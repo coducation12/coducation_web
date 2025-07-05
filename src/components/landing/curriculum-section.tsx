@@ -120,10 +120,6 @@ const mockCurriculums: Curriculum[] = [
 
 
 export function CurriculumSection() {
-    const plugin = React.useRef(
-      Autoplay({ delay: 4000, stopOnInteraction: true, stopOnMouseEnter: true })
-    );
-
     const groupedCurriculums = mockCurriculums.reduce((acc, curriculum) => {
         const level = curriculum.level;
         if (!acc[level]) {
@@ -156,9 +152,9 @@ export function CurriculumSection() {
                             }}
                             plugins={[
                                 Autoplay({
-                                    delay: 4000 + index * 500, // 각 캐러셀의 시작 시간을 다르게 설정
-                                    stopOnInteraction: true,
-                                    stopOnMouseEnter: true,
+                                    delay: 3000, // 3초마다 자동 슬라이드
+                                    stopOnInteraction: false, // 사용자 상호작용 시에도 계속 자동 슬라이드
+                                    stopOnMouseEnter: false, // 마우스 호버 시에도 계속 자동 슬라이드
                                 })
                             ]}
                             className="w-full"

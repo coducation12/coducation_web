@@ -2,10 +2,9 @@ import type { Metadata } from 'next';
 import { IBM_Plex_Sans_KR, Noto_Sans_KR, Source_Code_Pro } from 'next/font/google';
 import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
-import { Header } from '@/components/common/header';
-import { Footer } from '@/components/common/footer';
 import { cn } from '@/lib/utils';
-import { PageBackground } from '@/components/common/page-background';
+import { BackgroundWrapper } from '@/components/common/background-wrapper';
+import { LayoutWrapper } from '@/components/common/layout-wrapper';
 
 const bodyFont = Noto_Sans_KR({
   subsets: ['latin'],
@@ -48,11 +47,11 @@ export default function RootLayout({
           codeFont.variable
         )}
       >
-        <PageBackground />
+        <BackgroundWrapper />
         <div className="relative z-0 flex min-h-screen flex-col">
-          <Header />
-          <main className="flex-1">{children}</main>
-          <Footer />
+          <LayoutWrapper>
+            <main className="flex-1">{children}</main>
+          </LayoutWrapper>
         </div>
         <Toaster />
       </body>

@@ -2,12 +2,16 @@
 
 import { useEffect, useRef } from 'react';
 
-export function PageBackground() {
+interface PageBackgroundProps {
+  type?: 'animated' | 'static';
+}
+
+export function PageBackground({ type = 'animated' }: PageBackgroundProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789<>/?;:"}{[]|\\!@#$%^&*()_+-=';
 
   useEffect(() => {
-    if (!containerRef.current) return;
+    if (!containerRef.current || type === 'static') return;
 
     const createChar = () => {
       if (!containerRef.current) return;
@@ -45,7 +49,13 @@ export function PageBackground() {
         containerRef.current.innerHTML = '';
       }
     };
-  }, []);
+  }, [type]);
 
-  return <div ref={containerRef} className="falling-code" aria-hidden="true" />;
+  return (
+    <div 
+      ref={containerRef} 
+      className={`falling-code ${type === 'static' ? 'static-background' : ''}`} 
+      aria-hidden="true" 
+    />
+  );
 }

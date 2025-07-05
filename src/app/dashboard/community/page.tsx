@@ -72,45 +72,9 @@ export default function CommunityPage() {
           <h1 className="text-3xl font-bold text-cyan-100 drop-shadow">커뮤니티</h1>
           <p className="text-cyan-200 mt-2 font-medium drop-shadow">학습에 대한 이야기를 나누고 정보를 공유해보세요</p>
         </div>
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <Button className="bg-cyan-500 hover:bg-cyan-600 text-white font-bold shadow">새 글 작성</Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-2xl bg-[#183c5a] border-cyan-400/30">
-            <DialogHeader>
-              <DialogTitle className="text-cyan-100">새 글 작성</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-cyan-200 mb-2">제목</label>
-                <Input
-                  placeholder="제목을 입력하세요"
-                  value={newPost.title}
-                  onChange={(e) => setNewPost({ ...newPost, title: e.target.value })}
-                  className="bg-[#1a2a3a] text-cyan-100 border-cyan-400/30"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-cyan-200 mb-2">내용</label>
-                <Textarea
-                  placeholder="내용을 입력하세요"
-                  rows={6}
-                  value={newPost.content}
-                  onChange={(e) => setNewPost({ ...newPost, content: e.target.value })}
-                  className="bg-[#1a2a3a] text-cyan-100 border-cyan-400/30"
-                />
-              </div>
-              <div className="flex justify-end space-x-2">
-                <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
-                  취소
-                </Button>
-                <Button className="bg-cyan-500 hover:bg-cyan-600 text-white font-bold shadow" onClick={handleCreatePost}>
-                  작성하기
-                </Button>
-              </div>
-            </div>
-          </DialogContent>
-        </Dialog>
+        <Button className="bg-cyan-500 hover:bg-cyan-600 text-white font-bold shadow" onClick={() => router.push('/dashboard/community/new')}>
+          새 글 작성
+        </Button>
       </div>
 
       <div className="space-y-3">

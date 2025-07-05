@@ -414,8 +414,6 @@ JOIN users u ON s.user_id = u.id
 WHERE u.role = 'student' 
   AND s.enrollment_end_date IS NULL;
 ```
-```
-
 ---
 
 ## 🎯 주요 기능별 작동방식
@@ -452,3 +450,69 @@ WHERE u.role = 'student'
 - **권한**: academy별 데이터 접근 제어 가능
 
 ---
+
+# 주요 기능 및 DB 구조
+
+## 기능 요약
+- 커리큘럼 관리, 단계별 학습 진행, 결과물 업로드(파일/URL), 메모/피드백, 완료 체크(업로드 기반)
+- 완료된 학습은 2단 접이식(제목만 → 클릭 시 상세 카드)
+- UI/UX: 네온/사이버 스타일, 반응형, 사이드바 고정
+- 파일 업로드: 업로드 전 미리보기, 파일별 완료/삭제, 실수 방지
+- 상태 관리: 진행/완료 커리큘럼 분리, 단계별 열기/닫기
+
+## 파일 구조
+```
+src/
+  app/
+    dashboard/
+      student/
+        today/
+          page.tsx         # 학생의 커리큘럼 단계별 학습 진행/결과물/피드백 관리 메인
+  components/
+    curriculum/
+      curriculum-upload.tsx    # 결과물 업로드 컴포넌트
+      curriculum-memo.tsx      # 메모/피드백 통합 컴포넌트
+  components/
+    sidebar/
+      dashboard-sidebar.tsx    # 고정형 사이드바
+```
+
+## DB 설계 및 역할
+
+### 테이블 구조 및 역할
+- **curriculums**: 커리큘럼 정보(기존, id: uuid)
+- **curriculum_steps**: 각 커리큘럼의 단계(별도 테이블이 있으면 id: uuid, 없으면 checklist 배열)
+- **student_activity_logs**: 학생의 일일 출석, 타자, 요약 등 로그 용도 (결과물/메모/피드백 등은 포함하지 않음)
+- **student_step_result**: 학생별 커리큘럼 단계별 학습 결과(결과물/메모/피드백/완료) 관리용 테이블
+
+### Supabase 테이블 SQL 예시
+```sql
+-- checklist가 별도 테이블(curriculum_steps)로 관리되는 경우
+create table public.student_step_result (
+  id uuid not null default gen_random_uuid() primary key,
+  student_id uuid not null references public.users(id),
+  curriculum_id uuid not null references public.curriculums(id),
+  step_id uuid not null, -- curriculum_steps.id
+  is_done boolean default false,
+  done_at timestamp with time zone,
+  memo text,
+  feedbacks jsonb default '[]', -- [{author, role, content, created_at}]
+  files jsonb default '[]',     -- [{type, file_url, file_name, size, uploaded_at}]
+  unique(student_id, curriculum_id, step_id)
+);
+
+-- checklist가 curriculums 테이블의 배열 필드라면 step_index(int)로 관리
+create table public.student_step_result (
+  id uuid not null default gen_random_uuid() primary key,
+  student_id uuid not null references public.users(id),
+  curriculum_id uuid not null references public.curriculums(id),
+  step_index int not null, -- checklist 배열의 인덱스
+  is_done boolean default false,
+  done_at timestamp with time zone,
+  memo text,
+  feedbacks jsonb default '[]',
+  files jsonb default '[]',
+  unique(student_id, curriculum_id, step_index)
+);
+```
+- 파일 업로드: Supabase Storage의 별도 버킷(project-result 등) 사용, DB에는 파일/URL 등 메타데이터만 저장

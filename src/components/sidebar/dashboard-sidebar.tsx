@@ -137,8 +137,12 @@ export function DashboardSidebar({ user }: { user: User }) {
           </div>
         </header>
       ) : (
-        <div className="hidden border-r bg-muted/40 md:block w-[220px] lg:w-[280px]">
-          <NavContent user={user} />
+        <div
+          className="hidden md:block w-[220px] lg:w-[280px] h-screen sticky top-0 left-0 z-30 bg-muted/40 border-r"
+        >
+          <div className="h-full overflow-y-auto">
+            <NavContent user={user} />
+          </div>
         </div>
       )}
     </>

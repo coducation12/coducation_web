@@ -13,6 +13,8 @@ import {
   LogOut,
   PanelLeft,
   Keyboard,
+  Calendar,
+  MessageSquare,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -28,23 +30,28 @@ import React from 'react';
 import { logout } from '@/lib/actions';
 
 const studentNav = [
-  { href: '/dashboard/student', label: '내 정보', icon: Home },
+  { href: '/dashboard/student', label: '대시보드', icon: Home },
+  { href: '/dashboard/student/today', label: '오늘의 학습', icon: Calendar },
   { href: '/dashboard/student/typing', label: '타자 연습', icon: Keyboard },
+  { href: '/dashboard/community', label: '커뮤니티', icon: MessageSquare },
 ];
 
 const parentNav = [
   { href: '/dashboard/parent', label: '자녀 학습 현황', icon: Home },
+  { href: '/dashboard/community', label: '커뮤니티', icon: MessageSquare },
 ];
 
 const teacherNav = [
   { href: '/dashboard/teacher', label: '담당 학생 관리', icon: Home },
   { href: '/dashboard/teacher/curriculum', label: '커리큘럼 관리', icon: GraduationCap },
+  { href: '/dashboard/community', label: '커뮤니티', icon: MessageSquare },
 ];
 
 const adminNav = [
   { href: '/dashboard/admin', label: '통계', icon: BarChart3 },
   { href: '/dashboard/admin/users', label: '사용자 관리', icon: UserIcon },
   { href: '/dashboard/admin/curriculum', label: '커리큘럼 관리', icon: GraduationCap },
+  { href: '/dashboard/community', label: '커뮤니티', icon: MessageSquare },
 ];
 
 const navItemsByRole = {

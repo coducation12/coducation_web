@@ -21,6 +21,26 @@ export function Header() {
   const pathname = usePathname();
   const [activeLink, setActiveLink] = useState('');
 
+  const handleSmoothScroll = (e: React.MouseEvent<HTMLAnchorElement>, targetId: string) => {
+    e.preventDefault();
+    
+    if (pathname !== '/') {
+      // 다른 페이지에서는 일반 링크로 이동
+      return;
+    }
+
+    const targetElement = document.getElementById(targetId);
+    if (targetElement) {
+      const headerHeight = 56; // 헤더 높이 (h-14 = 3.5rem = 56px)
+      const targetPosition = targetElement.offsetTop - headerHeight;
+      
+      window.scrollTo({
+        top: targetPosition,
+        behavior: 'smooth'
+      });
+    }
+  };
+
   useEffect(() => {
     if (pathname !== '/') {
         setActiveLink('');
@@ -66,8 +86,9 @@ export function Header() {
             <Link
               key={link.href}
               href={link.href}
+              onClick={(e) => handleSmoothScroll(e, link.id)}
               className={cn(
-                'relative py-2 transition-colors hover:text-foreground/80',
+                'relative py-2 transition-colors hover:text-foreground/80 cursor-pointer',
                 pathname === '/' && activeLink === link.href
                   ? 'text-foreground active-nav-link'
                   : 'text-foreground/60'

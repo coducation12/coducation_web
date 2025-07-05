@@ -8,9 +8,33 @@ import type { TypingExercise } from '@/types';
 import { Sparkles } from 'lucide-react';
 
 const mockExercises: TypingExercise[] = [
-    { id: 'ko-1', language: 'Korean', level: '기초', content: '안녕하세요. 반갑습니다. 코딩 교육의 새로운 시작, Coducation입니다.', created_at: '' },
-    { id: 'en-1', language: 'English', level: '기초', content: 'The quick brown fox jumps over the lazy dog.', created_at: '' },
-    { id: 'code-1', language: 'Code', level: '기초', content: 'console.log("Hello, World!");', created_at: '' },
+    { 
+        id: 'ko-1', 
+        title: '한국어 기초 타자',
+        language: 'Korean', 
+        level: '기초', 
+        content: '안녕하세요. 반갑습니다. 코딩 교육의 새로운 시작, Coducation입니다.', 
+        exercise_type: '자리연습',
+        created_at: '' 
+    },
+    { 
+        id: 'en-1', 
+        title: '영어 기초 타자',
+        language: 'English', 
+        level: '기초', 
+        content: 'The quick brown fox jumps over the lazy dog.', 
+        exercise_type: '자리연습',
+        created_at: '' 
+    },
+    { 
+        id: 'code-1', 
+        title: '코드 기초 타자',
+        language: 'Code', 
+        level: '기초', 
+        content: 'console.log("Hello, World!");', 
+        exercise_type: '실전연습',
+        created_at: '' 
+    },
 ];
 
 

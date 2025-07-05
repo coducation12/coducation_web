@@ -1,25 +1,27 @@
 import type { Metadata } from 'next';
-import { Orbitron, Rajdhani, Source_Code_Pro } from 'next/font/google';
+import { IBM_Plex_Sans_KR, Noto_Sans_KR, Source_Code_Pro } from 'next/font/google';
 import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 import { Header } from '@/components/common/header';
 import { Footer } from '@/components/common/footer';
 import { cn } from '@/lib/utils';
+import { PageBackground } from '@/components/common/page-background';
 
-const bodyFont = Rajdhani({
+const bodyFont = Noto_Sans_KR({
   subsets: ['latin'],
   weight: ['400', '500', '700'],
   variable: '--font-body',
 });
-const headlineFont = Orbitron({
+const headlineFont = IBM_Plex_Sans_KR({
   subsets: ['latin'],
-  weight: ['400', '500', '700'],
+  weight: ['500', '700'],
   variable: '--font-headline',
 });
 const codeFont = Source_Code_Pro({
   subsets: ['latin'],
   variable: '--font-source-code-pro',
 });
+
 
 export const metadata: Metadata = {
   title: 'Coducation - 코딩으로 세상을 교육하다',
@@ -40,13 +42,14 @@ export default function RootLayout({
       <head />
       <body
         className={cn(
-          'min-h-screen bg-background font-body antialiased',
+          'min-h-screen font-body antialiased text-foreground',
           bodyFont.variable,
           headlineFont.variable,
           codeFont.variable
         )}
       >
-        <div className="relative flex min-h-screen flex-col">
+        <PageBackground />
+        <div className="relative z-0 flex min-h-screen flex-col">
           <Header />
           <main className="flex-1">{children}</main>
           <Footer />

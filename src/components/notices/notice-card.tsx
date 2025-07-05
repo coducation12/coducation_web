@@ -9,7 +9,7 @@ interface NoticeCardProps {
 
 export function NoticeCard({ notice }: NoticeCardProps) {
   return (
-    <Card className="flex flex-col">
+    <Card className="cyber-card flex flex-col">
       <CardHeader>
         <div className="flex items-center justify-between">
             <CardTitle className="text-lg font-headline">{notice.title}</CardTitle>

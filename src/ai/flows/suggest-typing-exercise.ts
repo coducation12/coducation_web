@@ -38,7 +38,7 @@ const SuggestTypingExerciseOutputSchema = z.object({
     ),
   exerciseLevel: z
     .string()
-    .describe('The difficulty level of the typing exercise (e.g., 기초, 중급, 수련).'),
+    .describe('The difficulty level of the typing exercise (e.g., 기초, 중급, 고급).'),
   exerciseContent: z
     .string()
     .describe('The text content of the typing exercise.'),

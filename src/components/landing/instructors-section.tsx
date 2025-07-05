@@ -1,3 +1,4 @@
+
 import type { Instructor } from '@/types';
 import { InstructorCard } from '@/components/profile/instructor-card';
 
@@ -28,14 +29,14 @@ const mockInstructors: Instructor[] = [
   },
 ];
 
-export default function InstructorsPage() {
+export function InstructorsSection() {
   const topInstructor = mockInstructors[0];
   const bottomInstructors = mockInstructors.slice(1);
 
   return (
-    <div className="container py-12 md:py-24 lg:py-32">
+    <section id="instructors" className="container w-full py-32 md:py-52">
       <div className="flex flex-col items-center text-center space-y-4 mb-12">
-        <h1 className="text-4xl font-bold tracking-tighter sm:text-5xl font-headline">전문 강사진 소개</h1>
+        <h2 className="text-4xl font-bold tracking-tighter sm:text-5xl font-headline">전문 강사진 소개</h2>
         <p className="max-w-2xl text-lg text-muted-foreground">
           열정과 실력을 겸비한 Coducation의 전문 강사님들을 소개합니다.
         </p>
@@ -62,6 +63,6 @@ export default function InstructorsPage() {
             </div>
         )}
       </div>
-    </div>
+    </section>
   );
 }

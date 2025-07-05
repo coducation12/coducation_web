@@ -26,13 +26,14 @@ export default function AboutPage() {
             </div>
           </div>
         </div>
-        <div className="relative h-64 lg:h-auto">
+        <div className="flex items-start justify-center">
           <Image
-            src="https://placehold.co/600x600.png"
+            src="https://placehold.co/600x400.png"
             data-ai-hint="team collaboration"
             alt="Team working on code"
-            fill
-            className="rounded-xl object-cover"
+            width={600}
+            height={400}
+            className="rounded-xl"
           />
         </div>
       </div>

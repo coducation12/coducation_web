@@ -53,15 +53,15 @@ const academySlides = [
   },
 ];
 
-export default function AcademyPage() {
+export function AcademySection() {
     const mainCarouselPlugin = React.useRef(
         Autoplay({ delay: 5000, stopOnInteraction: true, stopOnMouseEnter: true })
     );
 
   return (
-    <div className="container py-12 md:py-24 lg:py-32">
+    <section id="academy" className="container w-full py-32 md:py-52">
       <div className="flex flex-col items-center text-center space-y-4 mb-12">
-        <h1 className="text-4xl font-bold tracking-tighter sm:text-5xl font-headline">코딩메이커 학원 안내</h1>
+        <h2 className="text-4xl font-bold tracking-tighter sm:text-5xl font-headline">코딩메이커 학원 안내</h2>
         <p className="max-w-2xl text-lg text-muted-foreground">
           창의력과 기술이 만나는 곳, 코딩메이커 학원에 오신 것을 환영합니다.
         </p>
@@ -77,7 +77,7 @@ export default function AcademyPage() {
         <CarouselContent>
           {academySlides.map((slide, index) => (
             <CarouselItem key={index}>
-              <div className="grid grid-cols-1 md:grid-cols-2 items-center bg-card rounded-xl overflow-hidden">
+               <div className="grid grid-cols-1 md:grid-cols-2 items-center bg-card rounded-xl overflow-hidden">
                 <div className="p-8 md:p-12 space-y-4 order-2 md:order-1">
                   <h3 className="text-3xl font-bold text-primary font-headline tracking-wider">{slide.title}</h3>
                   <p className="text-lg text-muted-foreground mt-2">{slide.description}</p>
@@ -91,7 +91,7 @@ export default function AcademyPage() {
         </CarouselContent>
       </Carousel>
 
-      <div className="grid gap-8 md:grid-cols-3">
+      <div className="w-full grid gap-8 md:grid-cols-3">
         {features.map((feature, index) => (
           <Card key={index} className="flex flex-col cyber-card">
             <CardHeader className="flex flex-col items-center text-center">
@@ -104,6 +104,6 @@ export default function AcademyPage() {
           </Card>
         ))}
       </div>
-    </div>
+    </section>
   );
 }

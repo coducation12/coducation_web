@@ -1,41 +1,34 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-body {
-  font-family: var(--font-body), sans-serif;
-}
-
-h1, h2, h3, h4, h5, h6 {
-  font-family: var(--font-headline), sans-serif;
-}
-
 @layer base {
   :root {
-    --background: 220 20% 95%;
-    --foreground: 220 20% 10%;
-    --card: 0 0% 100%;
-    --card-foreground: 220 20% 10%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 220 20% 10%;
-    --primary: 195 90% 35%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 220 20% 90%;
-    --secondary-foreground: 195 90% 35%;
-    --muted: 220 20% 90%;
-    --muted-foreground: 220 20% 40%;
-    --accent: 300 90% 60%;
+    --background: 222 83% 4%;
+    --foreground: 195 100% 85%;
+    --card: 222 83% 8%;
+    --card-foreground: 195 100% 85%;
+    --popover: 222 83% 4%;
+    --popover-foreground: 195 100% 85%;
+    --primary: 195 100% 50%;
+    --primary-foreground: 222 83% 4%;
+    --secondary: 195 100% 10%;
+    --secondary-foreground: 195 100% 90%;
+    --muted: 222 83% 12%;
+    --muted-foreground: 195 100% 70%;
+    --accent: 300 100% 60%;
     --accent-foreground: 0 0% 100%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
-    --border: 195 50% 70%;
-    --input: 195 50% 80%;
-    --ring: 195 90% 45%;
-    --chart-1: 195 90% 55%;
-    --chart-2: 195 90% 45%;
-    --chart-3: 195 90% 35%;
-    --chart-4: 195 90% 65%;
-    --chart-5: 195 90% 75%;
+    --border: 195 100% 25%;
+    --input: 195 100% 15%;
+    --ring: 195 100% 50%;
+    --chart-1: 195 80% 60%;
+    --chart-2: 195 80% 70%;
+    --chart-3: 195 80% 80%;
+    --chart-4: 195 80% 50%;
+    --chart-5: 195 80% 90%;
     --radius: 0.25rem;
   }
   .dark {
@@ -64,19 +57,252 @@ h1, h2, h3, h4, h5, h6 {
     --chart-4: 195 80% 50%;
     --chart-5: 195 80% 90%;
   }
-}
 
-@layer base {
   * {
     @apply border-border;
   }
-  body {
-    @apply bg-background text-foreground;
+  
+  body, html {
+    background-color: transparent;
   }
-  .dark body {
-    background-image: 
-      linear-gradient(hsla(var(--border), 0.5) 1px, transparent 1px),
-      linear-gradient(to right, hsla(var(--border), 0.5) 1px, hsl(var(--background)) 1px);
-    background-size: 40px 40px;
+}
+
+@layer components {
+  /* Falling Code Background */
+  .falling-code {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    pointer-events: none;
+    z-index: -1;
+    background-color: hsl(var(--background));
+  }
+
+  .char {
+      position: absolute;
+      color: hsl(var(--primary) / 0.7);
+      font-family: var(--font-code);
+      font-size: 16px;
+      animation: fall linear infinite;
+      user-select: none;
+  }
+
+  @keyframes fall {
+      from {
+          transform: translateY(-20vh);
+          opacity: 1;
+      }
+      to {
+          transform: translateY(110vh);
+          opacity: 0.8;
+      }
+  }
+
+  @keyframes flicker {
+    0% { opacity: 0.1; }
+    2% { opacity: 1; }
+    8% { opacity: 0.1; }
+    9% { opacity: 1; }
+    12% { opacity: 0.1; }
+    20% { opacity: 1; }
+    25% { opacity: 0.3; }
+    30% { opacity: 1; }
+    70% { opacity: 0.7; }
+    72% { opacity: 0.2; }
+    77% { opacity: 0.9; }
+    100% { opacity: 0.9; }
+  }
+
+  @keyframes glitch-one {
+    0% { clip-path: inset(50% 50% 50% 50%); }
+    2.5% { clip-path: inset(10% 0 70% 0); }
+    5% { clip-path: inset(75% 0 5% 0); }
+    7.5% { clip-path: inset(30% 0 30% 0); }
+    10% { clip-path: inset(60% 0 15% 0); }
+    12.5% { clip-path: inset(50% 50% 50% 50%); }
+    100% { clip-path: inset(50% 50% 50% 50%); }
+  }
+
+  @keyframes glitch-two {
+    0% { clip-path: inset(50% 50% 50% 50%); }
+    1.25% { clip-path: inset(50% 50% 50% 50%); }
+    3.75% { clip-path: inset(70% 0 15% 0); }
+    6.25% { clip-path: inset(15% 0 80% 0); }
+    8.75% { clip-path: inset(50% 0 30% 0); }
+    11.25% { clip-path: inset(30% 0 65% 0); }
+    12.5% { clip-path: inset(50% 50% 50% 50%); }
+    100% { clip-path: inset(50% 50% 50% 50%); }
+  }
+
+  .glitch-heading {
+    position: relative;
+    color: hsl(var(--primary));
+    text-shadow: 0px 0px 4px hsl(var(--primary));
+    z-index: 10;
+  }
+  .glitch-heading::before,
+  .glitch-heading::after {
+    content: attr(data-text);
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: transparent;
+    overflow: hidden;
+    clip-path: inset(50% 50% 50% 50%);
+  }
+
+  .glitch-heading::before {
+    left: 8px;
+    text-shadow: -4px 0 hsl(var(--accent));
+    animation: glitch-one 4s linear infinite;
+  }
+
+  .glitch-heading::after {
+    left: -8px;
+    text-shadow: -4px 0 hsl(0 100% 50% / 0.8);
+    animation: glitch-two 4s linear infinite;
+  }
+
+  .active-nav-link {
+    text-shadow: 0 0 5px hsl(var(--primary));
+  }
+
+  .active-nav-link::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    bottom: 0px;
+    width: 80%;
+    height: 2px;
+    background: hsl(var(--primary));
+    box-shadow: 0 0 5px hsl(var(--primary)), 0 0 10px hsl(var(--primary));
+    animation: nav-glow 0.5s ease-in-out;
+  }
+
+  @keyframes nav-glow {
+    from {
+      opacity: 0;
+      width: 0%;
+    }
+    to {
+      opacity: 1;
+      width: 80%;
+    }
+  }
+
+  /* Cyber Button - Cut Corners */
+  .cyber-button {
+    --cut: 15px;
+    --border: 2px;
+    --color: hsl(var(--primary));
+    --bg: hsl(var(--primary-foreground));
+
+    position: relative;
+    padding: 12px 28px;
+    font-family: var(--font-headline);
+    font-size: 20px;
+    font-weight: 500;
+    color: var(--color);
+    background: transparent;
+    border: var(--border) solid var(--color);
+    clip-path: polygon(
+      0 var(--cut), 
+      var(--cut) 0, 
+      100% 0, 
+      100% calc(100% - var(--cut)), 
+      calc(100% - var(--cut)) 100%, 
+      0 100%
+    );
+    transition: color 0.3s ease;
+    cursor: pointer;
+    z-index: 1;
+    text-decoration: none;
+  }
+  
+  .cyber-button::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: var(--color);
+    transform: scale(0);
+    transition: transform 0.3s ease;
+    z-index: -1;
+  }
+
+  .cyber-button:hover {
+    color: var(--bg);
+  }
+
+  .cyber-button:hover::before {
+    transform: scale(1);
+  }
+
+
+  /* Cyber Card Hover Effect - Flowing Border */
+  @keyframes rotate {
+    100% {
+      transform: rotate(1turn);
+    }
+  }
+  
+  .cyber-card {
+    position: relative;
+    z-index: 0;
+    overflow: hidden;
+    padding: 2px;
+    background: transparent !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    transition: transform 0.3s ease-in-out;
+  }
+
+  .cyber-card:hover {
+    transform: translateY(-4px);
+  }
+
+  .cyber-card::before {
+    content: '';
+    position: absolute;
+    z-index: -2;
+    left: -50%;
+    top: -50%;
+    width: 200%;
+    height: 200%;
+    background-repeat: no-repeat;
+    background-image: conic-gradient(
+      hsl(var(--primary)),
+      hsl(var(--accent)),
+      hsl(var(--primary))
+    );
+    animation: rotate 4s linear infinite;
+    opacity: 0;
+    transition: opacity 0.3s ease-in-out;
+    animation-play-state: paused;
+  }
+  
+  .cyber-card:hover::before {
+    opacity: 1;
+    animation-play-state: running;
+  }
+
+  .cyber-card::after {
+    content: '';
+    position: absolute;
+    z-index: -1;
+    left: 2px;
+    top: 2px;
+    width: calc(100% - 4px);
+    height: calc(100% - 4px);
+    background: hsl(var(--card));
+    border-radius: var(--radius);
   }
 }

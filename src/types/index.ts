@@ -1,66 +1,98 @@
-export type UserRole = 'student' | 'parent' | 'teacher' | 'admin_main' | 'admin_sub';
+export type UserRole = 'student' | 'parent' | 'teacher' | 'admin';
 
-export interface UserProfile {
-  id: string; // auth.users.id
+export interface User {
+  id: string;
+  username: string;
   name: string;
   role: UserRole;
+  birth_year?: number;
+  academy?: string;
+  created_at: string;
 }
 
-export interface Student extends UserProfile {
-  role: 'student';
-  temp_id?: string;
-  assigned_teacher?: string; // teacher's id
-  curriculum_id?: string; // curriculum's id
+export interface Student {
+  user_id: string;
+  assigned_teachers: string[];
+  parent_id?: string;
+  tuition_fee?: number;
+  current_curriculum_id?: string;
+  enrollment_start_date: string;
+  enrollment_end_date?: string;
+  attendance_schedule?: any;
+  created_at: string;
 }
 
-export interface Parent extends UserProfile {
-  role: 'parent';
-  child_id: string; // student's id
-}
-
-export interface Teacher extends UserProfile {
-  role: 'teacher';
+export interface Teacher {
+  user_id: string;
   bio?: string;
-  profile_image?: string;
-  assigned_students: string[]; // array of student ids
+  image?: string;
+  certs?: string;
+  career?: string;
+  created_at: string;
 }
-
-export interface Admin extends UserProfile {
-  role: 'admin_main' | 'admin_sub';
-}
-
-export type User = Student | Parent | Teacher | Admin;
 
 export interface Curriculum {
   id: string;
   title: string;
-  description: string;
+  description?: string;
+  category?: string;
   level: '기초' | '중급' | '고급';
-  created_by: string; // teacher's id
+  image?: string;
+  checklist?: string[];
+  created_by?: string;
   public: boolean;
   created_at: string;
-  image?: string; // Added for UI
 }
 
-export interface AttendanceLog {
+export interface TypingExercise {
+  id: string;
+  title: string;
+  content: string;
+  language: 'Korean' | 'English' | 'Code';
+  level: '기초' | '중급' | '고급';
+  exercise_type: '자리연습' | '실전연습';
+  created_at: string;
+}
+
+export interface StudentActivityLog {
   id: string;
   student_id: string;
   date: string;
-  completed: boolean;
+  attended: boolean;
   typing_score?: number;
-  typing_duration_seconds?: number;
-  level?: string;
+  typing_speed?: number;
+  curriculum_id?: string;
+  typing_exercise_id?: string;
+  result_image?: string;
+  result_url?: string;
+  result_file?: string;
+  memo?: string;
   created_at: string;
 }
 
-export interface ClassReport {
+export interface TuitionPayment {
   id: string;
   student_id: string;
-  curriculum_id: string;
-  report_date: string;
-  report_type: 'image' | 'link';
+  amount: number;
+  paid_at: string;
+  note?: string;
+}
+
+export interface CommunityPost {
+  id: string;
+  user_id: string;
+  title: string;
   content: string;
-  submitted_by: string; // teacher's id
+  is_deleted: boolean;
+  created_at: string;
+}
+
+export interface CommunityComment {
+  id: string;
+  post_id: string;
+  user_id: string;
+  content: string;
+  is_deleted: boolean;
   created_at: string;
 }
 
@@ -71,15 +103,7 @@ export interface Notice {
   author_id: string;
   is_notice: boolean;
   created_at: string;
-  author_name?: string; // For display
-}
-
-export interface TypingExercise {
-  id: string;
-  language: 'Korean' | 'English' | 'Code';
-  level: '기초' | '중급' | '고급';
-  content: string;
-  created_at: string;
+  author_name?: string;
 }
 
 export interface Review {
@@ -95,105 +119,4 @@ export interface Instructor {
   name: string;
   bio: string;
   profile_image: string;
-  assigned_students_count: number;
-}
-
-export type UserRole = 'student' | 'parent' | 'teacher' | 'admin_main' | 'admin_sub';
-
-export interface UserProfile {
-  id: string; // auth.users.id
-  name: string;
-  role: UserRole;
-}
-
-export interface Student extends UserProfile {
-  role: 'student';
-  temp_id?: string;
-  assigned_teacher?: string; // teacher's id
-  curriculum_id?: string; // curriculum's id
-}
-
-export interface Parent extends UserProfile {
-  role: 'parent';
-  child_id: string; // student's id
-}
-
-export interface Teacher extends UserProfile {
-  role: 'teacher';
-  bio?: string;
-  profile_image?: string;
-  assigned_students: string[]; // array of student ids
-}
-
-export interface Admin extends UserProfile {
-  role: 'admin_main' | 'admin_sub';
-}
-
-export type User = Student | Parent | Teacher | Admin;
-
-export interface Curriculum {
-  id: string;
-  title: string;
-  description: string;
-  level: '기초' | '중급' | '수련';
-  created_by: string; // teacher's id
-  public: boolean;
-  created_at: string;
-  image?: string; // Added for UI
-}
-
-export interface AttendanceLog {
-  id: string;
-  student_id: string;
-  date: string;
-  completed: boolean;
-  typing_score?: number;
-  typing_duration_seconds?: number;
-  level?: string;
-  created_at: string;
-}
-
-export interface ClassReport {
-  id: string;
-  student_id: string;
-  curriculum_id: string;
-  report_date: string;
-  report_type: 'image' | 'link';
-  content: string;
-  submitted_by: string; // teacher's id
-  created_at: string;
-}
-
-export interface Notice {
-  id: string;
-  title: string;
-  content: string;
-  author_id: string;
-  is_notice: boolean;
-  created_at: string;
-  author_name?: string; // For display
-}
-
-export interface TypingExercise {
-  id: string;
-  language: 'Korean' | 'English' | 'Code';
-  level: '기초' | '중급' | '수련';
-  content: string;
-  created_at: string;
-}
-
-export interface Review {
-  id: string;
-  author: string;
-  avatar: string;
-  course: string;
-  content: string;
-}
-
-export interface Instructor {
-  id: string;
-  name: string;
-  bio: string;
-  profile_image: string;
-  assigned_students_count: number;
 }

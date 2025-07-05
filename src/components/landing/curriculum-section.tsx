@@ -1,5 +1,16 @@
+'use client';
+
+import * as React from 'react';
 import type { Curriculum } from '@/types';
 import { CurriculumCard } from '@/components/curriculum/curriculum-card';
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from '@/components/ui/carousel';
+import Autoplay from 'embla-carousel-autoplay';
 
 const mockCurriculums: Curriculum[] = [
   // 기초
@@ -107,21 +118,67 @@ const mockCurriculums: Curriculum[] = [
   },
 ];
 
-export default function CurriculumPage() {
-  return (
-    <div className="container py-12 md:py-24 lg:py-32">
-      <div className="flex flex-col items-center text-center space-y-4 mb-12">
-        <h1 className="text-4xl font-bold tracking-tighter sm:text-5xl font-headline">체계적인 커리큘럼</h1>
-        <p className="max-w-2xl text-lg text-muted-foreground">
-          기초부터 심화까지, 여러분의 성장을 이끌 Coducation의 전문 교육 과정을 만나보세요.
-        </p>
-      </div>
 
-      <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
-        {mockCurriculums.map((curriculum) => (
-          <CurriculumCard key={curriculum.id} curriculum={curriculum} />
-        ))}
-      </div>
-    </div>
-  );
+export function CurriculumSection() {
+    const plugin = React.useRef(
+      Autoplay({ delay: 4000, stopOnInteraction: true, stopOnMouseEnter: true })
+    );
+
+    const groupedCurriculums = mockCurriculums.reduce((acc, curriculum) => {
+        const level = curriculum.level;
+        if (!acc[level]) {
+        acc[level] = [];
+        }
+        acc[level].push(curriculum);
+        return acc;
+    }, {} as Record<Curriculum['level'], Curriculum[]>);
+
+    const levelOrder: Curriculum['level'][] = ['기초', '중급', '고급'];
+
+    return (
+        <section id="curriculum" className="container w-full py-32 md:py-52">
+            <div className="flex flex-col items-center text-center space-y-4 mb-12">
+                <h2 className="text-4xl font-bold tracking-tighter sm:text-5xl font-headline">체계적인 커리큘럼</h2>
+                <p className="max-w-2xl text-lg text-muted-foreground">
+                    기초부터 심화까지, 여러분의 성장을 이끌 Coducation의 전문 교육 과정을 만나보세요.
+                </p>
+            </div>
+
+            <div className="w-full space-y-12">
+                {levelOrder.map((level, index) => (
+                groupedCurriculums[level] && (
+                    <div key={level}>
+                        <h3 className="text-3xl font-bold font-headline mb-6 text-left text-primary">{level} 과정</h3>
+                        <Carousel
+                            opts={{
+                                align: 'start',
+                                loop: true,
+                            }}
+                            plugins={[
+                                Autoplay({
+                                    delay: 4000 + index * 500, // 각 캐러셀의 시작 시간을 다르게 설정
+                                    stopOnInteraction: true,
+                                    stopOnMouseEnter: true,
+                                })
+                            ]}
+                            className="w-full"
+                        >
+                            <CarouselContent>
+                                {groupedCurriculums[level].map((curriculum) => (
+                                    <CarouselItem key={curriculum.id} className="md:basis-1/2 lg:basis-1/3">
+                                        <div className="p-1">
+                                            <CurriculumCard curriculum={curriculum} />
+                                        </div>
+                                    </CarouselItem>
+                                ))}
+                            </CarouselContent>
+                            <CarouselPrevious className="hidden lg:flex" />
+                            <CarouselNext className="hidden lg:flex"/>
+                        </Carousel>
+                    </div>
+                )
+                ))}
+            </div>
+        </section>
+    );
 }

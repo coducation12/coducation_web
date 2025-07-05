@@ -57,9 +57,11 @@ export function AiExerciseGenerator({ onExerciseGenerated }: AiExerciseGenerator
         if (result) {
             const newExercise: TypingExercise = {
                 id: `ai-${Date.now()}`,
+                title: `AI 추천 ${result.exerciseLanguage} 연습`,
                 language: result.exerciseLanguage as any,
                 level: result.exerciseLevel as any,
                 content: result.exerciseContent,
+                exercise_type: '실전연습',
                 created_at: new Date().toISOString(),
             };
             onExerciseGenerated(newExercise);

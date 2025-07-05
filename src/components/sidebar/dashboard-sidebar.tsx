@@ -23,7 +23,7 @@ import {
   SheetTrigger,
 } from '@/components/ui/sheet';
 import { useState } from 'react';
-import type { User } from '@/lib/auth';
+import type { User } from '@/types';
 import React from 'react';
 import { logout } from '@/lib/actions';
 
@@ -51,8 +51,7 @@ const navItemsByRole = {
   student: studentNav,
   parent: parentNav,
   teacher: teacherNav,
-  admin_main: adminNav,
-  admin_sub: adminNav,
+  admin: adminNav,
 };
 
 function NavContent({ user, onLinkClick }: { user: User, onLinkClick?: () => void }) {

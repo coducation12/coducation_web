@@ -1,14 +1,145 @@
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://your-project.supabase.co';
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'your-anon-key';
-
-// 환경 변수가 설정되지 않은 경우 개발 모드에서만 경고
-if (process.env.NODE_ENV === 'development') {
-  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
-    console.warn('⚠️ Supabase 환경 변수가 설정되지 않았습니다. .env.local 파일을 확인해주세요.');
-    console.warn('NEXT_PUBLIC_SUPABASE_URL과 NEXT_PUBLIC_SUPABASE_ANON_KEY를 설정해야 합니다.');
-  }
-}
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+
+// Database types
+export interface Database {
+  public: {
+    Tables: {
+      users: {
+        Row: {
+          id: string;
+          username: string;
+          name: string;
+          role: 'student' | 'parent' | 'teacher' | 'admin';
+          birth_year?: number;
+          academy?: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          username: string;
+          name: string;
+          role: 'student' | 'parent' | 'teacher' | 'admin';
+          birth_year?: number;
+          academy?: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          username?: string;
+          name?: string;
+          role?: 'student' | 'parent' | 'teacher' | 'admin';
+          birth_year?: number;
+          academy?: string;
+          created_at?: string;
+        };
+      };
+      students: {
+        Row: {
+          user_id: string;
+          assigned_teachers: string[];
+          parent_id?: string;
+          tuition_fee?: number;
+          current_curriculum_id?: string;
+          enrollment_start_date: string;
+          enrollment_end_date?: string;
+          attendance_schedule?: any;
+          created_at: string;
+        };
+        Insert: {
+          user_id: string;
+          assigned_teachers: string[];
+          parent_id?: string;
+          tuition_fee?: number;
+          current_curriculum_id?: string;
+          enrollment_start_date: string;
+          enrollment_end_date?: string;
+          attendance_schedule?: any;
+          created_at?: string;
+        };
+        Update: {
+          user_id?: string;
+          assigned_teachers?: string[];
+          parent_id?: string;
+          tuition_fee?: number;
+          current_curriculum_id?: string;
+          enrollment_start_date?: string;
+          enrollment_end_date?: string;
+          attendance_schedule?: any;
+          created_at?: string;
+        };
+      };
+      curriculums: {
+        Row: {
+          id: string;
+          title: string;
+          description?: string;
+          category?: string;
+          level: '기초' | '중급' | '고급';
+          image?: string;
+          checklist?: string[];
+          created_by?: string;
+          public: boolean;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          title: string;
+          description?: string;
+          category?: string;
+          level: '기초' | '중급' | '고급';
+          image?: string;
+          checklist?: string[];
+          created_by?: string;
+          public: boolean;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          title?: string;
+          description?: string;
+          category?: string;
+          level?: '기초' | '중급' | '고급';
+          image?: string;
+          checklist?: string[];
+          created_by?: string;
+          public?: boolean;
+          created_at?: string;
+        };
+      };
+      typing_exercises: {
+        Row: {
+          id: string;
+          title: string;
+          content: string;
+          language: 'Korean' | 'English' | 'Code';
+          level: '기초' | '중급' | '고급';
+          exercise_type: '자리연습' | '실전연습';
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          title: string;
+          content: string;
+          language: 'Korean' | 'English' | 'Code';
+          level: '기초' | '중급' | '고급';
+          exercise_type: '자리연습' | '실전연습';
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          title?: string;
+          content?: string;
+          language?: 'Korean' | 'English' | 'Code';
+          level?: '기초' | '중급' | '고급';
+          exercise_type?: '자리연습' | '실전연습';
+          created_at?: string;
+        };
+      };
+    };
+  };
+} 

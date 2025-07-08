@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useMemo } from 'react';
 import type { TypingExercise } from '@/types';
 import { Card, CardContent } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
-import { Button } from '../ui/button';
+import { Button } from '../../../../components/ui/button';
 import { RefreshCw } from 'lucide-react';
 
 interface TypingPracticeProps {

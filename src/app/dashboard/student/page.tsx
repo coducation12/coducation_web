@@ -1,69 +1,59 @@
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
 import { getAuthenticatedUser } from "@/lib/auth";
-import { ArrowRight, Book, Target } from "lucide-react";
-import Link from "next/link";
+import { TypingChart } from "@/app/dashboard/student/components/typing-chart";
+import { LearningProgress } from "@/app/dashboard/student/components/learning-progress";
+import { GoalsCard } from "@/app/dashboard/student/components/goals-card";
+import { AttendanceCalendar } from "@/app/dashboard/student/components/attendance-calendar";
+import { AttendanceCheckCard } from "@/app/dashboard/student/components/attendance-check-card";
+import { DashboardCard } from "@/app/dashboard/student/components/DashboardCard";
+import { Trophy } from "lucide-react";
+import { CompletedLearning } from "@/app/dashboard/student/components/completed-learning";
 
 export default async function StudentDashboardPage() {
     const user = await getAuthenticatedUser();
 
+    if (!user) {
+        return <div>사용자 정보를 불러올 수 없습니다.</div>;
+    }
+
     return (
-        <div className="space-y-6">
-            <h1 className="text-3xl font-bold font-headline">안녕하세요, {user?.name}님!</h1>
-            
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                <Card>
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2 font-headline">
-                            <Book className="w-5 h-5" />
-                            오늘의 수업
-                        </CardTitle>
-                        <CardDescription>React 기초: 컴포넌트와 Props</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <p className="text-sm text-muted-foreground mb-4">
-                            오늘은 React의 핵심 개념인 컴포넌트와 Props에 대해 배웁니다.
-                        </p>
-                        <Progress value={25} className="w-full" />
-                        <p className="text-xs text-muted-foreground mt-2">25% 완료</p>
-                    </CardContent>
-                </Card>
-
-                <Card className="bg-primary text-primary-foreground">
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2 font-headline">
-                            <Target className="w-5 h-5" />
-                            타자 연습 챌린지
-                        </CardTitle>
-                        <CardDescription className="text-primary-foreground/80">새로운 AI 추천 연습으로 실력을 향상시키세요!</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <Button asChild variant="secondary" className="w-full">
-                            <Link href="/dashboard/student/typing">
-                                연습 시작하기
-                                <ArrowRight className="ml-2 w-4 h-4" />
-                            </Link>
-                        </Button>
-                    </CardContent>
-                </Card>
-
-                <Card>
-                    <CardHeader>
-                        <CardTitle className="font-headline">최근 성적</CardTitle>
-                        <CardDescription>지난 타자 연습 결과입니다.</CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-2 text-sm">
-                        <div className="flex justify-between">
-                            <span className="text-muted-foreground">정확도</span>
-                            <strong>98%</strong>
-                        </div>
-                        <div className="flex justify-between">
-                            <span className="text-muted-foreground">타수 (WPM)</span>
-                            <strong>65</strong>
-                        </div>
-                    </CardContent>
-                </Card>
+        <div className="w-full h-full flex-1 min-h-0 px-4 py-4 md:px-12 md:py-10 box-border pt-14 md:pt-8">
+            <div className="grid sm:grid-cols-1 md:grid-cols-2 gap-6 h-full min-w-0">
+                {/* 왼쪽: 학습진행률+완료된학습 (세로로 긴 카드) */}
+                <DashboardCard className="flex flex-col h-full min-w-0">
+                  <div className="flex flex-col h-full gap-4">
+                    <section className="flex-1 flex flex-col">
+                      <LearningProgress studentId={user.id} vertical />
+                    </section>
+                    <section className="flex-1 flex flex-col">
+                      <CompletedLearning studentId={user.id} />
+                    </section>
+                  </div>
+                </DashboardCard>
+                {/* 오른쪽: 2행 2열 구조 */}
+                <div className="h-full grid grid-rows-2 gap-6">
+                    {/* 상단: 출석+캘린더(왼쪽) + 목표설정(오른쪽) */}
+                    <div className="grid grid-cols-2 gap-6 h-full">
+                        <DashboardCard className="flex flex-col min-w-[180px] h-full">
+                            <section>
+                                <AttendanceCheckCard studentId={user.id} />
+                            </section>
+                            <section className="flex-1">
+                                <AttendanceCalendar studentId={user.id} />
+                            </section>
+                        </DashboardCard>
+                        <DashboardCard className="flex flex-col min-w-[180px] h-full">
+                            <section className="flex-1">
+                                <GoalsCard studentId={user.id} fixedInput />
+                            </section>
+                        </DashboardCard>
+                    </div>
+                    {/* 하단: 타자 기록(오른쪽 전체) */}
+                    <DashboardCard className="flex flex-col min-w-[180px] h-full">
+                        <section className="flex-1">
+                            <TypingChart studentId={user.id} />
+                        </section>
+                    </DashboardCard>
+                </div>
             </div>
         </div>
     );

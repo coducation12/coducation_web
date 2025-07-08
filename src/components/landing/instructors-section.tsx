@@ -1,6 +1,6 @@
 
 import type { Instructor } from '@/types';
-import { InstructorCard } from '@/components/profile/instructor-card';
+import { InstructorCard } from '@/components/ui/instructor-card';
 
 const mockInstructors: Instructor[] = [
   {

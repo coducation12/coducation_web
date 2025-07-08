@@ -5,7 +5,7 @@ import CurriculumMemo from "@/components/curriculum/curriculum-memo";
 import CurriculumFeedback from "@/components/curriculum/curriculum-feedback";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { CheckCircle, Circle } from "lucide-react";
+import { CheckCircle, Circle, Trophy } from "lucide-react";
 
 // TODO: 실제 데이터는 Supabase에서 불러오도록 구현
 const mockCurriculums = [
@@ -171,7 +171,7 @@ export default function TodayLearningPage() {
                     <CurriculumUpload
                       stepId={step.id}
                       uploads={cur.progress[idx].uploads}
-                      onUpload={(files) => handleUpload(cur.idx, idx, files)}
+                      onUpload={(files) => handleUpload(cur.idx, idx, files as File[])}
                       onDelete={(fileId) => handleDeleteUpload(cur.idx, idx, fileId)}
                       isAdmin={currentUserRole === "admin"}
                       isCompleted={cur.progress[idx].done}
@@ -191,7 +191,10 @@ export default function TodayLearningPage() {
       ))}
       {/* 완료된 학습 */}
       <div className="mt-10">
-        <h3 className="text-2xl font-bold text-cyan-100 mb-6">완료된 학습</h3>
+        <div className="flex items-center gap-2 font-headline text-lg font-bold mb-2">
+          <Trophy className="w-5 h-5" />
+          완료된 학습
+        </div>
         <ul className="flex flex-col gap-2">
           {completed.length === 0 ? (
             <li className="px-4 py-2 rounded border border-cyan-400/40 text-cyan-400 font-semibold bg-transparent drop-shadow-[0_0_4px_#00fff7] italic">

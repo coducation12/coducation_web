@@ -1,22 +1,10 @@
-import { DashboardSidebar } from '@/components/sidebar/dashboard-sidebar';
-import { getAuthenticatedUser } from '@/lib/auth';
-import { redirect } from 'next/navigation';
-import type { User } from '@/types';
+import React from "react";
 
-export default async function DashboardLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
-  const user = await getAuthenticatedUser();
-  if (!user) {
-    redirect('/login');
-  }
-
+export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex min-h-screen">
-      <DashboardSidebar user={user} />
-      <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-auto">
+    <div className="flex h-screen w-screen bg-gradient-to-br from-[#0a1837] to-[#0a1a2f]">
+      {/* 각 계정별 Sidebar는 하위 레이아웃에서 import */}
+      <main className="flex-1 min-w-0 flex flex-col overflow-x-hidden">
         {children}
       </main>
     </div>

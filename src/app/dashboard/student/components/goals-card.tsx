@@ -161,7 +161,6 @@ export function GoalsCard({ studentId, fixedInput }: { studentId: string, fixedI
           <div className="text-center py-8">
             <Target className="w-8 h-8 mx-auto mb-2 text-cyan-400/50" />
             <StudentText variant="muted">아직 설정된 목표가 없습니다.</StudentText>
-            <StudentText variant="muted" className="text-sm">위에서 새로운 목표를 추가해보세요!</StudentText>
           </div>
         ) : (
                       <div className="space-y-2">

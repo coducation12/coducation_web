@@ -17,9 +17,9 @@ export default async function StudentDashboardPage() {
     }
 
     return (
-        <div className="w-full h-full flex-1 min-h-0 px-4 py-4 md:px-12 md:py-10 box-border pt-14 md:pt-8">
+        <div className="w-full h-full flex-1 min-h-0 px-4 py-4 md:px-12 md:py-10 box-border pt-14 md:pt-8 flex flex-col">
             <StudentHeading size="h1" className="mb-6">학생 대시보드</StudentHeading>
-            <div className="grid sm:grid-cols-1 md:grid-cols-2 gap-6 h-full min-w-0">
+            <div className="grid sm:grid-cols-1 md:grid-cols-2 gap-6 flex-1 min-w-0">
                 {/* 왼쪽: 학습진행률+완료된학습 (세로로 긴 카드) */}
                 <DashboardCard className="flex flex-col h-full min-w-0">
                   <div className="flex flex-col h-full gap-4">
@@ -39,7 +39,7 @@ export default async function StudentDashboardPage() {
                             <section>
                                 <AttendanceCheckCard studentId={user.id} />
                             </section>
-                            <section className="flex-1">
+                            <section className="flex-1 mt-4">
                                 <AttendanceCalendar />
                             </section>
                         </DashboardCard>

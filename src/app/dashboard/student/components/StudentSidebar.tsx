@@ -24,7 +24,7 @@ export function StudentSidebar({ user }: StudentSidebarProps) {
   const SidebarContent = (
     <>
       <nav className="flex flex-col gap-2 p-4">
-        <div className="text-xl font-bold text-cyan-100 mb-6 drop-shadow-[0_0_6px_#00fff7]">Coducation</div>
+        <div className="text-xl font-bold text-cyan-100 mb-6 drop-shadow-[0_0_6px_#00fff7] text-center">Coducation</div>
         {navItems.map((item) => (
           <Link
             key={item.href}

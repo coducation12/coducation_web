@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { StudentText, studentButtonStyles } from './StudentThemeProvider';
+import { StudentText, studentButtonStyles } from '../../app/dashboard/student/components/StudentThemeProvider';
 import { cn } from '@/lib/utils';
 
 interface AttendanceData {

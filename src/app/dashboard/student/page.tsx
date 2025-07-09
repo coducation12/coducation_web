@@ -2,7 +2,7 @@ import { getAuthenticatedUser } from "@/lib/auth";
 import { TypingChart } from "@/app/dashboard/student/components/typing-chart";
 import { LearningProgress } from "@/app/dashboard/student/components/learning-progress";
 import { GoalsCard } from "@/app/dashboard/student/components/goals-card";
-import { AttendanceCalendar } from "@/app/dashboard/student/components/attendance-calendar";
+import { AttendanceCalendar } from "@/components/common/attendance-calendar";
 import { AttendanceCheckCard } from "@/app/dashboard/student/components/attendance-check-card";
 import { DashboardCard } from "@/app/dashboard/student/components/DashboardCard";
 import { Trophy } from "lucide-react";

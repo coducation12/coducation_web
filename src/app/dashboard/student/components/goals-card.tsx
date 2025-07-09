@@ -15,7 +15,7 @@ interface Goal {
   createdAt: string;
 }
 
-export function GoalsCard({ studentId, fixedInput }: { studentId: string, fixedInput?: boolean }) {
+export function GoalsCard({ studentId, fixedInput, readOnly }: { studentId: string, fixedInput?: boolean, readOnly?: boolean }) {
   const [goals, setGoals] = useState<Goal[]>([]);
   const [newGoal, setNewGoal] = useState('');
   const [isLoading, setIsLoading] = useState(true);
@@ -120,12 +120,10 @@ export function GoalsCard({ studentId, fixedInput }: { studentId: string, fixedI
 
   return (
     <div className="h-full flex flex-col">
-      <StudentSectionTitle icon={<Target className="w-5 h-5" />}>
-        목표설정
-      </StudentSectionTitle>
+      <StudentSectionTitle icon={<Target className="w-5 h-5" />}>목표설정</StudentSectionTitle>
       <div className="space-y-4 flex-1 flex flex-col justify-between">
         {/* 목표 추가 */}
-        {!fixedInput && (
+        {!readOnly && !fixedInput && (
           <div className="flex gap-2">
             <Input
               placeholder="새로운 목표를 입력하세요"
@@ -163,17 +161,18 @@ export function GoalsCard({ studentId, fixedInput }: { studentId: string, fixedI
             <StudentText variant="muted">아직 설정된 목표가 없습니다.</StudentText>
           </div>
         ) : (
-                      <div className="space-y-2">
-              {goals.map((goal) => (
-                <div key={goal.id} className="flex items-center gap-3 p-2 rounded-lg hover:bg-cyan-400/10 border border-transparent hover:border-cyan-400/20 transition-colors">
+          <div className="space-y-2">
+            {goals.map((goal) => (
+              <div key={goal.id} className="flex items-center gap-3 p-2 rounded-lg hover:bg-cyan-400/10 border border-transparent hover:border-cyan-400/20 transition-colors">
+                {!readOnly && (
                   <Checkbox
                     checked={goal.isCompleted}
                     onCheckedChange={() => toggleGoal(goal.id)}
                     className="text-cyan-400"
                   />
-                  <span className={`flex-1 text-sm ${goal.isCompleted ? 'line-through text-cyan-400' : 'text-cyan-100'}`}>
-                    {goal.title}
-                  </span>
+                )}
+                <span className={`flex-1 text-sm ${goal.isCompleted ? 'line-through text-cyan-400' : 'text-cyan-100'}`}>{goal.title}</span>
+                {!readOnly && (
                   <Button
                     variant="ghost"
                     size="sm"
@@ -182,12 +181,13 @@ export function GoalsCard({ studentId, fixedInput }: { studentId: string, fixedI
                   >
                     <Trash2 className="w-3 h-3" />
                   </Button>
-                </div>
-              ))}
-            </div>
+                )}
+              </div>
+            ))}
+          </div>
         )}
         {/* 하단 고정 입력창 */}
-        {fixedInput && (
+        {!readOnly && fixedInput && (
           <div className="flex gap-2 mt-auto pt-4 border-t border-cyan-400/20">
             <Input
               placeholder="새로운 목표를 입력하세요"

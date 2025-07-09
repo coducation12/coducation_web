@@ -1,6 +1,6 @@
 'use client';
 import React, { useState } from "react";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 import { UserCircle, BookOpen, Keyboard, Users, Menu, LogOut } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -19,7 +19,21 @@ interface StudentSidebarProps {
 
 export function StudentSidebar({ user }: StudentSidebarProps) {
   const pathname = usePathname();
+  const router = useRouter();
   const [open, setOpen] = useState(false);
+
+  const handleLogout = async () => {
+    try {
+      // 세션 쿠키 삭제
+      document.cookie = "session=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+      // 메인화면으로 리다이렉트
+      router.push("/");
+    } catch (error) {
+      console.error("로그아웃 실패:", error);
+      // 에러가 발생해도 메인화면으로 이동
+      router.push("/");
+    }
+  };
 
   const SidebarContent = (
     <>
@@ -42,11 +56,12 @@ export function StudentSidebar({ user }: StudentSidebarProps) {
           <UserCircle className="w-5 h-5" />
           <span>{user.name} ({user.role})</span>
         </Link>
-        <form action="/api/logout" method="POST">
-          <button type="submit" className="flex items-center gap-2 text-sm text-red-400 hover:underline">
-            <LogOut className="w-5 h-5" /> 로그아웃
-          </button>
-        </form>
+        <button 
+          onClick={handleLogout}
+          className="flex items-center gap-2 text-sm text-red-400 hover:underline"
+        >
+          <LogOut className="w-5 h-5" /> 로그아웃
+        </button>
       </div>
     </>
   );

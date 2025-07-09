@@ -24,7 +24,7 @@ export function StudentSidebar({ user }: StudentSidebarProps) {
   const SidebarContent = (
     <>
       <nav className="flex flex-col gap-2 p-4">
-        <div className="text-xl font-bold text-cyan-100 mb-6">Coducation</div>
+        <div className="text-xl font-bold text-cyan-100 mb-6 drop-shadow-[0_0_6px_#00fff7]">Coducation</div>
         {navItems.map((item) => (
           <Link
             key={item.href}
@@ -66,7 +66,7 @@ export function StudentSidebar({ user }: StudentSidebarProps) {
             {SidebarContent}
           </SheetContent>
         </Sheet>
-        <span className="text-xl font-bold text-cyan-100 ml-2">Coducation</span>
+        <span className="text-xl font-bold text-cyan-100 ml-2 drop-shadow-[0_0_6px_#00fff7]">Coducation</span>
       </div>
       {/* 데스크톱: 기존 사이드바 */}
       <aside className="hidden md:flex w-56 min-w-[180px] h-full bg-gradient-to-b from-[#0a1837] to-[#0a1a2f] border-r border-cyan-900/40 flex-col justify-between">

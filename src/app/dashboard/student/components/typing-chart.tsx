@@ -6,6 +6,7 @@ import { supabase } from "@/lib/supabase";
 import {
   LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid
 } from "recharts";
+import { StudentSectionTitle, StudentText } from "./StudentThemeProvider";
 
 interface TypingLog {
   date: string;
@@ -50,15 +51,18 @@ export function TypingChart({ studentId }: { studentId: string }) {
 
   return (
     <div className="w-full h-full flex flex-col">
-      <div className="flex items-center gap-2 font-headline text-lg font-bold mb-2">
-        <Keyboard className="w-5 h-5" />
+      <StudentSectionTitle icon={<Keyboard className="w-5 h-5" />}>
         타자연습 기록
-      </div>
+      </StudentSectionTitle>
       <div className="flex-1 w-full h-0 min-h-0 mt-4">
         {isLoading ? (
-          <div className="flex items-center justify-center h-full text-muted-foreground">로딩 중...</div>
+          <div className="flex items-center justify-center h-full">
+            <StudentText variant="muted">로딩 중...</StudentText>
+          </div>
         ) : data.length === 0 ? (
-          <div className="flex items-center justify-center h-full text-muted-foreground">기록이 없습니다.</div>
+          <div className="flex items-center justify-center h-full">
+            <StudentText variant="muted">기록이 없습니다.</StudentText>
+          </div>
         ) : (
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={data} margin={{ top: 10, right: 20, left: 0, bottom: 10 }}>

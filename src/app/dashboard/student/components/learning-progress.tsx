@@ -5,6 +5,8 @@ import { Progress } from "@/components/ui/progress";
 import { Book, CheckCircle } from "lucide-react";
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
+import { StudentSectionTitle, StudentText, studentProgressStyles } from "./StudentThemeProvider";
+import { cn } from "@/lib/utils";
 
 interface Curriculum {
   id: string;
@@ -82,11 +84,10 @@ export function LearningProgress({ studentId, vertical }: { studentId: string, v
   if (isLoading) {
     return (
       <div>
-        <div className="flex items-center gap-2 font-headline text-lg font-bold mb-2">
-          <Book className="w-5 h-5" />
+        <StudentSectionTitle icon={<Book className="w-5 h-5" />}>
           학습 진행률
-        </div>
-        <div className="text-muted-foreground">로딩 중...</div>
+        </StudentSectionTitle>
+        <StudentText variant="muted">로딩 중...</StudentText>
       </div>
     );
   }
@@ -94,47 +95,45 @@ export function LearningProgress({ studentId, vertical }: { studentId: string, v
   if (!progress) {
     return (
       <div>
-        <div className="flex items-center gap-2 font-headline text-lg font-bold mb-2">
-          <Book className="w-5 h-5" />
+        <StudentSectionTitle icon={<Book className="w-5 h-5" />}>
           학습 진행률
-        </div>
-        <div className="text-muted-foreground">진행 중인 커리큘럼이 없습니다.</div>
+        </StudentSectionTitle>
+        <StudentText variant="muted">진행 중인 커리큘럼이 없습니다.</StudentText>
       </div>
     );
   }
 
   return (
     <div>
-      <div className="flex items-center gap-2 font-headline text-lg font-bold mb-2">
-        <Book className="w-5 h-5" />
+      <StudentSectionTitle icon={<Book className="w-5 h-5" />}>
         학습 진행률
-      </div>
+      </StudentSectionTitle>
       <div className="space-y-4">
         <div>
-          <h3 className="font-medium mb-2">{progress.curriculum.title}</h3>
-          <p className="text-sm text-muted-foreground mb-4">
+          <h3 className="font-medium mb-2 text-cyan-100">{progress.curriculum.title}</h3>
+          <StudentText variant="muted" className="text-sm mb-4">
             {progress.curriculum.description}
-          </p>
+          </StudentText>
         </div>
         <div className="space-y-2">
           <div className="flex justify-between text-sm">
-            <span>진행률</span>
-            <span>{Math.round(progress.progress)}%</span>
+            <StudentText variant="secondary">진행률</StudentText>
+            <StudentText variant="accent" glow>{Math.round(progress.progress)}%</StudentText>
           </div>
-          <Progress value={progress.progress} className="w-full" />
-          <div className="flex justify-between text-xs text-muted-foreground">
-            <span>{progress.completedSteps}단계 완료</span>
-            <span>총 {progress.totalSteps}단계</span>
+          <Progress value={progress.progress} className={cn("w-full", studentProgressStyles)} />
+          <div className="flex justify-between text-xs">
+            <StudentText variant="muted">{progress.completedSteps}단계 완료</StudentText>
+            <StudentText variant="muted">총 {progress.totalSteps}단계</StudentText>
           </div>
         </div>
         {progress.curriculum.checklist && (
           <div className="space-y-2">
-            <h4 className="text-sm font-medium">학습 단계</h4>
+            <h4 className="text-sm font-medium text-cyan-200">학습 단계</h4>
             <div className="space-y-1">
               {progress.curriculum.checklist.map((step, index) => (
                 <div key={index} className="flex items-center gap-2 text-sm">
-                  <CheckCircle className={index < progress.completedSteps ? "w-4 h-4 text-green-500" : "w-4 h-4 text-gray-500"} />
-                  <span className={index < progress.completedSteps ? "line-through text-muted-foreground" : ""}>
+                  <CheckCircle className={index < progress.completedSteps ? "w-4 h-4 text-green-400 drop-shadow-[0_0_6px_#00ff00]" : "w-4 h-4 text-cyan-400"} />
+                  <span className={index < progress.completedSteps ? "line-through text-cyan-400" : "text-cyan-100"}>
                     {step}
                   </span>
                 </div>

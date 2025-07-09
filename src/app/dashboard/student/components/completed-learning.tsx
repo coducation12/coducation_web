@@ -3,6 +3,7 @@
 import { CheckCircle } from "lucide-react";
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
+import { StudentSectionTitle, StudentText } from "./StudentThemeProvider";
 
 interface CompletedLearningProps {
   studentId: string;
@@ -63,22 +64,21 @@ export function CompletedLearning({ studentId }: CompletedLearningProps) {
 
   return (
     <div className="flex flex-col h-full">
-      <div className="flex items-center gap-2 font-headline text-lg font-bold mb-2">
-        <CheckCircle className="w-5 h-5 text-green-400" />
+      <StudentSectionTitle icon={<CheckCircle className="w-5 h-5 text-green-400 drop-shadow-[0_0_6px_#00ff00]" />}>
         완료된 학습
-      </div>
+      </StudentSectionTitle>
       <div className="flex-1 overflow-auto">
         {isLoading ? (
-          <div className="text-muted-foreground">로딩 중...</div>
+          <StudentText variant="muted">로딩 중...</StudentText>
         ) : completed.length === 0 ? (
-          <div className="text-muted-foreground">아직 완료된 학습이 없습니다.</div>
+          <StudentText variant="muted">아직 완료된 학습이 없습니다.</StudentText>
         ) : (
           <ul className="space-y-2">
             {completed.map((c) => (
               <li key={c.id} className="flex items-center gap-2 text-sm">
-                <CheckCircle className="w-4 h-4 text-green-400" />
-                <span>{c.title}</span>
-                <span className="ml-auto text-xs text-muted-foreground">{c.completed_at.slice(0, 10)}</span>
+                <CheckCircle className="w-4 h-4 text-green-400 drop-shadow-[0_0_6px_#00ff00]" />
+                <span className="text-cyan-100">{c.title}</span>
+                <span className="ml-auto text-xs text-cyan-400">{c.completed_at.slice(0, 10)}</span>
               </li>
             ))}
           </ul>

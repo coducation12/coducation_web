@@ -6,6 +6,7 @@ import CurriculumFeedback from "@/components/curriculum/curriculum-feedback";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { CheckCircle, Circle, Trophy } from "lucide-react";
+import { StudentHeading, StudentText, studentButtonStyles } from "../components/StudentThemeProvider";
 
 // TODO: 실제 데이터는 Supabase에서 불러오도록 구현
 const mockCurriculums = [
@@ -135,17 +136,17 @@ export default function TodayLearningPage() {
 
   return (
     <div className="container mx-auto p-6 max-w-4xl">
-      <h1 className="text-2xl font-bold text-cyan-100 mb-6">오늘의 학습</h1>
+      <StudentHeading size="h1" className="mb-6">오늘의 학습</StudentHeading>
       {/* 진행 중인 커리큘럼 */}
       {ongoing.map(cur => (
-        <div key={cur.id} className="bg-transparent border-2 border-cyan-400/60 rounded-xl p-6 shadow-[0_0_24px_0_rgba(0,255,255,0.15)] mb-8">
+        <div key={cur.id} className="bg-transparent border-2 border-cyan-400/60 p-6 shadow-[0_0_24px_0_rgba(0,255,255,0.15)] mb-8">
           <h2 className="text-xl font-bold text-cyan-100 mb-4 drop-shadow-[0_0_6px_#00fff7]">{cur.title}</h2>
           <ul className="space-y-4">
             {cur.checklist.map((step, idx) => (
-              <li key={step.id} className="bg-transparent border border-cyan-400/40 rounded-lg shadow-[0_0_12px_0_rgba(0,255,255,0.10)]">
+              <li key={step.id} className="bg-transparent border border-cyan-400/40 shadow-[0_0_12px_0_rgba(0,255,255,0.10)]">
                 <div
                   className={
-                    "flex items-center justify-between cursor-pointer select-none hover:bg-cyan-400/10 rounded transition-colors duration-150 px-4 py-3"
+                    "flex items-center justify-between cursor-pointer select-none hover:bg-cyan-400/10 transition-colors duration-150 px-4 py-3"
                   }
                   onClick={() => setExpandedStep(expandedStep === `${cur.idx}-${idx}` ? null : `${cur.idx}-${idx}`)}
                 >
@@ -189,15 +190,15 @@ export default function TodayLearningPage() {
           </ul>
         </div>
       ))}
-      {/* 완료된 학습 */}
-      <div className="mt-10">
-        <div className="flex items-center gap-2 font-headline text-lg font-bold mb-2">
-          <Trophy className="w-5 h-5" />
-          완료된 학습
-        </div>
+              {/* 완료된 학습 */}
+        <div className="mt-10">
+          <div className="flex items-center gap-2 font-bold text-lg mb-2">
+            <Trophy className="w-5 h-5 text-yellow-400 drop-shadow-[0_0_6px_#ffff00]" />
+            <span className="text-cyan-100 drop-shadow-[0_0_4px_#00fff7]">완료된 학습</span>
+          </div>
         <ul className="flex flex-col gap-2">
           {completed.length === 0 ? (
-            <li className="px-4 py-2 rounded border border-cyan-400/40 text-cyan-400 font-semibold bg-transparent drop-shadow-[0_0_4px_#00fff7] italic">
+            <li className="px-4 py-2 border border-cyan-400/40 text-cyan-400 font-semibold bg-transparent italic">
               아직 완료된 학습이 없습니다.
             </li>
           ) : (
@@ -205,20 +206,20 @@ export default function TodayLearningPage() {
               <li key={cur.id} className="mb-4">
                 {/* 1단계: 제목만 */}
                 <div
-                  className="px-4 py-2 min-h-[56px] flex items-center rounded border-2 border-cyan-400/60 text-xl font-bold text-cyan-100 bg-transparent drop-shadow-[0_0_4px_#00fff7] cursor-pointer hover:bg-cyan-400/10 transition-colors duration-150 shadow-[0_0_24px_0_rgba(0,255,255,0.15)]"
+                  className="px-4 py-2 min-h-[56px] flex items-center border-2 border-cyan-400/60 text-base font-bold text-cyan-100 bg-transparent cursor-pointer hover:bg-cyan-400/10 transition-colors duration-150 shadow-[0_0_24px_0_rgba(0,255,255,0.15)]"
                   onClick={() => setOpenedCompleted(openedCompleted === cur.id ? null : cur.id)}
                 >
                   {cur.title}
                 </div>
                 {/* 2단계: 상세 카드 */}
                 {openedCompleted === cur.id && (
-                  <div className="bg-transparent border-2 border-cyan-400/60 rounded-xl p-6 min-h-[120px] shadow-[0_0_24px_0_rgba(0,255,255,0.15)] mt-2">
+                  <div className="bg-transparent border-2 border-cyan-400/60 p-6 min-h-[120px] shadow-[0_0_24px_0_rgba(0,255,255,0.15)] mt-2">
                     <ul className="space-y-4">
                       {cur.checklist.map((step, idx) => (
-                        <li key={step.id} className="bg-transparent border border-cyan-400/40 rounded-lg shadow-[0_0_12px_0_rgba(0,255,255,0.10)]">
+                        <li key={step.id} className="bg-transparent border border-cyan-400/40 shadow-[0_0_12px_0_rgba(0,255,255,0.10)]">
                           <div
                             className={
-                              "flex items-center justify-between cursor-pointer select-none hover:bg-cyan-400/10 rounded transition-colors duration-150 px-4 py-3"
+                              "flex items-center justify-between cursor-pointer select-none hover:bg-cyan-400/10 transition-colors duration-150 px-4 py-3"
                             }
                             onClick={() => setExpandedCompletedStep(prev => ({
                               ...prev,
@@ -231,12 +232,12 @@ export default function TodayLearningPage() {
                               ) : (
                                 <Circle className="w-5 h-5 text-cyan-700" />
                               )}
-                              <span className="font-semibold text-cyan-100 text-base drop-shadow-[0_0_4px_#00fff7]">{step.title}</span>
+                              <span className="font-semibold text-cyan-100 text-xl">{step.title}</span>
                               {cur.progress[idx].done && (
-                                <span className="ml-2 text-xs text-cyan-200 drop-shadow-[0_0_4px_#00fff7]">완료일: {cur.progress[idx].date}</span>
+                                <span className="ml-2 text-xs text-cyan-200">완료일: {cur.progress[idx].date}</span>
                               )}
                               {cur.progress[idx].uploads.length > 0 && (
-                                <span className="ml-2 text-xs text-fuchsia-400 drop-shadow-[0_0_4px_#e946fd]">
+                                <span className="ml-2 text-xs text-fuchsia-400">
                                   결과물 {cur.progress[idx].uploads.length}개
                                 </span>
                               )}

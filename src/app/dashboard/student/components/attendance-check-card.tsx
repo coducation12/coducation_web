@@ -3,6 +3,8 @@ import { Button } from "@/components/ui/button";
 import { CheckCircle } from "lucide-react";
 import { useState } from "react";
 import { supabase } from "@/lib/supabase";
+import { StudentText, studentButtonStyles } from "./StudentThemeProvider";
+import { cn } from "@/lib/utils";
 
 export function AttendanceCheckCard({ studentId }: { studentId: string }) {
   const [loading, setLoading] = useState(false);
@@ -41,13 +43,13 @@ export function AttendanceCheckCard({ studentId }: { studentId: string }) {
   return (
     <div className="flex flex-col items-center w-full">
       <Button
-        className="w-full max-w-xs py-3 text-lg font-bold flex items-center justify-center gap-2"
+        className={cn("w-full max-w-xs py-3 text-lg font-bold flex items-center justify-center gap-2", studentButtonStyles.primary)}
         onClick={handleAttendanceCheck}
         disabled={loading}
       >
         <CheckCircle className="w-5 h-5" /> 출석하기
       </Button>
-      {msg && <div className="mt-2 text-cyan-400">{msg}</div>}
+      {msg && <StudentText variant="accent" className="mt-2" glow>{msg}</StudentText>}
     </div>
   );
 } 

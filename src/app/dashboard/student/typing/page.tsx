@@ -2,6 +2,7 @@
 
 import { TypingPractice } from "./typing-practice";
 import type { TypingExercise } from '@/types';
+import { StudentHeading } from "../components/StudentThemeProvider";
 
 const defaultExercise: TypingExercise = {
   id: 'ko-1',
@@ -16,7 +17,7 @@ const defaultExercise: TypingExercise = {
 export default function TypingPage() {
   return (
     <div className="w-full h-full flex flex-col items-center justify-center p-6">
-      <h1 className="text-2xl font-bold mb-6 text-cyan-100">타자연습</h1>
+      <StudentHeading size="h1" className="mb-6">타자연습</StudentHeading>
       <TypingPractice exercise={defaultExercise} />
     </div>
   );

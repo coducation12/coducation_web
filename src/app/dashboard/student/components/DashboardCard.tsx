@@ -1,20 +1,17 @@
 import React from "react";
-import clsx from "clsx";
+import { StudentCard } from "./StudentThemeProvider";
 
 interface DashboardCardProps {
   className?: string;
   children: React.ReactNode;
+  hover?: boolean;
+  active?: boolean;
 }
 
-export function DashboardCard({ className, children }: DashboardCardProps) {
+export function DashboardCard({ className, children, hover = true, active = false }: DashboardCardProps) {
   return (
-    <div
-      className={clsx(
-        "border border-border bg-background/60 p-6 shadow-[0_0_24px_0_rgba(0,255,255,0.10)] min-w-0",
-        className
-      )}
-    >
+    <StudentCard className={className} hover={hover} active={active}>
       {children}
-    </div>
+    </StudentCard>
   );
 } 

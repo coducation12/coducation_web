@@ -7,6 +7,7 @@ import { AttendanceCheckCard } from "@/app/dashboard/student/components/attendan
 import { DashboardCard } from "@/app/dashboard/student/components/DashboardCard";
 import { Trophy } from "lucide-react";
 import { CompletedLearning } from "@/app/dashboard/student/components/completed-learning";
+import { StudentHeading } from "@/app/dashboard/student/components/StudentThemeProvider";
 
 export default async function StudentDashboardPage() {
     const user = await getAuthenticatedUser();
@@ -17,6 +18,7 @@ export default async function StudentDashboardPage() {
 
     return (
         <div className="w-full h-full flex-1 min-h-0 px-4 py-4 md:px-12 md:py-10 box-border pt-14 md:pt-8">
+            <StudentHeading size="h1" className="mb-6">학생 대시보드</StudentHeading>
             <div className="grid sm:grid-cols-1 md:grid-cols-2 gap-6 h-full min-w-0">
                 {/* 왼쪽: 학습진행률+완료된학습 (세로로 긴 카드) */}
                 <DashboardCard className="flex flex-col h-full min-w-0">
@@ -38,7 +40,7 @@ export default async function StudentDashboardPage() {
                                 <AttendanceCheckCard studentId={user.id} />
                             </section>
                             <section className="flex-1">
-                                <AttendanceCalendar studentId={user.id} />
+                                <AttendanceCalendar />
                             </section>
                         </DashboardCard>
                         <DashboardCard className="flex flex-col min-w-[180px] h-full">

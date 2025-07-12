@@ -2,7 +2,7 @@
 import React, { useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
-import { UserCircle, BookOpen, Users, Menu, LogOut, ChevronDown } from "lucide-react";
+import { LayoutDashboard, BookOpen, Users, Menu, LogOut, ChevronDown, User } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -15,9 +15,9 @@ const mockStudents = [
 ];
 
 const navItems = [
-  { href: "/dashboard/parent", label: "대시보드", icon: <UserCircle className="w-5 h-5" /> },
-  { href: "/dashboard/parent/study", label: "학습 관리", icon: <BookOpen className="w-5 h-5" /> },
-  { href: "/dashboard/community", label: "커뮤니티", icon: <Users className="w-5 h-5" /> },
+  { href: "/dashboard/parent", label: "대시보드", icon: <LayoutDashboard className="w-5 h-5" /> },
+  { href: "/dashboard/parent/study", label: "학습관리", icon: <BookOpen className="w-5 h-5" /> },
+  { href: "/dashboard/parent/community", label: "커뮤니티", icon: <Users className="w-5 h-5" /> },
 ];
 
 interface ParentSidebarProps {
@@ -95,7 +95,7 @@ export function ParentSidebar({ user }: ParentSidebarProps) {
       
       <div className="p-4 border-t border-cyan-900/20 text-cyan-200 text-sm flex flex-col gap-4">
         <Link href="/dashboard/parent/profile" className="flex items-center gap-3 hover:underline cursor-pointer">
-          <UserCircle className="w-5 h-5" />
+          <User className="w-5 h-5" />
           <span>{user.name} ({user.role})</span>
         </Link>
         <button 
@@ -111,7 +111,7 @@ export function ParentSidebar({ user }: ParentSidebarProps) {
   return (
     <>
       {/* 모바일: 상단 고정 헤더 + Sheet */}
-      <div className="md:hidden fixed top-0 left-0 w-full z-50 h-14 flex items-center px-4 border-b bg-gradient-to-b from-[#0a1837] to-[#0a1a2f]">
+      <div className="lg:hidden fixed top-0 left-0 w-full z-50 h-14 flex items-center px-4 border-b bg-gradient-to-b from-[#0a1837] to-[#0a1a2f]">
         <Sheet open={open} onOpenChange={setOpen}>
           <SheetTrigger asChild>
             <Button variant="ghost" size="icon" className="mr-2">
@@ -126,11 +126,11 @@ export function ParentSidebar({ user }: ParentSidebarProps) {
         <span className="text-xl font-bold text-cyan-100 ml-2 drop-shadow-[0_0_6px_#00fff7]">Coducation</span>
       </div>
       {/* 데스크톱: 기존 사이드바 */}
-      <aside className="hidden md:flex w-56 min-w-[180px] h-full bg-gradient-to-b from-[#0a1837] to-[#0a1a2f] border-r border-cyan-900/40 flex-col justify-between">
+      <aside className="hidden lg:flex w-56 min-w-[180px] h-full bg-gradient-to-b from-[#0a1837] to-[#0a1a2f] border-r border-cyan-900/40 flex-col justify-between">
         {SidebarContent}
       </aside>
       {/* 모바일 본문 여백 확보용 */}
-      <div className="md:hidden" style={{ height: 56 }} />
+      <div className="lg:hidden" style={{ height: 56 }} />
     </>
   );
 } 

@@ -10,15 +10,21 @@ const bodyFont = Noto_Sans_KR({
   subsets: ['latin'],
   weight: ['400', '500', '700'],
   variable: '--font-body',
+  preload: true,
+  display: 'swap',
 });
 const headlineFont = IBM_Plex_Sans_KR({
   subsets: ['latin'],
   weight: ['500', '700'],
   variable: '--font-headline',
+  preload: true,
+  display: 'swap',
 });
 const codeFont = Source_Code_Pro({
   subsets: ['latin'],
   variable: '--font-source-code-pro',
+  preload: true,
+  display: 'swap',
 });
 
 

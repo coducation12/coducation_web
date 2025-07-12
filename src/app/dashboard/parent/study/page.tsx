@@ -113,7 +113,7 @@ export default function ParentStudyPage() {
   return (
     <div className="container mx-auto p-6 max-w-4xl">
       <div className="flex items-center justify-between mb-6">
-        <StudentHeading size="h1">{selectedStudent.name} 학습 관리</StudentHeading>
+        <StudentHeading size="h1">{selectedStudent.name} 학습관리</StudentHeading>
       </div>
       
       {/* 진행 중인 커리큘럼 */}

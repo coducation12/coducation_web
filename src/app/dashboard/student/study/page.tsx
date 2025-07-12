@@ -135,7 +135,7 @@ export default function TodayLearningPage() {
   const [expandedCompletedStep, setExpandedCompletedStep] = useState<{[curId: number]: string | null}>({});
 
   return (
-    <div className="container mx-auto p-6 max-w-4xl">
+    <div className="container mx-auto p-6 max-w-4xl pt-16 lg:pt-2">
       <StudentHeading size="h1" className="mb-6">오늘의 학습</StudentHeading>
       {/* 진행 중인 커리큘럼 */}
       {ongoing.map(cur => (

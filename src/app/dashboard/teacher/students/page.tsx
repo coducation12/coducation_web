@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Mail, Phone } from "lucide-react";
 import AddStudentModal, { StudentFormData } from "./components/AddStudentModal";
+import { Input } from "@/components/ui/input";
 
 interface Student {
     id: string;
@@ -28,7 +29,8 @@ interface Student {
 
 interface ClassSchedule {
     day: string;
-    time: string;
+    startTime: string;
+    endTime: string;
 }
 
 const initialStudents: Student[] = [
@@ -49,8 +51,8 @@ const initialStudents: Student[] = [
         joinDate: '2024-01-15',
         lastLogin: '2024-03-20',
         classSchedules: [
-            { day: 'monday', time: '14:30-16:00' },
-            { day: 'wednesday', time: '14:30-16:00' }
+            { day: 'monday', startTime: '14:30', endTime: '16:00' },
+            { day: 'wednesday', startTime: '14:30', endTime: '16:00' }
         ]
     },
     {
@@ -70,8 +72,8 @@ const initialStudents: Student[] = [
         joinDate: '2024-02-01',
         lastLogin: '2024-03-21',
         classSchedules: [
-            { day: 'tuesday', time: '16:00-17:30' },
-            { day: 'thursday', time: '16:00-17:30' }
+            { day: 'tuesday', startTime: '16:00', endTime: '17:30' },
+            { day: 'thursday', startTime: '16:00', endTime: '17:30' }
         ]
     },
     {
@@ -91,8 +93,8 @@ const initialStudents: Student[] = [
         joinDate: '2024-01-20',
         lastLogin: '2024-03-19',
         classSchedules: [
-            { day: 'monday', time: '19:00-20:30' },
-            { day: 'friday', time: '19:00-20:30' }
+            { day: 'monday', startTime: '19:00', endTime: '20:30' },
+            { day: 'friday', startTime: '19:00', endTime: '20:30' }
         ]
     },
     {
@@ -112,7 +114,7 @@ const initialStudents: Student[] = [
         joinDate: '2024-02-10',
         lastLogin: '2024-03-10',
         classSchedules: [
-            { day: 'saturday', time: '10:30-12:00' }
+            { day: 'saturday', startTime: '10:30', endTime: '12:00' }
         ]
     },
     {
@@ -132,15 +134,16 @@ const initialStudents: Student[] = [
         joinDate: '2023-12-01',
         lastLogin: '2024-03-21',
         classSchedules: [
-            { day: 'monday', time: '17:30-19:00' },
-            { day: 'wednesday', time: '17:30-19:00' },
-            { day: 'friday', time: '17:30-19:00' }
+            { day: 'monday', startTime: '17:30', endTime: '19:00' },
+            { day: 'wednesday', startTime: '17:30', endTime: '19:00' },
+            { day: 'friday', startTime: '17:30', endTime: '19:00' }
         ]
     }
 ];
 
 export default function TeacherStudentsPage() {
     const [students, setStudents] = useState<Student[]>(initialStudents);
+    const [search, setSearch] = useState("");
 
     const handleAddStudent = (studentData: StudentFormData) => {
         const newStudent: Student = {
@@ -159,11 +162,29 @@ export default function TeacherStudentsPage() {
             status: '활성',
             joinDate: new Date().toISOString().split('T')[0],
             lastLogin: '-',
-            classSchedules: studentData.classSchedules
+            classSchedules: studentData.classSchedules.map(s => ({
+                day: s.day,
+                startTime: s.startTime,
+                endTime: s.endTime
+            }))
         };
 
         setStudents(prev => [newStudent, ...prev]);
     };
+
+    // 검색 필터링
+    const filteredStudents = students.filter(student => {
+        const keyword = search.trim().toLowerCase();
+        if (!keyword) return true;
+        return (
+            student.name.toLowerCase().includes(keyword) ||
+            student.phone.toLowerCase().includes(keyword) ||
+            (student.parentPhone || '').toLowerCase().includes(keyword) ||
+            student.email.toLowerCase().includes(keyword) ||
+            student.course.toLowerCase().includes(keyword) ||
+            student.curriculum.toLowerCase().includes(keyword)
+        );
+    });
 
     return (
         <div className="p-6 space-y-6 pt-16 lg:pt-2">
@@ -176,7 +197,15 @@ export default function TeacherStudentsPage() {
 
             <Card className="bg-gradient-to-br from-cyan-900/20 to-blue-900/20 border-cyan-500/30">
                 <CardHeader>
-                    <CardTitle className="text-cyan-100">학생 목록</CardTitle>
+                    <div className="flex items-center justify-between gap-2 w-full">
+                        <CardTitle className="text-cyan-100">학생 목록</CardTitle>
+                        <Input
+                            value={search}
+                            onChange={e => setSearch(e.target.value)}
+                            placeholder="이름, 연락처, 과목 등 검색"
+                            className="max-w-xs bg-background/40 border-cyan-400/40 text-cyan-100 placeholder:text-cyan-400/60 focus:border-cyan-400/80"
+                        />
+                    </div>
                 </CardHeader>
                 <CardContent>
                     <Table>
@@ -192,7 +221,7 @@ export default function TeacherStudentsPage() {
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {students.map((student) => (
+                            {filteredStudents.map((student) => (
                                 <TableRow key={student.id} className="border-cyan-500/10">
                                     <TableCell>
                                         <div>

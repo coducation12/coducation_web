@@ -5,10 +5,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Plus, Edit, Trash2, Eye } from "lucide-react";
 
 const mockCurriculums = [
-    { id: 'curriculum-1', title: 'React 기초 과정', level: '초급', students: 8, status: '진행중' },
-    { id: 'curriculum-2', title: 'Python 중급 과정', level: '중급', students: 5, status: '진행중' },
-    { id: 'curriculum-3', title: '알고리즘 기초', level: '초급', students: 12, status: '진행중' },
-    { id: 'curriculum-4', title: '웹 개발 심화', level: '고급', students: 3, status: '준비중' },
+    { id: 'curriculum-1', title: 'React 기초 과정', category: '프론트엔드', level: '초급', students: 8, status: '진행중' },
+    { id: 'curriculum-2', title: 'Python 중급 과정', category: '백엔드', level: '중급', students: 5, status: '진행중' },
+    { id: 'curriculum-3', title: '알고리즘 기초', category: 'AI', level: '초급', students: 12, status: '진행중' },
+    { id: 'curriculum-4', title: '웹 개발 심화', category: '프론트엔드', level: '고급', students: 3, status: '준비중' },
 ];
 
 export default function TeacherCurriculumPage() {
@@ -24,78 +24,52 @@ export default function TeacherCurriculumPage() {
                 </Button>
             </div>
 
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                <Card className="bg-gradient-to-br from-cyan-900/20 to-blue-900/20 border-cyan-500/30">
-                    <CardHeader className="pb-2">
-                        <CardDescription className="text-cyan-200">총 커리큘럼</CardDescription>
-                        <CardTitle className="text-3xl font-bold text-cyan-100">4</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-xs text-cyan-300">활성 과정</div>
-                    </CardContent>
-                </Card>
-                <Card className="bg-gradient-to-br from-cyan-900/20 to-blue-900/20 border-cyan-500/30">
-                    <CardHeader className="pb-2">
-                        <CardDescription className="text-cyan-200">총 학생 수</CardDescription>
-                        <CardTitle className="text-3xl font-bold text-cyan-100">28</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-xs text-cyan-300">수강 중인 학생</div>
-                    </CardContent>
-                </Card>
-                <Card className="bg-gradient-to-br from-cyan-900/20 to-blue-900/20 border-cyan-500/30">
-                    <CardHeader className="pb-2">
-                        <CardDescription className="text-cyan-200">평균 진행률</CardDescription>
-                        <CardTitle className="text-3xl font-bold text-cyan-100">78%</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-xs text-cyan-300">전체 과정</div>
-                    </CardContent>
-                </Card>
-                <Card className="bg-gradient-to-br from-cyan-900/20 to-blue-900/20 border-cyan-500/30">
-                    <CardHeader className="pb-2">
-                        <CardDescription className="text-cyan-200">완료된 과정</CardDescription>
-                        <CardTitle className="text-3xl font-bold text-cyan-100">12</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-xs text-cyan-300">이번 달</div>
-                    </CardContent>
-                </Card>
-            </div>
+            {/* 상단 4개 카드(통계) 제거됨 */}
 
+            {/* 이하 커리큘럼 목록 등 기존 내용 유지 */}
             <Card className="bg-gradient-to-br from-cyan-900/20 to-blue-900/20 border-cyan-500/30">
                 <CardHeader>
                     <CardTitle className="text-cyan-100">커리큘럼 목록</CardTitle>
-                    <CardDescription className="text-cyan-200">
-                        현재 운영 중인 모든 커리큘럼을 확인하고 관리합니다.
-                    </CardDescription>
                 </CardHeader>
                 <CardContent>
                     <Table>
                         <TableHeader>
                             <TableRow className="border-cyan-500/20">
-                                <TableHead className="text-cyan-200">커리큘럼명</TableHead>
-                                <TableHead className="text-cyan-200">레벨</TableHead>
-                                <TableHead className="text-cyan-200">수강생 수</TableHead>
-                                <TableHead className="text-cyan-200">상태</TableHead>
-                                <TableHead className="text-right text-cyan-200">관리</TableHead>
+                                <TableHead className="text-cyan-200 text-center">커리큘럼명</TableHead>
+                                <TableHead className="text-cyan-200 text-center">분류</TableHead>
+                                <TableHead className="text-cyan-200 text-center">레벨</TableHead>
+                                <TableHead className="text-cyan-200 text-center">수강생 수</TableHead>
+                                <TableHead className="text-cyan-200 text-center">상태</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
                             {mockCurriculums.map((curriculum) => (
                                 <TableRow key={curriculum.id} className="border-cyan-500/10">
-                                    <TableCell className="font-medium text-cyan-100">
+                                    <TableCell className="font-medium text-cyan-100 text-center">
                                         {curriculum.title}
                                     </TableCell>
-                                    <TableCell>
-                                        <Badge variant="outline" className="border-cyan-500/30 text-cyan-200">
+                                    <TableCell className="text-cyan-200 text-center">
+                                        {curriculum.category}
+                                    </TableCell>
+                                    <TableCell className="text-center">
+                                        <Badge
+                                            className={
+                                                curriculum.level === '초급'
+                                                    ? 'bg-green-500 text-white'
+                                                    : curriculum.level === '중급'
+                                                    ? 'bg-yellow-500 text-white'
+                                                    : curriculum.level === '고급'
+                                                    ? 'bg-red-500 text-white'
+                                                    : 'bg-cyan-600/20 text-cyan-200 border-cyan-400/40'
+                                            }
+                                        >
                                             {curriculum.level}
                                         </Badge>
                                     </TableCell>
-                                    <TableCell className="text-cyan-200">
+                                    <TableCell className="text-cyan-200 text-center">
                                         {curriculum.students}명
                                     </TableCell>
-                                    <TableCell>
+                                    <TableCell className="text-center">
                                         <Badge 
                                             className={curriculum.status === '진행중' 
                                                 ? 'bg-green-600/20 text-green-300 border-green-500/30' 
@@ -104,19 +78,6 @@ export default function TeacherCurriculumPage() {
                                         >
                                             {curriculum.status}
                                         </Badge>
-                                    </TableCell>
-                                    <TableCell className="text-right">
-                                        <div className="flex justify-end gap-2">
-                                            <Button size="sm" variant="ghost" className="text-cyan-200 hover:text-cyan-100">
-                                                <Eye className="w-4 h-4" />
-                                            </Button>
-                                            <Button size="sm" variant="ghost" className="text-cyan-200 hover:text-cyan-100">
-                                                <Edit className="w-4 h-4" />
-                                            </Button>
-                                            <Button size="sm" variant="ghost" className="text-red-400 hover:text-red-300">
-                                                <Trash2 className="w-4 h-4" />
-                                            </Button>
-                                        </div>
                                     </TableCell>
                                 </TableRow>
                             ))}

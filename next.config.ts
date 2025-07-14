@@ -8,13 +8,11 @@ const nextConfig: NextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
   },
-  experimental: {
-    turbo: {
-      rules: {
-        '*.css': {
-          loaders: ['css-loader'],
-          as: '*.css',
-        },
+  turbopack: {
+    rules: {
+      '*.css': {
+        loaders: ['css-loader'],
+        as: '*.css',
       },
     },
   },

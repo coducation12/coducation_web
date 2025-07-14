@@ -2,27 +2,12 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
 import React from "react";
-
-// 타입 정의
-interface Student {
-  id: string;
-  name: string;
-  day: string;
-  course: string;
-  progress: number;
-  phone: string;
-  attendanceTime: {
-    start: string;
-    end: string;
-    status: 'unregistered' | 'present' | 'absent' | 'makeup';
-    checkedAt?: Date; // 출석체크 시간
-  };
-}
-
-type AttendanceStatus = 'unregistered' | 'present' | 'absent' | 'makeup';
+import { Student, AttendanceStatus, STATUS_CONFIG } from "./types";
+import { WeeklyCalendar } from "./WeeklyCalendar";
+import { StudentList } from "./StudentList";
 
 // 상수 정의
 const TIME_SLOTS = [
@@ -30,23 +15,16 @@ const TIME_SLOTS = [
   '15:00', '15:30', '16:00', '16:30', '17:00', '17:30', '18:00', '18:30', '19:00', '19:30', '20:00'
 ];
 
-const STATUS_CONFIG = {
-  unregistered: { color: 'bg-gray-500/80 border-gray-400', text: '미등록' },
-  present: { color: 'bg-green-500/80 border-green-400', text: '출석' },
-  absent: { color: 'bg-red-500/80 border-red-400', text: '결석' },
-  makeup: { color: 'bg-yellow-500/80 border-yellow-400', text: '보강' }
-} as const;
-
 // 유틸리티 함수들
 const getMockStudentsByDate = (date: Date): Student[] => {
   const day = date.getDate();
   const baseStudents = [
-    { id: '1', name: '김민준', day: '월/수', course: 'Python 기초', progress: 80, phone: '010-1234-5678' },
-    { id: '2', name: '이서아', day: '화/목', course: 'Python 기초', progress: 80, phone: '010-1234-5678' },
-    { id: '3', name: '박도윤', day: '금', course: 'C언어', progress: 90, phone: '010-3456-7890' },
-    { id: '4', name: '정현우', day: '월/수', course: 'Python 기초', progress: 80, phone: '010-1234-5678' },
-    { id: '5', name: '한소희', day: '월/수', course: 'Python 기초', progress: 80, phone: '010-1234-5678' },
-    { id: '6', name: '윤준호', day: '월/수', course: 'Python 기초', progress: 80, phone: '010-1234-5678' },
+    { id: '1', name: '김민준', day: '월/수', course: 'Python', curriculum: '기초 과정', progress: 80, phone: '010-1234-5678' },
+    { id: '2', name: '이서아', day: '화/목', course: 'Python', curriculum: '기초 과정', progress: 80, phone: '010-1234-5678' },
+    { id: '3', name: '박도윤', day: '금', course: 'C언어', curriculum: '기초 과정', progress: 90, phone: '010-3456-7890' },
+    { id: '4', name: '정현우', day: '월/수', course: 'Python', curriculum: '기초 과정', progress: 80, phone: '010-1234-5678' },
+    { id: '5', name: '한소희', day: '월/수', course: 'Python', curriculum: '기초 과정', progress: 80, phone: '010-1234-5678' },
+    { id: '6', name: '윤준호', day: '월/수', course: 'Python', curriculum: '기초 과정', progress: 80, phone: '010-1234-5678' },
   ];
 
   const timeSlots = [
@@ -175,6 +153,8 @@ const useAttendanceScheduler = () => {
     handleAttendanceChange
   };
 };
+
+
 
 // 서브 컴포넌트들
 const ScheduleHeader = ({ 
@@ -312,81 +292,7 @@ const ScheduleRow = ({ student, rowIdx }: { student: Student; rowIdx: number }) 
   );
 };
 
-const StudentList = ({ 
-  students, 
-  onAttendanceChange 
-}: { 
-  students: Student[]; 
-  onAttendanceChange: (id: string, value: AttendanceStatus) => void; 
-}) => {
-  return (
-    <Card className="bg-gradient-to-br from-cyan-900/20 to-blue-900/20 border-cyan-500/30 mt-8">
-      <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle className="text-cyan-100">학생 목록</CardTitle>
-        <button
-          className="ml-auto bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-1 rounded transition-colors text-sm"
-          onClick={() => alert('추가 기능 준비중')}
-        >
-          추가
-        </button>
-      </CardHeader>
-      <CardContent>
-        <table className="w-full text-sm text-cyan-100 table-auto">
-          <thead>
-            <tr className="bg-cyan-900/30">
-              <th className="px-2 py-1 text-center min-w-[60px] truncate">학생 이름</th>
-              <th className="px-2 py-1 text-center min-w-[48px] truncate">수강 요일</th>
-              <th className="px-2 py-1 text-center min-w-[80px] truncate">수강 과정</th>
-              <th className="px-2 py-1 text-center min-w-[60px] truncate">진행률</th>
-              <th className="px-2 py-1 text-center min-w-[100px] truncate hidden sm:table-cell">연락처</th>
-              <th className="px-2 py-1 text-center min-w-[70px] truncate">출결</th>
-            </tr>
-          </thead>
-          <tbody>
-            {students.map((student, idx) => (
-              <tr key={student.id} className={idx % 2 === 0 ? 'bg-cyan-900/10' : ''}>
-                <td className="px-2 py-1 text-center min-w-[60px] truncate">{student.name}</td>
-                <td className="px-2 py-1 text-center min-w-[48px] truncate">{student.day}</td>
-                <td className="px-2 py-1 text-center min-w-[80px] truncate">{student.course}</td>
-                <td className="px-2 py-1 text-center min-w-[60px] truncate">
-                  <span className="block md:hidden">{student.progress}%</span>
-                  <span className="hidden md:inline-flex items-center">
-                    <div className="w-24 bg-cyan-800/40 rounded-full overflow-hidden mr-2">
-                      <div 
-                        className="bg-cyan-400 h-2 rounded-full" 
-                        style={{ width: `${student.progress}%` }} 
-                      />
-                    </div>
-                    <span className="text-xs text-cyan-200">{student.progress}%</span>
-                  </span>
-                </td>
-                <td className="px-2 py-1 text-center min-w-[100px] truncate hidden sm:table-cell">{student.phone}</td>
-                <td className="px-2 py-1 text-center min-w-[70px] truncate">
-                  <select
-                    className={`border border-cyan-700 rounded px-2 py-1 focus:outline-none transition-colors duration-200 ${
-                      student.attendanceTime.status === 'unregistered' ? 'bg-gray-600 text-white' :
-                      student.attendanceTime.status === 'present' ? 'bg-green-600 text-white' :
-                      student.attendanceTime.status === 'absent' ? 'bg-red-600 text-white' :
-                      student.attendanceTime.status === 'makeup' ? 'bg-yellow-400 text-black' :
-                      'bg-gray-900 text-white'
-                    }`}
-                    value={student.attendanceTime.status}
-                    onChange={e => onAttendanceChange(student.id, e.target.value as AttendanceStatus)}
-                  >
-                    <option value="unregistered"></option>
-                    <option value="present">출석</option>
-                    <option value="absent">결석</option>
-                    <option value="makeup">보강</option>
-                  </select>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </CardContent>
-    </Card>
-  );
-};
+
 
 // 메인 컴포넌트
 export function AttendanceScheduler() {
@@ -400,6 +306,8 @@ export function AttendanceScheduler() {
 
   return (
     <>
+      <WeeklyCalendar currentDate={currentDate} />
+      
       <Card className="bg-gradient-to-br from-cyan-900/20 to-blue-900/20 border-cyan-500/30">
         <ScheduleHeader 
           currentDate={currentDate} 

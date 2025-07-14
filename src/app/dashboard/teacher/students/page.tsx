@@ -1,178 +1,206 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Search, Filter, Edit, Trash2, Eye, Mail, Phone } from "lucide-react";
+"use client";
 
-const mockStudents = [
+import { useState } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Mail, Phone } from "lucide-react";
+import AddStudentModal, { StudentFormData } from "./components/AddStudentModal";
+
+interface Student {
+    id: string;
+    name: string;
+    email: string;
+    phone: string;
+    parentPhone: string;
+    birthDate: string;
+    avatar: string;
+    course: string;
+    curriculum: string;
+    progress: number;
+    attendance: number;
+    status: string;
+    joinDate: string;
+    lastLogin: string;
+    studentId?: string;
+    classSchedules?: ClassSchedule[];
+}
+
+interface ClassSchedule {
+    day: string;
+    time: string;
+}
+
+const initialStudents: Student[] = [
     {
         id: 'student-1',
+        studentId: 'STU001',
         name: '김민준',
         email: 'minjun@example.com',
         phone: '010-1234-5678',
+        parentPhone: '010-1111-2222',
+        birthDate: '2010-03-15',
         avatar: '/avatars/student1.jpg',
-        curriculum: 'React 기초',
+        course: 'React',
+        curriculum: '기초 과정',
         progress: 25,
-        attendance: 85,
+        attendance: 12,
         status: '활성',
         joinDate: '2024-01-15',
-        lastLogin: '2024-03-20'
+        lastLogin: '2024-03-20',
+        classSchedules: [
+            { day: 'monday', time: '14:30-16:00' },
+            { day: 'wednesday', time: '14:30-16:00' }
+        ]
     },
     {
         id: 'student-2',
+        studentId: 'STU002',
         name: '이서아',
         email: 'seoa@example.com',
         phone: '010-2345-6789',
+        parentPhone: '010-2222-3333',
+        birthDate: '2009-07-22',
         avatar: '/avatars/student2.jpg',
-        curriculum: 'Python 중급',
+        course: 'Python',
+        curriculum: '중급 과정',
         progress: 75,
-        attendance: 92,
+        attendance: 18,
         status: '활성',
         joinDate: '2024-02-01',
-        lastLogin: '2024-03-21'
+        lastLogin: '2024-03-21',
+        classSchedules: [
+            { day: 'tuesday', time: '16:00-17:30' },
+            { day: 'thursday', time: '16:00-17:30' }
+        ]
     },
     {
         id: 'student-3',
+        studentId: 'STU003',
         name: '박도윤',
         email: 'doyoon@example.com',
         phone: '010-3456-7890',
+        parentPhone: '010-3333-4444',
+        birthDate: '2011-11-08',
         avatar: '/avatars/student3.jpg',
-        curriculum: 'React 기초',
+        course: 'React',
+        curriculum: '기초 과정',
         progress: 50,
-        attendance: 78,
+        attendance: 15,
         status: '활성',
         joinDate: '2024-01-20',
-        lastLogin: '2024-03-19'
+        lastLogin: '2024-03-19',
+        classSchedules: [
+            { day: 'monday', time: '19:00-20:30' },
+            { day: 'friday', time: '19:00-20:30' }
+        ]
     },
     {
         id: 'student-4',
+        studentId: 'STU004',
         name: '최지우',
         email: 'jiwoo@example.com',
         phone: '010-4567-8901',
+        parentPhone: '010-4444-5555',
+        birthDate: '2010-05-12',
         avatar: '/avatars/student4.jpg',
-        curriculum: '알고리즘',
+        course: '알고리즘',
+        curriculum: '기초 과정',
         progress: 10,
-        attendance: 65,
+        attendance: 8,
         status: '휴면',
         joinDate: '2024-02-10',
-        lastLogin: '2024-03-10'
+        lastLogin: '2024-03-10',
+        classSchedules: [
+            { day: 'saturday', time: '10:30-12:00' }
+        ]
     },
     {
         id: 'student-5',
+        studentId: 'STU005',
         name: '정현우',
         email: 'hyunwoo@example.com',
         phone: '010-5678-9012',
+        parentPhone: '010-5555-6666',
+        birthDate: '2008-12-03',
         avatar: '/avatars/student5.jpg',
-        curriculum: '웹 개발 심화',
+        course: '웹 개발',
+        curriculum: '심화 과정',
         progress: 90,
-        attendance: 95,
+        attendance: 22,
         status: '활성',
         joinDate: '2023-12-01',
-        lastLogin: '2024-03-21'
+        lastLogin: '2024-03-21',
+        classSchedules: [
+            { day: 'monday', time: '17:30-19:00' },
+            { day: 'wednesday', time: '17:30-19:00' },
+            { day: 'friday', time: '17:30-19:00' }
+        ]
     }
 ];
 
-const mockStats = [
-    { label: '총 학생 수', value: '25', change: '+3명 (이번 달)' },
-    { label: '활성 학생', value: '22', change: '88% 비율' },
-    { label: '평균 출석률', value: '87%', change: '+5% (지난 달 대비)' },
-    { label: '평균 진행률', value: '72%', change: '전체 과정' }
-];
-
 export default function TeacherStudentsPage() {
+    const [students, setStudents] = useState<Student[]>(initialStudents);
+
+    const handleAddStudent = (studentData: StudentFormData) => {
+        const newStudent: Student = {
+            id: `student-${Date.now()}`,
+            studentId: studentData.studentId,
+            name: studentData.name,
+            email: studentData.email || '-',
+            phone: studentData.phone,
+            parentPhone: studentData.parentPhone || '-',
+            birthDate: studentData.birthDate,
+            avatar: '/avatars/default.jpg',
+            course: studentData.subject,
+            curriculum: '신규 과정',
+            progress: 0,
+            attendance: 0,
+            status: '활성',
+            joinDate: new Date().toISOString().split('T')[0],
+            lastLogin: '-',
+            classSchedules: studentData.classSchedules
+        };
+
+        setStudents(prev => [newStudent, ...prev]);
+    };
+
     return (
         <div className="p-6 space-y-6 pt-16 lg:pt-2">
             <div className="flex justify-between items-center">
                 <div>
                     <h1 className="text-3xl font-bold text-cyan-100 drop-shadow-[0_0_6px_#00fff7]">학생관리</h1>
                 </div>
-                <Button className="bg-cyan-600 hover:bg-cyan-700 text-white">
-                    <Plus className="w-4 h-4 mr-2" />
-                    학생 추가
-                </Button>
-            </div>
-
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                {mockStats.map((stat, index) => (
-                    <Card key={index} className="bg-gradient-to-br from-cyan-900/20 to-blue-900/20 border-cyan-500/30">
-                        <CardHeader className="pb-2">
-                            <CardDescription className="text-cyan-200">{stat.label}</CardDescription>
-                            <CardTitle className="text-3xl font-bold text-cyan-100">{stat.value}</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-xs text-cyan-300">{stat.change}</div>
-                        </CardContent>
-                    </Card>
-                ))}
+                <AddStudentModal onAddStudent={handleAddStudent} />
             </div>
 
             <Card className="bg-gradient-to-br from-cyan-900/20 to-blue-900/20 border-cyan-500/30">
                 <CardHeader>
-                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                        <div>
-                            <CardTitle className="text-cyan-100">학생 목록</CardTitle>
-                            <CardDescription className="text-cyan-200">
-                                등록된 모든 학생들의 정보와 학습 현황을 확인합니다.
-                            </CardDescription>
-                        </div>
-                        <div className="flex gap-2 w-full sm:w-auto">
-                            <div className="relative flex-1 sm:flex-none">
-                                <Search className="absolute left-2 top-2.5 h-4 w-4 text-cyan-300" />
-                                <Input
-                                    placeholder="학생 검색..."
-                                    className="pl-8 bg-cyan-900/20 border-cyan-500/30 text-cyan-100 placeholder:text-cyan-300"
-                                />
-                            </div>
-                            <Select>
-                                <SelectTrigger className="w-[140px] bg-cyan-900/20 border-cyan-500/30 text-cyan-100">
-                                    <Filter className="w-4 h-4 mr-2" />
-                                    <SelectValue placeholder="필터" />
-                                </SelectTrigger>
-                                <SelectContent className="bg-cyan-900/90 border-cyan-500/30">
-                                    <SelectItem value="all" className="text-cyan-100">전체</SelectItem>
-                                    <SelectItem value="active" className="text-cyan-100">활성</SelectItem>
-                                    <SelectItem value="inactive" className="text-cyan-100">휴면</SelectItem>
-                                    <SelectItem value="high-progress" className="text-cyan-100">진행률 높음</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
-                    </div>
+                    <CardTitle className="text-cyan-100">학생 목록</CardTitle>
                 </CardHeader>
                 <CardContent>
                     <Table>
                         <TableHeader>
                             <TableRow className="border-cyan-500/20">
-                                <TableHead className="text-cyan-200">학생</TableHead>
-                                <TableHead className="text-cyan-200">연락처</TableHead>
-                                <TableHead className="text-cyan-200">수강 과정</TableHead>
-                                <TableHead className="text-cyan-200">진행률</TableHead>
-                                <TableHead className="text-cyan-200">출석률</TableHead>
-                                <TableHead className="text-cyan-200">상태</TableHead>
-                                <TableHead className="text-cyan-200">최근 로그인</TableHead>
-                                <TableHead className="text-right text-cyan-200">관리</TableHead>
+                                <TableHead className="text-cyan-200 min-w-[90px] w-[133px] text-center">학생</TableHead>
+                                <TableHead className="text-cyan-200 w-[80px] text-center hidden lg:table-cell">연락처</TableHead>
+                                <TableHead className="text-cyan-200 min-w-[120px] w-[160px] text-center">과목</TableHead>
+                                <TableHead className="text-cyan-200 w-[297px] text-center hidden lg:table-cell">수업 과정</TableHead>
+                                <TableHead className="text-cyan-200 min-w-[80px] w-[80px] text-center">진행률</TableHead>
+                                <TableHead className="text-cyan-200 min-w-[90px] w-[80px] text-center">출석 일수</TableHead>
+                                <TableHead className="text-cyan-200 min-w-[120px] w-[120px] text-center">최근 로그인</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {mockStudents.map((student) => (
+                            {students.map((student) => (
                                 <TableRow key={student.id} className="border-cyan-500/10">
                                     <TableCell>
-                                        <div className="flex items-center space-x-3">
-                                            <Avatar className="w-8 h-8">
-                                                <AvatarImage src={student.avatar} />
-                                                <AvatarFallback className="bg-cyan-600 text-cyan-100 text-xs">
-                                                    {student.name.charAt(0)}
-                                                </AvatarFallback>
-                                            </Avatar>
-                                            <div>
-                                                <div className="font-medium text-cyan-100">{student.name}</div>
-                                                <div className="text-xs text-cyan-300">가입일: {student.joinDate}</div>
-                                            </div>
+                                        <div>
+                                            <div className="font-medium text-cyan-100">{student.name}</div>
+                                            <div className="text-xs text-cyan-300 hidden sm:block">{student.joinDate}</div>
                                         </div>
                                     </TableCell>
-                                    <TableCell>
+                                    <TableCell className="hidden lg:table-cell">
                                         <div className="space-y-1">
                                             <div className="flex items-center text-sm text-cyan-200">
                                                 <Mail className="w-3 h-3 mr-1" />
@@ -184,10 +212,13 @@ export default function TeacherStudentsPage() {
                                             </div>
                                         </div>
                                     </TableCell>
-                                    <TableCell className="text-cyan-200">
+                                    <TableCell className="text-cyan-200 text-center">
+                                        {student.course}
+                                    </TableCell>
+                                    <TableCell className="text-cyan-200 hidden lg:table-cell">
                                         {student.curriculum}
                                     </TableCell>
-                                    <TableCell>
+                                    <TableCell className="text-center">
                                         <Badge 
                                             className={student.progress > 70 
                                                 ? 'bg-green-600/20 text-green-300 border-green-500/30' 
@@ -199,43 +230,20 @@ export default function TeacherStudentsPage() {
                                             {student.progress}%
                                         </Badge>
                                     </TableCell>
-                                    <TableCell>
+                                    <TableCell className="text-center">
                                         <Badge 
-                                            className={student.attendance > 90 
+                                            className={student.attendance > 20 
                                                 ? 'bg-green-600/20 text-green-300 border-green-500/30' 
-                                                : student.attendance > 70
+                                                : student.attendance > 10
                                                 ? 'bg-yellow-600/20 text-yellow-300 border-yellow-500/30'
                                                 : 'bg-red-600/20 text-red-300 border-red-500/30'
                                             }
                                         >
-                                            {student.attendance}%
+                                            {student.attendance}일
                                         </Badge>
                                     </TableCell>
-                                    <TableCell>
-                                        <Badge 
-                                            className={student.status === '활성' 
-                                                ? 'bg-green-600/20 text-green-300 border-green-500/30' 
-                                                : 'bg-gray-600/20 text-gray-300 border-gray-500/30'
-                                            }
-                                        >
-                                            {student.status}
-                                        </Badge>
-                                    </TableCell>
-                                    <TableCell className="text-cyan-200 text-sm">
+                                    <TableCell className="text-cyan-200 text-sm text-center">
                                         {student.lastLogin}
-                                    </TableCell>
-                                    <TableCell className="text-right">
-                                        <div className="flex justify-end gap-1">
-                                            <Button size="sm" variant="ghost" className="text-cyan-200 hover:text-cyan-100">
-                                                <Eye className="w-4 h-4" />
-                                            </Button>
-                                            <Button size="sm" variant="ghost" className="text-cyan-200 hover:text-cyan-100">
-                                                <Edit className="w-4 h-4" />
-                                            </Button>
-                                            <Button size="sm" variant="ghost" className="text-red-400 hover:text-red-300">
-                                                <Trash2 className="w-4 h-4" />
-                                            </Button>
-                                        </div>
                                     </TableCell>
                                 </TableRow>
                             ))}

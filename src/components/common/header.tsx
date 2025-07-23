@@ -4,7 +4,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Code2 } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -41,36 +41,67 @@ export function Header() {
     }
   };
 
-  useEffect(() => {
+  const updateActiveLink = useCallback(() => {
     if (pathname !== '/') {
         setActiveLink('');
         return;
     }
 
-    const handleScroll = () => {
-      const sections = navLinks.map(link => document.getElementById(link.id));
-      const scrollPosition = window.scrollY + 150; 
+    const scrollPosition = window.scrollY + 100; // 헤더 높이 + 여유 공간
+    const sections = navLinks.map(link => ({
+      id: link.id,
+      element: document.getElementById(link.id)
+    })).filter(section => section.element);
 
       let currentActiveLink = '';
-      for (const section of sections) {
-        if (section && scrollPosition >= section.offsetTop && scrollPosition < section.offsetTop + section.offsetHeight) {
+    
+    // 현재 스크롤 위치가 어느 섹션에 있는지 확인
+    for (let i = sections.length - 1; i >= 0; i--) {
+      const section = sections[i];
+      if (section.element) {
+        const sectionTop = section.element.offsetTop;
+        const sectionBottom = sectionTop + section.element.offsetHeight;
+        
+        if (scrollPosition >= sectionTop && scrollPosition < sectionBottom) {
           currentActiveLink = `/#${section.id}`;
           break;
         }
       }
-      // If no section is active, check if we are at the top
-      if (!currentActiveLink && window.scrollY < 150) {
+    }
+
+    // 맨 위에 있을 때는 home을 활성화
+    if (!currentActiveLink && scrollPosition < 200) {
         currentActiveLink = '/#home';
       }
 
       setActiveLink(currentActiveLink);
+  }, [pathname]);
+
+  useEffect(() => {
+    if (pathname !== '/') {
+      setActiveLink('');
+      return;
+    }
+
+    // 초기 활성 링크 설정
+    updateActiveLink();
+
+    // 스크롤 이벤트 리스너 추가 (throttling 적용)
+    let ticking = false;
+    const handleScroll = () => {
+      if (!ticking) {
+        requestAnimationFrame(() => {
+          updateActiveLink();
+          ticking = false;
+        });
+        ticking = true;
+      }
     };
 
     window.addEventListener('scroll', handleScroll, { passive: true });
-    handleScroll();
 
     return () => window.removeEventListener('scroll', handleScroll);
-  }, [pathname]);
+  }, [pathname, updateActiveLink]);
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">

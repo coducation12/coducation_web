@@ -5,6 +5,7 @@ import { Toaster } from '@/components/ui/toaster';
 import { cn } from '@/lib/utils';
 import { BackgroundWrapper } from '@/components/common/background-wrapper';
 import { LayoutWrapper } from '@/components/common/layout-wrapper';
+import { SupabaseProvider } from './providers';
 
 const bodyFont = Noto_Sans_KR({
   subsets: ['latin'],
@@ -56,7 +57,9 @@ export default function RootLayout({
         <BackgroundWrapper />
         <div className="relative z-0 flex min-h-screen flex-col">
           <LayoutWrapper>
-            <main className="flex-1">{children}</main>
+            <SupabaseProvider>
+              <main className="flex-1">{children}</main>
+            </SupabaseProvider>
           </LayoutWrapper>
         </div>
         <Toaster />

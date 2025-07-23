@@ -1,14 +1,31 @@
 'use client';
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { useState, useEffect } from "react";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Plus, Edit, Trash2, Eye } from "lucide-react";
-import { useState, useEffect } from "react";
-import AddCurriculumModal, { CurriculumFormData } from "./components/AddCurriculumModal";
-import EditCurriculumModal, { CurriculumData } from "./components/EditCurriculumModal";
+import CurriculumDetailModal, { CurriculumDetailData } from "./components/CurriculumDetailModal";
 import { supabase } from "@/lib/supabase";
+
+interface Curriculum {
+    id: string;
+    name: string;
+    category: string;
+    level: string;
+    teacher: string;
+    courses: Course[];
+    status: '준비중' | '완료';
+    createdAt: string;
+    updatedAt: string;
+}
+
+interface Course {
+    id: string;
+    title: string;
+    description: string;
+    duration: string;
+    order: number;
+}
 
 const [curriculums, setCurriculums] = useState<any[]>([]);
 useEffect(() => {
@@ -18,7 +35,7 @@ useEffect(() => {
 const fetchCurriculums = async () => {
   const { data, error } = await supabase
     .from('curriculums')
-    .select('id, title, category, level, created_by, users (id, name), checklist, public, created_at');
+    .select('id, title, name, category, level, created_by, users (id, name), checklist, public, created_at');
   if (error) {
     setCurriculums([]);
     return;
@@ -26,35 +43,49 @@ const fetchCurriculums = async () => {
   // 담당 강사명 users.name으로 매핑
   const mapped = (data || []).map((cur: any) => ({
     ...cur,
-    teacherName: cur.users?.name || '미배정',
-    students: 0, // 추후 학생 수 연동
+    teacher: cur.users?.name || '미배정',
+    courses: cur.checklist || [],
     status: '완료', // 추후 상태 연동
-    courses: cur.checklist || []
+    createdAt: cur.created_at,
+    updatedAt: cur.created_at
   }));
   setCurriculums(mapped);
 };
 
-export default function TeacherCurriculumPage() {
-    const [isModalOpen, setIsModalOpen] = useState(false);
-    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-    const [selectedCurriculum, setSelectedCurriculum] = useState<CurriculumData | null>(null);
-    // curriculums는 위에서 Supabase fetch로 대체
+export default function AdminCurriculumPage() {
+    const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+    const [selectedCurriculum, setSelectedCurriculum] = useState<CurriculumDetailData | null>(null);
 
-    const handleAddCurriculum = (data: CurriculumFormData) => {
-        console.log('새 커리큘럼 추가:', data);
-        // 여기에 실제 추가 로직을 구현할 수 있습니다
+    const handleEditCurriculum = (curriculum: Curriculum) => {
+        const detailData: CurriculumDetailData = {
+            id: curriculum.id,
+            name: curriculum.name,
+            category: curriculum.category,
+            level: curriculum.level as '기초' | '중급' | '고급',
+            teacher: curriculum.teacher,
+            status: curriculum.status,
+            courses: curriculum.courses
+        };
+        setSelectedCurriculum(detailData);
+        setIsDetailModalOpen(true);
     };
 
-    const handleEditCurriculum = (curriculum: CurriculumData) => {
-        setSelectedCurriculum(curriculum);
-        setIsEditModalOpen(true);
-    };
+    const handleUpdateCurriculum = (updatedData: CurriculumDetailData) => {
+        const updatedCurriculum: Curriculum = {
+            id: updatedData.id,
+            name: updatedData.name,
+            category: updatedData.category,
+            level: updatedData.level,
+            teacher: updatedData.teacher,
+            courses: updatedData.courses || [],
+            status: updatedData.status as '준비중' | '완료',
+            createdAt: curriculums.find(c => c.id === updatedData.id)?.createdAt || new Date().toISOString().split('T')[0],
+            updatedAt: new Date().toISOString().split('T')[0]
+        };
 
-    const handleUpdateCurriculum = (updatedData: CurriculumData) => {
-        console.log('커리큘럼 수정:', updatedData);
         setCurriculums(prev => 
             prev.map(curriculum => 
-                curriculum.id === updatedData.id ? updatedData : curriculum
+                curriculum.id === updatedData.id ? updatedCurriculum : curriculum
             )
         );
     };
@@ -65,39 +96,30 @@ export default function TeacherCurriculumPage() {
                 <div>
                     <h1 className="text-3xl font-bold text-cyan-100 drop-shadow-[0_0_6px_#00fff7]">커리큘럼 관리</h1>
                 </div>
-                <Button 
-                    className="bg-cyan-600 hover:bg-cyan-700 text-white"
-                    onClick={() => setIsModalOpen(true)}
-                >
-                    <Plus className="w-4 h-4 mr-2" />
-                    새 커리큘럼 추가
-                </Button>
             </div>
 
-            {/* 상단 4개 카드(통계) 제거됨 */}
-
-            {/* 이하 커리큘럼 목록 등 기존 내용 유지 */}
             <Card className="bg-gradient-to-br from-cyan-900/20 to-blue-900/20 border-cyan-500/30">
                 <CardContent>
                     <Table>
                         <TableHeader>
                             <TableRow className="border-cyan-500/20">
-                                <TableHead className="text-cyan-200 text-center">과정명</TableHead>
+                                <TableHead className="text-cyan-200">과정명</TableHead>
                                 <TableHead className="text-cyan-200 text-center">분류</TableHead>
                                 <TableHead className="text-cyan-200 text-center">레벨</TableHead>
                                 <TableHead className="text-cyan-200 text-center">담당 강사</TableHead>
+                                <TableHead className="text-cyan-200 text-center">과정 수</TableHead>
                                 <TableHead className="text-cyan-200 text-center">상태</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
                             {curriculums.map((curriculum: any) => (
                           <TableRow key={curriculum.id} className="border-cyan-500/10">
-                            <TableCell className="font-medium text-cyan-100 text-center">
+                            <TableCell>
                               <button
                                 onClick={() => handleEditCurriculum(curriculum)}
-                                className="hover:text-cyan-300 transition-colors cursor-pointer underline"
+                                className="font-medium text-cyan-100 hover:text-cyan-300 transition-colors cursor-pointer underline"
                               >
-                                {curriculum.title}
+                                {curriculum.title || curriculum.name}
                               </button>
                             </TableCell>
                             <TableCell className="text-cyan-200 text-center">
@@ -119,7 +141,10 @@ export default function TeacherCurriculumPage() {
                               </Badge>
                             </TableCell>
                             <TableCell className="text-cyan-200 text-center">
-                              {curriculum.teacherName}
+                              {curriculum.teacher}
+                            </TableCell>
+                            <TableCell className="text-cyan-200 text-center">
+                              {curriculum.courses.length}개
                             </TableCell>
                             <TableCell className="text-center">
                               <Badge
@@ -137,17 +162,10 @@ export default function TeacherCurriculumPage() {
                 </CardContent>
             </Card>
 
-            {/* 새 커리큘럼 추가 모달 */}
-            <AddCurriculumModal
-                isOpen={isModalOpen}
-                onClose={() => setIsModalOpen(false)}
-                onAddCurriculum={handleAddCurriculum}
-            />
-
-            {/* 커리큘럼 수정 모달 */}
-            <EditCurriculumModal
-                isOpen={isEditModalOpen}
-                onClose={() => setIsEditModalOpen(false)}
+            {/* 커리큘럼 상세 모달 */}
+            <CurriculumDetailModal
+                isOpen={isDetailModalOpen}
+                onClose={() => setIsDetailModalOpen(false)}
                 curriculum={selectedCurriculum}
                 onUpdateCurriculum={handleUpdateCurriculum}
             />

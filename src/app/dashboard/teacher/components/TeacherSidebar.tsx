@@ -5,6 +5,7 @@ import Link from "next/link";
 import { LayoutDashboard, BookOpen, Keyboard, Users, Menu, LogOut, GraduationCap, User, CalendarDays } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
+import { logout } from "@/lib/actions";
 
 const navItems = [
   { href: "/dashboard/teacher", label: "대시보드", icon: <LayoutDashboard className="w-5 h-5" /> },
@@ -21,9 +22,10 @@ export function TeacherSidebar() {
 
   const handleLogout = async () => {
     try {
-      document.cookie = "session=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-      router.push("/");
+      // TODO: 배포 후 정상화 - Supabase Auth 로그아웃으로 복원 필요
+      await logout();
     } catch (error) {
+      console.error("로그아웃 실패:", error);
       router.push("/");
     }
   };

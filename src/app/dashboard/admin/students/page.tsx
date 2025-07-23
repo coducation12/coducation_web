@@ -37,7 +37,7 @@ interface ClassSchedule {
     endTime: string;
 }
 
-export default function TeacherStudentsPage() {
+export default function AdminStudentsPage() {
     const [students, setStudents] = useState<Student[]>([]);
     const [search, setSearch] = useState("");
     const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
@@ -49,18 +49,9 @@ export default function TeacherStudentsPage() {
     }, []);
 
     const fetchStudents = async () => {
-        const currentUserId = getCurrentUserId();
-        
-        let query = supabase
+        const { data, error } = await supabase
             .from('students')
             .select(`user_id, parent_id, current_curriculum_id, enrollment_start_date, attendance_schedule, users!students_user_id_fkey ( id, name, username, phone, birth_year, academy, created_at, email ), parent:users!students_parent_id_fkey ( phone )`);
-        
-        // 강사인 경우 담당 학생만 조회
-        if (currentUserId) {
-            query = query.contains('assigned_teachers', [currentUserId]);
-        }
-        
-        const { data, error } = await query;
         
         if (error) {
             console.error('학생 목록 조회 오류:', error);
@@ -134,9 +125,9 @@ export default function TeacherStudentsPage() {
             // FormData로 변환하여 서버 액션 호출
             const formData = new FormData();
             formData.append('studentId', studentData.studentId);
+            formData.append('password', studentData.password);
             formData.append('name', studentData.name);
             formData.append('birthYear', studentData.birthYear);
-            formData.append('password', studentData.password);
             formData.append('subject', studentData.subject);
             formData.append('phone', studentData.phone);
             formData.append('parentPhone', studentData.parentPhone);
@@ -226,7 +217,7 @@ export default function TeacherStudentsPage() {
             <div className="flex items-center justify-between">
                 <div>
                     <h1 className="text-3xl font-bold text-cyan-100">학생 관리</h1>
-                    <p className="text-cyan-300 mt-2">담당 학생들의 정보를 관리하세요</p>
+                    <p className="text-cyan-300 mt-2">전체 학생들의 정보를 관리하세요</p>
                 </div>
                 <AddStudentModal onAddStudent={handleAddStudent} />
             </div>

@@ -13,7 +13,7 @@ const mockRecentActivities = [
 
 export default function AdminDashboardPage() {
     return (
-        <div className="space-y-6">
+        <div className="p-6 space-y-6 pt-16 lg:pt-2">
             <h1 className="text-3xl font-bold font-headline">관리자 대시보드</h1>
             <div className="grid gap-4 md:grid-cols-2 md:gap-8 lg:grid-cols-4">
                 <Card>

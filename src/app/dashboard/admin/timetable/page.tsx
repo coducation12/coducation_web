@@ -1,8 +1,7 @@
 'use client';
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { supabase } from "@/lib/supabase";
 
 // 샘플 데이터 - 실제로는 API에서 가져올 데이터
 const sampleStudents = [
@@ -36,40 +35,9 @@ const getStudentsForTimeSlot = (day: string, timeSlot: string) => {
   );
 };
 
-// 강사별 학생 수(수업일 기준 0.5씩 합산) 계산
-const [teacherStudentCount, setTeacherStudentCount] = useState<Record<string, number>>({});
-const [teacherNames, setTeacherNames] = useState<Record<string, string>>({});
-useEffect(() => {
-  fetchTeacherStudentCount();
-}, []);
-
-const fetchTeacherStudentCount = async () => {
-  const { data: logs } = await supabase
-    .from('student_activity_logs')
-    .select('teacher_id')
-    .not('teacher_id', 'is', null);
-  const count: Record<string, number> = {};
-  (logs || []).forEach((log: any) => {
-    if (!count[log.teacher_id]) count[log.teacher_id] = 0;
-    count[log.teacher_id] += 0.5;
-  });
-  setTeacherStudentCount(count);
-  // 강사명도 함께 fetch
-  const teacherIds = Object.keys(count);
-  if (teacherIds.length > 0) {
-    const { data: teachers } = await supabase
-      .from('users')
-      .select('id, name')
-      .in('id', teacherIds);
-    const nameMap: Record<string, string> = {};
-    (teachers || []).forEach((t: any) => { nameMap[t.id] = t.name; });
-    setTeacherNames(nameMap);
-  }
-};
-
-export default function TimetablePage() {
+export default function AdminTimetablePage() {
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-6 space-y-6 pt-16 lg:pt-2">
       {/* 헤더 */}
       <div className="flex items-center justify-between">
         <div>
@@ -80,27 +48,21 @@ export default function TimetablePage() {
         {/* 강사별 범례 */}
         <div className="flex items-center gap-4">
           {Object.entries(teacherColors).map(([teacher, colorClass]) => {
-            // 해당 강사의 학생 수 계산
-            const studentCount = sampleStudents.filter(student => student.teacher === teacher).length;
+            // 해당 강사의 학생 수와 수업 시간 계산 (하루 = 0.5)
+            const teacherStudents = sampleStudents.filter(student => student.teacher === teacher);
+            const studentCount = teacherStudents.length;
+            const totalSessions = teacherStudents.reduce((total, student) => {
+              return total + (student.days.length * 0.5);
+            }, 0);
             return (
               <div key={teacher} className="flex items-center gap-2">
-              <div className={`w-3 h-3 rounded ${colorClass}`}></div>
-              <span className="text-cyan-200 text-xs">{teacher}</span>
-                <span className="text-cyan-400 text-xs">({studentCount}명)</span>
-            </div>
+                <div className={`w-3 h-3 rounded ${colorClass}`}></div>
+                <span className="text-cyan-200 text-xs">{teacher}</span>
+                <span className="text-cyan-400 text-xs">({studentCount}명/{totalSessions})</span>
+              </div>
             );
           })}
         </div>
-      </div>
-
-      {/* 범례 UI 예시 (적절한 위치에 추가) */}
-      <div className="flex flex-wrap gap-4 my-4">
-        {Object.entries(teacherStudentCount).map(([teacherId, count]) => (
-          <div key={teacherId} className="flex items-center gap-2 px-3 py-1 rounded bg-cyan-900/30 border border-cyan-500/30 text-cyan-100">
-            <span className="font-bold">{teacherNames[teacherId] || teacherId}</span>
-            <span className="text-cyan-300">학생 수: {count}</span>
-          </div>
-        ))}
       </div>
 
       {/* 시간표 테이블 */}

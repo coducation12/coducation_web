@@ -1,48 +1,43 @@
 import { cookies } from 'next/headers';
-import { User, UserRole } from '@/types';
+import { User } from '@/types';
+import { supabase } from './supabase';
 
-export const mockUsers: Record<string, User> = {
-  student: {
-    id: 'student1',
-    username: 'student',
-    name: '김민준',
-    role: 'student',
-    created_at: new Date().toISOString(),
-  },
-  parent: {
-    id: 'parent1',
-    username: 'parent',
-    name: '김민준 부모님',
-    role: 'parent',
-    created_at: new Date().toISOString(),
-  },
-  teacher: {
-    id: 'teacher1',
-    username: 'teacher',
-    name: '박선생',
-    role: 'teacher',
-    created_at: new Date().toISOString(),
-  },
-  admin: {
-    id: 'admin1',
-    username: 'admin',
-    name: '관리자',
-    role: 'admin',
-    created_at: new Date().toISOString(),
-  },
-};
+// TODO: 배포 후 정상화 - Supabase Auth로 복원 필요
+// 현재는 개발 편의를 위해 쿠키 기반 인증 사용
+// 배포 후에는 createServerComponentClient({ cookies }) 사용하여 보안 강화 필요
 
-// This function simulates fetching the currently authenticated user.
-// In a real application, this would involve checking a session, cookie, or token.
 export async function getAuthenticatedUser(): Promise<User | null> {
-  const cookieStore = await cookies();
-  const username = cookieStore.get('username')?.value;
-  
-  if (username && mockUsers[username]) {
-    // Simulate network delay
-    await new Promise(resolve => setTimeout(resolve, 100));
-    return mockUsers[username];
-  }
+  try {
+    const cookieStore = await cookies();
+    const userId = cookieStore.get('user_id')?.value;
+    const userRole = cookieStore.get('user_role')?.value;
+    
+    if (!userId || !userRole) {
+      return null;
+    }
 
-  return null;
+    // TODO: 배포 후 정상화 - Supabase Auth 사용
+    // const supabase = createServerComponentClient({ cookies });
+    // const { data: { user } } = await supabase.auth.getUser();
+    // if (!user) return null;
+
+    const { data, error } = await supabase
+      .from('users')
+      .select('*')
+      .eq('id', userId)
+      .single();
+
+    if (error || !data) return null;
+    return data as User;
+  } catch (error) {
+    console.error('Authentication error:', error);
+    return null;
+  }
+}
+
+// TODO: 배포 후 정상화 - 로그아웃 함수도 Supabase Auth 사용으로 변경 필요
+export async function logout() {
+  const cookieStore = await cookies();
+  cookieStore.delete('user_id');
+  cookieStore.delete('user_role');
 }

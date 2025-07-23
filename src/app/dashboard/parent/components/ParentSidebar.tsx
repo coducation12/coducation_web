@@ -6,6 +6,7 @@ import { LayoutDashboard, BookOpen, Users, Menu, LogOut, ChevronDown, User } fro
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { logout } from "@/lib/actions";
 
 // TODO: 실제 데이터는 DB에서 가져오도록 구현
 const mockStudents = [
@@ -32,10 +33,8 @@ export function ParentSidebar({ user }: ParentSidebarProps) {
 
   const handleLogout = async () => {
     try {
-      // 세션 쿠키 삭제
-      document.cookie = "session=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-      // 메인화면으로 리다이렉트
-      router.push("/");
+      // TODO: 배포 후 정상화 - Supabase Auth 로그아웃으로 복원 필요
+      await logout();
     } catch (error) {
       console.error("로그아웃 실패:", error);
       // 에러가 발생해도 메인화면으로 이동

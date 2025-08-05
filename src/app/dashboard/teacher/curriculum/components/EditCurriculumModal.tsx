@@ -1,13 +1,15 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent } from '@/components/ui/card';
-import { Plus, Trash2, Save, X } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
+import { Plus, Trash2, Save, X, Upload } from 'lucide-react';
+import { supabase } from '@/lib/supabase';
 
 export interface CurriculumData {
   id: string;
@@ -15,7 +17,9 @@ export interface CurriculumData {
   category: string;
   level: '기초' | '중급' | '고급';
   students: number;
-  status: string;
+  status: 'preparing' | 'completed';
+  description?: string;
+  image?: string;
   courses?: string[];
 }
 
@@ -38,9 +42,13 @@ export default function EditCurriculumModal({
     category: '',
     level: '기초',
     students: 0,
-    status: '준비중',
+    status: 'preparing',
+    description: '',
+    image: '',
     courses: ['']
   });
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // curriculum이 변경될 때마다 폼 데이터 업데이트
   useEffect(() => {
@@ -73,6 +81,102 @@ export default function EditCurriculumModal({
       ...prev,
       courses: prev.courses?.map((course, i) => i === index ? value : course) || ['']
     }));
+  };
+
+  const handleImageUpload = async (file: File) => {
+    if (!file) return;
+    
+    setIsUploading(true);
+    try {
+      // 파일 크기 체크 (5MB 제한)
+      if (file.size > 5 * 1024 * 1024) {
+        alert('파일 크기는 5MB 이하여야 합니다.');
+        setIsUploading(false);
+        return;
+      }
+
+      // 파일 형식 체크
+      const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
+      if (!allowedTypes.includes(file.type)) {
+        alert('JPG, PNG, GIF 파일만 업로드 가능합니다.');
+        setIsUploading(false);
+        return;
+      }
+
+      // RLS 정책 문제로 인해 임시로 Base64 방식 사용
+      // TODO: Supabase Storage RLS 정책 설정 후 다시 Supabase Storage 사용
+      
+      // 이미지 압축을 위한 Canvas 사용
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      const img = new Image();
+      
+      img.onload = () => {
+        // 이미지 크기 조정 (최대 800px)
+        const maxSize = 800;
+        let { width, height } = img;
+        
+        if (width > height) {
+          if (width > maxSize) {
+            height = (height * maxSize) / width;
+            width = maxSize;
+          }
+        } else {
+          if (height > maxSize) {
+            width = (width * maxSize) / height;
+            height = maxSize;
+          }
+        }
+        
+        canvas.width = width;
+        canvas.height = height;
+        
+        // 이미지 그리기
+        ctx?.drawImage(img, 0, 0, width, height);
+        
+        // 압축된 Base64 생성 (품질 0.7)
+        const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.7);
+        setFormData(prev => ({ ...prev, image: compressedDataUrl }));
+        setIsUploading(false);
+      };
+      
+      img.onerror = (error) => {
+        console.error('이미지 로드 오류:', error);
+        alert('이미지를 로드하는 중 오류가 발생했습니다.');
+        setIsUploading(false);
+      };
+      
+      // FileReader로 이미지 로드
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        img.src = e.target?.result as string;
+      };
+      reader.onerror = (error) => {
+        console.error('파일 읽기 오류:', error);
+        alert('파일을 읽는 중 오류가 발생했습니다.');
+        setIsUploading(false);
+      };
+      reader.readAsDataURL(file);
+
+    } catch (error) {
+      console.error('이미지 업로드 오류:', error);
+      alert(`이미지 업로드에 실패했습니다: ${error instanceof Error ? error.message : '알 수 없는 오류'}`);
+      setIsUploading(false);
+    }
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      handleImageUpload(file);
+    }
+  };
+
+  const removeImage = () => {
+    setFormData(prev => ({ ...prev, image: '' }));
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
   };
 
   const handleSubmit = () => {
@@ -155,15 +259,77 @@ export default function EditCurriculumModal({
           {/* 상태 선택 */}
           <div className="space-y-2">
             <Label htmlFor="status" className="text-cyan-200">상태</Label>
-            <Select value={formData.status} onValueChange={(value: string) => setFormData(prev => ({ ...prev, status: value }))}>
+            <Select value={formData.status} onValueChange={(value: 'preparing' | 'completed') => setFormData(prev => ({ ...prev, status: value }))}>
               <SelectTrigger className="bg-background/40 border-cyan-400/40 text-cyan-100 focus:border-cyan-400/80">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent className="bg-background border-cyan-400/40">
-                <SelectItem value="준비중" className="text-cyan-100 hover:bg-cyan-900/20">준비중</SelectItem>
-                <SelectItem value="완료" className="text-cyan-100 hover:bg-cyan-900/20">완료</SelectItem>
+                <SelectItem value="preparing" className="text-cyan-100 hover:bg-cyan-900/20">준비중</SelectItem>
+                <SelectItem value="completed" className="text-cyan-100 hover:bg-cyan-900/20">완료</SelectItem>
               </SelectContent>
             </Select>
+          </div>
+
+          {/* 설명 */}
+          <div className="space-y-2">
+            <Label htmlFor="description" className="text-cyan-200">설명 <span className="text-cyan-400 text-xs">(선택)</span></Label>
+            <Textarea
+              id="description"
+              value={formData.description || ''}
+              onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+              placeholder="커리큘럼에 대한 상세 설명을 입력하세요"
+              className="bg-background/40 border-cyan-400/40 text-cyan-100 placeholder:text-cyan-400/60 focus:border-cyan-400/80 min-h-[100px]"
+            />
+          </div>
+
+          {/* 이미지 업로드 */}
+          <div className="space-y-2">
+            <Label className="text-cyan-200">대표 이미지 <span className="text-cyan-400 text-xs">(선택)</span></Label>
+            <div className="space-y-3">
+              {formData.image ? (
+                <div className="relative">
+                  <img 
+                    src={formData.image.startsWith('data:') ? formData.image : formData.image} 
+                    alt="커리큘럼 이미지" 
+                    className="w-full h-48 object-cover rounded-lg border border-cyan-500/30"
+                    onError={(e) => {
+                      console.error('이미지 로드 실패:', formData.image);
+                      e.currentTarget.style.display = 'none';
+                    }}
+                  />
+                  <Button
+                    type="button"
+                    onClick={removeImage}
+                    size="icon"
+                    variant="outline"
+                    className="absolute top-2 right-2 border-red-500/50 text-red-400 hover:bg-red-500/20 hover:text-red-300"
+                  >
+                    <X className="w-4 h-4" />
+                  </Button>
+                </div>
+              ) : (
+                <div className="border-2 border-dashed border-cyan-500/30 rounded-lg p-6 text-center">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleFileChange}
+                    className="hidden"
+                  />
+                  <Button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    variant="outline"
+                    className="border-cyan-500/50 text-cyan-400 hover:bg-cyan-500/20 hover:text-cyan-300"
+                    disabled={isUploading}
+                  >
+                    <Upload className="w-4 h-4 mr-2" />
+                    {isUploading ? '업로드 중...' : '이미지 선택'}
+                  </Button>
+                  <p className="text-cyan-400/60 text-sm mt-2">JPG, PNG, GIF 파일을 선택하세요</p>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* 과정 리스트 */}

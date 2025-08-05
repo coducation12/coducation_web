@@ -1,18 +1,23 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent } from '@/components/ui/card';
-import { Plus, Trash2 } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
+import { Plus, Trash2, Upload, X } from 'lucide-react';
+import { supabase } from '@/lib/supabase';
 
 export interface CurriculumFormData {
   title: string;
   category: string;
   level: '기초' | '중급' | '고급';
+  status: 'preparing' | 'completed';
+  description: string;
+  image: string;
   courses: string[];
 }
 
@@ -27,8 +32,13 @@ export default function AddCurriculumModal({ isOpen, onClose, onAddCurriculum }:
     title: '',
     category: '',
     level: '기초',
+    status: 'preparing',
+    description: '',
+    image: '',
     courses: ['']
   });
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleAddCourse = () => {
     setFormData(prev => ({
@@ -53,6 +63,68 @@ export default function AddCurriculumModal({ isOpen, onClose, onAddCurriculum }:
     }));
   };
 
+  const handleImageUpload = async (file: File) => {
+    if (!file) return;
+    
+    setIsUploading(true);
+    try {
+      // 파일 크기 체크 (5MB 제한)
+      if (file.size > 5 * 1024 * 1024) {
+        alert('파일 크기는 5MB 이하여야 합니다.');
+        setIsUploading(false);
+        return;
+      }
+
+      // 파일 형식 체크
+      const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
+      if (!allowedTypes.includes(file.type)) {
+        alert('JPG, PNG, GIF 파일만 업로드 가능합니다.');
+        setIsUploading(false);
+        return;
+      }
+
+      // Supabase Storage에 업로드
+      const fileName = `${Date.now()}-${file.name}`;
+      const { data, error } = await supabase.storage
+        .from('curriculum-image')
+        .upload(fileName, file);
+
+      if (error) {
+        console.error('Storage 업로드 오류:', error);
+        alert('이미지 업로드에 실패했습니다.');
+        setIsUploading(false);
+        return;
+      }
+
+      // 공개 URL 가져오기
+      const { data: urlData } = supabase.storage
+        .from('curriculum-image')
+        .getPublicUrl(fileName);
+
+      setFormData(prev => ({ ...prev, image: urlData.publicUrl }));
+      setIsUploading(false);
+
+    } catch (error) {
+      console.error('이미지 업로드 오류:', error);
+      alert(`이미지 업로드에 실패했습니다: ${error instanceof Error ? error.message : '알 수 없는 오류'}`);
+      setIsUploading(false);
+    }
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      handleImageUpload(file);
+    }
+  };
+
+  const removeImage = () => {
+    setFormData(prev => ({ ...prev, image: '' }));
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
   const handleSubmit = (isDraft: boolean = false) => {
     const filteredCourses = formData.courses.filter(course => course.trim() !== '');
     
@@ -71,6 +143,9 @@ export default function AddCurriculumModal({ isOpen, onClose, onAddCurriculum }:
       title: '',
       category: '',
       level: '기초',
+      status: 'preparing',
+      description: '',
+      image: '',
       courses: ['']
     });
     
@@ -118,19 +193,96 @@ export default function AddCurriculumModal({ isOpen, onClose, onAddCurriculum }:
             </div>
           </div>
 
-          {/* 레벨 선택 */}
+          {/* 레벨과 상태 선택 */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="level" className="text-cyan-200">레벨 *</Label>
+              <Select value={formData.level} onValueChange={(value: '기초' | '중급' | '고급') => setFormData(prev => ({ ...prev, level: value }))}>
+                <SelectTrigger className="bg-background/40 border-cyan-400/40 text-cyan-100 focus:border-cyan-400/80">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="bg-background border-cyan-400/40">
+                  <SelectItem value="기초" className="text-cyan-100 hover:bg-cyan-900/20">기초</SelectItem>
+                  <SelectItem value="중급" className="text-cyan-100 hover:bg-cyan-900/20">중급</SelectItem>
+                  <SelectItem value="고급" className="text-cyan-100 hover:bg-cyan-900/20">고급</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="status" className="text-cyan-200">상태 *</Label>
+              <Select value={formData.status} onValueChange={(value: 'preparing' | 'completed') => setFormData(prev => ({ ...prev, status: value }))}>
+                <SelectTrigger className="bg-background/40 border-cyan-400/40 text-cyan-100 focus:border-cyan-400/80">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="bg-background border-cyan-400/40">
+                  <SelectItem value="preparing" className="text-cyan-100 hover:bg-cyan-900/20">준비중</SelectItem>
+                  <SelectItem value="completed" className="text-cyan-100 hover:bg-cyan-900/20">완료</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          {/* 설명 */}
           <div className="space-y-2">
-            <Label htmlFor="level" className="text-cyan-200">레벨 *</Label>
-            <Select value={formData.level} onValueChange={(value: '기초' | '중급' | '고급') => setFormData(prev => ({ ...prev, level: value }))}>
-              <SelectTrigger className="bg-background/40 border-cyan-400/40 text-cyan-100 focus:border-cyan-400/80">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent className="bg-background border-cyan-400/40">
-                <SelectItem value="기초" className="text-cyan-100 hover:bg-cyan-900/20">기초</SelectItem>
-                <SelectItem value="중급" className="text-cyan-100 hover:bg-cyan-900/20">중급</SelectItem>
-                <SelectItem value="고급" className="text-cyan-100 hover:bg-cyan-900/20">고급</SelectItem>
-              </SelectContent>
-            </Select>
+            <Label htmlFor="description" className="text-cyan-200">설명 <span className="text-cyan-400 text-xs">(선택)</span></Label>
+            <Textarea
+              id="description"
+              value={formData.description}
+              onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+              placeholder="커리큘럼에 대한 상세 설명을 입력하세요"
+              className="bg-background/40 border-cyan-400/40 text-cyan-100 placeholder:text-cyan-400/60 focus:border-cyan-400/80 min-h-[100px]"
+            />
+          </div>
+
+          {/* 이미지 업로드 */}
+          <div className="space-y-2">
+            <Label className="text-cyan-200">대표 이미지 <span className="text-cyan-400 text-xs">(선택)</span></Label>
+            <div className="space-y-3">
+              {formData.image ? (
+                <div className="relative">
+                  <img 
+                    src={formData.image.startsWith('data:') ? formData.image : formData.image} 
+                    alt="커리큘럼 이미지" 
+                    className="w-full h-48 object-cover rounded-lg border border-cyan-500/30"
+                    onError={(e) => {
+                      console.error('이미지 로드 실패:', formData.image);
+                      e.currentTarget.style.display = 'none';
+                    }}
+                  />
+                  <Button
+                    type="button"
+                    onClick={removeImage}
+                    size="icon"
+                    variant="outline"
+                    className="absolute top-2 right-2 border-red-500/50 text-red-400 hover:bg-red-500/20 hover:text-red-300"
+                  >
+                    <X className="w-4 h-4" />
+                  </Button>
+                </div>
+              ) : (
+                <div className="border-2 border-dashed border-cyan-500/30 rounded-lg p-6 text-center">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleFileChange}
+                    className="hidden"
+                  />
+                  <Button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    variant="outline"
+                    className="border-cyan-500/50 text-cyan-400 hover:bg-cyan-500/20 hover:text-cyan-300"
+                    disabled={isUploading}
+                  >
+                    <Upload className="w-4 h-4 mr-2" />
+                    {isUploading ? '업로드 중...' : '이미지 선택'}
+                  </Button>
+                  <p className="text-cyan-400/60 text-sm mt-2">JPG, PNG, GIF 파일을 선택하세요</p>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* 과정 리스트 */}

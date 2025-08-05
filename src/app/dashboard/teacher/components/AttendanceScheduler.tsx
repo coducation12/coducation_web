@@ -8,6 +8,7 @@ import React from "react";
 import { Student, AttendanceStatus, STATUS_CONFIG } from "./types";
 import { WeeklyCalendar } from "./WeeklyCalendar";
 import { StudentList } from "./StudentList";
+import { supabase } from "@/lib/supabase";
 
 // 상수 정의
 const TIME_SLOTS = [
@@ -15,37 +16,149 @@ const TIME_SLOTS = [
   '15:00', '15:30', '16:00', '16:30', '17:00', '17:30', '18:00', '18:30', '19:00', '19:30', '20:00'
 ];
 
-// 유틸리티 함수들
-const getMockStudentsByDate = (date: Date): Student[] => {
-  const day = date.getDate();
-  const baseStudents = [
-    { id: '1', name: '김민준', day: '월/수', course: 'Python', curriculum: '기초 과정', progress: 80, phone: '010-1234-5678' },
-    { id: '2', name: '이서아', day: '화/목', course: 'Python', curriculum: '기초 과정', progress: 80, phone: '010-1234-5678' },
-    { id: '3', name: '박도윤', day: '금', course: 'C언어', curriculum: '기초 과정', progress: 90, phone: '010-3456-7890' },
-    { id: '4', name: '정현우', day: '월/수', course: 'Python', curriculum: '기초 과정', progress: 80, phone: '010-1234-5678' },
-    { id: '5', name: '한소희', day: '월/수', course: 'Python', curriculum: '기초 과정', progress: 80, phone: '010-1234-5678' },
-    { id: '6', name: '윤준호', day: '월/수', course: 'Python', curriculum: '기초 과정', progress: 80, phone: '010-1234-5678' },
-  ];
+// DB에서 학생 데이터를 가져오는 함수
+const getStudentsByDate = async (date: Date): Promise<Student[]> => {
+  try {
+    // students 테이블에서 학생 정보와 담당 강사 정보를 함께 가져오기
+    const { data: studentsData, error: studentsError } = await supabase
+      .from('students')
+      .select(`
+        user_id,
+        assigned_teachers,
+        attendance_schedule,
+        users!students_user_id_fkey(name)
+      `);
 
-  const timeSlots = [
-    { start: '10:00', end: '11:30' },
-    { start: '11:00', end: '12:30' },
-    { start: '12:30', end: '14:00' },
-    { start: '15:00', end: '16:30' },
-    { start: '16:00', end: '17:30' },
-    { start: '17:00', end: '18:30' },
-  ];
-
-  // 초기 상태는 모두 미등록으로 설정
-  const statusPatterns = ['unregistered', 'unregistered', 'unregistered', 'unregistered', 'unregistered', 'unregistered'];
-
-  return baseStudents.map((student, index) => ({
-    ...student,
-    attendanceTime: {
-      ...timeSlots[index],
-      status: statusPatterns[index] as AttendanceStatus
+    if (studentsError) {
+      console.error('학생 데이터 가져오기 실패:', studentsError);
+      return [];
     }
-  }));
+
+    // 담당 강사 ID들을 수집
+    const teacherIds = new Set<string>();
+    (studentsData || []).forEach((student: any) => {
+      if (student.assigned_teachers && Array.isArray(student.assigned_teachers)) {
+        student.assigned_teachers.forEach((teacherId: string) => {
+          teacherIds.add(teacherId);
+        });
+      }
+    });
+
+    // 강사 정보 가져오기
+    const { data: teachersData, error: teachersError } = await supabase
+      .from('users')
+      .select('id, name')
+      .in('id', Array.from(teacherIds));
+
+    if (teachersError) {
+      console.error('강사 데이터 가져오기 실패:', teachersError);
+      return [];
+    }
+
+    // 강사 ID를 이름으로 매핑
+    const teacherMap = new Map();
+    (teachersData || []).forEach((teacher: any) => {
+      teacherMap.set(teacher.id, teacher.name);
+    });
+
+    // 해당 날짜의 요일 구하기 (0: 일요일, 1: 월요일, ...)
+    const dayOfWeek = date.getDay();
+    const dayNames = ['일', '월', '화', '수', '목', '금', '토'];
+    const currentDayName = dayNames[dayOfWeek];
+
+    // 해당 요일에 수업이 있는 학생들만 필터링
+    const filteredStudents = (studentsData || []).filter((student: any) => {
+      const schedule = student.attendance_schedule || {};
+      
+      // attendance_schedule이 객체인 경우
+      if (typeof schedule === 'object' && schedule !== null) {
+        // 숫자 키로 저장된 경우 (0, 1, 2, ...)
+        if (schedule[dayOfWeek] !== undefined && schedule[dayOfWeek] !== null) {
+          return true;
+        }
+        
+        // 문자열 키로 저장된 경우 ('0', '1', '2', ...)
+        if (schedule[dayOfWeek.toString()] !== undefined && schedule[dayOfWeek.toString()] !== null) {
+          return true;
+        }
+        
+        // 요일 이름으로 저장된 경우 ('월', '화', ...)
+        if (schedule[currentDayName] !== undefined && schedule[currentDayName] !== null) {
+          return true;
+        }
+      }
+      
+      return false;
+    });
+
+    // 학생 데이터를 기존 형식으로 변환
+    const convertedStudents = filteredStudents.map((student: any, index: number) => {
+      const teacherId = student.assigned_teachers?.[0] || '';
+      const teacherName = teacherMap.get(teacherId) || '미배정';
+      
+      // attendance_schedule을 기존 형식으로 변환
+      const schedule = student.attendance_schedule || {};
+      const days: string[] = [];
+      const times: string[] = [];
+      let currentDayTime = '';
+      
+      Object.entries(schedule).forEach(([dayKey, timeData]: [string, any]) => {
+        // 숫자 키인 경우
+        if (!isNaN(parseInt(dayKey))) {
+          const dayIndex = parseInt(dayKey);
+          const dayNames = ['일', '월', '화', '수', '목', '금', '토'];
+          if (dayIndex >= 0 && dayIndex < 7) {
+            days.push(dayNames[dayIndex]);
+            if (timeData && typeof timeData === 'object') {
+              const timeStr = `${timeData.startTime || '10:00'}-${timeData.endTime || '11:30'}`;
+              times.push(timeStr);
+              // 현재 요일과 일치하는 경우 시간 정보 저장
+              if (dayIndex === dayOfWeek) {
+                currentDayTime = timeStr;
+              }
+            }
+          }
+        } else {
+          // 문자열 키인 경우 (요일 이름)
+          days.push(dayKey);
+          if (timeData && typeof timeData === 'object') {
+            const timeStr = `${timeData.startTime || '10:00'}-${timeData.endTime || '11:30'}`;
+            times.push(timeStr);
+            // 현재 요일과 일치하는 경우 시간 정보 저장
+            if (dayKey === currentDayName) {
+              currentDayTime = timeStr;
+            }
+          }
+        }
+      });
+
+      // 기본 수업 정보 (실제로는 curriculum 테이블에서 가져와야 함)
+      const courses = ['Python', 'C언어', 'Java', 'JavaScript'];
+      const curriculums = ['기초 과정', '중급 과정', '고급 과정'];
+      
+      return {
+        id: student.user_id,
+        name: student.users?.name || '알 수 없음',
+        teacher: teacherName,
+        day: days.join('/'),
+        course: courses[index % courses.length],
+        curriculum: curriculums[index % curriculums.length],
+        progress: Math.floor(Math.random() * 30) + 70, // 임시 진행률
+        phone: '010-1234-5678', // 임시 전화번호
+        attendanceTime: {
+          start: currentDayTime.split('-')[0] || '10:00',
+          end: currentDayTime.split('-')[1] || '11:30',
+          status: 'unregistered' as AttendanceStatus
+        },
+        originalSchedule: schedule
+      };
+    });
+
+    return convertedStudents;
+  } catch (error) {
+    console.error('학생 데이터 가져오기 중 오류:', error);
+    return [];
+  }
 };
 
 // 날짜가 지났는지 확인하는 함수
@@ -100,11 +213,19 @@ const getStatusText = (status: AttendanceStatus): string => {
 // 커스텀 훅
 const useAttendanceScheduler = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [students, setStudents] = useState(() => getMockStudentsByDate(new Date()));
+  const [students, setStudents] = useState<Student[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   // 날짜 변경 시 학생 데이터 새로 불러오기
   useEffect(() => {
-    setStudents(getMockStudentsByDate(currentDate));
+    const fetchStudents = async () => {
+      setIsLoading(true);
+      const studentsData = await getStudentsByDate(currentDate);
+      setStudents(studentsData);
+      setIsLoading(false);
+    };
+    
+    fetchStudents();
   }, [currentDate]);
 
   // 자동 결석 처리 (1분마다 체크)
@@ -148,13 +269,12 @@ const useAttendanceScheduler = () => {
   return {
     currentDate,
     students,
+    isLoading,
     handlePrev,
     handleNext,
     handleAttendanceChange
   };
 };
-
-
 
 // 서브 컴포넌트들
 const ScheduleHeader = ({ 
@@ -207,7 +327,15 @@ const ScheduleHeader = ({
   );
 };
 
-const ScheduleGrid = ({ students }: { students: Student[] }) => {
+const ScheduleGrid = ({ students, isLoading }: { students: Student[]; isLoading: boolean }) => {
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center py-8">
+        <div className="text-cyan-200">학생 데이터를 불러오는 중...</div>
+      </div>
+    );
+  }
+
   return (
     <div className="overflow-x-auto">
       <div
@@ -292,13 +420,12 @@ const ScheduleRow = ({ student, rowIdx }: { student: Student; rowIdx: number }) 
   );
 };
 
-
-
 // 메인 컴포넌트
 export function AttendanceScheduler() {
   const {
     currentDate,
     students,
+    isLoading,
     handlePrev,
     handleNext,
     handleAttendanceChange
@@ -315,7 +442,7 @@ export function AttendanceScheduler() {
           onNext={handleNext} 
         />
         <CardContent className="p-0">
-          <ScheduleGrid students={students} />
+          <ScheduleGrid students={students} isLoading={isLoading} />
         </CardContent>
       </Card>
       

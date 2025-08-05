@@ -348,3 +348,133 @@ export async function updateStudent(formData: FormData) {
     return { success: false, error: '학생 정보 수정 중 오류가 발생했습니다.' };
   }
 }
+
+// 커리큘럼 추가 서버 액션
+export async function addCurriculum(formData: FormData) {
+  try {
+    // 현재 로그인한 사용자 정보 가져오기
+    const cookieStore = await cookies();
+    const currentUserId = cookieStore.get('user_id')?.value;
+    const currentUserRole = cookieStore.get('user_role')?.value;
+
+    if (!currentUserId) {
+      return { success: false, error: '로그인이 필요합니다.' };
+    }
+
+    // 강사나 관리자만 커리큘럼 추가 가능
+    if (currentUserRole !== 'teacher' && currentUserRole !== 'admin') {
+      return { success: false, error: '권한이 없습니다.' };
+    }
+
+    // FormData에서 데이터 추출
+    const title = formData.get('title') as string;
+    const category = formData.get('category') as string;
+    const level = formData.get('level') as string;
+    const status = formData.get('status') as string;
+    const courses = JSON.parse(formData.get('courses') as string) as string[];
+    const description = formData.get('description') as string || '';
+    const image = formData.get('image') as string || '';
+
+    // 이미지 크기 제한 (1MB)
+    if (image && image.length > 1024 * 1024) {
+      return { success: false, error: '이미지 크기가 너무 큽니다. 1MB 이하로 압축해주세요.' };
+    }
+
+    // 필수 필드 검증
+    if (!title || !category || !level || !status || !courses || courses.length === 0) {
+      return { success: false, error: '모든 필수 항목을 입력해주세요.' };
+    }
+
+    // 커리큘럼 데이터 준비
+    const curriculumData = {
+      title: title.trim(),
+      category: category.trim(),
+      level: level.trim(),
+      status: status.trim(),
+      description: description.trim(),
+      image: image.trim(),
+      checklist: courses.filter(course => course.trim() !== ''),
+      created_by: currentUserId,
+      created_at: new Date().toISOString()
+    };
+
+    // Supabase에 커리큘럼 추가
+    const { data, error } = await supabase
+      .from('curriculums')
+      .insert([curriculumData])
+      .select()
+      .single();
+
+    if (error) {
+      console.error('커리큘럼 추가 오류:', error);
+      return { success: false, error: error.message };
+    }
+
+    return { success: true, data };
+  } catch (error) {
+    console.error('커리큘럼 추가 중 오류:', error);
+    return { success: false, error: '커리큘럼 추가 중 오류가 발생했습니다.' };
+  }
+}
+
+// 커리큘럼 수정 서버 액션
+export async function updateCurriculum(formData: FormData) {
+  try {
+    // 현재 로그인한 사용자 정보 가져오기
+    const cookieStore = await cookies();
+    const currentUserId = cookieStore.get('user_id')?.value;
+    const currentUserRole = cookieStore.get('user_role')?.value;
+
+    if (!currentUserId) {
+      return { success: false, error: '로그인이 필요합니다.' };
+    }
+
+    // 강사나 관리자만 커리큘럼 수정 가능
+    if (currentUserRole !== 'teacher' && currentUserRole !== 'admin') {
+      return { success: false, error: '권한이 없습니다.' };
+    }
+
+    // FormData에서 데이터 추출
+    const id = formData.get('id') as string;
+    const title = formData.get('title') as string;
+    const category = formData.get('category') as string;
+    const level = formData.get('level') as string;
+    const courses = JSON.parse(formData.get('courses') as string) as string[];
+    const description = formData.get('description') as string || '';
+    const image = formData.get('image') as string || '';
+
+    // 필수 필드 검증
+    if (!id || !title || !category || !level || !courses || courses.length === 0) {
+      return { success: false, error: '모든 필수 항목을 입력해주세요.' };
+    }
+
+    // 커리큘럼 데이터 준비
+    const curriculumData = {
+      title: title.trim(),
+      category: category.trim(),
+      level: level.trim(),
+      description: description.trim(),
+      image: image.trim(),
+      checklist: courses.filter(course => course.trim() !== ''),
+      status: formData.get('status') as string || 'preparing' // 상태 업데이트 지원
+    };
+
+    // Supabase에서 커리큘럼 수정
+    const { data, error } = await supabase
+      .from('curriculums')
+      .update(curriculumData)
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('커리큘럼 수정 오류:', error);
+      return { success: false, error: error.message };
+    }
+
+    return { success: true, data };
+  } catch (error) {
+    console.error('커리큘럼 수정 중 오류:', error);
+    return { success: false, error: '커리큘럼 수정 중 오류가 발생했습니다.' };
+  }
+}

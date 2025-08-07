@@ -1,12 +1,12 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { login } from '@/lib/actions'
 
-export default function LoginPage() {
+function LoginForm() {
   const [userType, setUserType] = useState<'teacher' | 'student'>('student')
   const [email, setEmail] = useState('')
   const [username, setUsername] = useState('')
@@ -30,8 +30,6 @@ export default function LoginPage() {
     setIsLoading(true)
     
     try {
-
-      
       const formData = new FormData()
       formData.append('userType', userType)
       formData.append('password', password)
@@ -114,9 +112,15 @@ export default function LoginPage() {
         >
           {isLoading ? '로그인 중...' : '로그인'}
         </Button>
-        
-
       </form>
     </div>
+  )
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center min-h-[calc(100vh-11rem)] py-12"><div className="text-white">로딩 중...</div></div>}>
+      <LoginForm />
+    </Suspense>
   )
 }

@@ -1,11 +1,12 @@
 'use client';
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 import { LayoutDashboard, BookOpen, Keyboard, Users, Menu, LogOut, GraduationCap, User, CalendarDays } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { logout } from "@/lib/actions";
+import { supabase } from "@/lib/supabase";
 
 const navItems = [
   { href: "/dashboard/teacher", label: "대시보드", icon: <LayoutDashboard className="w-5 h-5" /> },
@@ -19,6 +20,30 @@ export function TeacherSidebar() {
   const pathname = usePathname();
   const router = useRouter();
   const [open, setOpen] = useState(false);
+  const [userName, setUserName] = useState<string>("");
+
+  useEffect(() => {
+    fetchUserInfo();
+  }, []);
+
+  const fetchUserInfo = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data, error } = await supabase
+          .from('users')
+          .select('name')
+          .eq('id', user.id)
+          .single();
+        
+        if (data && !error) {
+          setUserName(data.name);
+        }
+      }
+    } catch (error) {
+      console.error('사용자 정보 조회 실패:', error);
+    }
+  };
 
   const handleLogout = async () => {
     try {
@@ -49,7 +74,7 @@ export function TeacherSidebar() {
       <div className="p-4 border-t border-cyan-900/20 text-cyan-200 text-sm flex flex-col gap-4">
         <Link href="/dashboard/teacher/profile" className="flex items-center gap-3 hover:underline cursor-pointer">
           <User className="w-5 h-5" />
-          <span>강사님</span>
+          <span>{userName ? `${userName}강사` : '강사님'}</span>
         </Link>
         <button 
           onClick={handleLogout}

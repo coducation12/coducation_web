@@ -216,8 +216,7 @@ export default function AdminStudentsPage() {
         <div className="p-6 space-y-6">
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-3xl font-bold text-cyan-100">학생 관리</h1>
-                    <p className="text-cyan-300 mt-2">전체 학생들의 정보를 관리하세요</p>
+                    <h1 className="text-3xl font-bold text-cyan-100 drop-shadow-[0_0_6px_#00fff7]">학생 관리</h1>
                 </div>
                 <AddStudentModal onAddStudent={handleAddStudent} />
             </div>

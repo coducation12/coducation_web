@@ -62,6 +62,7 @@ export function StudentCard({ children, className, hover = true, active = false 
         STUDENT_THEME.card.base,
         hover && STUDENT_THEME.card.hover,
         active && STUDENT_THEME.card.active,
+        "min-h-0", // 높이 제약 추가
         className
       )}
     >

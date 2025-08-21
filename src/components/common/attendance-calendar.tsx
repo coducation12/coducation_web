@@ -92,8 +92,8 @@ export function AttendanceCalendar() {
   ];
 
   return (
-    <div className="flex flex-col h-full">
-      <div className="flex items-center justify-between mb-4">
+    <div className="flex flex-col h-full min-h-0">
+      <div className="flex items-center justify-between mb-4 flex-shrink-0">
         <button
           onClick={prevMonth}
           className={cn("p-1 hover:bg-cyan-400/10 rounded transition-colors", studentButtonStyles.ghost)}
@@ -111,14 +111,14 @@ export function AttendanceCalendar() {
         </button>
       </div>
 
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col min-h-0">
         {/* 요일 헤더 */}
-        <div className="grid grid-cols-7 gap-1 mb-2">
+        <div className="grid grid-cols-7 gap-1 mb-2 flex-shrink-0">
           {weekdays.map((day, index) => (
             <div
               key={day}
               className={cn(
-                "text-center text-xs font-medium py-1",
+                "text-center text-sm font-medium py-1",
                 index === 0 ? "text-red-400" : index === 6 ? "text-blue-400" : "text-cyan-200"
               )}
             >
@@ -128,7 +128,7 @@ export function AttendanceCalendar() {
         </div>
 
         {/* 캘린더 그리드 */}
-        <div className="grid grid-cols-7 gap-1 flex-1">
+        <div className="grid grid-cols-7 gap-1 flex-1 min-h-0">
           {/* 빈 칸들 */}
           {Array.from({ length: startingDayOfWeek }, (_, index) => (
             <div key={`empty-${index}`} className="aspect-square" />
@@ -144,7 +144,7 @@ export function AttendanceCalendar() {
               <div
                 key={day}
                 className={cn(
-                  "aspect-square flex items-center justify-center text-xs font-medium cursor-pointer transition-all duration-200 hover:bg-cyan-400/10",
+                  "aspect-square flex items-center justify-center text-base font-medium cursor-pointer transition-all duration-200 hover:bg-cyan-400/10",
                   today && "ring-2 ring-cyan-400 ring-offset-1 ring-offset-transparent",
                   attended && "bg-green-500/20 text-green-300",
                   !attended && today && "text-cyan-300",
@@ -158,7 +158,7 @@ export function AttendanceCalendar() {
         </div>
 
         {/* 범례 */}
-        <div className="mt-4 flex items-center justify-center gap-4 text-xs">
+        <div className="mt-4 flex items-center justify-center gap-4 text-sm flex-shrink-0">
           <div className="flex items-center gap-1">
             <div className="w-3 h-3 bg-green-500/20 border border-green-500/40" />
             <StudentText variant="muted">출석</StudentText>

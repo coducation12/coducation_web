@@ -17,41 +17,41 @@ export default async function StudentDashboardPage() {
     }
 
     return (
-        <div className="w-full h-full flex-1 min-h-0 px-4 py-4 lg:px-12 lg:py-10 box-border pt-16 lg:pt-2 flex flex-col">
+        <div className="student-dashboard-content w-full h-full flex-1 min-h-0 px-4 py-4 lg:px-12 lg:py-10 box-border pt-16 lg:pt-2 flex flex-col">
             <StudentHeading size="h1" className="mb-6">학생 대시보드</StudentHeading>
-            <div className="grid sm:grid-cols-1 md:grid-cols-2 gap-6 flex-1 min-w-0">
+            <div className="grid sm:grid-cols-1 md:grid-cols-2 gap-6 flex-1 min-h-0">
                 {/* 왼쪽: 학습진행률+완료된학습 (세로로 긴 카드) */}
-                <DashboardCard className="flex flex-col h-full min-w-0">
-                  <div className="flex flex-col h-full gap-4">
-                    <section className="flex-1 flex flex-col">
+                <DashboardCard className="student-card-container">
+                  <div className="student-card-content flex flex-col gap-4">
+                    <section className="flex-1 flex flex-col min-h-0">
                       <LearningProgress studentId={user.id} vertical />
                     </section>
-                    <section className="flex-1 flex flex-col">
+                    <section className="flex-1 flex flex-col min-h-0">
                       <CompletedLearning studentId={user.id} />
                     </section>
                   </div>
                 </DashboardCard>
                 {/* 오른쪽: 2행 2열 구조 */}
-                <div className="h-full grid grid-rows-2 gap-6">
+                <div className="h-full grid grid-rows-2 gap-6 min-h-0">
                     {/* 상단: 출석+캘린더(왼쪽) + 목표설정(오른쪽) */}
-                    <div className="grid grid-cols-2 gap-6 h-full">
-                        <DashboardCard className="flex flex-col min-w-[180px] h-full">
-                            <section>
+                    <div className="grid grid-cols-2 gap-6 h-full min-h-0">
+                        <DashboardCard className="student-card-container min-w-[180px]">
+                            <section className="min-h-0">
                                 <AttendanceCheckCard studentId={user.id} />
                             </section>
-                            <section className="flex-1 mt-4">
+                            <section className="flex-1 mt-4 min-h-0">
                                 <AttendanceCalendar />
                             </section>
                         </DashboardCard>
-                        <DashboardCard className="flex flex-col min-w-[180px] h-full">
-                            <section className="flex-1">
+                        <DashboardCard className="student-card-container min-w-[180px]">
+                            <section className="student-card-content">
                                 <GoalsCard studentId={user.id} fixedInput />
                             </section>
                         </DashboardCard>
                     </div>
                     {/* 하단: 타자 기록(오른쪽 전체) */}
-                    <DashboardCard className="flex flex-col min-w-[180px] h-full">
-                        <section className="flex-1">
+                    <DashboardCard className="student-card-container min-w-[180px]">
+                        <section className="student-card-content">
                             <TypingChart studentId={user.id} />
                         </section>
                     </DashboardCard>

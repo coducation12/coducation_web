@@ -8,28 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { CheckCircle, Circle, Trophy } from "lucide-react";
 import { StudentHeading, StudentText, studentButtonStyles } from "../components/StudentThemeProvider";
 import { supabase } from "@/lib/supabase";
-
-// 커리큘럼 목록 상태 추가
-const [curriculums, setCurriculums] = useState<any[]>([]);
-useEffect(() => {
-  fetchCurriculums();
-}, []);
-
-const fetchCurriculums = async () => {
-  const { data, error } = await supabase
-    .from('curriculums')
-    .select('id, title, checklist');
-  if (error) {
-    setCurriculums([]);
-    return;
-  }
-  // checklist가 string[]이므로 id 부여
-  const mapped = (data || []).map((cur: any) => ({
-    ...cur,
-    checklist: (cur.checklist || []).map((title: string, idx: number) => ({ id: idx + 1, title }))
-  }));
-  setCurriculums(mapped);
-};
+import { getCurrentUser } from "@/lib/actions";
 
 interface ProgressItem {
   done: boolean;
@@ -53,26 +32,64 @@ interface ProgressItem {
 }
 
 export default function TodayLearningPage() {
+  // 커리큘럼 목록 상태 추가
+  const [curriculums, setCurriculums] = useState<any[]>([]);
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  
+  useEffect(() => {
+    fetchCurriculums();
+    fetchCurrentUser();
+  }, []);
+
+  const fetchCurrentUser = async () => {
+    try {
+      const userProfile = await getCurrentUser();
+      console.log('서버 액션으로 가져온 사용자 정보:', userProfile);
+      setCurrentUser(userProfile);
+    } catch (error) {
+      console.error('사용자 정보 조회 실패:', error);
+      setCurrentUser(null);
+    }
+  };
+
+  const fetchCurriculums = async () => {
+    const { data, error } = await supabase
+      .from('curriculums')
+      .select('id, title, checklist');
+    if (error) {
+      setCurriculums([]);
+      return;
+    }
+    // checklist가 string[]이므로 id 부여
+    const mapped = (data || []).map((cur: any) => ({
+      ...cur,
+      checklist: (cur.checklist || []).map((title: string, idx: number) => ({ id: idx + 1, title }))
+    }));
+    setCurriculums(mapped);
+  };
+
   const [progressList, setProgressList] = useState<ProgressItem[][]>([]);
   useEffect(() => {
     if (!curriculums.length) return;
     fetchProgressList();
   }, [curriculums]);
 
-  const fetchProgressList = async () => {
-    // TODO: 실제 로그인 학생 ID로 대체 필요
-    const studentId = "1";
+    const fetchProgressList = async () => {
+    const userId = currentUser?.id; // 클라이언트에서 사용자 ID 가져오기
+    if (!userId) return;
+    
     const newProgressList = await Promise.all(curriculums.map(async (cur: any) => {
       const { data: logs } = await supabase
-        .from('student_activity_logs')
-        .select('memo, date, uploads, feedbacks')
-        .eq('student_id', studentId)
+        .from('student_learning_logs')
+        .select('step_title, uploads, feedbacks, completed_at')
+        .eq('student_id', userId)
         .eq('curriculum_id', cur.id);
       return (cur.checklist || []).map((step: any) => {
-        const log = (logs || []).find((l: any) => l.memo?.includes(step.title));
+        const log = (logs || []).find((l: any) => l.step_title === step.title);
+        
         return {
           done: !!log,
-          date: log?.date || '',
+          date: log?.completed_at?.split('T')[0] || '',
           uploads: log?.uploads || [],
           feedbacks: log?.feedbacks || []
         };
@@ -86,11 +103,11 @@ export default function TodayLearningPage() {
 
   // 진행/완료 커리큘럼 분리
   const ongoing = curriculums
-    .map((cur: any, idx: number) => ({ ...cur, idx, progress: progressList[idx as number] }))
-    .filter((cur: any) => cur.progress.some((step: any) => !step.done));
+    .map((cur: any, idx: number) => ({ ...cur, idx, progress: progressList[idx as number] || [] }))
+    .filter((cur: any) => cur.progress && cur.progress.length > 0 && cur.progress.some((step: any) => !step.done));
   const completed = curriculums
-    .map((cur: any, idx: number) => ({ ...cur, idx, progress: progressList[idx as number] }))
-    .filter((cur: any) => cur.progress.every((step: any) => step.done));
+    .map((cur: any, idx: number) => ({ ...cur, idx, progress: progressList[idx as number] || [] }))
+    .filter((cur: any) => cur.progress && cur.progress.length > 0 && cur.progress.every((step: any) => step.done));
 
   const handleUpload = async (curIdx: number, stepIndex: number, files: File[]) => {
     const newUploads = files.map((file, idx) => ({
@@ -100,6 +117,42 @@ export default function TodayLearningPage() {
       size: file.size,
       uploadedAt: new Date().toISOString(),
     }));
+
+    // 데이터베이스에 저장
+    const userId = currentUser?.id; // 클라이언트에서 사용자 ID 가져오기
+    if (userId) {
+      const curriculum = curriculums[curIdx];
+      const step = curriculum.checklist[stepIndex];
+      
+      // 기존 데이터 조회
+      const { data: existingLog } = await supabase
+        .from('student_learning_logs')
+        .select('uploads, feedbacks')
+        .eq('student_id', userId)
+        .eq('curriculum_id', curriculum.id)
+        .eq('step_title', step.title)
+        .single();
+      
+      const updatedUploads = [...(existingLog?.uploads || []), ...newUploads];
+      
+      const { error } = await supabase
+        .from('student_learning_logs')
+        .upsert({
+          student_id: userId,
+          curriculum_id: curriculum.id,
+          step_title: step.title,
+          uploads: updatedUploads,
+          feedbacks: existingLog?.feedbacks || [],
+          completed_at: new Date().toISOString()
+        });
+      
+      if (error) {
+        console.error('업로드 저장 실패:', error);
+        return;
+      }
+    }
+
+    // 로컬 상태 업데이트
     const newProgressList = [...progressList];
     newProgressList[curIdx] = [...newProgressList[curIdx]];
     newProgressList[curIdx][stepIndex].uploads = [
@@ -130,21 +183,105 @@ export default function TodayLearningPage() {
   };
 
   const handleAddFeedback = async (curIdx: number, stepIndex: number, content: string) => {
+    console.log('현재 사용자 정보:', currentUser);
     const newFeedback = {
       id: `${Date.now()}`,
       content,
       author: {
-        name: "현재 사용자",
+        name: currentUser?.name || "현재 사용자",
         role: currentUserRole,
       },
       createdAt: new Date().toISOString().split('T')[0],
     };
+    console.log('생성된 피드백:', newFeedback);
+
+    // 데이터베이스에 저장
+    const userId = currentUser?.id; // 클라이언트에서 사용자 ID 가져오기
+    if (userId) {
+      const curriculum = curriculums[curIdx];
+      const step = curriculum.checklist[stepIndex];
+      
+      // 기존 데이터 조회
+      const { data: existingLog } = await supabase
+        .from('student_learning_logs')
+        .select('uploads, feedbacks')
+        .eq('student_id', userId)
+        .eq('curriculum_id', curriculum.id)
+        .eq('step_title', step.title)
+        .single();
+      
+      const updatedFeedbacks = [...(existingLog?.feedbacks || []), newFeedback];
+      
+      const { error } = await supabase
+        .from('student_learning_logs')
+        .upsert({
+          student_id: userId,
+          curriculum_id: curriculum.id,
+          step_title: step.title,
+          uploads: existingLog?.uploads || [],
+          feedbacks: updatedFeedbacks,
+          completed_at: new Date().toISOString()
+        });
+      
+      if (error) {
+        console.error('피드백 저장 실패:', error);
+        return;
+      }
+    }
+
+    // 로컬 상태 업데이트
     const newProgressList = [...progressList];
     newProgressList[curIdx] = [...newProgressList[curIdx]];
     newProgressList[curIdx][stepIndex].feedbacks = [
       ...newProgressList[curIdx][stepIndex].feedbacks,
       newFeedback,
     ];
+    setProgressList(newProgressList);
+  };
+
+  const handleDeleteFeedback = async (curIdx: number, stepIndex: number, feedbackId: string) => {
+    // 데이터베이스에서 삭제
+    const userId = currentUser?.id; // 클라이언트에서 사용자 ID 가져오기
+    if (userId) {
+      const curriculum = curriculums[curIdx];
+      const step = curriculum.checklist[stepIndex];
+      
+      // 기존 데이터 조회
+      const { data: existingLog } = await supabase
+        .from('student_learning_logs')
+        .select('uploads, feedbacks')
+        .eq('student_id', userId)
+        .eq('curriculum_id', curriculum.id)
+        .eq('step_title', step.title)
+        .single();
+      
+      if (existingLog?.feedbacks) {
+        const updatedFeedbacks = existingLog.feedbacks.filter((feedback: any) => feedback.id !== feedbackId);
+        
+        const { error } = await supabase
+          .from('student_learning_logs')
+          .upsert({
+            student_id: userId,
+            curriculum_id: curriculum.id,
+            step_title: step.title,
+            uploads: existingLog.uploads || [],
+            feedbacks: updatedFeedbacks,
+            completed_at: new Date().toISOString()
+          });
+        
+        if (error) {
+          console.error('피드백 삭제 실패:', error);
+          return;
+        }
+      }
+    }
+
+    // 로컬 상태 업데이트
+    const newProgressList = [...progressList];
+    newProgressList[curIdx] = [...newProgressList[curIdx]];
+    newProgressList[curIdx][stepIndex].feedbacks = newProgressList[curIdx][stepIndex].feedbacks.filter(
+      feedback => feedback.id !== feedbackId
+    );
     setProgressList(newProgressList);
   };
 
@@ -169,18 +306,18 @@ export default function TodayLearningPage() {
                   onClick={() => setExpandedStep(expandedStep === `${cur.idx}-${idx}` ? null : `${cur.idx}-${idx}`)}
                 >
                   <div className="flex items-center gap-3">
-                    {cur.progress[idx].done ? (
+                    {cur.progress[idx]?.done ? (
                       <CheckCircle className="w-5 h-5 text-cyan-300 drop-shadow-[0_0_6px_#00fff7]" />
                     ) : (
                       <Circle className="w-5 h-5 text-cyan-700" />
                     )}
                     <span className="font-semibold text-cyan-100 text-base drop-shadow-[0_0_4px_#00fff7]">{step.title}</span>
-                    {cur.progress[idx].done && (
-                      <span className="ml-2 text-xs text-cyan-200 drop-shadow-[0_0_4px_#00fff7]">완료일: {cur.progress[idx].date}</span>
+                    {cur.progress[idx]?.done && (
+                      <span className="ml-2 text-xs text-cyan-200 drop-shadow-[0_0_4px_#00fff7]">완료일: {cur.progress[idx]?.date}</span>
                     )}
-                    {cur.progress[idx].uploads.length > 0 && (
+                    {cur.progress[idx]?.uploads?.length > 0 && (
                       <span className="ml-2 text-xs text-fuchsia-400 drop-shadow-[0_0_4px_#e946fd]">
-                        결과물 {cur.progress[idx].uploads.length}개
+                        결과물 {cur.progress[idx]?.uploads?.length}개
                       </span>
                     )}
                   </div>
@@ -189,17 +326,19 @@ export default function TodayLearningPage() {
                   <div className="space-y-4 pt-3 px-4 pb-4 border-t border-cyan-400/20">
                     <CurriculumUpload
                       stepId={step.id}
-                      uploads={cur.progress[idx].uploads}
+                      uploads={cur.progress[idx]?.uploads || []}
                       onUpload={(files) => handleUpload(cur.idx, idx, files as File[])}
                       onDelete={(fileId) => handleDeleteUpload(cur.idx, idx, fileId)}
                       isAdmin={currentUserRole === "admin"}
-                      isCompleted={cur.progress[idx].done}
+                      isCompleted={cur.progress[idx]?.done || false}
                     />
                     <CurriculumMemo
                       stepId={step.id}
-                      feedbacks={cur.progress[idx].feedbacks}
+                      feedbacks={cur.progress[idx]?.feedbacks || []}
                       onAddFeedback={(content) => handleAddFeedback(cur.idx, idx, content)}
+                      onDeleteFeedback={(feedbackId) => handleDeleteFeedback(cur.idx, idx, feedbackId)}
                       currentUserRole={currentUserRole}
+                      currentUserName={currentUser?.name}
                     />
                   </div>
                 )}
@@ -245,18 +384,18 @@ export default function TodayLearningPage() {
                             }))}
                           >
                             <div className="flex items-center gap-3">
-                              {cur.progress[idx].done ? (
+                              {cur.progress[idx]?.done ? (
                                 <CheckCircle className="w-5 h-5 text-cyan-300 drop-shadow-[0_0_6px_#00fff7]" />
                               ) : (
                                 <Circle className="w-5 h-5 text-cyan-700" />
                               )}
                               <span className="font-semibold text-cyan-100 text-xl">{step.title}</span>
-                              {cur.progress[idx].done && (
-                                <span className="ml-2 text-xs text-cyan-200">완료일: {cur.progress[idx].date}</span>
+                              {cur.progress[idx]?.done && (
+                                <span className="ml-2 text-xs text-cyan-200">완료일: {cur.progress[idx]?.date}</span>
                               )}
-                              {cur.progress[idx].uploads.length > 0 && (
+                              {cur.progress[idx]?.uploads?.length > 0 && (
                                 <span className="ml-2 text-xs text-fuchsia-400">
-                                  결과물 {cur.progress[idx].uploads.length}개
+                                  결과물 {cur.progress[idx]?.uploads?.length}개
                                 </span>
                               )}
                             </div>
@@ -265,17 +404,19 @@ export default function TodayLearningPage() {
                             <div className="space-y-4 pt-3 px-4 pb-4 border-t border-cyan-400/20">
                               <CurriculumUpload
                                 stepId={step.id}
-                                uploads={cur.progress[idx].uploads}
+                                uploads={cur.progress[idx]?.uploads || []}
                                 onUpload={() => {}}
                                 onDelete={() => {}}
                                 isAdmin={false}
-                                isCompleted={cur.progress[idx].done}
+                                isCompleted={cur.progress[idx]?.done || false}
                               />
                               <CurriculumMemo
                                 stepId={step.id}
-                                feedbacks={cur.progress[idx].feedbacks}
+                                feedbacks={cur.progress[idx]?.feedbacks || []}
                                 onAddFeedback={() => {}}
+                                onDeleteFeedback={() => {}}
                                 currentUserRole={currentUserRole}
+                                currentUserName={currentUser?.name}
                               />
                             </div>
                           )}

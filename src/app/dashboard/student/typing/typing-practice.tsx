@@ -7,6 +7,7 @@ import { cn } from '@/lib/utils';
 import { Button } from '../../../../components/ui/button';
 import { RefreshCw } from 'lucide-react';
 import { StudentCard, StudentText, studentButtonStyles } from '../components/StudentThemeProvider';
+import { supabase } from '@/lib/supabase';
 
 interface TypingPracticeProps {
     exercise: TypingExercise;
@@ -22,10 +23,40 @@ export function TypingPractice({ exercise }: TypingPracticeProps) {
     const [userInput, setUserInput] = useState('');
     const [startTime, setStartTime] = useState<number | null>(null);
     const [result, setResult] = useState<Result | null>(null);
+    const [isSaving, setIsSaving] = useState(false);
     const inputRef = useRef<HTMLInputElement>(null);
 
     const textToType = exercise.content;
     const isFinished = userInput.length === textToType.length;
+
+    // 타이핑 결과를 데이터베이스에 저장
+    const saveTypingResult = async (result: Result) => {
+        setIsSaving(true);
+        try {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) return;
+
+            const { error } = await supabase
+                .from('student_activity_logs')
+                .insert({
+                    student_id: user.id,
+                    activity_type: 'typing',
+                    date: new Date().toISOString().split('T')[0],
+                    typing_score: result.accuracy,
+                    typing_speed: result.wpm,
+                    typing_exercise_id: exercise.id,
+                    attended: true
+                });
+
+            if (error) {
+                console.error('타이핑 결과 저장 실패:', error);
+            }
+        } catch (error) {
+            console.error('타이핑 결과 저장 중 오류:', error);
+        } finally {
+            setIsSaving(false);
+        }
+    };
 
     useEffect(() => {
         if (isFinished && startTime) {
@@ -42,9 +73,13 @@ export function TypingPractice({ exercise }: TypingPracticeProps) {
             });
             const accuracy = Math.round(((textToType.length - errors) / textToType.length) * 100);
 
-            setResult({ wpm, accuracy, duration: durationInSeconds });
+            const newResult = { wpm, accuracy, duration: durationInSeconds };
+            setResult(newResult);
+            
+            // 결과를 데이터베이스에 저장
+            saveTypingResult(newResult);
         }
-    }, [isFinished, startTime, textToType, userInput]);
+    }, [isFinished, startTime, textToType, userInput, exercise.id]);
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (isFinished) return;
@@ -124,6 +159,11 @@ export function TypingPractice({ exercise }: TypingPracticeProps) {
                                 <p className="text-3xl font-bold text-cyan-300 drop-shadow-[0_0_6px_#00fff7]">{result.duration.toFixed(1)}s</p>
                             </div>
                         </div>
+                        {isSaving && (
+                            <div className="mt-2 text-sm text-cyan-200">
+                                결과 저장 중...
+                            </div>
+                        )}
                         <Button onClick={resetPractice} className={cn("mt-4", studentButtonStyles.primary)}>
                             <RefreshCw className="mr-2 h-4 w-4" /> 다시 시작
                         </Button>

@@ -3,16 +3,14 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Target, Plus, Trash2 } from "lucide-react";
+import { Target, Plus, Trash2, Edit3, Calendar } from "lucide-react";
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import { StudentSectionTitle, StudentText, studentButtonStyles, studentInputStyles } from "./StudentThemeProvider";
 
 interface Goal {
-  id: string;
-  title: string;
-  isCompleted: boolean;
-  createdAt: string;
+  title: string;        // 할 일 제목만
+  isCompleted: boolean; // 완료 여부만
 }
 
 export function GoalsCard({ studentId, fixedInput, readOnly }: { studentId: string, fixedInput?: boolean, readOnly?: boolean }) {
@@ -20,6 +18,9 @@ export function GoalsCard({ studentId, fixedInput, readOnly }: { studentId: stri
   const [newGoal, setNewGoal] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [isAdding, setIsAdding] = useState(false);
+  const [editingGoalIndex, setEditingGoalIndex] = useState<number | null>(null);
+  const [editingTitle, setEditingTitle] = useState('');
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     fetchGoals();
@@ -27,25 +28,27 @@ export function GoalsCard({ studentId, fixedInput, readOnly }: { studentId: stri
 
   const fetchGoals = async () => {
     try {
-      const { data, error } = await supabase
-        .from('student_activity_logs')
-        .select('id, memo, created_at')
-        .eq('student_id', studentId)
-        .like('memo', 'GOAL:%')
-        .order('created_at', { ascending: false });
+      setError(null);
+      
+      // Students 테이블에서 todolist 컬럼을 조회
+      const { data, error: supabaseError } = await supabase
+        .from('students')
+        .select('todolist')
+        .eq('user_id', studentId)
+        .single();
 
-      if (error) throw error;
+      if (supabaseError) {
+        console.error('Supabase 에러:', supabaseError);
+        throw new Error(`데이터베이스 조회 실패: ${supabaseError.message}`);
+      }
 
-      const parsedGoals: Goal[] = (data || []).map(item => ({
-        id: item.id,
-        title: item.memo?.replace('GOAL:', '') || '',
-        isCompleted: false,
-        createdAt: item.created_at
-      }));
-
-      setGoals(parsedGoals);
+      // todolist 컬럼이 없거나 null인 경우 빈 배열로 초기화
+      const todolistData = data?.todolist || [];
+      setGoals(todolistData);
     } catch (error) {
-      console.error('목표 조회 실패:', error);
+      const errorMessage = error instanceof Error ? error.message : '알 수 없는 오류가 발생했습니다.';
+      console.error('할 일 조회 실패:', error);
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -55,78 +58,211 @@ export function GoalsCard({ studentId, fixedInput, readOnly }: { studentId: stri
     if (!newGoal.trim()) return;
 
     setIsAdding(true);
+    setError(null);
     try {
-      const { error } = await supabase
-        .from('student_activity_logs')
-        .insert({
-          student_id: studentId,
-          date: new Date().toISOString().split('T')[0],
-          memo: `GOAL:${newGoal.trim()}`,
-          attended: false,
-          typing_score: 0,
-          typing_speed: 0
-        });
+      const newGoalData = {
+        title: newGoal.trim(),
+        isCompleted: false
+      };
 
-      if (error) throw error;
+      // 기존 todolist 배열에 새로운 할 일 추가
+      const { data: currentData, error: fetchError } = await supabase
+        .from('students')
+        .select('todolist')
+        .eq('user_id', studentId)
+        .single();
+
+      if (fetchError) {
+        throw new Error(`기존 할 일 조회 실패: ${fetchError.message}`);
+      }
+
+      const currentTodolist = currentData?.todolist || [];
+      const updatedTodolist = [...currentTodolist, newGoalData];
+
+      // Students 테이블의 todolist 컬럼 업데이트
+      const { error: updateError } = await supabase
+        .from('students')
+        .update({ todolist: updatedTodolist })
+        .eq('user_id', studentId);
+
+      if (updateError) {
+        throw new Error(`할 일 추가 실패: ${updateError.message}`);
+      }
 
       setNewGoal('');
       await fetchGoals();
     } catch (error) {
-      console.error('목표 추가 실패:', error);
+      const errorMessage = error instanceof Error ? error.message : '알 수 없는 오류가 발생했습니다.';
+      console.error('할 일 추가 실패:', error);
+      setError(errorMessage);
     } finally {
       setIsAdding(false);
     }
   };
 
-  const toggleGoal = async (goalId: string) => {
+  const toggleGoal = async (goalIndex: number) => {
     try {
-      const goal = goals.find(g => g.id === goalId);
-      if (!goal) return;
+      setError(null);
+      
+      // 기존 todolist 배열 조회
+      const { data: currentData, error: fetchError } = await supabase
+        .from('students')
+        .select('todolist')
+        .eq('user_id', studentId)
+        .single();
 
-      const { error } = await supabase
-        .from('student_activity_logs')
-        .update({ 
-          memo: goal.isCompleted 
-            ? `GOAL:${goal.title}` 
-            : `GOAL:${goal.title} (COMPLETED)`
-        })
-        .eq('id', goalId);
+      if (fetchError) {
+        throw new Error(`기존 할 일 조회 실패: ${fetchError.message}`);
+      }
 
-      if (error) throw error;
+      const currentTodolist = currentData?.todolist || [];
+      const updatedTodolist = currentTodolist.map((goal: any, index: number) => {
+        if (index === goalIndex) {
+          return {
+            ...goal,
+            isCompleted: !goal.isCompleted
+          };
+        }
+        return goal;
+      });
+
+      // Students 테이블의 todolist 컬럼 업데이트
+      const { error: updateError } = await supabase
+        .from('students')
+        .update({ todolist: updatedTodolist })
+        .eq('user_id', studentId);
+
+      if (updateError) {
+        throw new Error(`할 일 상태 변경 실패: ${updateError.message}`);
+      }
 
       await fetchGoals();
     } catch (error) {
-      console.error('목표 상태 변경 실패:', error);
+      const errorMessage = error instanceof Error ? error.message : '알 수 없는 오류가 발생했습니다.';
+      console.error('할 일 상태 변경 실패:', error);
+      setError(errorMessage);
     }
   };
 
-  const deleteGoal = async (goalId: string) => {
+  const deleteGoal = async (goalIndex: number) => {
     try {
-      const { error } = await supabase
-        .from('student_activity_logs')
-        .delete()
-        .eq('id', goalId);
+      setError(null);
+      
+      // 기존 todolist 배열 조회
+      const { data: currentData, error: fetchError } = await supabase
+        .from('students')
+        .select('todolist')
+        .eq('user_id', studentId)
+        .single();
 
-      if (error) throw error;
+      if (fetchError) {
+        throw new Error(`기존 할 일 조회 실패: ${fetchError.message}`);
+      }
+
+      const currentTodolist = currentData?.todolist || [];
+      const updatedTodolist = currentTodolist.filter((_: any, index: number) => index !== goalIndex);
+
+      // Students 테이블의 todolist 컬럼 업데이트
+      const { error: updateError } = await supabase
+        .from('students')
+        .update({ todolist: updatedTodolist })
+        .eq('user_id', studentId);
+
+      if (updateError) {
+        throw new Error(`할 일 삭제 실패: ${updateError.message}`);
+      }
 
       await fetchGoals();
     } catch (error) {
-      console.error('목표 삭제 실패:', error);
+      const errorMessage = error instanceof Error ? error.message : '알 수 없는 오류가 발생했습니다.';
+      console.error('할 일 삭제 실패:', error);
+      setError(errorMessage);
     }
+  };
+
+  const startEditing = (goalIndex: number) => {
+    setEditingGoalIndex(goalIndex);
+    setEditingTitle(goals[goalIndex].title);
+    setError(null);
+  };
+
+  const saveEdit = async (goalIndex: number) => {
+    try {
+      setError(null);
+      
+      // 기존 todolist 배열 조회
+      const { data: currentData, error: fetchError } = await supabase
+        .from('students')
+        .select('todolist')
+        .eq('user_id', studentId)
+        .single();
+
+      if (fetchError) {
+        throw new Error(`기존 할 일 조회 실패: ${fetchError.message}`);
+      }
+
+      const currentTodolist = currentData?.todolist || [];
+      const updatedTodolist = currentTodolist.map((goal: any, index: number) => {
+        if (index === goalIndex) {
+          return {
+            ...goal,
+            title: editingTitle.trim()
+          };
+        }
+        return goal;
+      });
+
+      // Students 테이블의 todolist 컬럼 업데이트
+      const { error: updateError } = await supabase
+        .from('students')
+        .update({ todolist: updatedTodolist })
+        .eq('user_id', studentId);
+
+      if (updateError) {
+        throw new Error(`할 일 제목 수정 실패: ${updateError.message}`);
+      }
+
+      setEditingGoalIndex(null);
+      setEditingTitle('');
+      await fetchGoals();
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : '알 수 없는 오류가 발생했습니다.';
+      console.error('할 일 제목 수정 실패:', error);
+      setError(errorMessage);
+    }
+  };
+
+  const cancelEdit = () => {
+    setEditingGoalIndex(null);
+    setEditingTitle('');
+    setError(null);
   };
 
   const completedGoals = goals.filter(goal => goal.isCompleted).length;
   const totalGoals = goals.length;
 
+  // 모든 할 일을 한 줄로 표시
+  const allGoals = goals;
+
   return (
     <div className="h-full flex flex-col">
-      <StudentSectionTitle icon={<Target className="w-5 h-5" />}>목표설정</StudentSectionTitle>
+      <StudentSectionTitle icon={<Target className="w-5 h-5" />}>To-Do List</StudentSectionTitle>
+      
+      {/* 에러 메시지 표시 */}
+      {error && (
+        <div className="mb-4 p-3 bg-red-400/10 border border-red-400/20 rounded-lg">
+          <StudentText variant="muted" className="text-red-400 text-sm">
+            {error}
+          </StudentText>
+        </div>
+      )}
+      
       <div className="space-y-4 flex-1 flex flex-col justify-between">
-        {/* 목표 추가 */}
+        {/* 할 일 추가 */}
         {!readOnly && !fixedInput && (
           <div className="flex gap-2">
             <Input
-              placeholder="새로운 목표를 입력하세요"
+              placeholder="새로운 할 일을 입력하세요"
               value={newGoal}
               onChange={(e) => setNewGoal(e.target.value)}
               onKeyPress={(e) => e.key === 'Enter' && addGoal()}
@@ -143,54 +279,97 @@ export function GoalsCard({ studentId, fixedInput, readOnly }: { studentId: stri
             </Button>
           </div>
         )}
-        {/* 진행률 */}
-        {totalGoals > 0 && (
-          <div className="text-center p-3 bg-cyan-400/10 rounded-lg border border-cyan-400/20">
-            <div className="text-2xl font-bold text-cyan-300 drop-shadow-[0_0_6px_#00fff7]">
-              {completedGoals}/{totalGoals}
-            </div>
-            <div className="text-sm text-cyan-400">목표 달성</div>
-          </div>
-        )}
-        {/* 목표 목록 */}
+
+        {/* 할 일 목록 */}
         {isLoading ? (
-          <StudentText variant="muted">로딩 중...</StudentText>
-        ) : goals.length === 0 ? (
+          <div className="flex items-center justify-center py-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-cyan-400"></div>
+            <StudentText variant="muted" className="ml-2">로딩 중...</StudentText>
+          </div>
+        ) : allGoals.length === 0 ? (
           <div className="text-center py-8">
             <Target className="w-8 h-8 mx-auto mb-2 text-cyan-400/50" />
-            <StudentText variant="muted">아직 설정된 목표가 없습니다.</StudentText>
+            <StudentText variant="muted">아직 등록된 할 일이 없습니다.</StudentText>
           </div>
         ) : (
-          <div className="space-y-2">
-            {goals.map((goal) => (
-              <div key={goal.id} className="flex items-center gap-3 p-2 rounded-lg hover:bg-cyan-400/10 border border-transparent hover:border-cyan-400/20 transition-colors">
-                {!readOnly && (
-                  <Checkbox
-                    checked={goal.isCompleted}
-                    onCheckedChange={() => toggleGoal(goal.id)}
-                    className="text-cyan-400"
-                  />
-                )}
-                <span className={`flex-1 text-sm ${goal.isCompleted ? 'line-through text-cyan-400' : 'text-cyan-100'}`}>{goal.title}</span>
-                {!readOnly && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => deleteGoal(goal.id)}
-                    className="h-6 w-6 p-0 text-cyan-400 hover:text-red-400 hover:bg-red-400/10"
-                  >
-                    <Trash2 className="w-3 h-3" />
-                  </Button>
-                )}
-              </div>
-            ))}
+          <div className="space-y-4 flex-1">
+            {/* 할 일 목록 */}
+            <div className="space-y-2">
+              {allGoals.map((goal, index) => (
+                <div key={index} className="flex items-center gap-3 p-3 rounded-lg bg-cyan-400/5 border border-cyan-400/20 hover:bg-cyan-400/10 transition-colors">
+                  {!readOnly && (
+                    <Checkbox
+                      checked={goal.isCompleted}
+                      onCheckedChange={() => toggleGoal(index)}
+                      className="text-cyan-400 border-cyan-400"
+                    />
+                  )}
+                  <div className="flex-1">
+                    {editingGoalIndex === index ? (
+                      <div className="flex gap-2">
+                        <Input
+                          value={editingTitle}
+                          onChange={(e) => setEditingTitle(e.target.value)}
+                          className="h-7 text-sm"
+                          onKeyPress={(e) => e.key === 'Enter' && saveEdit(index)}
+                          onKeyDown={(e) => e.key === 'Escape' && cancelEdit()}
+                          autoFocus
+                        />
+                        <Button
+                          size="sm"
+                          onClick={() => saveEdit(index)}
+                          className="h-7 px-2 text-xs"
+                        >
+                          저장
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={cancelEdit}
+                          className="h-7 px-2 text-xs"
+                        >
+                          취소
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        <span className={`text-sm ${goal.isCompleted ? 'text-cyan-400 line-through' : 'text-cyan-100'}`}>
+                          {goal.title}
+                        </span>
+                        {!readOnly && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => startEditing(index)}
+                            className="h-5 w-5 p-0 text-cyan-400/60 hover:text-cyan-400"
+                          >
+                            <Edit3 className="w-3 h-3" />
+                          </Button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                  {!readOnly && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => deleteGoal(index)}
+                      className="h-6 w-6 p-0 text-cyan-400/60 hover:text-red-400 hover:bg-red-400/10"
+                    >
+                      <Trash2 className="w-3 h-3" />
+                    </Button>
+                  )}
+                </div>
+              ))}
+            </div>
           </div>
         )}
+
         {/* 하단 고정 입력창 */}
         {!readOnly && fixedInput && (
           <div className="flex gap-2 mt-auto pt-4 border-t border-cyan-400/20">
             <Input
-              placeholder="새로운 목표를 입력하세요"
+              placeholder="새로운 할 일을 입력하세요"
               value={newGoal}
               onChange={(e) => setNewGoal(e.target.value)}
               onKeyPress={(e) => e.key === 'Enter' && addGoal()}

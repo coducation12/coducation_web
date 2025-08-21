@@ -14,30 +14,54 @@ export function AttendanceCheckCard({ studentId }: { studentId: string }) {
     setLoading(true);
     setMsg('');
     const today = new Date().toISOString().split('T')[0];
-    const { data: existing } = await supabase
-      .from('student_activity_logs')
-      .select('id')
-      .eq('student_id', studentId)
-      .eq('date', today)
-      .single();
-    if (existing) {
-      await supabase
+    
+    try {
+      // 기존 출석 기록 확인
+      const { data: existing } = await supabase
         .from('student_activity_logs')
-        .update({ attended: true })
-        .eq('id', existing.id);
-    } else {
-      await supabase
-        .from('student_activity_logs')
-        .insert({
-          student_id: studentId,
-          date: today,
-          attended: true,
-          typing_score: 0,
-          typing_speed: 0
-        });
+        .select('id')
+        .eq('student_id', studentId)
+        .eq('activity_type', 'attendance')
+        .eq('date', today)
+        .single();
+      
+      if (existing) {
+        // 기존 기록이 있으면 attended를 true로 업데이트
+        const { error } = await supabase
+          .from('student_activity_logs')
+          .update({ attended: true })
+          .eq('id', existing.id);
+        
+        if (error) {
+          console.error('출석 업데이트 실패:', error);
+          setMsg('출석 처리 중 오류가 발생했습니다.');
+          return;
+        }
+      } else {
+        // 새로운 출석 기록 생성
+        const { error } = await supabase
+          .from('student_activity_logs')
+          .insert({
+            student_id: studentId,
+            activity_type: 'attendance',
+            date: today,
+            attended: true
+          });
+        
+        if (error) {
+          console.error('출석 기록 생성 실패:', error);
+          setMsg('출석 처리 중 오류가 발생했습니다.');
+          return;
+        }
+      }
+      
+      setMsg('출석이 완료되었습니다!');
+    } catch (error) {
+      console.error('출석체크 오류:', error);
+      setMsg('출석 처리 중 오류가 발생했습니다.');
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
-    setMsg('출석이 완료되었습니다!');
   };
 
   return (

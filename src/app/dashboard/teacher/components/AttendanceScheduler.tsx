@@ -253,7 +253,8 @@ const useAttendanceScheduler = () => {
     });
   }, []);
 
-  const handleAttendanceChange = useCallback((id: string, value: AttendanceStatus) => {
+  const handleAttendanceChange = useCallback(async (id: string, value: AttendanceStatus) => {
+    // 로컬 상태 업데이트
     setStudents(prev => prev.map(s =>
       s.id === id ? { 
         ...s, 
@@ -264,7 +265,52 @@ const useAttendanceScheduler = () => {
         } 
       } : s
     ));
-  }, []);
+
+    // 데이터베이스에 출석 기록 저장
+    try {
+      const today = currentDate.toISOString().split('T')[0];
+      
+      // 기존 출석 기록 확인
+      const { data: existing } = await supabase
+        .from('student_activity_logs')
+        .select('id')
+        .eq('student_id', id)
+        .eq('activity_type', 'attendance')
+        .eq('date', today)
+        .single();
+
+      if (existing) {
+        // 기존 기록이 있으면 업데이트
+        const { error } = await supabase
+          .from('student_activity_logs')
+          .update({ 
+            attended: value === 'present',
+            created_at: new Date().toISOString()
+          })
+          .eq('id', existing.id);
+        
+        if (error) {
+          console.error('출석 업데이트 실패:', error);
+        }
+      } else {
+        // 새로운 출석 기록 생성
+        const { error } = await supabase
+          .from('student_activity_logs')
+          .insert({
+            student_id: id,
+            activity_type: 'attendance',
+            date: today,
+            attended: value === 'present'
+          });
+        
+        if (error) {
+          console.error('출석 기록 생성 실패:', error);
+        }
+      }
+    } catch (error) {
+      console.error('출석 상태 저장 중 오류:', error);
+    }
+  }, [currentDate]);
 
   return {
     currentDate,

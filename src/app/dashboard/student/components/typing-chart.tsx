@@ -32,6 +32,7 @@ export function TypingChart({ studentId }: { studentId: string }) {
         .from('student_activity_logs')
         .select('date, typing_score')
         .eq('student_id', studentId)
+        .eq('activity_type', 'typing')
         .not('typing_score', 'is', null)
         .gte('date', fromDate)
         .order('date', { ascending: true });

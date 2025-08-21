@@ -83,6 +83,34 @@ export async function login(formData: FormData) {
   }
 }
 
+// 사용자 정보 조회 서버 액션 (클라이언트 컴포넌트용)
+export async function getCurrentUser() {
+  try {
+    const cookieStore = await cookies();
+    const userId = cookieStore.get('user_id')?.value;
+    const userRole = cookieStore.get('user_role')?.value;
+    
+    if (!userId || !userRole) {
+      return null;
+    }
+
+    const { data, error } = await supabase
+      .from('users')
+      .select('id, name, role')
+      .eq('id', userId)
+      .single();
+
+    if (error || !data) {
+      return null;
+    }
+
+    return data;
+  } catch (error) {
+    console.error('사용자 정보 조회 오류:', error);
+    return null;
+  }
+}
+
 // TODO: 배포 후 정상화 - Supabase Auth 로그아웃으로 복원 필요
 export async function logout() {
   const cookieStore = await cookies();

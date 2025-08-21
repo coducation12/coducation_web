@@ -28,6 +28,7 @@ export function AttendanceCalendar() {
       const { data, error } = await supabase
         .from('student_activity_logs')
         .select('date, attended')
+        .eq('activity_type', 'attendance')
         .gte('date', startOfMonth.toISOString().split('T')[0])
         .lte('date', endOfMonth.toISOString().split('T')[0])
         .eq('attended', true);

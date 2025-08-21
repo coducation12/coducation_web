@@ -40,7 +40,7 @@ export default async function StudentDashboardPage() {
                                 <AttendanceCheckCard studentId={user.id} />
                             </section>
                             <section className="flex-1 mt-4 min-h-0">
-                                <AttendanceCalendar />
+                                <AttendanceCalendar studentId={user.id} />
                             </section>
                         </DashboardCard>
                         <DashboardCard className="student-card-container min-w-[180px]">

@@ -10,14 +10,18 @@ interface AttendanceData {
   attended: boolean;
 }
 
-export function AttendanceCalendar() {
+interface AttendanceCalendarProps {
+  studentId: string;
+}
+
+export function AttendanceCalendar({ studentId }: AttendanceCalendarProps) {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [attendanceData, setAttendanceData] = useState<AttendanceData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     fetchAttendanceData();
-  }, [currentDate]);
+  }, [currentDate, studentId]);
 
   const fetchAttendanceData = async () => {
     setIsLoading(true);
@@ -28,6 +32,7 @@ export function AttendanceCalendar() {
       const { data, error } = await supabase
         .from('student_activity_logs')
         .select('date, attended')
+        .eq('student_id', studentId)  // 특정 학생의 출석 데이터만 조회
         .eq('activity_type', 'attendance')
         .gte('date', startOfMonth.toISOString().split('T')[0])
         .lte('date', endOfMonth.toISOString().split('T')[0])
@@ -70,8 +75,11 @@ export function AttendanceCalendar() {
   };
 
   const isAttended = (day: number) => {
-    const dateStr = new Date(currentDate.getFullYear(), currentDate.getMonth(), day)
-      .toISOString().split('T')[0];
+    // 한국 시간 기준으로 날짜 생성 (UTC 변환 방지)
+    const year = currentDate.getFullYear();
+    const month = currentDate.getMonth();
+    const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    
     return attendanceData.some(data => data.date === dateStr && data.attended);
   };
 

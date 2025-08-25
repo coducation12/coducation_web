@@ -101,7 +101,7 @@ export default function TypingPage() {
           
           <CategoryCard
             title="코드 타이핑"
-            description="6가지 프로그래밍 언어"
+            description="C언어, Python, HTML"
             icon={<Code className="w-full h-full" />}
             onClick={() => handleCategorySelect('code')}
             isSelected={selectedCategory === 'code'}
@@ -166,7 +166,7 @@ export default function TypingPage() {
 
             {/* 코드 타이핑 언어 선택 카드들 */}
             {selectedCategory === 'code' && (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <a href="/dashboard/student/typing/code/c" className="block group">
                   <StudentCard className="cursor-pointer transition-all duration-300 hover:scale-105 hover:ring-2 hover:ring-cyan-400 hover:shadow-[0_0_30px_0_rgba(0,255,255,0.40)] group-hover:bg-cyan-400/10">
                     <div className="text-center p-6">
@@ -191,30 +191,6 @@ export default function TypingPage() {
                   </StudentCard>
                 </a>
                 
-                <a href="/dashboard/student/typing/code/java" className="block group">
-                  <StudentCard className="cursor-pointer transition-all duration-300 hover:scale-105 hover:ring-2 hover:ring-cyan-400 hover:shadow-[0_0_30px_0_rgba(0,255,255,0.40)] group-hover:bg-cyan-400/10">
-                    <div className="text-center p-6">
-                      <div className="w-16 h-16 mx-auto mb-4 text-cyan-300 transition-colors duration-300 group-hover:text-cyan-200">
-                        <span className="text-4xl">☕</span>
-                      </div>
-                      <h3 className="text-xl font-bold text-cyan-100 mb-2 transition-colors duration-300 group-hover:text-cyan-50">Java</h3>
-                      <p className="text-cyan-300 text-sm transition-colors duration-300 group-hover:text-cyan-200">자바 코드를 타이핑하고 실행해보세요</p>
-                    </div>
-                  </StudentCard>
-                </a>
-                
-                <a href="/dashboard/student/typing/code/javascript" className="block group">
-                  <StudentCard className="cursor-pointer transition-all duration-300 hover:scale-105 hover:ring-2 hover:ring-cyan-400 hover:shadow-[0_0_30px_0_rgba(0,255,255,0.40)] group-hover:bg-cyan-400/10">
-                    <div className="text-center p-6">
-                      <div className="w-16 h-16 mx-auto mb-4 text-cyan-300 transition-colors duration-300 group-hover:text-cyan-200">
-                        <span className="text-4xl">🟨</span>
-                      </div>
-                      <h3 className="text-xl font-bold text-cyan-100 mb-2 transition-colors duration-300 group-hover:text-cyan-50">JavaScript</h3>
-                      <p className="text-cyan-300 text-sm transition-colors duration-300 group-hover:text-cyan-200">자바스크립트 코드를 타이핑하고 실행해보세요</p>
-                    </div>
-                  </StudentCard>
-                </a>
-                
                 <a href="/dashboard/student/typing/code/html" className="block group">
                   <StudentCard className="cursor-pointer transition-all duration-300 hover:scale-105 hover:ring-2 hover:ring-cyan-400 hover:shadow-[0_0_30px_0_rgba(0,255,255,0.40)] group-hover:bg-cyan-400/10">
                     <div className="text-center p-6">
@@ -223,18 +199,6 @@ export default function TypingPage() {
                       </div>
                       <h3 className="text-xl font-bold text-cyan-100 mb-2 transition-colors duration-300 group-hover:text-cyan-50">HTML</h3>
                       <p className="text-cyan-300 text-sm transition-colors duration-300 group-hover:text-cyan-200">HTML 코드를 타이핑하고 결과를 확인해보세요</p>
-                    </div>
-                  </StudentCard>
-                </a>
-                
-                <a href="/dashboard/student/typing/code/css" className="block group">
-                  <StudentCard className="cursor-pointer transition-all duration-300 hover:scale-105 hover:ring-2 hover:ring-cyan-400 hover:shadow-[0_0_30px_0_rgba(0,255,255,0.40)] group-hover:bg-cyan-400/10">
-                    <div className="text-center p-6">
-                      <div className="w-16 h-16 mx-auto mb-4 text-cyan-300 transition-colors duration-300 group-hover:text-cyan-200">
-                        <span className="text-4xl">🎨</span>
-                      </div>
-                      <h3 className="text-xl font-bold text-cyan-100 mb-2 transition-colors duration-300 group-hover:text-cyan-50">CSS</h3>
-                      <p className="text-cyan-300 text-sm transition-colors duration-300 group-hover:text-cyan-200">CSS 코드를 타이핑하고 스타일을 적용해보세요</p>
                     </div>
                   </StudentCard>
                 </a>

@@ -114,7 +114,7 @@ const englishKeysByPosition = {
   'left-upper': ['q', 'w', 'e', 'r', 'a','s','d','f'],
   'right-upper': ['u', 'i', 'o', 'p','j','k','l',';'],
   'left-lower': ['z', 'x', 'c', 'v','a','s','d','f'],
-  'right-lower': ['b', 'n', 'm','j','k','l',';',':'],
+  'right-lower': ['b', 'n', 'm', ',', '.', '/', '?','j','k','l',';'],
   'center': ['g', 'h','t','y','b','n']
 };
 

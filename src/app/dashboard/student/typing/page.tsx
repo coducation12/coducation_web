@@ -120,7 +120,7 @@ export default function TypingPage() {
             {/* 한글/영어 타이핑 세부 카드들 */}
             {(selectedCategory === 'korean' || selectedCategory === 'english') && (
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <a href={`/dashboard/student/typing/${selectedCategory}/basic`} className="block group">
+                <a href={`/dashboard/student/typing/basic?language=${selectedCategory}`} className="block group">
                   <StudentCard className="cursor-pointer transition-all duration-300 hover:scale-105 hover:ring-2 hover:ring-cyan-400 hover:shadow-[0_0_30px_0_rgba(0,255,255,0.40)] group-hover:bg-cyan-400/10">
                     <div className="text-center p-6">
                       <div className="w-16 h-16 mx-auto mb-4 text-cyan-300 transition-colors duration-300 group-hover:text-cyan-200">
@@ -134,7 +134,7 @@ export default function TypingPage() {
                   </StudentCard>
                 </a>
                 
-                <a href={`/dashboard/student/typing/${selectedCategory}/word`} className="block group">
+                <a href={`/dashboard/student/typing/word?language=${selectedCategory}`} className="block group">
                   <StudentCard className="cursor-pointer transition-all duration-300 hover:scale-105 hover:ring-2 hover:ring-cyan-400 hover:shadow-[0_0_30px_0_rgba(0,255,255,0.40)] group-hover:bg-cyan-400/10">
                     <div className="text-center p-6">
                       <div className="w-16 h-16 mx-auto mb-4 text-cyan-300 transition-colors duration-300 group-hover:text-cyan-200">
@@ -148,7 +148,7 @@ export default function TypingPage() {
                   </StudentCard>
                 </a>
                 
-                <a href={`/dashboard/student/typing/${selectedCategory}/sentence`} className="block group">
+                <a href={`/dashboard/student/typing/sentence?language=${selectedCategory}`} className="block group">
                   <StudentCard className="cursor-pointer transition-all duration-300 hover:scale-105 hover:ring-2 hover:ring-cyan-400 hover:shadow-[0_0_30px_0_rgba(0,255,255,0.40)] group-hover:bg-cyan-400/10">
                     <div className="text-center p-6">
                       <div className="w-16 h-16 mx-auto mb-4 text-cyan-300 transition-colors duration-300 group-hover:text-cyan-200">

@@ -2,9 +2,9 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { ArrowLeft, RotateCcw, BookOpen, Keyboard, Hand } from 'lucide-react';
-import { StudentHeading, StudentCard, StudentText, studentButtonStyles } from "../../../components/StudentThemeProvider";
+import { StudentHeading, StudentCard, StudentText, studentButtonStyles } from "../../components/StudentThemeProvider";
 import { cn } from "@/lib/utils";
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 
 interface TypingResult {
   accuracy: number;
@@ -27,8 +27,12 @@ const keyboardLayout = {
   ]
 };
 
-export default function KoreanWordPage() {
+export default function WordPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const initialLanguage = searchParams.get('language') as 'korean' | 'english' || 'korean';
+  
+  const [language, setLanguage] = useState<'korean' | 'english'>(initialLanguage);
   const [currentWords, setCurrentWords] = useState<string[]>([]);
   const [currentWordIndex, setCurrentWordIndex] = useState(0);
   const [userInput, setUserInput] = useState('');
@@ -42,7 +46,7 @@ export default function KoreanWordPage() {
   const inputRef = useRef<HTMLInputElement>(null);
 
   // 한글 낱말연습 단어들 (카테고리별)
-  const wordCategories = {
+  const koreanWordCategories = {
     '가족': ['아버지', '어머니', '형제', '자매', '할아버지', '할머니', '삼촌', '이모'],
     '동물': ['강아지', '고양이', '토끼', '사자', '호랑이', '코끼리', '기린', '펭귄'],
     '음식': ['김치', '비빔밥', '불고기', '삼겹살', '된장찌개', '순두부', '떡볶이', '치킨'],
@@ -51,7 +55,18 @@ export default function KoreanWordPage() {
     '직업': ['의사', '교사', '경찰', '소방관', '기자', '변호사', '회사원', '농부']
   };
 
-  const [currentCategory, setCurrentCategory] = useState<keyof typeof wordCategories>('가족');
+  // 영어 낱말연습 단어들 (카테고리별)
+  const englishWordCategories = {
+    'Family': ['father', 'mother', 'brother', 'sister', 'grandfather', 'grandmother', 'uncle', 'aunt'],
+    'Animals': ['dog', 'cat', 'rabbit', 'lion', 'tiger', 'elephant', 'giraffe', 'penguin'],
+    'Food': ['apple', 'banana', 'orange', 'bread', 'cheese', 'milk', 'water', 'chicken'],
+    'Colors': ['red', 'blue', 'yellow', 'green', 'purple', 'orange', 'pink', 'black'],
+    'Emotions': ['happy', 'sad', 'angry', 'love', 'hate', 'surprise', 'fear', 'hope'],
+    'Jobs': ['doctor', 'teacher', 'police', 'firefighter', 'journalist', 'lawyer', 'worker', 'farmer']
+  };
+
+  const wordCategories = language === 'korean' ? koreanWordCategories : englishWordCategories;
+  const [currentCategory, setCurrentCategory] = useState<string>(Object.keys(wordCategories)[0]);
 
   const resetTyping = () => {
     setUserInput('');
@@ -128,14 +143,23 @@ export default function KoreanWordPage() {
     }
   };
 
-  const changeCategory = (category: keyof typeof wordCategories) => {
+  const changeCategory = (category: string) => {
     setCurrentCategory(category);
     resetTyping();
   };
 
+  const changeLanguage = () => {
+    const newLanguage = language === 'korean' ? 'english' : 'korean';
+    setLanguage(newLanguage);
+    const newWordCategories = newLanguage === 'korean' ? koreanWordCategories : englishWordCategories;
+    setCurrentCategory(Object.keys(newWordCategories)[0]);
+    resetTyping();
+  };
+
   useEffect(() => {
-    setCurrentWords(wordCategories[currentCategory]);
-  }, [currentCategory]);
+    const categories = language === 'korean' ? koreanWordCategories : englishWordCategories;
+    setCurrentWords(categories[currentCategory as keyof typeof categories] || []);
+  }, [currentCategory, language]);
 
   const currentWord = currentWords[currentWordIndex];
 
@@ -148,10 +172,38 @@ export default function KoreanWordPage() {
         >
           <ArrowLeft className="w-6 h-6 text-cyan-300" />
         </button>
-        <StudentHeading size="h1">한글 낱말연습</StudentHeading>
+        <StudentHeading size="h1">낱말연습</StudentHeading>
       </div>
 
       <div className="max-w-6xl mx-auto w-full flex-1 flex flex-col">
+        {/* 언어 선택 */}
+        <div className="flex justify-end mb-6">
+          <div className="flex bg-slate-800/80 backdrop-blur-sm rounded-full p-1 shadow-lg border border-cyan-500/30">
+            <button
+              onClick={() => changeLanguage()}
+              className={cn(
+                "px-6 py-2 rounded-full font-medium transition-all duration-200",
+                language === 'korean'
+                  ? "bg-gradient-to-r from-cyan-500 to-blue-500 text-white shadow-lg shadow-cyan-500/25"
+                  : "text-cyan-300 hover:text-cyan-100"
+              )}
+            >
+              한국어
+            </button>
+            <button
+              onClick={() => changeLanguage()}
+              className={cn(
+                "px-6 py-2 rounded-full font-medium transition-all duration-200",
+                language === 'english'
+                  ? "bg-gradient-to-r from-cyan-500 to-blue-500 text-white shadow-lg shadow-cyan-500/25"
+                  : "text-cyan-300 hover:text-cyan-100"
+              )}
+            >
+              ENG
+            </button>
+          </div>
+        </div>
+
         {/* 카테고리 선택 */}
         <div className="mb-6">
           <StudentText variant="secondary" className="text-lg mb-4">카테고리 선택</StudentText>
@@ -159,7 +211,7 @@ export default function KoreanWordPage() {
             {Object.keys(wordCategories).map((category) => (
               <button
                 key={category}
-                onClick={() => changeCategory(category as keyof typeof wordCategories)}
+                onClick={() => changeCategory(category)}
                 className={cn(
                   "px-3 py-2 rounded-lg text-sm font-medium transition-colors",
                   currentCategory === category
@@ -254,7 +306,7 @@ export default function KoreanWordPage() {
             
             {/* 키보드 레이아웃 */}
             <div className="flex flex-col items-center space-y-3">
-              {keyboardLayout.korean.map((row, rowIndex) => (
+              {keyboardLayout[language].map((row, rowIndex) => (
                 <div key={rowIndex} className="flex space-x-2">
                   {row.map((key) => (
                     <div

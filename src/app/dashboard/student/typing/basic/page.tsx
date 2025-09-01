@@ -1,16 +1,50 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { ArrowLeft, RotateCcw, Keyboard, Globe, Hand, Turtle, X } from 'lucide-react';
 import { StudentHeading, StudentCard, StudentText, studentButtonStyles } from "../../components/StudentThemeProvider";
 import { cn } from "@/lib/utils";
 import { useRouter, useSearchParams } from 'next/navigation';
 
+// 한글 자모 분해 함수
+function decomposeHangul(char: string): string[] {
+  const code = char.charCodeAt(0) - 0xAC00;
+  if (code < 0 || code > 11171) {
+    // 완성형 한글이 아닌 경우 (자음, 모음 등)
+    return [char];
+  }
+  
+  const choseong = ['ㄱ', 'ㄲ', 'ㄴ', 'ㄷ', 'ㄸ', 'ㄹ', 'ㅁ', 'ㅂ', 'ㅃ', 'ㅅ', 'ㅆ', 'ㅇ', 'ㅈ', 'ㅉ', 'ㅊ', 'ㅋ', 'ㅌ', 'ㅍ', 'ㅎ'];
+  const jungseong = ['ㅏ', 'ㅐ', 'ㅑ', 'ㅒ', 'ㅓ', 'ㅔ', 'ㅕ', 'ㅖ', 'ㅗ', 'ㅘ', 'ㅙ', 'ㅚ', 'ㅛ', 'ㅜ', 'ㅝ', 'ㅞ', 'ㅟ', 'ㅠ', 'ㅡ', 'ㅢ', 'ㅣ'];
+  const jongseong = ['', 'ㄱ', 'ㄲ', 'ㄳ', 'ㄴ', 'ㄵ', 'ㄶ', 'ㄷ', 'ㄹ', 'ㄺ', 'ㄻ', 'ㄼ', 'ㄽ', 'ㄾ', 'ㄿ', 'ㅀ', 'ㅁ', 'ㅂ', 'ㅄ', 'ㅅ', 'ㅆ', 'ㅇ', 'ㅈ', 'ㅊ', 'ㅋ', 'ㅌ', 'ㅍ', 'ㅎ'];
+  
+  const cho = Math.floor(code / 588);
+  const jung = Math.floor((code % 588) / 28);
+  const jong = code % 28;
+  
+  const result = [choseong[cho], jungseong[jung]];
+  if (jong > 0) {
+    result.push(jongseong[jong]);
+  }
+  
+  return result;
+}
+
 interface TypingResult {
   accuracy: number;
   speed: number;
+  wpm?: number;
   time: number;
   totalKeyPresses: number;
+  actualCharacters?: number;
+}
+
+interface WordTiming {
+  word: string;
+  startTime: number;
+  endTime?: number;
+  duration?: number;
+  cpm?: number;
 }
 
 // 배열을 랜덤하게 섞는 함수
@@ -74,30 +108,6 @@ function getBaseKey(key: string): string {
   return shiftToBaseKeyMap[key] || symbolToBaseKeyMap[key] || key;
 }
 
-// 한글 자모 분해 함수
-function decomposeHangul(char: string): string[] {
-  const code = char.charCodeAt(0) - 0xAC00;
-  if (code < 0 || code > 11171) {
-    // 완성형 한글이 아닌 경우 (자음, 모음 등)
-    return [char];
-  }
-  
-  const choseong = ['ㄱ', 'ㄲ', 'ㄴ', 'ㄷ', 'ㄸ', 'ㄹ', 'ㅁ', 'ㅂ', 'ㅃ', 'ㅅ', 'ㅆ', 'ㅇ', 'ㅈ', 'ㅉ', 'ㅊ', 'ㅋ', 'ㅌ', 'ㅍ', 'ㅎ'];
-  const jungseong = ['ㅏ', 'ㅐ', 'ㅑ', 'ㅒ', 'ㅓ', 'ㅔ', 'ㅕ', 'ㅖ', 'ㅗ', 'ㅘ', 'ㅙ', 'ㅚ', 'ㅛ', 'ㅜ', 'ㅝ', 'ㅞ', 'ㅟ', 'ㅠ', 'ㅡ', 'ㅢ', 'ㅣ'];
-  const jongseong = ['', 'ㄱ', 'ㄲ', 'ㄳ', 'ㄴ', 'ㄵ', 'ㄶ', 'ㄷ', 'ㄹ', 'ㄺ', 'ㄻ', 'ㄼ', 'ㄽ', 'ㄾ', 'ㄿ', 'ㅀ', 'ㅁ', 'ㅂ', 'ㅄ', 'ㅅ', 'ㅆ', 'ㅇ', 'ㅈ', 'ㅊ', 'ㅋ', 'ㅌ', 'ㅍ', 'ㅎ'];
-  
-  const cho = Math.floor(code / 588);
-  const jung = Math.floor((code % 588) / 28);
-  const jong = code % 28;
-  
-  const result = [choseong[cho], jungseong[jung]];
-  if (jong > 0) {
-    result.push(jongseong[jong]);
-  }
-  
-  return result;
-}
-
 // 각 자리별 기본 글자들 정의
 const koreanKeysByPosition = {
   'basic': ['ㅁ', 'ㄴ', 'ㅇ', 'ㄹ', 'ㅓ', 'ㅏ', 'ㅣ',';'],
@@ -118,7 +128,7 @@ const englishKeysByPosition = {
   'center': ['g', 'h','t','y','b','n']
 };
 
-// 각 자리별로 랜덤하게 섞인 연습 시퀀스 생성 (10개씩) - 연속 중복 방지
+// 각 자리별로 랜덤하게 섞인 연습 시퀀스 생성 (50개씩) - 연속 중복 방지
 const generateRandomSequences = (language: 'korean' | 'english') => {
   const sequences: { [key: string]: string[] } = {};
   const keysByPosition = language === 'korean' ? koreanKeysByPosition : englishKeysByPosition;
@@ -132,8 +142,8 @@ const generateRandomSequences = (language: 'korean' | 'english') => {
       sequence.push(keys[Math.floor(Math.random() * keys.length)]);
     }
     
-    // 나머지 9개의 글자 생성 (연속 중복 방지)
-    for (let i = 1; i < 10; i++) {
+    // 나머지 49개의 글자 생성 (연속 중복 방지)
+    for (let i = 1; i < 50; i++) {
       const lastKey = sequence[i - 1];
       let availableKeys = keys.filter(key => key !== lastKey);
       
@@ -156,24 +166,24 @@ const generateRandomSequences = (language: 'korean' | 'english') => {
 const koreanWordSequences = {
     // basic: 자음 [ㅁ ㄴ ㅇ ㄹ], 모음 [ㅓ ㅏ ㅣ] — 2~4글자
     basic: [
-      ['나라', '나리', '나날', '아마', '아라'],
-      ['아리', '아니', '이리', '이마', '어미'],
-      ['어리', '어린', '어머니', '어린이', '머리'],
+      ['나라', '나리', '나날', '아마', '아라리'],
+      ['엄마', '아니', '이리', '이마', '어미'],
+      ['어림', '어린', '어머니', '어린이', '머리'],
       ['미리', '마리', '머리말', '나라말', '나라일'],
-      ['아라리', '아리아', '아니라', '이라니', '나라님'],
-      ['아마라', '아리마', '아리나', '이리마', '마리아'],
-      ['마마', '아마미', '아라마', '아리미', '나라니'],
-      ['아라나', '어리니', '아니마', '아라미', '이리니'],
-      ['어마니', '어마마', '아라라', '아리라', '이라라'],
-      ['아리말', '나라라', '아라마', '이리말', '아마리']
+      ['아리랑', '아리아', '이나라', '아이', '나라님'],
+      ['이마', '아리아리', '이랑', '이나미', '마리아'],
+      ['마마', '맘마', '어이', '이너마', '나라니'],
+      ['어머니', '어마이', '너랑나랑', '나날', '엄니'],
+      ['어마니', '어머나', '이이', '이미나', '이랑'],
+      ['아리말', '나라', '아리마', '이리말', '남아']
     ],
   
     // left-upper: basic + 자음 [ㅂ ㅈ ㄷ ㄱ ㅃ ㅉ ㄸ ㄲ], 모음은 그대로 [ㅓ ㅏ ㅣ]
     'left-upper': [
       ['바다', '나비', '바리', '가라', '가락'],
-      ['다리', '다리미', '머리띠', '나라말', '미담'],
+      ['다리', '다리미', '머리띠', '나락', '미담'],
       ['이바지', '나라님', '미라', '바가지', '가마'],
-      ['머리말', '다다다', '나라말이', '바닥', '가림'],
+      ['머리말', '아다다', '나라말이', '바닥', '가림'],
       ['바람', '바람기', '다짐', '가방', '가가린'],
       ['가마니', '다가다', '나락', '가락질', '바리바리'],
       ['미닫이', '가리다', '다가림', '나라일', '가마'],
@@ -327,7 +337,7 @@ const englishWordSequences = {
   };
   
 
-// 단어 시퀀스를 랜덤하게 생성 (10개씩) - 연속 중복 방지
+// 단어 시퀀스를 랜덤하게 생성 (50개씩) - 연속 중복 방지
 const generateRandomWords = (language: 'korean' | 'english') => {
   const words: { [key: string]: string[] } = {};
   const wordsByPosition = language === 'korean' ? koreanWordSequences : englishWordSequences;
@@ -344,8 +354,8 @@ const generateRandomWords = (language: 'korean' | 'english') => {
         // 첫 번째 단어는 랜덤으로 선택
         sequence.push(allWords[Math.floor(Math.random() * allWords.length)]);
         
-        // 나머지 9개 단어 생성 (연속 중복 방지)
-        for (let i = 1; i < 10; i++) {
+        // 나머지 49개 단어 생성 (연속 중복 방지)
+        for (let i = 1; i < 50; i++) {
           const lastWord = sequence[i - 1];
           let availableWords = allWords.filter(word => word !== lastWord);
           
@@ -368,8 +378,8 @@ const generateRandomWords = (language: 'korean' | 'english') => {
         // 첫 번째 단어는 랜덤으로 선택
         sequence.push(wordArray[Math.floor(Math.random() * wordArray.length)]);
         
-        // 나머지 9개 단어 생성 (연속 중복 방지)
-        for (let i = 1; i < 10; i++) {
+        // 나머지 49개 단어 생성 (연속 중복 방지)
+        for (let i = 1; i < 50; i++) {
           const lastWord = sequence[i - 1];
           let availableWords = wordArray.filter(word => word !== lastWord);
           
@@ -423,6 +433,13 @@ export default function BasicPage() {
   
   // 각 항목별 입력 시간 측정을 위한 상태들
   const [currentItemStartTime, setCurrentItemStartTime] = useState<number | null>(null);
+  
+  // 단어연습 부분 전용 타이밍 시스템
+  const [wordTimings, setWordTimings] = useState<WordTiming[]>([]);
+  const [currentWordStartTime, setCurrentWordStartTime] = useState<number | null>(null);
+  const wordStartTimeRef = useRef<number | null>(null);
+  const [lastWordCPM, setLastWordCPM] = useState<number | null>(null);
+  const [wordCorrectHistory, setWordCorrectHistory] = useState<boolean[]>([]);
 
   // 현재 언어에 따른 시퀀스 생성
   const [sequences, setSequences] = useState(() => generateRandomSequences(language));
@@ -430,12 +447,12 @@ export default function BasicPage() {
 
   // 현재 입력할 글자/단어 가져오기 (단순화된 로직)
   const getCurrentItem = useCallback((): string => {
-    if (currentCharIndex < 10) {
+    if (currentCharIndex < 50) {
       // 1단계: 개별 글자 연습
       return sequences[currentPosition][currentCharIndex % sequences[currentPosition].length];
     } else {
       // 2단계: 단어 연습
-      const wordIndex = currentCharIndex - 10;
+      const wordIndex = currentCharIndex - 50;
       return words[currentPosition][wordIndex % words[currentPosition].length];
     }
   }, [language, currentPosition, currentCharIndex, sequences, words]);
@@ -443,14 +460,14 @@ export default function BasicPage() {
   // 다음 입력할 글자/단어 가져오기
   const getNextItem = useCallback((): string => {
     const nextIndex = currentCharIndex + 1;
-    if (nextIndex >= 20) return '';
+    if (nextIndex >= 100) return '';
     
-    if (nextIndex < 10) {
+    if (nextIndex < 50) {
       // 1단계: 개별 글자 연습
       return sequences[currentPosition][nextIndex % sequences[currentPosition].length];
     } else {
       // 2단계: 단어 연습
-      const wordIndex = nextIndex - 10;
+      const wordIndex = nextIndex - 50;
       return words[currentPosition][wordIndex % words[currentPosition].length];
     }
   }, [currentPosition, currentCharIndex, sequences, words]);
@@ -466,7 +483,7 @@ export default function BasicPage() {
     setCurrentWordProgress(0);
     
     // 2단계(단어 연습)일 때 한글 자모 분해
-    if (currentCharIndex >= 10 && language === 'korean' && currentItem) {
+    if (currentCharIndex >= 50 && language === 'korean' && currentItem) {
       const decomposed = currentItem.split('').flatMap(char => decomposeHangul(char));
       setCurrentJamos(decomposed);
       setCurrentJamoIndex(0);
@@ -519,38 +536,92 @@ export default function BasicPage() {
   }, [isPaused, pauseStartTime]);
 
   const calculateResult = useCallback(() => {
-    const totalItems = 20; // 총 20개 연습 (자리연습 10개 + 단어연습 10개)
-    const correctItems = inputHistory.length; // 올바르게 완료한 항목 수
+    // 단어연습 부분만의 결과 계산 (currentCharIndex >= 50인 부분)
+    const wordPracticeCount = Math.max(0, currentCharIndex - 50); // 완료한 단어 수
+    const wordCorrectCount = wordCorrectHistory.filter(Boolean).length; // 맞힌 단어 수
     
-    // 정확도 계산: (올바른 입력 수 / 총 입력 시도 수) * 100
-    const accuracy = totalKeyPresses > 0 ? Math.round((correctItems / totalItems) * 100) : 0;
+    // 단어연습 정확도 계산
+    const wordAccuracy = wordPracticeCount > 0 ? Math.round((wordCorrectCount / wordPracticeCount) * 100) : 0;
     
     // 전체 경과 시간 계산 (분 단위) - 일시정지 시간 제외
     const rawTimeMinutes = startTime ? (Date.now() - startTime) / (1000 * 60) : 0;
     const adjustedPausedTimeMinutes = pausedTime / (1000 * 60);
-    const totalTimeMinutes = Math.max(0, rawTimeMinutes - adjustedPausedTimeMinutes);
+    const totalTimeMinutes = Math.max(0.1, rawTimeMinutes - adjustedPausedTimeMinutes); // 최소 0.1분으로 설정
     
-    // 분당 타수 계산 (일반적인 WPM 공식): (총 키 입력 수 / 5) / 전체 경과 시간(분)
-    const wpm = totalTimeMinutes > 0 ? Math.round((totalKeyPresses / 5) / totalTimeMinutes) : 0;
+    // 실제 완료한 문자 수 계산 (더 정확한 방식)
+    let actualCharacters = 0;
     
-    // 분당 문자 수 (CPM): 총 키 입력 수 / 전체 경과 시간(분)  
-    const cpm = totalTimeMinutes > 0 ? Math.round(totalKeyPresses / totalTimeMinutes) : 0;
+    // 1단계: 완료한 글자 수 (50개 중 완료한 만큼)
+    if (currentCharIndex >= 50) {
+      actualCharacters += 50; // 1단계 모두 완료
+    } else {
+      actualCharacters += currentCharIndex; // 1단계 부분 완료
+    }
+    
+    // 2단계: 완료한 단어의 실제 문자 수
+    if (currentCharIndex >= 50) {
+      // 2단계에서 완료한 단어들의 문자 수 합계
+      const stage2Items = Math.min(currentCharIndex - 50, 50);
+      for (let i = 0; i < stage2Items; i++) {
+        const wordIndex = 50 + i;
+        const word = getCurrentItem(); // 실제 단어 가져오기 로직 필요
+        if (language === 'korean') {
+          // 한글의 경우 자모 수로 계산
+          actualCharacters += word.split('').reduce((sum, char) => {
+            return sum + decomposeHangul(char).length;
+          }, 0);
+        } else {
+          // 영어의 경우 글자 수로 계산
+          actualCharacters += word.length;
+        }
+      }
+    }
+    
+    // 단어연습 부분의 개별 단어 타수들의 평균으로 CPM 계산
+    let averageCPM = 0;
+    if (wordTimings.length > 0) {
+      // 유효한 타이밍 데이터만 필터링 (0이 아닌 CPM)
+      const validTimings = wordTimings.filter(timing => timing.cpm && timing.cpm > 0);
+      
+      if (validTimings.length > 0) {
+        const totalCPM = validTimings.reduce((sum, timing) => sum + (timing.cpm || 0), 0);
+        averageCPM = Math.round(totalCPM / validTimings.length);
+      }
+    }
+    
+    // 정확도가 50% 미만이면 CPM/WPM을 0으로 설정
+    let finalCPM = 0;
+    let finalWPM = 0;
+    
+    if (wordAccuracy >= 50) {
+      // CPM 상한선 설정 (현실적인 범위)
+      const cappedCPM = Math.min(averageCPM, 800);
+      
+      // 정확도에 따른 패널티 적용 (정확도가 낮을수록 패널티)
+      const accuracyMultiplier = Math.max(0.3, wordAccuracy / 100); // 최소 30%는 유지
+      finalCPM = Math.round(cappedCPM * accuracyMultiplier);
+      
+      // WPM 계산 (5글자 = 1단어 기준)
+      finalWPM = Math.round(finalCPM / 5);
+    }
     
     setResult({
-      accuracy,
-      speed: cpm, // CPM 기준으로 표시
-      time: Math.round(totalTimeMinutes * 60), // 실제 입력 시간(초)
-      totalKeyPresses: totalKeyPresses
+      accuracy: wordAccuracy,
+      speed: finalCPM,
+      wpm: finalWPM,
+      time: Math.round(totalTimeMinutes * 60),
+      totalKeyPresses: totalKeyPresses,
+      actualCharacters: wordTimings.length
     });
     setShowResultModal(true);
-  }, [inputHistory.length, totalKeyPresses, startTime, pausedTime]);
+  }, [wordTimings, wordCorrectHistory, totalKeyPresses, startTime, pausedTime, currentCharIndex, language]);
 
   // 다음 자리로 진행하는 함수 (단순화)
   const moveToNextPosition = useCallback(() => {
     const nextIndex = currentCharIndex + 1;
     
-    if (nextIndex >= 20) {
-      // 20개 연습 완료 시 결과 계산
+    if (nextIndex >= 100) {
+      // 100개 연습 완료 시 결과 계산
       calculateResult();
     } else {
       // 다음 순서로 진행
@@ -576,7 +647,32 @@ export default function BasicPage() {
     setPauseStartTime(null);
     setStartTime(null);
     setHasStarted(false);
+    // 단어별 타이밍 상태 초기화
+    setWordTimings([]);
+    setCurrentWordStartTime(null);
+    wordStartTimeRef.current = null;
+    setLastWordCPM(null);
+    setWordCorrectHistory([]);
   };
+
+  // IME 상태 힌트 함수
+  const setIMEHint = useCallback((targetLanguage: 'korean' | 'english') => {
+    const inputElement = document.querySelector('input[type="text"]') as HTMLInputElement;
+    if (inputElement) {
+      // 언어별 속성 설정
+      inputElement.setAttribute('lang', targetLanguage === 'korean' ? 'ko' : 'en');
+      inputElement.setAttribute('inputmode', 'text');
+      
+      // 브라우저에 IME 변경 힌트 제공 (일부 브라우저에서 지원)
+      if ('setInputMethodHint' in inputElement) {
+        (inputElement as any).setInputMethodHint(targetLanguage === 'korean' ? 'korean' : 'english');
+      }
+      
+      // 포커스를 다시 설정하여 IME 변경 감지 도움
+      inputElement.blur();
+      setTimeout(() => inputElement.focus(), 50);
+    }
+  }, []);
 
   // 언어 변경 시 초기화
   const changeLanguage = () => {
@@ -596,6 +692,15 @@ export default function BasicPage() {
     setPauseStartTime(null);
     setStartTime(null);
     setHasStarted(false);
+    // 단어별 타이밍 상태 초기화
+    setWordTimings([]);
+    setCurrentWordStartTime(null);
+    wordStartTimeRef.current = null;
+    setLastWordCPM(null);
+    setWordCorrectHistory([]);
+    
+    // IME 상태 힌트 설정
+    setTimeout(() => setIMEHint(newLanguage), 100);
   };
 
   // 연습 초기화
@@ -617,6 +722,12 @@ export default function BasicPage() {
     setPausedTime(0);
     setLastActivityTime(null);
     setPauseStartTime(null);
+    // 단어별 타이밍 상태 초기화
+    setWordTimings([]);
+    setCurrentWordStartTime(null);
+    wordStartTimeRef.current = null;
+    setLastWordCPM(null);
+    setWordCorrectHistory([]);
   };
 
   // 단어 입력 처리 함수
@@ -640,6 +751,16 @@ export default function BasicPage() {
       setStartTime(Date.now());
     }
     
+    // 단어연습 부분에서만 단어별 타이밍 측정 (currentCharIndex >= 50)
+    if (currentCharIndex >= 50) {
+      // 단어 입력 시작 시간 설정 (첫 키 입력 시점)
+      if (!wordStartTimeRef.current && input.length > 0) {
+        const wordStartTime = Date.now();
+        wordStartTimeRef.current = wordStartTime;
+        setCurrentWordStartTime(wordStartTime);
+      }
+    }
+    
     setUserInput(input);
     
     // 전체 연습에서 첫 번째 입력 시 전체 시작 표시
@@ -653,7 +774,41 @@ export default function BasicPage() {
 
   // 단어 확인 함수 (엔터나 스페이스바 입력 시)
   const checkWordInput = useCallback(() => {
-    if (userInput.trim() === currentWord) {
+    const isCorrect = userInput.trim() === currentWord;
+    
+    // 단어연습 부분에서만 타이밍 계산 (currentCharIndex >= 50)
+    if (currentCharIndex >= 50 && wordStartTimeRef.current) {
+      const endTime = Date.now();
+      const duration = endTime - wordStartTimeRef.current;
+      
+      // 단어의 문자 수 계산 (CPM 계산용)
+      let characterCount = 0;
+      if (language === 'korean') {
+        characterCount = currentWord.split('').flatMap(char => decomposeHangul(char)).length;
+      } else {
+        characterCount = currentWord.length;
+      }
+      
+      // 개별 단어의 CPM 계산 (분당 문자 수)
+      const durationMinutes = duration / (1000 * 60);
+      const wordCPM = durationMinutes > 0 ? Math.round(characterCount / durationMinutes) : 0;
+      
+      const wordTiming: WordTiming = {
+        word: currentWord,
+        startTime: wordStartTimeRef.current,
+        endTime: endTime,
+        duration: duration,
+        cpm: wordCPM
+      };
+      
+      setWordTimings(prev => [...prev, wordTiming]);
+      setLastWordCPM(wordCPM);
+      
+      // 단어연습 정답 여부 기록
+      setWordCorrectHistory(prev => [...prev, isCorrect]);
+    }
+    
+    if (isCorrect) {
       // 정답! 언어에 따라 타수 계산
       let keyPressCount = 0;
       if (language === 'korean') {
@@ -669,6 +824,7 @@ export default function BasicPage() {
       setUserInput('');
       setIsWrong(false);
       setCurrentItemStartTime(null);
+      wordStartTimeRef.current = null; // 다음 단어를 위해 초기화
       
       setTimeout(() => {
         moveToNextPosition();
@@ -677,10 +833,10 @@ export default function BasicPage() {
       // 틀렸을 때는 개별 글자 색상으로 피드백 (전체 isWrong 상태는 사용하지 않음)
       // 사용자가 다시 입력할 수 있도록 그대로 유지
     }
-  }, [userInput, currentWord, currentItemStartTime, moveToNextPosition]);
+  }, [userInput, currentWord, currentItemStartTime, moveToNextPosition, currentCharIndex, language]);
 
   const handleKeyPress = useCallback((key: string) => {
-    if (currentCharIndex < 10) {
+    if (currentCharIndex < 50) {
       // 입력 활동 재개 (일시정지 해제)
       resumeTyping();
       
@@ -728,11 +884,31 @@ export default function BasicPage() {
     // 2단계(단어 연습)는 이제 handleWordInput으로 처리
   }, [currentChar, currentCharIndex, hasStarted, currentItemStartTime, moveToNextPosition, resumeTyping]);
 
+  // 각 자리별 키 매핑 정의
+  const positionKeyMaps = {
+    korean: {
+      'basic': ['ㅁ', 'ㄴ', 'ㅇ', 'ㄹ', 'ㅓ', 'ㅏ', 'ㅣ', ';'],
+      'left-upper': ['ㅂ', 'ㅈ', 'ㄷ', 'ㄱ'],
+      'right-upper': ['ㅕ', 'ㅑ', 'ㅐ', 'ㅔ'],
+      'left-lower': ['ㅋ', 'ㅌ', 'ㅊ', 'ㅍ'],
+      'right-lower': ['ㅡ', ',', '.', '/'],
+      'center': ['ㅅ', 'ㅎ', 'ㅛ', 'ㅗ', 'ㅠ', 'ㅜ']
+    },
+    english: {
+      'basic': ['A', 'S', 'D', 'F', 'J', 'K', 'L', ';'],
+      'left-upper': ['Q', 'W', 'E', 'R'],
+      'right-upper': ['U', 'I', 'O', 'P'],
+      'left-lower': ['Z', 'X', 'C', 'V'],
+      'right-lower': ['M', ',', '.', '/'],
+      'center': ['T', 'Y', 'G', 'H', 'B', 'N']
+    }
+  };
+
   const isKeyHighlighted = (key: string) => {
     let targetKey = '';
     
     // 2단계(단어 연습) 중에는 현재 입력해야 할 자모를 하이라이트
-    if (currentCharIndex >= 10) {
+    if (currentCharIndex >= 50) {
       if (language === 'korean' && currentJamos.length > 0) {
         targetKey = currentJamos[currentJamoIndex];
       } else if (language === 'english') {
@@ -756,6 +932,12 @@ export default function BasicPage() {
       return 'shift';
     }
     
+    // 현재 선택된 자리의 키들에 대한 파란색 하이라이트
+    const currentPositionKeys = positionKeyMaps[language][currentPosition];
+    if (currentPositionKeys.includes(key)) {
+      return 'position';
+    }
+    
     return 'normal';
   };
 
@@ -763,7 +945,7 @@ export default function BasicPage() {
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       // 2단계(단어 연습) 중에는 엔터와 스페이스바만 처리
-      if (currentCharIndex >= 10) {
+      if (currentCharIndex >= 50) {
         if (event.key === 'Enter' || event.key === ' ') {
           event.preventDefault();
           checkWordInput();
@@ -817,6 +999,53 @@ export default function BasicPage() {
     };
   }, [handleKeyPress, language, currentCharIndex, checkWordInput]);
 
+  // 전역 자동 포커스 시스템 (단어연습 부분에서만)
+  useEffect(() => {
+    if (currentCharIndex < 50) return; // 자리연습 부분에서는 적용하지 않음
+    
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (showResultModal) return;
+      const inputElement = document.querySelector('input[type="text"]') as HTMLInputElement;
+      if (inputElement && document.activeElement !== inputElement) {
+        inputElement.focus();
+      }
+      // Enter나 Space 키 처리는 기존 handleKeyPress에서 처리됨
+    };
+
+    const handleClick = () => {
+      if (!showResultModal) {
+        const inputElement = document.querySelector('input[type="text"]') as HTMLInputElement;
+        if (inputElement) {
+          setTimeout(() => inputElement.focus(), 0);
+        }
+      }
+    };
+
+    const handleVisibilityChange = () => {
+      if (!document.hidden && !showResultModal) {
+        const inputElement = document.querySelector('input[type="text"]') as HTMLInputElement;
+        if (inputElement) {
+          setTimeout(() => inputElement.focus(), 100);
+        }
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown, { capture: true });
+    document.addEventListener('click', handleClick);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown, { capture: true });
+      document.removeEventListener('click', handleClick);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [currentCharIndex, showResultModal]);
+
+  // 페이지 로드 시 IME 힌트 설정
+  useEffect(() => {
+    setTimeout(() => setIMEHint(language), 200);
+  }, [language, setIMEHint]);
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 relative overflow-hidden">
       {/* 사이버틱한 기하학적 패턴 배경 */}
@@ -828,7 +1057,7 @@ export default function BasicPage() {
         <div className="absolute top-1/3 right-1/3 w-12 h-12 border border-cyan-300 rounded-full animate-pulse" style={{animationDelay: '1.5s'}}></div>
       </div>
 
-      <div className="relative z-10 w-full h-full flex flex-col p-6">
+      <div className="relative z-10 w-full h-full flex flex-col p-6 pt-20 lg:pt-6">
         {/* 헤더 */}
         <div className="flex items-center justify-between mb-8">
           <button
@@ -845,12 +1074,12 @@ export default function BasicPage() {
 
         <div className="max-w-6xl mx-auto w-full flex-1 flex flex-col">
           {/* 언어 선택 */}
-          <div className="flex justify-end mb-6">
+          <div className="flex justify-center lg:justify-end mb-6">
             <div className="flex bg-slate-800/80 backdrop-blur-sm rounded-full p-1 shadow-lg border border-cyan-500/30">
               <button
                 onClick={() => changeLanguage()}
                 className={cn(
-                  "px-6 py-2 rounded-full font-medium transition-all duration-200",
+                  "px-4 lg:px-6 py-2 rounded-full font-medium transition-all duration-200",
                   language === 'korean'
                     ? "bg-gradient-to-r from-cyan-500 to-blue-500 text-white shadow-lg shadow-cyan-500/25"
                     : "text-cyan-300 hover:text-cyan-100"
@@ -861,7 +1090,7 @@ export default function BasicPage() {
               <button
                 onClick={() => changeLanguage()}
                 className={cn(
-                  "px-6 py-2 rounded-full font-medium transition-all duration-200",
+                  "px-4 lg:px-6 py-2 rounded-full font-medium transition-all duration-200",
                   language === 'english'
                     ? "bg-gradient-to-r from-cyan-500 to-blue-500 text-white shadow-lg shadow-cyan-500/25"
                     : "text-cyan-300 hover:text-cyan-100"
@@ -901,10 +1130,23 @@ export default function BasicPage() {
 
           {/* 메인 연습 영역 */}
           <div className="flex-1 flex flex-col items-center justify-center mb-8">
+            {/* 이전 단어 CPM 표시 (단어연습 부분에서만, 고정 공간) */}
+            {currentCharIndex >= 50 && (
+              <div className="mb-4 text-center h-10 flex items-center justify-center">
+                {lastWordCPM !== null ? (
+                  <div className="text-cyan-400 text-2xl font-bold">
+                    {lastWordCPM} CPM
+                  </div>
+                ) : (
+                  <div className="h-8"></div> // 빈 공간 유지
+                )}
+              </div>
+            )}
+            
             {/* 현재 입력할 글자와 다음 글자 */}
             <div className="flex items-center justify-center gap-6 mb-8 relative">
-              {/* 현재 입력할 글자 - 항상 중앙에 */}
-              <div className="bg-gradient-to-br from-cyan-500 to-blue-600 rounded-3xl p-12 shadow-2xl shadow-cyan-500/25 border border-cyan-400/50 transition-all duration-200">
+              {/* 현재 입력할 글자 - 항상 중앙에 (반응형) */}
+              <div className="bg-gradient-to-br from-cyan-500 to-blue-600 rounded-3xl p-8 lg:p-12 shadow-2xl shadow-cyan-500/25 border border-cyan-400/50 transition-all duration-200">
                 <div className="text-center">
                   <div className={cn(
                     "text-sm mb-4 opacity-80",
@@ -913,7 +1155,7 @@ export default function BasicPage() {
                     {isWrong ? "틀렸습니다!" : currentCharIndex < 10 ? "입력할 자리" : "입력할 단어"}
                   </div>
                   <div className={cn(
-                    "text-8xl font-bold leading-none transition-colors duration-150",
+                    "text-6xl lg:text-8xl font-bold leading-none transition-colors duration-150",
                     isWrong ? "text-red-800" : "text-white"
                   )}>
                     {currentChar}
@@ -934,14 +1176,16 @@ export default function BasicPage() {
               )}
             </div>
 
-            {/* 2단계 단어 연습에서 입력창 표시 */}
-            {currentCharIndex >= 10 && (
+
+            
+            {/* 단어 입력 필드 */}
+            {currentCharIndex >= 50 && (
               <div className="mb-6 text-center">
                 <div className="bg-transparent">
                   {/* 입력 필드 */}
                   <div className="mb-4">
                     {/* 글자별 표시를 위한 커스텀 입력 디스플레이 */}
-                    <div className="w-full max-w-2xl mx-auto px-2 py-2 text-center text-6xl font-bold min-h-[80px] flex items-center justify-center">
+                    <div className="w-full max-w-2xl mx-auto px-2 py-2 text-center text-4xl lg:text-6xl font-bold min-h-[60px] lg:min-h-[80px] flex items-center justify-center">
                       {userInput.split('').map((char, index) => {
                         const isCorrect = index < currentWord.length && char === currentWord[index];
                         
@@ -966,6 +1210,15 @@ export default function BasicPage() {
                       type="text"
                       value={userInput}
                       onChange={(e) => handleWordInput(e.target.value)}
+                      onBlur={(e) => {
+                        if (!showResultModal) {
+                          setTimeout(() => e.target.focus(), 0);
+                        }
+                      }}
+                      lang={language === 'korean' ? 'ko' : 'en'}
+                      inputMode="text"
+                      autoCapitalize="off"
+                      autoCorrect="off"
                       className="opacity-0 absolute -left-9999px"
                       autoFocus
                       autoComplete="off"
@@ -981,13 +1234,13 @@ export default function BasicPage() {
               </div>
             )}
 
-            {/* 가상 키보드 */}
-            <div className="bg-slate-800/90 backdrop-blur-sm rounded-3xl p-8 shadow-2xl border border-cyan-500/30">
+            {/* 가상 키보드 (모바일에서 숨김) */}
+            <div className="hidden lg:block bg-slate-800/90 backdrop-blur-sm rounded-3xl p-8 shadow-2xl border border-cyan-500/30">
               {/* 진행도 막대바 */}
               <div className="mb-6">
                 <div className="flex items-center justify-between mb-3">
                   <span className="text-cyan-300 text-sm">
-                    {currentCharIndex < 10 ? '1단계: 자리 연습' : '2단계: 단어 연습'}
+                    {currentCharIndex < 50 ? '1단계: 자리 연습' : '2단계: 단어 연습'}
                   </span>
                   <div className="flex items-center gap-3">
                     {isPaused && (
@@ -997,14 +1250,14 @@ export default function BasicPage() {
                       </div>
                     )}
                     <span className="text-cyan-300 text-sm">
-                      {currentCharIndex + 1} / 20
+                      {currentCharIndex + 1} / 100
                     </span>
                   </div>
                 </div>
                 <div className="w-full bg-slate-700 rounded-full h-3">
                   <div 
                     className="bg-gradient-to-r from-cyan-500 to-blue-500 h-3 rounded-full transition-all duration-300"
-                    style={{ width: `${((currentCharIndex + 1) / 20) * 100}%` }}
+                    style={{ width: `${((currentCharIndex + 1) / 100) * 100}%` }}
                   ></div>
                 </div>
               </div>
@@ -1064,6 +1317,7 @@ export default function BasicPage() {
                       className={cn(
                         "w-12 h-12 rounded-lg border-2 flex items-center justify-center text-sm font-bold shadow-sm hover:bg-slate-600 transition-all duration-200 cursor-pointer",
                         isKeyHighlighted(key) === 'current' && "border-pink-400 bg-pink-400/20 text-pink-300 shadow-[0_0_15px_0_rgba(236,72,153,0.5)] scale-105",
+                        isKeyHighlighted(key) === 'position' && "border-blue-400 bg-blue-400/20 text-blue-300 shadow-[0_0_10px_0_rgba(59,130,246,0.4)]",
                         isKeyHighlighted(key) === 'normal' && "border-cyan-500/50 bg-slate-700 text-cyan-300 hover:border-cyan-400"
                       )}
                     >
@@ -1094,6 +1348,7 @@ export default function BasicPage() {
                       className={cn(
                         "w-12 h-12 rounded-lg border-2 flex items-center justify-center text-sm font-bold shadow-sm hover:bg-slate-600 transition-all duration-200 cursor-pointer",
                         isKeyHighlighted(key) === 'current' && "border-pink-400 bg-pink-400/20 text-pink-300 shadow-[0_0_15px_0_rgba(236,72,153,0.5)] scale-105",
+                        isKeyHighlighted(key) === 'position' && "border-blue-400 bg-blue-400/20 text-blue-300 shadow-[0_0_10px_0_rgba(59,130,246,0.4)]",
                         isKeyHighlighted(key) === 'normal' && "border-cyan-500/50 bg-slate-700 text-cyan-300 hover:border-cyan-400"
                       )}
                     >
@@ -1104,14 +1359,22 @@ export default function BasicPage() {
                     onClick={() => handleKeyPress(';')}
                     className={cn(
                       "w-12 h-12 rounded-lg border-2 flex flex-col items-center justify-center text-xs font-bold shadow-sm hover:bg-slate-600 transition-all duration-200 cursor-pointer",
-                      isKeyHighlighted(';') === 'current' && "border-pink-400 bg-pink-400/20 text-pink-300 shadow-[0_0_15px_0_rgba(236,72,153,0.5)] scale-105",
-                      isKeyHighlighted(';') === 'normal' && "border-cyan-500/50 bg-slate-700 text-cyan-300 hover:border-cyan-400"
+                      (isKeyHighlighted(';') === 'current' || isKeyHighlighted(':') === 'current') && "border-pink-400 bg-pink-400/20 text-pink-300 shadow-[0_0_15px_0_rgba(236,72,153,0.5)] scale-105",
+                      isKeyHighlighted(';') === 'position' && "border-blue-400 bg-blue-400/20 text-blue-300 shadow-[0_0_10px_0_rgba(59,130,246,0.4)]",
+                      (isKeyHighlighted(';') === 'normal' && isKeyHighlighted(':') === 'normal' && isKeyHighlighted(';') !== 'position') && "border-cyan-500/50 bg-slate-700 text-cyan-300 hover:border-cyan-400"
                     )}
                   >
                     <span className="text-cyan-400 text-xs">:</span>
                     <span className="font-bold text-sm">;</span>
                   </div>
-                  <div className="w-12 h-12 rounded-lg border-2 flex flex-col items-center justify-center text-xs font-bold border-cyan-500/50 bg-slate-700 text-cyan-300 shadow-sm hover:bg-slate-600 hover:border-cyan-400 transition-all duration-200 cursor-pointer">
+                  <div 
+                    onClick={() => handleKeyPress("'")}
+                    className={cn(
+                      "w-12 h-12 rounded-lg border-2 flex flex-col items-center justify-center text-xs font-bold shadow-sm hover:bg-slate-600 transition-all duration-200 cursor-pointer",
+                      (isKeyHighlighted("'") === 'current' || isKeyHighlighted('"') === 'current') && "border-pink-400 bg-pink-400/20 text-pink-300 shadow-[0_0_15px_0_rgba(236,72,153,0.5)] scale-105",
+                      (isKeyHighlighted("'") === 'normal' && isKeyHighlighted('"') === 'normal') && "border-cyan-500/50 bg-slate-700 text-cyan-300 hover:border-cyan-400"
+                    )}
+                  >
                     <span className="text-cyan-400 text-xs">"</span>
                     <span className="font-bold text-sm">'</span>
                   </div>
@@ -1136,18 +1399,32 @@ export default function BasicPage() {
                       className={cn(
                         "w-12 h-12 rounded-lg border-2 flex items-center justify-center text-sm font-bold shadow-sm hover:bg-slate-600 transition-all duration-200 cursor-pointer",
                         isKeyHighlighted(key) === 'current' && "border-pink-400 bg-pink-400/20 text-pink-300 shadow-[0_0_15px_0_rgba(236,72,153,0.5)] scale-105",
+                        isKeyHighlighted(key) === 'position' && "border-blue-400 bg-blue-400/20 text-blue-300 shadow-[0_0_10px_0_rgba(59,130,246,0.4)]",
                         isKeyHighlighted(key) === 'normal' && "border-cyan-500/50 bg-slate-700 text-cyan-300 hover:border-cyan-400"
                       )}
                     >
                       {key}
                     </div>
                   ))}
-                  {['< ,', '> .', '? /'].map((key, index) => (
-                    <div key={index} className="w-12 h-12 rounded-lg border-2 flex flex-col items-center justify-center text-xs font-bold border-cyan-500/50 bg-slate-700 text-cyan-300 shadow-sm hover:bg-slate-600 hover:border-cyan-400 transition-all duration-200 cursor-pointer">
-                      <span className="text-cyan-400 text-xs">{key.split(' ')[0]}</span>
-                      <span className="font-bold text-sm">{key.split(' ')[1]}</span>
-                    </div>
-                  ))}
+                  {['< ,', '> .', '? /'].map((key, index) => {
+                    const baseKey = key.split(' ')[1]; // ',', '.', '/' 추출
+                    const shiftKey = key.split(' ')[0]; // '<', '>', '?' 추출
+                    return (
+                      <div 
+                        key={index} 
+                        onClick={() => handleKeyPress(baseKey)}
+                        className={cn(
+                          "w-12 h-12 rounded-lg border-2 flex flex-col items-center justify-center text-xs font-bold shadow-sm hover:bg-slate-600 transition-all duration-200 cursor-pointer",
+                          (isKeyHighlighted(baseKey) === 'current' || isKeyHighlighted(shiftKey) === 'current') && "border-pink-400 bg-pink-400/20 text-pink-300 shadow-[0_0_15px_0_rgba(236,72,153,0.5)] scale-105",
+                          isKeyHighlighted(baseKey) === 'position' && "border-blue-400 bg-blue-400/20 text-blue-300 shadow-[0_0_10px_0_rgba(59,130,246,0.4)]",
+                          (isKeyHighlighted(baseKey) === 'normal' && isKeyHighlighted(shiftKey) === 'normal' && isKeyHighlighted(baseKey) !== 'position') && "border-cyan-500/50 bg-slate-700 text-cyan-300 hover:border-cyan-400"
+                        )}
+                      >
+                        <span className="text-cyan-400 text-xs">{shiftKey}</span>
+                        <span className="font-bold text-sm">{baseKey}</span>
+                      </div>
+                    );
+                  })}
                   <div className={cn(
                     "w-24 h-12 rounded-lg border-2 flex items-center justify-end pr-2 text-xs font-bold shadow-sm hover:bg-slate-600 transition-all duration-200 cursor-pointer",
                     isKeyHighlighted('Shift') === 'shift' && "border-orange-400 bg-orange-400/20 text-orange-300 shadow-[0_0_15px_0_rgba(251,146,60,0.5)] scale-105",
@@ -1185,68 +1462,69 @@ export default function BasicPage() {
       {showResultModal && result && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 backdrop-blur-sm">
           <div className="bg-slate-800 rounded-3xl p-8 max-w-md w-full mx-4 shadow-2xl border border-cyan-500/30">
-            <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center justify-center mb-6">
               <h3 className="text-2xl font-bold bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent">연습 완료! 🎉</h3>
-              <button
-                onClick={() => setShowResultModal(false)}
-                className="p-2 hover:bg-slate-700 rounded-lg transition-colors text-cyan-300 hover:text-cyan-100"
-              >
-                <X className="w-6 h-6" />
-              </button>
             </div>
             
             <div className="space-y-6">
-              <div className="grid grid-cols-2 gap-6">
+              <div className="grid grid-cols-2 gap-4">
                 <div className="text-center">
-                  <div className="text-4xl font-bold text-cyan-400 mb-2">
+                  <div className="text-3xl font-bold text-cyan-400 mb-2">
                     {result.accuracy}%
                   </div>
                   <div className="text-sm text-cyan-300">정확도</div>
                   <div className="text-xs text-slate-400 mt-1">
-                    완료한 항목 / 전체 항목
+                    완료 항목 비율
                   </div>
                 </div>
                 <div className="text-center">
-                  <div className="text-4xl font-bold text-cyan-400 mb-2">
+                  <div className="text-3xl font-bold text-cyan-400 mb-2">
                     {result.speed}
                   </div>
                   <div className="text-sm text-cyan-300">분당 문자수</div>
                   <div className="text-xs text-slate-400 mt-1">
-                    CPM (Characters Per Minute)
+                    CPM (실제 문자 기준)
                   </div>
                 </div>
+                {result.wpm && (
+                  <div className="text-center">
+                    <div className="text-3xl font-bold text-green-400 mb-2">
+                      {result.wpm}
+                    </div>
+                    <div className="text-sm text-green-300">분당 단어수</div>
+                    <div className="text-xs text-slate-400 mt-1">
+                      WPM (5글자 = 1단어)
+                    </div>
+                  </div>
+                )}
                 <div className="text-center">
-                  <div className="text-4xl font-bold text-cyan-400 mb-2">
+                  <div className="text-3xl font-bold text-cyan-400 mb-2">
                     {result.time}초
                   </div>
-                  <div className="text-sm text-cyan-300">소요시간</div>
+                  <div className="text-sm text-cyan-300">순 타이핑 시간</div>
                   <div className="text-xs text-slate-400 mt-1">
-                    전체 경과 시간
-                  </div>
-                </div>
-                <div className="text-center">
-                  <div className="text-4xl font-bold text-cyan-400 mb-2">
-                    {result.totalKeyPresses}회
-                  </div>
-                  <div className="text-sm text-cyan-300">총 키 입력</div>
-                  <div className="text-xs text-slate-400 mt-1">
-                    모든 키 입력 횟수
+                    일시정지 시간 제외
                   </div>
                 </div>
               </div>
               
+
+              
               <div className="flex gap-3">
                 <button
-                  onClick={() => setShowResultModal(false)}
+                  onClick={() => {
+                    setShowResultModal(false);
+                    resetTyping();
+                  }}
                   className="flex-1 px-4 py-3 bg-gradient-to-r from-cyan-500 to-blue-500 text-white rounded-lg font-medium hover:from-cyan-600 hover:to-blue-600 transition-all duration-200 shadow-lg shadow-cyan-500/25"
                 >
-                  계속하기
+                  다시 연습
                 </button>
                 <button
-                  onClick={resetTyping}
+                  onClick={() => router.push('/dashboard/student/typing')}
                   className="flex-1 px-4 py-3 bg-slate-700 text-cyan-300 rounded-lg font-medium hover:bg-slate-600 transition-colors border border-cyan-500/30"
                 >
-                  다시 연습
+                  나가기
                 </button>
               </div>
             </div>

@@ -1,6 +1,6 @@
 'use client';
 
-import { Keyboard, Globe, Code } from 'lucide-react';
+import { Keyboard, Globe } from 'lucide-react';
 import { StudentHeading, StudentCard, StudentText } from "../components/StudentThemeProvider";
 import { cn } from "@/lib/utils";
 import { useState, useEffect } from 'react';
@@ -28,15 +28,15 @@ function CategoryCard({ title, description, icon, onClick, isSelected }: Categor
         "transition-all duration-300",
         isSelected && "bg-cyan-400/20 border-cyan-400/50"
       )}>
-        <div className="text-center p-6">
+        <div className="text-center p-4 lg:p-6">
           <div className={cn(
-            "w-16 h-16 mx-auto mb-4 transition-colors duration-300",
+            "w-12 h-12 lg:w-16 lg:h-16 mx-auto mb-4 transition-colors duration-300",
             isSelected ? "text-cyan-200" : "text-cyan-300"
           )}>
             {icon}
           </div>
           <h3 className={cn(
-            "text-xl font-bold mb-2 transition-colors duration-300",
+            "text-lg lg:text-xl font-bold mb-2 transition-colors duration-300",
             isSelected ? "text-cyan-100" : "text-cyan-100"
           )}>
             {title}
@@ -54,11 +54,11 @@ function CategoryCard({ title, description, icon, onClick, isSelected }: Categor
 }
 
 export default function TypingPage() {
-  const [selectedCategory, setSelectedCategory] = useState<'korean' | 'english' | 'code' | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<'korean' | 'english' | null>(null);
   const [isAnimating, setIsAnimating] = useState(false);
   const [animationKey, setAnimationKey] = useState(0);
 
-  const handleCategorySelect = (category: 'korean' | 'english' | 'code') => {
+  const handleCategorySelect = (category: 'korean' | 'english') => {
     if (selectedCategory === category) return; // 같은 카테고리 재선택 방지
     
     if (selectedCategory) {
@@ -77,15 +77,15 @@ export default function TypingPage() {
   };
 
   return (
-    <div className="w-full h-full flex flex-col p-6">
-      <StudentHeading size="h1" className="mb-8 text-center">타자연습</StudentHeading>
+    <div className="w-full h-full flex flex-col p-6 pt-20 lg:pt-6">
+      <StudentHeading size="h1" className="mb-6 lg:mb-8 text-center text-3xl lg:text-4xl">타자연습</StudentHeading>
       
       <div className="max-w-4xl mx-auto w-full">
         {/* 메인 카테고리 선택 */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 lg:gap-6 mb-6 lg:mb-8 justify-center max-w-2xl mx-auto">
           <CategoryCard
             title="한글 타이핑"
-            description="자리연습, 낱말연습, 문장연습"
+            description="자리연습, 낱말연습"
             icon={<Keyboard className="w-full h-full" />}
             onClick={() => handleCategorySelect('korean')}
             isSelected={selectedCategory === 'korean'}
@@ -93,18 +93,10 @@ export default function TypingPage() {
           
           <CategoryCard
             title="영어 타이핑"
-            description="자리연습, 낱말연습, 문장연습"
+            description="자리연습, 낱말연습"
             icon={<Globe className="w-full h-full" />}
             onClick={() => handleCategorySelect('english')}
             isSelected={selectedCategory === 'english'}
-          />
-          
-          <CategoryCard
-            title="코드 타이핑"
-            description="C언어, Python, HTML"
-            icon={<Code className="w-full h-full" />}
-            onClick={() => handleCategorySelect('code')}
-            isSelected={selectedCategory === 'code'}
           />
         </div>
 
@@ -118,92 +110,35 @@ export default function TypingPage() {
             )}
           >
             {/* 한글/영어 타이핑 세부 카드들 */}
-            {(selectedCategory === 'korean' || selectedCategory === 'english') && (
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <a href={`/dashboard/student/typing/basic?language=${selectedCategory}`} className="block group">
-                  <StudentCard className="cursor-pointer transition-all duration-300 hover:scale-105 hover:ring-2 hover:ring-cyan-400 hover:shadow-[0_0_30px_0_rgba(0,255,255,0.40)] group-hover:bg-cyan-400/10">
-                    <div className="text-center p-6">
-                      <div className="w-16 h-16 mx-auto mb-4 text-cyan-300 transition-colors duration-300 group-hover:text-cyan-200">
-                        <span className="text-4xl">⌨️</span>
-                      </div>
-                      <h3 className="text-xl font-bold text-cyan-100 mb-2 transition-colors duration-300 group-hover:text-cyan-50">자리연습</h3>
-                      <p className="text-cyan-300 text-sm transition-colors duration-300 group-hover:text-cyan-200">
-                        {selectedCategory === 'korean' ? '한글 자음과 모음의 기본 위치를 익혀보세요' : '영어 알파벳의 기본 위치를 익혀보세요'}
-                      </p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 lg:gap-6 justify-center max-w-2xl mx-auto">
+              <a href={`/dashboard/student/typing/basic?language=${selectedCategory}`} className="block group">
+                <StudentCard className="cursor-pointer transition-all duration-300 hover:scale-105 hover:ring-2 hover:ring-cyan-400 hover:shadow-[0_0_30px_0_rgba(0,255,255,0.40)] group-hover:bg-cyan-400/10">
+                  <div className="text-center p-4 lg:p-6">
+                    <div className="w-12 h-12 lg:w-16 lg:h-16 mx-auto mb-4 text-cyan-300 transition-colors duration-300 group-hover:text-cyan-200">
+                      <span className="text-3xl lg:text-4xl">⌨️</span>
                     </div>
-                  </StudentCard>
-                </a>
-                
-                <a href={`/dashboard/student/typing/word?language=${selectedCategory}`} className="block group">
-                  <StudentCard className="cursor-pointer transition-all duration-300 hover:scale-105 hover:ring-2 hover:ring-cyan-400 hover:shadow-[0_0_30px_0_rgba(0,255,255,0.40)] group-hover:bg-cyan-400/10">
-                    <div className="text-center p-6">
-                      <div className="w-16 h-16 mx-auto mb-4 text-cyan-300 transition-colors duration-300 group-hover:text-cyan-200">
-                        <span className="text-4xl">📝</span>
-                      </div>
-                      <h3 className="text-xl font-bold text-cyan-100 mb-2 transition-colors duration-300 group-hover:text-cyan-50">낱말연습</h3>
-                      <p className="text-cyan-300 text-sm transition-colors duration-300 group-hover:text-cyan-200">
-                        {selectedCategory === 'korean' ? '한글 단어를 타이핑하여 어휘력을 키워보세요' : '영어 단어를 타이핑하여 어휘력을 키워보세요'}
-                      </p>
+                    <h3 className="text-lg lg:text-xl font-bold text-cyan-100 mb-2 transition-colors duration-300 group-hover:text-cyan-50">자리연습</h3>
+                    <p className="text-cyan-300 text-sm transition-colors duration-300 group-hover:text-cyan-200">
+                      {selectedCategory === 'korean' ? '한글 자리 연습습' : '영어 자리 연습'}
+                    </p>
+                  </div>
+                </StudentCard>
+              </a>
+              
+              <a href={`/dashboard/student/typing/word?language=${selectedCategory}`} className="block group">
+                <StudentCard className="cursor-pointer transition-all duration-300 hover:scale-105 hover:ring-2 hover:ring-cyan-400 hover:shadow-[0_0_30px_0_rgba(0,255,255,0.40)] group-hover:bg-cyan-400/10">
+                  <div className="text-center p-4 lg:p-6">
+                    <div className="w-12 h-12 lg:w-16 lg:h-16 mx-auto mb-4 text-cyan-300 transition-colors duration-300 group-hover:text-cyan-200">
+                      <span className="text-3xl lg:text-4xl">📝</span>
                     </div>
-                  </StudentCard>
-                </a>
-                
-                <a href={`/dashboard/student/typing/sentence?language=${selectedCategory}`} className="block group">
-                  <StudentCard className="cursor-pointer transition-all duration-300 hover:scale-105 hover:ring-2 hover:ring-cyan-400 hover:shadow-[0_0_30px_0_rgba(0,255,255,0.40)] group-hover:bg-cyan-400/10">
-                    <div className="text-center p-6">
-                      <div className="w-16 h-16 mx-auto mb-4 text-cyan-300 transition-colors duration-300 group-hover:text-cyan-200">
-                        <span className="text-4xl">📖</span>
-                      </div>
-                      <h3 className="text-xl font-bold text-cyan-100 mb-2 transition-colors duration-300 group-hover:text-cyan-50">문장연습</h3>
-                      <p className="text-cyan-300 text-sm transition-colors duration-300 group-hover:text-cyan-200">
-                        {selectedCategory === 'korean' ? '긴 문장을 타이핑하여 실력을 향상시켜보세요' : '긴 영어 문장을 타이핑하여 실력을 향상시켜보세요'}
-                      </p>
-                    </div>
-                  </StudentCard>
-                </a>
-              </div>
-            )}
-
-            {/* 코드 타이핑 언어 선택 카드들 */}
-            {selectedCategory === 'code' && (
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <a href="/dashboard/student/typing/code/c" className="block group">
-                  <StudentCard className="cursor-pointer transition-all duration-300 hover:scale-105 hover:ring-2 hover:ring-cyan-400 hover:shadow-[0_0_30px_0_rgba(0,255,255,0.40)] group-hover:bg-cyan-400/10">
-                    <div className="text-center p-6">
-                      <div className="w-16 h-16 mx-auto mb-4 text-cyan-300 transition-colors duration-300 group-hover:text-cyan-200">
-                        <span className="text-4xl">🔷</span>
-                      </div>
-                      <h3 className="text-xl font-bold text-cyan-100 mb-2 transition-colors duration-300 group-hover:text-cyan-50">C언어</h3>
-                      <p className="text-cyan-300 text-sm transition-colors duration-300 group-hover:text-cyan-200">C언어 코드를 타이핑하고 실행해보세요</p>
-                    </div>
-                  </StudentCard>
-                </a>
-                
-                <a href="/dashboard/student/typing/code/python" className="block group">
-                  <StudentCard className="cursor-pointer transition-all duration-300 hover:scale-105 hover:ring-2 hover:ring-cyan-400 hover:shadow-[0_0_30px_0_rgba(0,255,255,0.40)] group-hover:bg-cyan-400/10">
-                    <div className="text-center p-6">
-                      <div className="w-16 h-16 mx-auto mb-4 text-cyan-300 transition-colors duration-300 group-hover:text-cyan-200">
-                        <span className="text-4xl">🐍</span>
-                      </div>
-                      <h3 className="text-xl font-bold text-cyan-100 mb-2 transition-colors duration-300 group-hover:text-cyan-50">Python</h3>
-                      <p className="text-cyan-300 text-sm transition-colors duration-300 group-hover:text-cyan-200">파이썬 코드를 타이핑하고 실행해보세요</p>
-                    </div>
-                  </StudentCard>
-                </a>
-                
-                <a href="/dashboard/student/typing/code/html" className="block group">
-                  <StudentCard className="cursor-pointer transition-all duration-300 hover:scale-105 hover:ring-2 hover:ring-cyan-400 hover:shadow-[0_0_30px_0_rgba(0,255,255,0.40)] group-hover:bg-cyan-400/10">
-                    <div className="text-center p-6">
-                      <div className="w-16 h-16 mx-auto mb-4 text-cyan-300 transition-colors duration-300 group-hover:text-cyan-200">
-                        <span className="text-4xl">🌐</span>
-                      </div>
-                      <h3 className="text-xl font-bold text-cyan-100 mb-2 transition-colors duration-300 group-hover:text-cyan-50">HTML</h3>
-                      <p className="text-cyan-300 text-sm transition-colors duration-300 group-hover:text-cyan-200">HTML 코드를 타이핑하고 결과를 확인해보세요</p>
-                    </div>
-                  </StudentCard>
-                </a>
-              </div>
-            )}
+                    <h3 className="text-lg lg:text-xl font-bold text-cyan-100 mb-2 transition-colors duration-300 group-hover:text-cyan-50">낱말연습</h3>
+                    <p className="text-cyan-300 text-sm transition-colors duration-300 group-hover:text-cyan-200">
+                      {selectedCategory === 'korean' ? '한글 낱말 연습' : '영어 낱말 연습'}
+                    </p>
+                  </div>
+                </StudentCard>
+              </a>
+            </div>
           </div>
         )}
       </div>

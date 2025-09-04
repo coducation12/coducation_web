@@ -10,6 +10,46 @@ import {
   CarouselItem,
 } from '@/components/ui/carousel';
 import Autoplay from 'embla-carousel-autoplay';
+import { getContent } from '@/lib/actions';
+
+// 클라이언트 캐러셀 컴포넌트
+function AcademyCarousel({ slides }: { slides: any[] }) {
+  const mainCarouselPlugin = React.useRef(
+    Autoplay({ delay: 5000, stopOnInteraction: true, stopOnMouseEnter: true })
+  );
+
+  return (
+    <Carousel
+      plugins={[mainCarouselPlugin.current]}
+      className="w-full mb-12"
+      opts={{ loop: true }}
+      onMouseEnter={mainCarouselPlugin.current.stop}
+      onMouseLeave={mainCarouselPlugin.current.reset}
+    >
+      <CarouselContent>
+        {slides.map((slide, index) => (
+          <CarouselItem key={index}>
+            <div className="grid grid-cols-1 md:grid-cols-2 items-center bg-card rounded-xl overflow-hidden">
+              <div className="p-8 md:p-12 space-y-4 order-2 md:order-1">
+                <h3 className="text-3xl font-bold text-primary font-headline tracking-wider">{slide.title}</h3>
+                <p className="text-lg text-muted-foreground mt-2">{slide.description}</p>
+              </div>
+              <div className="relative w-full h-96 order-1 md:order-2">
+                <Image 
+                  src={slide.image} 
+                  alt={slide.title}
+                  width={600}
+                  height={400}
+                  className="w-full h-full object-cover"
+                />
+              </div>
+            </div>
+          </CarouselItem>
+        ))}
+      </CarouselContent>
+    </Carousel>
+  );
+}
 
 const features = [
   {
@@ -54,48 +94,58 @@ const academySlides = [
 ];
 
 export function AcademySection() {
-    const mainCarouselPlugin = React.useRef(
-        Autoplay({ delay: 5000, stopOnInteraction: true, stopOnMouseEnter: true })
-    );
+  const [content, setContent] = React.useState<any>(null);
+  const [loading, setLoading] = React.useState(true);
+
+  React.useEffect(() => {
+    const loadContent = async () => {
+      const contentResult = await getContent();
+      setContent(contentResult.success ? contentResult.data : null);
+      setLoading(false);
+    };
+    loadContent();
+  }, []);
+
+  // 로딩 중이면 기본값 사용
+  const academyFeatures = content?.academy_features || features;
+  const academySlides = content?.academy_slides || [
+    {
+      image: 'https://placehold.co/600x400.png',
+      title: '최첨단 학습 환경',
+      description: '학생들이 창의력을 마음껏 발휘할 수 있는 현대적이고 영감을 주는 공간을 제공합니다.',
+    },
+    {
+      image: 'https://placehold.co/600x400.png',
+      title: '개인별 맞춤 지도',
+      description: '소수 정예 수업으로 강사가 학생 한 명 한 명에게 집중하여 잠재력을 최대로 이끌어냅니다.',
+    },
+    {
+      image: 'https://placehold.co/600x400.png',
+      title: '실전 프로젝트 중심',
+      description: '실제 문제를 해결하는 프로젝트를 통해 코딩 실력과 문제 해결 능력을 동시에 기릅니다.',
+    },
+  ];
 
   return (
     <section id="academy" className="container w-full py-32 md:py-52">
       <div className="flex flex-col items-center text-center space-y-4 mb-12">
-        <h2 className="text-4xl font-bold tracking-tighter sm:text-5xl font-headline">코딩메이커 학원 안내</h2>
+        <h2 className="text-4xl font-bold tracking-tighter sm:text-5xl font-headline">
+          {content?.academy_title || '코딩메이커 학원 안내'}
+        </h2>
         <p className="max-w-2xl text-lg text-muted-foreground">
-          창의력과 기술이 만나는 곳, 코딩메이커 학원에 오신 것을 환영합니다.
+          {content?.academy_subtitle || '창의력과 기술이 만나는 곳, 코딩메이커 학원에 오신 것을 환영합니다.'}
         </p>
       </div>
       
-      <Carousel
-        plugins={[mainCarouselPlugin.current]}
-        className="w-full mb-12"
-        opts={{ loop: true }}
-        onMouseEnter={mainCarouselPlugin.current.stop}
-        onMouseLeave={mainCarouselPlugin.current.reset}
-      >
-        <CarouselContent>
-          {academySlides.map((slide, index) => (
-            <CarouselItem key={index}>
-               <div className="grid grid-cols-1 md:grid-cols-2 items-center bg-card rounded-xl overflow-hidden">
-                <div className="p-8 md:p-12 space-y-4 order-2 md:order-1">
-                  <h3 className="text-3xl font-bold text-primary font-headline tracking-wider">{slide.title}</h3>
-                  <p className="text-lg text-muted-foreground mt-2">{slide.description}</p>
-                </div>
-                <div className="relative w-full h-96 order-1 md:order-2">
-                  <Image src={slide.image} data-ai-hint={slide.hint} alt={slide.alt} layout="fill" objectFit="cover" />
-                </div>
-              </div>
-            </CarouselItem>
-          ))}
-        </CarouselContent>
-      </Carousel>
+      <AcademyCarousel slides={academySlides} />
 
       <div className="w-full grid gap-8 md:grid-cols-3">
-        {features.map((feature, index) => (
+        {academyFeatures.map((feature, index) => (
           <Card key={index} className="flex flex-col cyber-card">
             <CardHeader className="flex flex-col items-center text-center">
-              {feature.icon}
+              {index === 0 && <MapPin className="h-8 w-8 text-primary" />}
+              {index === 1 && <BookOpen className="h-8 w-8 text-primary" />}
+              {index === 2 && <Users className="h-8 w-8 text-primary" />}
               <CardTitle className="mt-4 font-headline">{feature.title}</CardTitle>
             </CardHeader>
             <CardContent className="text-center text-muted-foreground flex-grow">

@@ -5,6 +5,7 @@ import { ArrowLeft, RotateCcw, X } from 'lucide-react';
 import { StudentHeading, StudentCard, StudentText, studentButtonStyles } from "../../components/StudentThemeProvider";
 import { cn } from "@/lib/utils";
 import { useRouter, useSearchParams } from 'next/navigation';
+import { saveTypingResult } from '@/lib/actions';
 
 // 한글 자모 분해 함수
 function decomposeHangul(char: string): string[] {
@@ -261,7 +262,7 @@ export default function WordPage() {
 
 
 
-  const calculateResult = useCallback(() => {
+  const calculateResult = useCallback(async () => {
     const totalItems = inputHistory.length; // 실제 시도한 단어 수
     const correctItems = correctHistory.filter(Boolean).length; // 맞힌 단어 수
     
@@ -313,14 +314,29 @@ export default function WordPage() {
       }
     }
     
-    setResult({
+    const resultData = {
       accuracy,
       speed: finalCPM,
       wpm: finalWPM,
       time: Math.round(clampedTimeMinutes * 60),
       totalKeyPresses: totalKeyPresses,
       actualCharacters: totalTypedCharacters
-    });
+    };
+    
+    // 타자연습 결과를 데이터베이스에 저장
+    try {
+      await saveTypingResult({
+        accuracy: resultData.accuracy,
+        speed: resultData.speed,
+        wpm: resultData.wpm,
+        time: resultData.time,
+        language: language
+      });
+    } catch (error) {
+      console.error('타자연습 결과 저장 실패:', error);
+    }
+    
+    setResult(resultData);
     setShowResultModal(true);
   }, [inputHistory, correctHistory, totalKeyPresses, startTime, language, wordTimings]);
 

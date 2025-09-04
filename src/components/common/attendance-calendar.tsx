@@ -31,9 +31,8 @@ export function AttendanceCalendar({ studentId }: AttendanceCalendarProps) {
       
       const { data, error } = await supabase
         .from('student_activity_logs')
-        .select('date, attended')
+        .select('date, attended, activity_type')
         .eq('student_id', studentId)  // 특정 학생의 출석 데이터만 조회
-        .eq('activity_type', 'attendance')
         .gte('date', startOfMonth.toISOString().split('T')[0])
         .lte('date', endOfMonth.toISOString().split('T')[0])
         .eq('attended', true);

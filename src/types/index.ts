@@ -61,8 +61,7 @@ export interface StudentActivityLog {
   attended: boolean;
   typing_score?: number;
   typing_speed?: number;
-  curriculum_id?: string;
-  typing_exercise_id?: string;
+  typing_language?: 'korean' | 'english';
   result_image?: string;
   result_url?: string;
   result_file?: string;

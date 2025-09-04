@@ -506,3 +506,244 @@ export async function updateCurriculum(formData: FormData) {
     return { success: false, error: '커리큘럼 수정 중 오류가 발생했습니다.' };
   }
 }
+
+// 타자연습 결과 저장 서버 액션
+export async function saveTypingResult(data: {
+  accuracy: number;
+  speed: number;
+  wpm?: number;
+  time: number;
+  language: 'korean' | 'english';
+}) {
+  try {
+    // 현재 로그인한 사용자 정보 가져오기
+    const cookieStore = await cookies();
+    const userId = cookieStore.get('user_id')?.value;
+    
+    if (!userId) {
+      return { success: false, error: '로그인이 필요합니다.' };
+    }
+
+    const today = new Date().toISOString().split('T')[0];
+
+    // 같은 날짜, 같은 언어의 기존 기록 확인
+    const { data: existingRecord, error: selectError } = await supabase
+      .from('student_activity_logs')
+      .select('id, typing_score, typing_speed')
+      .eq('student_id', userId)
+      .eq('activity_type', 'typing')
+      .eq('date', today)
+      .eq('typing_language', data.language)
+      .single();
+
+    if (selectError && selectError.code !== 'PGRST116') {
+      // PGRST116은 "not found" 에러이므로 정상, 다른 에러는 처리
+      console.error('기존 기록 조회 실패:', selectError);
+      return { success: false, error: selectError.message };
+    }
+
+    if (existingRecord) {
+      // 기존 기록이 있으면 더 좋은 점수로만 업데이트
+      const shouldUpdate = data.accuracy > existingRecord.typing_score || 
+                          (data.accuracy === existingRecord.typing_score && data.speed > existingRecord.typing_speed);
+      
+      if (shouldUpdate) {
+        const { error } = await supabase
+          .from('student_activity_logs')
+          .update({
+            typing_score: data.accuracy,
+            typing_speed: data.speed,
+            attended: true,
+            created_at: new Date().toISOString()
+          })
+          .eq('id', existingRecord.id);
+
+        if (error) {
+          console.error('타자연습 결과 업데이트 실패:', error);
+          return { success: false, error: error.message };
+        }
+      }
+      // 기존 기록이 더 좋으면 업데이트하지 않음
+    } else {
+      // 새로운 기록 생성
+      const { error } = await supabase
+        .from('student_activity_logs')
+        .insert({
+          student_id: userId,
+          activity_type: 'typing',
+          date: today,
+          typing_score: data.accuracy,
+          typing_speed: data.speed,
+          typing_language: data.language,
+          attended: true
+        });
+
+      if (error) {
+        console.error('타자연습 결과 저장 실패:', error);
+        return { success: false, error: error.message };
+      }
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error('타자연습 결과 저장 중 오류:', error);
+    return { success: false, error: '타자연습 결과 저장 중 오류가 발생했습니다.' };
+  }
+}
+
+// 타자연습 기록 조회 서버 액션
+export async function getTypingRecords(studentId: string, daysBack: number = 90) {
+  try {
+    const fromDate = new Date();
+    fromDate.setDate(fromDate.getDate() - daysBack);
+    const fromDateString = fromDate.toISOString().split('T')[0];
+    
+    const { data, error } = await supabase
+      .from('student_activity_logs')
+      .select('date, typing_score, typing_speed, typing_language, created_at')
+      .eq('student_id', studentId)
+      .eq('activity_type', 'typing')
+      .not('typing_score', 'is', null)
+      .gte('date', fromDateString)
+      .order('date', { ascending: true });
+
+    if (error) {
+      console.error('타자연습 기록 조회 실패:', error);
+      return { success: false, error: error.message };
+    }
+
+    return { success: true, data: data || [] };
+  } catch (error) {
+    console.error('타자연습 기록 조회 중 오류:', error);
+    return { success: false, error: '타자연습 기록 조회 중 오류가 발생했습니다.' };
+  }
+}
+
+// 컨텐츠 이미지 Supabase Storage 업로드
+export async function uploadContentImage(file: File, section: string): Promise<{success: boolean, url?: string, error?: string}> {
+  try {
+    console.log('이미지 업로드 시작:', { fileName: file.name, fileSize: file.size, fileType: file.type, section });
+    
+    // 인증 정보 확인
+    const cookieStore = await cookies();
+    const userId = cookieStore.get('user_id')?.value;
+    const userRole = cookieStore.get('user_role')?.value;
+    console.log('현재 사용자 정보:', { userId, userRole });
+    
+    if (!userId || userRole !== 'admin') {
+      return { success: false, error: '관리자만 이미지를 업로드할 수 있습니다.' };
+    }
+    
+    // 파일 크기 체크 (5MB 제한)
+    if (file.size > 5 * 1024 * 1024) {
+      return { success: false, error: '파일 크기는 5MB 이하여야 합니다.' };
+    }
+
+    // 파일 형식 체크
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+    if (!allowedTypes.includes(file.type)) {
+      return { success: false, error: 'JPG, PNG, GIF, WEBP 파일만 업로드 가능합니다.' };
+    }
+
+    // 파일명 정리 (특수문자 제거)
+    const cleanFileName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+    const fileName = `${section}/${Date.now()}-${cleanFileName}`;
+    
+    console.log('업로드 파일명:', fileName);
+
+    // Supabase Storage에 업로드
+    const { data, error } = await supabase.storage
+      .from('content-images')
+      .upload(fileName, file, {
+        cacheControl: '3600',
+        upsert: true // 같은 파일명이 있어도 덮어쓰기
+      });
+
+    if (error) {
+      console.error('Storage 업로드 오류:', error);
+      return { 
+        success: false, 
+        error: `이미지 업로드에 실패했습니다: ${error.message}` 
+      };
+    }
+
+    console.log('업로드 성공:', data);
+
+    // 공개 URL 가져오기
+    const { data: urlData } = supabase.storage
+      .from('content-images')
+      .getPublicUrl(fileName);
+
+    console.log('공개 URL:', urlData.publicUrl);
+    
+    return { success: true, url: urlData.publicUrl };
+  } catch (error) {
+    console.error('이미지 업로드 오류:', error);
+    return { 
+      success: false, 
+      error: `이미지 업로드에 실패했습니다: ${error instanceof Error ? error.message : '알 수 없는 오류'}` 
+    };
+  }
+}
+
+// 컨텐츠 업데이트 서버 액션 (통합)
+export async function updateContent(formData: FormData) {
+  try {
+    const cookieStore = await cookies();
+    const currentUserRole = cookieStore.get('user_role')?.value;
+
+    // 관리자만 수정 가능
+    if (currentUserRole !== 'admin') {
+      return { success: false, error: '관리자만 수정할 수 있습니다.' };
+    }
+
+    const contentData = {
+      about_title: formData.get('about_title') as string,
+      about_subtitle: formData.get('about_subtitle') as string,
+      about_mission: formData.get('about_mission') as string,
+      about_vision: formData.get('about_vision') as string,
+      about_image: formData.get('about_image') as string,
+      academy_title: formData.get('academy_title') as string,
+      academy_subtitle: formData.get('academy_subtitle') as string,
+      academy_features: JSON.parse(formData.get('academy_features') as string),
+      academy_slides: JSON.parse(formData.get('academy_slides') as string),
+      updated_at: new Date().toISOString()
+    };
+
+    // 기존 레코드 업데이트 (항상 첫 번째 레코드)
+    const { error } = await supabase
+      .from('content_management')
+      .update(contentData)
+      .eq('id', (await supabase.from('content_management').select('id').limit(1).single()).data?.id);
+
+    if (error) {
+      return { success: false, error: error.message };
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error('컨텐츠 업데이트 오류:', error);
+    return { success: false, error: '저장 중 오류가 발생했습니다.' };
+  }
+}
+
+// 컨텐츠 조회 서버 액션
+export async function getContent() {
+  try {
+    const { data, error } = await supabase
+      .from('content_management')
+      .select('*')
+      .limit(1)
+      .single();
+
+    if (error && error.code !== 'PGRST116') {
+      return { success: false, error: error.message };
+    }
+
+    return { success: true, data };
+  } catch (error) {
+    console.error('컨텐츠 조회 오류:', error);
+    return { success: false, error: '데이터 조회 중 오류가 발생했습니다.' };
+  }
+}
+

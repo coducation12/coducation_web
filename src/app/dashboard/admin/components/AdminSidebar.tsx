@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
-import { LayoutDashboard, BookOpen, Users, Menu, LogOut, GraduationCap, User, CalendarDays, UserCheck } from "lucide-react";
+import { LayoutDashboard, BookOpen, Users, Menu, LogOut, GraduationCap, User, CalendarDays, UserCheck, Settings } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { logout } from "@/lib/actions";
@@ -15,6 +15,7 @@ const navItems = [
   { href: "/dashboard/admin/timetable", label: "학원시간표", icon: <CalendarDays className="w-5 h-5" /> },
   { href: "/dashboard/admin/curriculum", label: "커리큘럼", icon: <BookOpen className="w-5 h-5" /> },
   { href: "/dashboard/admin/community", label: "커뮤니티", icon: <Users className="w-5 h-5" /> },
+  { href: "/dashboard/admin/content", label: "컨텐츠 관리", icon: <Settings className="w-5 h-5" /> },
 ];
 
 export function AdminSidebar() {
@@ -49,7 +50,7 @@ export function AdminSidebar() {
         ))}
       </nav>
       <div className="p-4 border-t border-cyan-900/20 text-cyan-200 text-sm flex flex-col gap-4">
-        <Link href="/dashboard/admin/profile" className="flex items-center gap-3 hover:underline cursor-pointer">
+        <Link href="/dashboard/admin/content" className="flex items-center gap-3 hover:underline cursor-pointer">
           <User className="w-5 h-5" />
           <span>관리자</span>
         </Link>

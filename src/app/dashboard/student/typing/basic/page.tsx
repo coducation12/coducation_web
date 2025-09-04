@@ -5,6 +5,7 @@ import { ArrowLeft, RotateCcw, Keyboard, Globe, Hand, Turtle, X } from 'lucide-r
 import { StudentHeading, StudentCard, StudentText, studentButtonStyles } from "../../components/StudentThemeProvider";
 import { cn } from "@/lib/utils";
 import { useRouter, useSearchParams } from 'next/navigation';
+import { saveTypingResult } from '@/lib/actions';
 
 // 한글 자모 분해 함수
 function decomposeHangul(char: string): string[] {
@@ -535,7 +536,7 @@ export default function BasicPage() {
     setLastActivityTime(Date.now());
   }, [isPaused, pauseStartTime]);
 
-  const calculateResult = useCallback(() => {
+  const calculateResult = useCallback(async () => {
     // 단어연습 부분만의 결과 계산 (currentCharIndex >= 50인 부분)
     const wordPracticeCount = Math.max(0, currentCharIndex - 50); // 완료한 단어 수
     const wordCorrectCount = wordCorrectHistory.filter(Boolean).length; // 맞힌 단어 수
@@ -605,24 +606,39 @@ export default function BasicPage() {
       finalWPM = Math.round(finalCPM / 5);
     }
     
-    setResult({
+    const resultData = {
       accuracy: wordAccuracy,
       speed: finalCPM,
       wpm: finalWPM,
       time: Math.round(totalTimeMinutes * 60),
       totalKeyPresses: totalKeyPresses,
       actualCharacters: wordTimings.length
-    });
+    };
+    
+    // 타자연습 결과를 데이터베이스에 저장
+    try {
+      await saveTypingResult({
+        accuracy: resultData.accuracy,
+        speed: resultData.speed,
+        wpm: resultData.wpm,
+        time: resultData.time,
+        language: language
+      });
+    } catch (error) {
+      console.error('타자연습 결과 저장 실패:', error);
+    }
+    
+    setResult(resultData);
     setShowResultModal(true);
   }, [wordTimings, wordCorrectHistory, totalKeyPresses, startTime, pausedTime, currentCharIndex, language]);
 
   // 다음 자리로 진행하는 함수 (단순화)
-  const moveToNextPosition = useCallback(() => {
+  const moveToNextPosition = useCallback(async () => {
     const nextIndex = currentCharIndex + 1;
     
     if (nextIndex >= 100) {
       // 100개 연습 완료 시 결과 계산
-      calculateResult();
+      await calculateResult();
     } else {
       // 다음 순서로 진행
       setCurrentCharIndex(nextIndex);

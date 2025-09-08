@@ -7,7 +7,8 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { ChevronLeft, ChevronRight, MapPin, BookOpen, Users, Camera, Save, Plus, Trash2, MoveUp, MoveDown } from 'lucide-react';
 import Image from 'next/image';
-import { updateContent, uploadContentImage, getContent } from '@/lib/actions';
+import { supabase } from '@/lib/supabase';
+import { updateContent, getContent } from '@/lib/actions';
 
 export default function ContentManagePage() {
   const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
@@ -77,22 +78,59 @@ export default function ContentManagePage() {
       if (file) {
         setIsUploading(true);
         try {
-          const result = await uploadContentImage(file, section);
-          if (result.success && result.url) {
-            if (section === 'about') {
-              setContent(prev => ({ ...prev, about_image: result.url! }));
-            } else if (slideIndex !== undefined) {
-              setContent(prev => ({
-                ...prev,
-                academy_slides: prev.academy_slides.map((slide, idx) => 
-                  idx === slideIndex ? { ...slide, image: result.url! } : slide
-                )
-              }));
-            }
-          } else {
-            alert(result.error || '이미지 업로드에 실패했습니다.');
+          // 파일 크기 체크 (5MB 제한)
+          if (file.size > 5 * 1024 * 1024) {
+            alert('파일 크기는 5MB 이하여야 합니다.');
+            setIsUploading(false);
+            return;
+          }
+
+          // 파일 형식 체크
+          const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+          if (!allowedTypes.includes(file.type)) {
+            alert('JPG, PNG, GIF, WEBP 파일만 업로드 가능합니다.');
+            setIsUploading(false);
+            return;
+          }
+
+          // 파일명 정리 (특수문자 제거)
+          const cleanFileName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+          const fileName = `${section}/${Date.now()}-${cleanFileName}`;
+
+          // Supabase Storage에 업로드 (content-images 버킷 사용)
+          const { data, error } = await supabase.storage
+            .from('content-images')
+            .upload(fileName, file, {
+              cacheControl: '3600',
+              upsert: true
+            });
+
+          if (error) {
+            console.error('Storage 업로드 오류:', error);
+            alert(`이미지 업로드에 실패했습니다: ${error.message}`);
+            setIsUploading(false);
+            return;
+          }
+
+          // 공개 URL 가져오기
+          const { data: urlData } = supabase.storage
+            .from('content-images')
+            .getPublicUrl(fileName);
+
+          console.log('업로드 성공:', urlData.publicUrl);
+
+          if (section === 'about') {
+            setContent(prev => ({ ...prev, about_image: urlData.publicUrl }));
+          } else if (slideIndex !== undefined) {
+            setContent(prev => ({
+              ...prev,
+              academy_slides: prev.academy_slides.map((slide, idx) => 
+                idx === slideIndex ? { ...slide, image: urlData.publicUrl } : slide
+              )
+            }));
           }
         } catch (error) {
+          console.error('이미지 업로드 오류:', error);
           alert('이미지 업로드 중 오류가 발생했습니다.');
         } finally {
           setIsUploading(false);

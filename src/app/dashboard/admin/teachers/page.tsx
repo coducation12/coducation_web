@@ -5,8 +5,11 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Plus, Edit, Trash2 } from "lucide-react";
+import { Plus, Edit, Trash2, User } from "lucide-react";
+import Image from "next/image";
 import { supabase } from "@/lib/supabase";
+import AddTeacherModal from "./components/AddTeacherModal";
+import EditTeacherModal from "./components/EditTeacherModal";
 
 interface Teacher {
     id: string;
@@ -16,11 +19,14 @@ interface Teacher {
     subject: string;
     status: '활성' | '비활성';
     createdAt: string;
+    image?: string;
 }
 
 export default function AdminTeachersPage() {
     const [teachers, setTeachers] = useState<Teacher[]>([]);
     const [loading, setLoading] = useState(true);
+    const [editingTeacher, setEditingTeacher] = useState<Teacher | null>(null);
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
     useEffect(() => {
         fetchTeachers();
@@ -28,9 +34,15 @@ export default function AdminTeachersPage() {
 
     const fetchTeachers = async () => {
         try {
+            // users와 teachers 테이블 조인해서 강사 정보 가져오기
             const { data, error } = await supabase
                 .from('users')
-                .select('id, name, email, phone, role, created_at')
+                .select(`
+                    id, name, email, phone, username, created_at,
+                    teachers (
+                        bio, certs, career, image, subject
+                    )
+                `)
                 .eq('role', 'teacher');
 
             if (error) {
@@ -44,9 +56,10 @@ export default function AdminTeachersPage() {
                 name: teacher.name || '이름 없음',
                 email: teacher.email || '',
                 phone: teacher.phone || '',
-                subject: '컴퓨터 교육', // 기본값
+                subject: teacher.teachers?.subject || '코딩 교육', // subject 컬럼에서 직접 가져오기
                 status: '활성' as const,
-                createdAt: teacher.created_at
+                createdAt: teacher.created_at,
+                image: teacher.teachers?.image || ''
             }));
 
             setTeachers(mappedTeachers);
@@ -58,14 +71,23 @@ export default function AdminTeachersPage() {
         }
     };
 
-    const handleAddTeacher = () => {
-        // TODO: 강사 추가 모달 구현
-        console.log('강사 추가');
+    const handleRefreshTeachers = () => {
+        fetchTeachers();
     };
 
     const handleEditTeacher = (teacher: Teacher) => {
-        // TODO: 강사 수정 모달 구현
-        console.log('강사 수정:', teacher);
+        setEditingTeacher(teacher);
+        setIsEditModalOpen(true);
+    };
+
+    const handleCloseEditModal = () => {
+        setEditingTeacher(null);
+        setIsEditModalOpen(false);
+    };
+
+    const handleUpdateTeacher = () => {
+        fetchTeachers(); // 목록 새로고침
+        handleCloseEditModal();
     };
 
     const handleDeleteTeacher = async (teacherId: string) => {
@@ -107,13 +129,7 @@ export default function AdminTeachersPage() {
                 <div>
                     <h1 className="text-3xl font-bold text-cyan-100 drop-shadow-[0_0_6px_#00fff7]">강사 관리</h1>
                 </div>
-                <Button 
-                    onClick={handleAddTeacher}
-                    className="bg-cyan-600 hover:bg-cyan-700 text-white"
-                >
-                    <Plus className="w-4 h-4 mr-2" />
-                    강사 추가
-                </Button>
+                <AddTeacherModal onAddTeacher={handleRefreshTeachers} />
             </div>
 
             <Card className="bg-gradient-to-br from-cyan-900/20 to-blue-900/20 border-cyan-500/30">
@@ -121,6 +137,7 @@ export default function AdminTeachersPage() {
                     <Table>
                         <TableHeader>
                             <TableRow className="border-cyan-500/20">
+                                <TableHead className="text-cyan-200 text-center">프로필</TableHead>
                                 <TableHead className="text-cyan-200">이름</TableHead>
                                 <TableHead className="text-cyan-200">이메일</TableHead>
                                 <TableHead className="text-cyan-200">연락처</TableHead>
@@ -133,13 +150,36 @@ export default function AdminTeachersPage() {
                         <TableBody>
                             {teachers.length === 0 ? (
                                 <TableRow>
-                                    <TableCell colSpan={7} className="text-center text-cyan-200 py-8">
+                                    <TableCell colSpan={8} className="text-center text-cyan-200 py-8">
                                         등록된 강사가 없습니다.
                                     </TableCell>
                                 </TableRow>
                             ) : (
                                 teachers.map((teacher) => (
                                     <TableRow key={teacher.id} className="border-cyan-500/10">
+                                        <TableCell className="text-center">
+                                            <div className="flex justify-center">
+                                                <div className="relative w-10 h-10 rounded-full overflow-hidden border-2 border-cyan-400/30">
+                                                    {teacher.image ? (
+                                                        <Image
+                                                            src={teacher.image}
+                                                            alt={`${teacher.name} 프로필`}
+                                                            fill
+                                                            className="object-cover"
+                                                            onError={(e) => {
+                                                                // 이미지 로딩 실패 시 숨김 처리
+                                                                e.currentTarget.style.display = 'none';
+                                                            }}
+                                                        />
+                                                    ) : null}
+                                                    {!teacher.image && (
+                                                        <div className="flex items-center justify-center h-full bg-cyan-900/20">
+                                                            <User className="w-5 h-5 text-cyan-400" />
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </TableCell>
                                         <TableCell className="text-cyan-100 font-medium">
                                             {teacher.name}
                                         </TableCell>
@@ -191,6 +231,14 @@ export default function AdminTeachersPage() {
                     </Table>
                 </CardContent>
             </Card>
+
+            {/* 강사 수정 모달 */}
+            <EditTeacherModal
+                teacher={editingTeacher}
+                isOpen={isEditModalOpen}
+                onClose={handleCloseEditModal}
+                onUpdate={handleUpdateTeacher}
+            />
         </div>
     );
 } 

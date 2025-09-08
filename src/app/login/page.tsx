@@ -51,7 +51,7 @@ function LoginForm() {
 
   return (
     <div className="flex items-center justify-center min-h-[calc(100vh-11rem)] py-12">
-      <form onSubmit={handleLogin} className="mx-auto max-w-sm w-full bg-black/40 rounded-lg shadow p-8">
+      <form onSubmit={handleLogin} className="mx-auto max-w-sm w-full bg-black/40 rounded-lg shadow p-8" autoComplete="off">
         <div className="flex items-center justify-between mb-6">
           <div className="text-2xl font-headline font-bold text-white">로그인</div>
           <div className="flex gap-2">

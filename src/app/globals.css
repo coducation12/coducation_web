@@ -3,6 +3,31 @@
 @tailwind components;
 @tailwind utilities;
 
+/* 자동완성 방지 글로벌 스타일 */
+* {
+  -webkit-text-security: none;
+}
+
+input, textarea, select {
+  -webkit-autocomplete: off;
+  -webkit-autofill: off;
+}
+
+/* 브라우저 자동완성 배경색 제거 */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active {
+  transition: background-color 5000s ease-in-out 0s;
+  -webkit-text-fill-color: inherit !important;
+}
+
+/* 패스워드 매니저 아이콘 숨김 */
+input::-ms-reveal,
+input::-ms-clear {
+  display: none;
+}
+
 @layer base {
   :root {
     --background: 222 83% 4%;

@@ -10,11 +10,11 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 
 const navLinks = [
-  { href: '/#home', label: 'Home', id: 'home' },
-  { href: '/#about', label: 'About', id: 'about' },
-  { href: '/#academy', label: 'Academy', id: 'academy' },
-  { href: '/#instructors', label: 'Instructors', id: 'instructors' },
-  { href: '/#curriculum', label: 'Curriculum', id: 'curriculum' },
+  { href: '/#home', label: '홈', id: 'home' },
+  { href: '/#about', label: '소개', id: 'about' },
+  { href: '/#academy', label: '학원안내', id: 'academy' },
+  { href: '/#instructors', label: '강사진', id: 'instructors' },
+  { href: '/#curriculum', label: '커리큘럼', id: 'curriculum' },
 ];
 
 export function Header() {

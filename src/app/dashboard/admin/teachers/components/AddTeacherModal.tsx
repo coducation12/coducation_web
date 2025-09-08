@@ -6,60 +6,56 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import ImageUpload from "@/components/ui/image-upload";
 import { Plus } from "lucide-react";
+import { addTeacher } from "@/lib/actions";
 
 interface AddTeacherModalProps {
-    onAddTeacher: (teacherData: TeacherFormData) => void;
+    onAddTeacher: () => void; // 강사 목록 새로고침용 콜백
 }
 
 export interface TeacherFormData {
-    teacherId: string;
-    name: string;
     email: string;
+    name: string;
     phone: string;
+    password: string;
     subject: string;
-    experience: number;
+    image: string;
 }
 
-const subjects = [
-    "React", "Python", "알고리즘", "웹 개발", "JavaScript", "TypeScript", 
-    "Node.js", "데이터베이스", "머신러닝", "앱 개발", "Java", "C++"
-];
-
-const experienceYears = Array.from({ length: 20 }, (_, i) => i + 1);
+// 담당과목은 직접 입력으로 변경
 
 export default function AddTeacherModal({ onAddTeacher }: AddTeacherModalProps) {
     const [open, setOpen] = useState(false);
     const [formData, setFormData] = useState<TeacherFormData>({
-        teacherId: "",
-        name: "",
         email: "",
+        name: "",
         phone: "",
+        password: "",
         subject: "",
-        experience: 1
+        image: ""
     });
+    const [loading, setLoading] = useState(false);
 
-    const handleInputChange = (field: keyof TeacherFormData, value: string | number) => {
+    const handleInputChange = (field: keyof TeacherFormData, value: string) => {
         setFormData(prev => ({
             ...prev,
             [field]: value
         }));
     };
 
-    const handleSubmit = () => {
+    const handleSubmit = async () => {
         // 필수 필드 검증
-        if (!formData.teacherId || !formData.name || !formData.phone || !formData.subject) {
-            alert("필수 필드를 모두 입력해주세요.");
+        if (!formData.email || !formData.name || !formData.phone || !formData.password || !formData.subject) {
+            alert("모든 필수 항목을 입력해주세요.");
             return;
         }
 
-        // 이메일 형식 검증 (입력된 경우에만)
-        if (formData.email) {
-            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-            if (!emailRegex.test(formData.email)) {
-                alert("올바른 이메일 형식을 입력해주세요.");
-                return;
-            }
+        // 이메일 형식 검증
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(formData.email)) {
+            alert("올바른 이메일 형식을 입력해주세요.");
+            return;
         }
 
         // 전화번호 형식 검증
@@ -69,26 +65,58 @@ export default function AddTeacherModal({ onAddTeacher }: AddTeacherModalProps) 
             return;
         }
 
-        onAddTeacher(formData);
-        setFormData({
-            teacherId: "",
-            name: "",
-            email: "",
-            phone: "",
-            subject: "",
-            experience: 1
-        });
-        setOpen(false);
+        // 비밀번호 길이 검증
+        if (formData.password.length < 6) {
+            alert("비밀번호는 최소 6자 이상이어야 합니다.");
+            return;
+        }
+
+        setLoading(true);
+
+        try {
+            // FormData 생성
+            const submitFormData = new FormData();
+            submitFormData.append('email', formData.email);
+            submitFormData.append('name', formData.name);
+            submitFormData.append('phone', formData.phone);
+            submitFormData.append('password', formData.password);
+            submitFormData.append('subject', formData.subject);
+            submitFormData.append('image', formData.image);
+
+            // 서버 액션 호출
+            const result = await addTeacher(submitFormData);
+
+            if (result.success) {
+                alert("강사가 성공적으로 등록되었습니다.");
+                setFormData({
+                    email: "",
+                    name: "",
+                    phone: "",
+                    password: "",
+                    subject: "",
+                    image: ""
+                });
+                setOpen(false);
+                onAddTeacher(); // 목록 새로고침
+            } else {
+                alert(result.error || "강사 등록에 실패했습니다.");
+            }
+        } catch (error) {
+            console.error('강사 등록 오류:', error);
+            alert("강사 등록 중 오류가 발생했습니다.");
+        } finally {
+            setLoading(false);
+        }
     };
 
     const handleCancel = () => {
         setFormData({
-            teacherId: "",
-            name: "",
             email: "",
+            name: "",
             phone: "",
+            password: "",
             subject: "",
-            experience: 1
+            image: ""
         });
         setOpen(false);
     };
@@ -107,13 +135,21 @@ export default function AddTeacherModal({ onAddTeacher }: AddTeacherModalProps) 
                 </DialogHeader>
                 
                 <div className="space-y-4">
+                    {/* 프로필 이미지 */}
+                    <ImageUpload
+                        value={formData.image}
+                        onChange={(url) => handleInputChange("image", url)}
+                        label="프로필 이미지"
+                    />
+
                     <div className="space-y-2">
-                        <Label htmlFor="teacherId" className="text-cyan-200">강사 ID *</Label>
+                        <Label htmlFor="email" className="text-cyan-200">이메일 (로그인 ID) *</Label>
                         <Input
-                            id="teacherId"
-                            value={formData.teacherId}
-                            onChange={(e) => handleInputChange("teacherId", e.target.value)}
-                            placeholder="강사 ID를 입력하세요"
+                            id="email"
+                            type="email"
+                            value={formData.email}
+                            onChange={(e) => handleInputChange("email", e.target.value)}
+                            placeholder="example@email.com"
                             className="bg-background/40 border-cyan-400/40 text-cyan-100 placeholder:text-cyan-400/60 focus:border-cyan-400/80"
                         />
                     </div>
@@ -141,55 +177,26 @@ export default function AddTeacherModal({ onAddTeacher }: AddTeacherModalProps) 
                     </div>
 
                     <div className="space-y-2">
-                        <Label htmlFor="email" className="text-cyan-200">이메일 <span className="text-cyan-400 text-xs">(선택)</span></Label>
+                        <Label htmlFor="password" className="text-cyan-200">비밀번호 *</Label>
                         <Input
-                            id="email"
-                            type="email"
-                            value={formData.email}
-                            onChange={(e) => handleInputChange("email", e.target.value)}
-                            placeholder="example@email.com"
+                            id="password"
+                            type="password"
+                            value={formData.password}
+                            onChange={(e) => handleInputChange("password", e.target.value)}
+                            placeholder="최소 6자 이상"
                             className="bg-background/40 border-cyan-400/40 text-cyan-100 placeholder:text-cyan-400/60 focus:border-cyan-400/80"
                         />
                     </div>
 
                     <div className="space-y-2">
-                        <Label htmlFor="subject" className="text-cyan-200">담당과목 *</Label>
-                        <Select value={formData.subject} onValueChange={(value) => handleInputChange("subject", value)}>
-                            <SelectTrigger className="bg-background/40 border-cyan-400/40 text-cyan-100 focus:border-cyan-400/80">
-                                <SelectValue placeholder="과목을 선택하세요" />
-                            </SelectTrigger>
-                            <SelectContent className="bg-background border-cyan-400/40">
-                                {subjects.map((subject) => (
-                                    <SelectItem
-                                        key={subject}
-                                        value={subject}
-                                        className="text-cyan-100 hover:bg-cyan-900/20"
-                                    >
-                                        {subject}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                    </div>
-
-                    <div className="space-y-2">
-                        <Label htmlFor="experience" className="text-cyan-200">경력 *</Label>
-                        <Select value={formData.experience.toString()} onValueChange={(value) => handleInputChange("experience", parseInt(value))}>
-                            <SelectTrigger className="bg-background/40 border-cyan-400/40 text-cyan-100 focus:border-cyan-400/80">
-                                <SelectValue placeholder="경력을 선택하세요" />
-                            </SelectTrigger>
-                            <SelectContent className="bg-background border-cyan-400/40">
-                                {experienceYears.map((year) => (
-                                    <SelectItem
-                                        key={year}
-                                        value={year.toString()}
-                                        className="text-cyan-100 hover:bg-cyan-900/20"
-                                    >
-                                        {year}년
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
+                        <Label htmlFor="subject" className="text-cyan-200">담당 과목 *</Label>
+                        <Input
+                            id="subject"
+                            value={formData.subject}
+                            onChange={(e) => handleInputChange("subject", e.target.value)}
+                            placeholder="담당 과목을 입력하세요 (예: React, Python, 웹 개발)"
+                            className="bg-background/40 border-cyan-400/40 text-cyan-100 placeholder:text-cyan-400/60 focus:border-cyan-400/80"
+                        />
                     </div>
 
                     {/* 버튼 영역 */}
@@ -205,9 +212,10 @@ export default function AddTeacherModal({ onAddTeacher }: AddTeacherModalProps) 
                         <Button
                             type="button"
                             onClick={handleSubmit}
-                            className="bg-cyan-600 hover:bg-cyan-700 text-white"
+                            disabled={loading}
+                            className="bg-cyan-600 hover:bg-cyan-700 text-white disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                            등록
+                            {loading ? "등록 중..." : "등록"}
                         </Button>
                     </div>
                 </div>
@@ -216,5 +224,4 @@ export default function AddTeacherModal({ onAddTeacher }: AddTeacherModalProps) 
     );
 } 
 
-// TODO: 추후 관리자 계정에서 승인 시 users 테이블에 강사 계정으로 role을 변경하는 로직을 추가할 예정
-// 예시: 관리자가 승인 버튼 클릭 → users 테이블의 해당 사용자의 role을 'teacher'로 업데이트
+// 강사 등록이 완료되면 즉시 users 테이블에 role='teacher'로 등록되고 teachers 테이블에도 상세 정보가 추가됩니다.

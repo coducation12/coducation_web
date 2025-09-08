@@ -23,7 +23,7 @@ export function HeroSection() {
                 {headingText}
               </h1>
               <p className="max-w-[600px] text-muted-foreground md:text-xl">
-                코딩메이커 학원과 함께 미래를 코딩하세요. 전문적인 커리큘럼과 맞춤형 학습으로 여러분의 잠재력을 깨워드립니다.
+              코듀케이션과 함께 미래를 코딩하세요. <br /> 전문적인 커리큘럼과 맞춤형 학습으로 여러분의 잠재력을 깨워드립니다.
               </p>
               <div className="flex justify-center pt-6">
                  <Button 

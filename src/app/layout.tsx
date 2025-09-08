@@ -32,7 +32,7 @@ const codeFont = Source_Code_Pro({
 export const metadata: Metadata = {
   title: 'Coducation - 코딩으로 세상을 교육하다',
   description:
-    '전남 광양 코딩메이커 학원 | 코딩 교육의 새로운 시작, Coducation',
+    ' 코딩 교육의 새로운 시작, Coducation',
   icons: {
     icon: '/favicon.ico',
   },
@@ -45,7 +45,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ko" suppressHydrationWarning className="dark">
-      <head />
+      <head>
+        <meta name="autocomplete" content="off" />
+        <meta name="form-autocomplete" content="off" />
+      </head>
       <body
         className={cn(
           'min-h-screen font-body antialiased text-foreground',

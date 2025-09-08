@@ -747,3 +747,445 @@ export async function getContent() {
   }
 }
 
+// 강사 추가 서버 액션
+export async function addTeacher(formData: FormData) {
+  try {
+    // 현재 로그인한 사용자가 관리자인지 확인
+    const cookieStore = await cookies();
+    const currentUserRole = cookieStore.get('user_role')?.value;
+    
+    if (currentUserRole !== 'admin') {
+      return { success: false, error: '관리자만 강사를 추가할 수 있습니다.' };
+    }
+
+    const teacherData = {
+      email: formData.get('email') as string,
+      name: formData.get('name') as string,
+      phone: formData.get('phone') as string,
+      password: formData.get('password') as string,
+      subject: formData.get('subject') as string,
+      image: formData.get('image') as string
+    };
+
+    // 필수 필드 검증
+    if (!teacherData.email || !teacherData.name || !teacherData.phone || !teacherData.password || !teacherData.subject) {
+      return { success: false, error: '모든 필수 항목을 입력해주세요.' };
+    }
+
+    // 이메일 형식 검증
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(teacherData.email)) {
+      return { success: false, error: '올바른 이메일 형식을 입력해주세요.' };
+    }
+
+    // 전화번호 형식 검증
+    const phoneRegex = /^010-\d{4}-\d{4}$/;
+    if (!phoneRegex.test(teacherData.phone)) {
+      return { success: false, error: '올바른 전화번호 형식을 입력해주세요. (예: 010-1234-5678)' };
+    }
+
+    // 비밀번호 길이 검증
+    if (teacherData.password.length < 6) {
+      return { success: false, error: '비밀번호는 최소 6자 이상이어야 합니다.' };
+    }
+
+    // 중복 검사 (이메일, 전화번호)
+    const { data: existingUser } = await supabase
+      .from('users')
+      .select('username, email, phone')
+      .or(`username.eq.${teacherData.email},email.eq.${teacherData.email},phone.eq.${teacherData.phone}`)
+      .single();
+
+    if (existingUser) {
+      if (existingUser.username === teacherData.email || existingUser.email === teacherData.email) {
+        return { success: false, error: '이미 존재하는 이메일입니다.' };
+      }
+      if (existingUser.phone === teacherData.phone) {
+        return { success: false, error: '이미 존재하는 전화번호입니다.' };
+      }
+    }
+
+    // 1. Supabase Auth에 사용자 등록
+    const { data: authData, error: authError } = await supabase.auth.signUp({
+      email: teacherData.email,
+      password: teacherData.password,
+      options: {
+        data: {
+          name: teacherData.name,
+          role: 'teacher'
+        }
+      }
+    });
+    
+    if (authError) {
+      console.error('Supabase Auth 계정 생성 실패:', authError);
+      // Auth 생성 실패해도 계속 진행 (개발 환경 고려)
+      // return { success: false, error: `인증 계정 생성 실패: ${authError.message}` };
+    }
+
+    // 2. 비밀번호 해시 처리
+    const passwordHash = await bcrypt.hash(teacherData.password, 10);
+
+    // 3. users 테이블에 강사 정보 등록 (이메일을 username으로 사용)
+    const { data: userData, error: userError } = await supabase
+      .from('users')
+      .insert({
+        username: teacherData.email, // 이메일을 username으로 사용
+        name: teacherData.name,
+        role: 'teacher',
+        password: passwordHash,
+        email: teacherData.email,
+        phone: teacherData.phone,
+        academy: '코딩메이커',
+        created_at: new Date().toISOString()
+      })
+      .select()
+      .single();
+
+    if (userError) {
+      return { success: false, error: `강사 계정 생성 실패: ${userError.message}` };
+    }
+
+    // 4. teachers 테이블에 강사 상세 정보 등록
+    const { error: teacherError } = await supabase
+      .from('teachers')
+      .insert({
+        user_id: userData.id,
+        bio: '코딩 전문 강사',
+        certs: '코딩 교육 전문가',
+        career: '코딩 교육 전문 강사',
+        image: teacherData.image || null, // 업로드된 이미지 또는 null
+        subject: teacherData.subject, // 입력된 담당과목
+        created_at: new Date().toISOString()
+      });
+
+    if (teacherError) {
+      // users 테이블 롤백
+      await supabase.from('users').delete().eq('id', userData.id);
+      return { success: false, error: `강사 상세 정보 등록 실패: ${teacherError.message}` };
+    }
+
+    return { 
+      success: true, 
+      data: {
+        id: userData.id,
+        name: userData.name,
+        email: userData.email,
+        phone: userData.phone
+      }
+    };
+  } catch (error) {
+    console.error('강사 추가 중 오류:', error);
+    return { success: false, error: '강사 추가 중 오류가 발생했습니다.' };
+  }
+}
+
+// 강사 정보 수정 서버 액션
+export async function updateTeacher(formData: FormData) {
+  try {
+    // 현재 로그인한 사용자가 관리자인지 확인
+    const cookieStore = await cookies();
+    const currentUserRole = cookieStore.get('user_role')?.value;
+    
+    if (currentUserRole !== 'admin') {
+      return { success: false, error: '관리자만 강사 정보를 수정할 수 있습니다.' };
+    }
+
+    const teacherData = {
+      teacherId: formData.get('teacherId') as string,
+      email: formData.get('email') as string,
+      name: formData.get('name') as string,
+      phone: formData.get('phone') as string,
+      password: formData.get('password') as string,
+      bio: formData.get('bio') as string,
+      certs: formData.get('certs') as string,
+      career: formData.get('career') as string,
+      image: formData.get('image') as string,
+      subject: formData.get('subject') as string
+    };
+
+    // 필수 필드 검증
+    if (!teacherData.teacherId || !teacherData.email || !teacherData.name || !teacherData.phone) {
+      return { success: false, error: '필수 항목을 모두 입력해주세요.' };
+    }
+
+    // 이메일 형식 검증
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(teacherData.email)) {
+      return { success: false, error: '올바른 이메일 형식을 입력해주세요.' };
+    }
+
+    // 전화번호 형식 검증
+    const phoneRegex = /^010-\d{4}-\d{4}$/;
+    if (!phoneRegex.test(teacherData.phone)) {
+      return { success: false, error: '올바른 전화번호 형식을 입력해주세요. (예: 010-1234-5678)' };
+    }
+
+    // 비밀번호 길이 검증 (입력된 경우에만)
+    if (teacherData.password && teacherData.password.length < 6) {
+      return { success: false, error: '비밀번호는 최소 6자 이상이어야 합니다.' };
+    }
+
+    // 중복 검사 (현재 강사를 제외하고 이메일, 전화번호 중복 체크)
+    const { data: existingUser } = await supabase
+      .from('users')
+      .select('username, email, phone, id')
+      .or(`username.eq.${teacherData.email},email.eq.${teacherData.email},phone.eq.${teacherData.phone}`)
+      .neq('id', teacherData.teacherId)
+      .single();
+
+    if (existingUser) {
+      if (existingUser.username === teacherData.email || existingUser.email === teacherData.email) {
+        return { success: false, error: '이미 존재하는 이메일입니다.' };
+      }
+      if (existingUser.phone === teacherData.phone) {
+        return { success: false, error: '이미 존재하는 전화번호입니다.' };
+      }
+    }
+
+    // 1. Supabase Auth 업데이트 (비밀번호 변경 시에만)
+    if (teacherData.password) {
+      try {
+        // Auth 사용자 목록에서 이메일로 조회
+        const { data: authUsers, error: listError } = await supabase.auth.admin.listUsers();
+        
+        if (!listError && authUsers.users) {
+          const authUser = authUsers.users.find(user => user.email === teacherData.email);
+          
+          if (authUser) {
+            // Auth 비밀번호 업데이트
+            const { error: authUpdateError } = await supabase.auth.admin.updateUserById(
+              authUser.id,
+              { password: teacherData.password }
+            );
+            
+            if (authUpdateError) {
+              console.error('Supabase Auth 비밀번호 업데이트 실패:', authUpdateError);
+              // Auth 업데이트 실패해도 계속 진행 (개발 환경 고려)
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Supabase Auth 업데이트 중 오류:', error);
+        // Auth 업데이트 실패해도 계속 진행
+      }
+    }
+
+    // 2. users 테이블 업데이트
+    const updateUserData: any = {
+      username: teacherData.email, // 이메일을 username으로 사용
+      name: teacherData.name,
+      email: teacherData.email,
+      phone: teacherData.phone
+    };
+
+    // 비밀번호가 입력된 경우에만 업데이트
+    if (teacherData.password) {
+      const passwordHash = await bcrypt.hash(teacherData.password, 10);
+      updateUserData.password = passwordHash;
+    }
+
+    const { error: userError } = await supabase
+      .from('users')
+      .update(updateUserData)
+      .eq('id', teacherData.teacherId);
+
+    if (userError) {
+      return { success: false, error: `기본 정보 수정 실패: ${userError.message}` };
+    }
+
+    // 3. teachers 테이블 업데이트
+    const { error: teacherError } = await supabase
+      .from('teachers')
+      .update({
+        bio: teacherData.bio || null,
+        certs: teacherData.certs || null,
+        career: teacherData.career || null,
+        image: teacherData.image || null,
+        subject: teacherData.subject || '코딩 교육' // subject 컬럼에 직접 저장
+      })
+      .eq('user_id', teacherData.teacherId);
+
+    if (teacherError) {
+      return { success: false, error: `상세 정보 수정 실패: ${teacherError.message}` };
+    }
+
+    return { 
+      success: true, 
+      data: {
+        id: teacherData.teacherId,
+        name: teacherData.name,
+        email: teacherData.email,
+        phone: teacherData.phone
+      }
+    };
+  } catch (error) {
+    console.error('강사 정보 수정 중 오류:', error);
+    return { success: false, error: '강사 정보 수정 중 오류가 발생했습니다.' };
+  }
+}
+
+// 강사 상세 정보 조회 서버 액션
+export async function getTeacherDetails(teacherId: string) {
+  try {
+    const { data, error } = await supabase
+      .from('teachers')
+      .select('bio, certs, career, image, subject')
+      .eq('user_id', teacherId)
+      .single();
+
+    if (error && error.code !== 'PGRST116') {
+      return { success: false, error: error.message };
+    }
+
+    return { 
+      success: true, 
+      data: data || { bio: '', certs: '', career: '', image: '', subject: '코딩 교육' }
+    };
+  } catch (error) {
+    console.error('강사 상세 정보 조회 중 오류:', error);
+    return { success: false, error: '강사 상세 정보 조회 중 오류가 발생했습니다.' };
+  }
+}
+
+// ==================== 상담 문의 관련 액션 ====================
+
+// 상담 문의 저장
+export async function saveConsultation(formData: FormData) {
+  try {
+    // FormData에서 데이터 추출
+    const consultationData = {
+      name: formData.get('name') as string,
+      phone: formData.get('phone') as string,
+      academy: formData.get('academy') as string,
+      subject: formData.get('subject') as string,
+      message: formData.get('message') as string,
+      privacy_consent: formData.get('privacy_consent') === 'true'
+    };
+
+    // 입력값 검증
+    if (!consultationData.name || !consultationData.phone || !consultationData.academy || !consultationData.subject || !consultationData.message) {
+      return { success: false, error: '모든 필수 항목을 입력해주세요.' };
+    }
+
+    if (!consultationData.privacy_consent) {
+      return { success: false, error: '개인정보 수집 및 이용에 동의해주세요.' };
+    }
+
+    // 전화번호 형식 검증
+    const phoneRegex = /^[0-9]{2,3}-[0-9]{3,4}-[0-9]{4}$/;
+    if (!phoneRegex.test(consultationData.phone)) {
+      return { success: false, error: '올바른 전화번호 형식을 입력해주세요. (예: 010-1234-5678)' };
+    }
+
+    // Supabase에 상담 문의 저장
+    const { data, error } = await supabase
+      .from('consultations')
+      .insert({
+        name: consultationData.name,
+        phone: consultationData.phone,
+        academy: consultationData.academy,
+        subject: consultationData.subject,
+        message: consultationData.message,
+        privacy_consent: consultationData.privacy_consent,
+        status: 'pending'
+      })
+      .select()
+      .single();
+
+    if (error) {
+      console.error('상담 문의 저장 중 오류:', error);
+      return { success: false, error: '상담 문의 저장 중 오류가 발생했습니다.' };
+    }
+
+    console.log('상담 문의 저장 성공:', data);
+    return { 
+      success: true, 
+      message: '상담 문의가 접수되었습니다. 빠른 시일 내에 연락드리겠습니다.',
+      data: data 
+    };
+
+  } catch (error) {
+    console.error('상담 문의 저장 중 오류:', error);
+    return { success: false, error: '상담 문의 저장 중 오류가 발생했습니다.' };
+  }
+}
+
+// 관리자용: 모든 상담 문의 조회
+export async function getConsultations() {
+  try {
+    // 관리자 권한 확인
+    const userRole = cookies().get('user_role')?.value;
+    if (userRole !== 'admin') {
+      return { success: false, error: '관리자만 접근 가능합니다.' };
+    }
+
+    const { data, error } = await supabase
+      .from('consultations')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('상담 문의 조회 중 오류:', error);
+      return { success: false, error: '상담 문의 조회 중 오류가 발생했습니다.' };
+    }
+
+    return { success: true, data: data || [] };
+
+  } catch (error) {
+    console.error('상담 문의 조회 중 오류:', error);
+    return { success: false, error: '상담 문의 조회 중 오류가 발생했습니다.' };
+  }
+}
+
+// 관리자용: 상담 문의 상태 업데이트
+export async function updateConsultationStatus(formData: FormData) {
+  try {
+    // 관리자 권한 확인
+    const userRole = cookies().get('user_role')?.value;
+    if (userRole !== 'admin') {
+      return { success: false, error: '관리자만 접근 가능합니다.' };
+    }
+
+    const consultationId = formData.get('consultationId') as string;
+    const status = formData.get('status') as string;
+    const responseNote = formData.get('responseNote') as string;
+
+    if (!consultationId || !status) {
+      return { success: false, error: '필수 정보가 누락되었습니다.' };
+    }
+
+    const updateData: any = {
+      status: status
+    };
+
+    // 완료 상태로 변경 시 응답 시간 기록
+    if (status === 'completed') {
+      updateData.responded_at = new Date().toISOString();
+    }
+
+    // 응답 메모가 있으면 추가
+    if (responseNote) {
+      updateData.response_note = responseNote;
+    }
+
+    const { data, error } = await supabase
+      .from('consultations')
+      .update(updateData)
+      .eq('id', consultationId)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('상담 문의 상태 업데이트 중 오류:', error);
+      return { success: false, error: '상담 문의 상태 업데이트 중 오류가 발생했습니다.' };
+    }
+
+    return { success: true, message: '상담 문의 상태가 업데이트되었습니다.', data: data };
+
+  } catch (error) {
+    console.error('상담 문의 상태 업데이트 중 오류:', error);
+    return { success: false, error: '상담 문의 상태 업데이트 중 오류가 발생했습니다.' };
+  }
+}
+

@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Upload, X, User } from "lucide-react";
 import Image from "next/image";
 import { supabase } from "@/lib/supabase";
+import { compressImage, validateImageFile, formatFileSize } from "@/lib/image-utils";
 
 interface ImageUploadProps {
     value?: string;
@@ -24,30 +25,42 @@ export default function ImageUpload({ value, onChange, label = "이미지", clas
         const file = event.target.files?.[0];
         if (!file) return;
 
-        // 파일 크기 체크 (5MB 제한)
-        if (file.size > 5 * 1024 * 1024) {
-            alert("파일 크기는 5MB 이하여야 합니다.");
-            return;
-        }
-
-        // 파일 형식 체크
-        const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
-        if (!allowedTypes.includes(file.type)) {
-            alert("JPG, PNG, GIF, WEBP 파일만 업로드 가능합니다.");
+        // 파일 유효성 검사
+        const validation = validateImageFile(file, 10 * 1024 * 1024); // 10MB 제한
+        if (!validation.valid) {
+            alert(validation.error);
             return;
         }
 
         setUploading(true);
 
         try {
-            // Supabase Storage에 업로드
-            const fileName = `teacher-profiles/${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
+            console.log(`원본 파일 크기: ${formatFileSize(file.size)}`);
+
+            // 이미지 압축 (프로필 이미지는 작게)
+            const compressedBlob = await compressImage(file, {
+                maxWidth: 400,
+                maxHeight: 400,
+                quality: 0.8,
+                outputFormat: 'webp'
+            });
+
+            console.log(`압축 후 크기: ${formatFileSize(compressedBlob.size)} (${((compressedBlob.size / file.size) * 100).toFixed(1)}%)`);
+
+            // 압축된 파일을 File 객체로 변환
+            const compressedFile = new File([compressedBlob], file.name.replace(/\.[^/.]+$/, '.webp'), {
+                type: 'image/webp',
+                lastModified: Date.now(),
+            });
+
+            // Supabase Storage에 압축된 이미지 업로드
+            const fileName = `teacher-profiles/${Date.now()}-${compressedFile.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
             
             const { data, error } = await supabase.storage
                 .from('content-images')
-                .upload(fileName, file, {
-                    cacheControl: '3600',
-                    upsert: false
+                .upload(fileName, compressedFile, {
+                    cacheControl: '31536000', // 1년 캐시
+                    upsert: true
                 });
 
             if (error) {

@@ -4,6 +4,7 @@ import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import bcrypt from 'bcryptjs'
+import { compressImage, validateImageFile, formatFileSize } from '@/lib/image-utils'
 
 // TODO: 배포 후 정상화 - 비밀번호 인증으로 복원 필요
 // 현재는 개발 편의를 위해 비밀번호 없이 로그인 허용
@@ -276,6 +277,7 @@ export async function updateStudent(formData: FormData) {
       phone: formData.get('phone') as string,
       parentPhone: formData.get('parentPhone') as string,
       email: formData.get('email') as string,
+      status: formData.get('status') as string,
       classSchedules: JSON.parse(formData.get('classSchedules') as string)
     };
 
@@ -358,11 +360,12 @@ export async function updateStudent(formData: FormData) {
       }
     });
 
-    // 4. students 테이블의 attendance_schedule 업데이트
+    // 4. students 테이블의 attendance_schedule과 status 업데이트
     const { error: studentError } = await supabase
       .from('students')
       .update({
-        attendance_schedule: Object.keys(attendanceSchedule).length > 0 ? attendanceSchedule : null
+        attendance_schedule: Object.keys(attendanceSchedule).length > 0 ? attendanceSchedule : null,
+        status: studentData.status || '수강'
       })
       .eq('user_id', (await supabase.from('users').select('id').eq('username', studentData.studentId).single()).data?.id);
 
@@ -634,28 +637,41 @@ export async function uploadContentImage(file: File, section: string): Promise<{
       return { success: false, error: '관리자만 이미지를 업로드할 수 있습니다.' };
     }
     
-    // 파일 크기 체크 (5MB 제한)
-    if (file.size > 5 * 1024 * 1024) {
-      return { success: false, error: '파일 크기는 5MB 이하여야 합니다.' };
+    // 파일 유효성 검사
+    const validation = validateImageFile(file, 10 * 1024 * 1024); // 10MB 제한
+    if (!validation.valid) {
+      return { success: false, error: validation.error };
     }
 
-    // 파일 형식 체크
-    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
-    if (!allowedTypes.includes(file.type)) {
-      return { success: false, error: 'JPG, PNG, GIF, WEBP 파일만 업로드 가능합니다.' };
-    }
+    console.log(`원본 파일 크기: ${formatFileSize(file.size)}`);
+
+    // 이미지 압축
+    const compressedBlob = await compressImage(file, {
+      maxWidth: 1200,
+      maxHeight: 1200,
+      quality: 0.85,
+      outputFormat: 'webp'
+    });
+
+    console.log(`압축 후 크기: ${formatFileSize(compressedBlob.size)} (${((compressedBlob.size / file.size) * 100).toFixed(1)}%)`);
+
+    // 압축된 파일을 File 객체로 변환
+    const compressedFile = new File([compressedBlob], file.name.replace(/\.[^/.]+$/, '.webp'), {
+      type: 'image/webp',
+      lastModified: Date.now(),
+    });
 
     // 파일명 정리 (특수문자 제거)
-    const cleanFileName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+    const cleanFileName = compressedFile.name.replace(/[^a-zA-Z0-9.-]/g, '_');
     const fileName = `${section}/${Date.now()}-${cleanFileName}`;
     
     console.log('업로드 파일명:', fileName);
 
-    // Supabase Storage에 업로드
+    // Supabase Storage에 압축된 이미지 업로드
     const { data, error } = await supabase.storage
       .from('content-images')
-      .upload(fileName, file, {
-        cacheControl: '3600',
+      .upload(fileName, compressedFile, {
+        cacheControl: '31536000', // 1년 캐시
         upsert: true // 같은 파일명이 있어도 덮어쓰기
       });
 
@@ -1186,6 +1202,68 @@ export async function updateConsultationStatus(formData: FormData) {
   } catch (error) {
     console.error('상담 문의 상태 업데이트 중 오류:', error);
     return { success: false, error: '상담 문의 상태 업데이트 중 오류가 발생했습니다.' };
+  }
+}
+
+// ==================== 강사진 관련 액션 ====================
+
+// 모든 강사진 정보 조회 (공개용)
+export async function getInstructors() {
+  try {
+    const { data, error } = await supabase
+      .from('users')
+      .select(`
+        id,
+        name,
+        email,
+        phone,
+        teachers!inner (
+          bio,
+          image,
+          certs,
+          career,
+          subject
+        )
+      `)
+      .in('role', ['teacher', 'admin'])
+      .not('teachers.bio', 'is', null)
+      .order('name');
+
+    if (error) {
+      console.error('강사진 정보 조회 중 오류:', error);
+      return { success: false, error: '강사진 정보 조회 중 오류가 발생했습니다.' };
+    }
+
+    // 데이터 매핑
+    const instructors = (data || []).map((teacher: any) => ({
+      id: teacher.id,
+      name: teacher.name,
+      bio: teacher.teachers.bio || '전문 강사',
+      profile_image: teacher.teachers.image || 'https://placehold.co/400x400.png',
+      subject: teacher.teachers.subject || '코딩 교육',
+      certs: teacher.teachers.certs || '',
+      career: teacher.teachers.career || '',
+      email: teacher.email,
+      phone: teacher.phone
+    }));
+
+    // bio 기준으로 정렬: 원장, 부원장을 상단에 배치
+    const sortedInstructors = instructors.sort((a, b) => {
+      const aIsLeader = a.bio.includes('원장');
+      const bIsLeader = b.bio.includes('원장');
+      
+      if (aIsLeader && !bIsLeader) return -1;
+      if (!aIsLeader && bIsLeader) return 1;
+      
+      // 둘 다 원장이거나 둘 다 원장이 아닌 경우 이름순
+      return a.name.localeCompare(b.name);
+    });
+
+    return { success: true, data: sortedInstructors };
+
+  } catch (error) {
+    console.error('강사진 정보 조회 중 오류:', error);
+    return { success: false, error: '강사진 정보 조회 중 오류가 발생했습니다.' };
   }
 }
 

@@ -118,4 +118,9 @@ export interface Instructor {
   name: string;
   bio: string;
   profile_image: string;
+  subject?: string;
+  certs?: string;
+  career?: string;
+  email?: string;
+  phone?: string;
 }

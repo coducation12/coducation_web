@@ -1,37 +1,79 @@
+'use client';
 
+import { useState, useEffect } from 'react';
 import type { Instructor } from '@/types';
 import { InstructorCard } from '@/components/ui/instructor-card';
-
-const mockInstructors: Instructor[] = [
-  {
-    id: 'teacher-uuid-1',
-    name: '김철수 선생님',
-    bio: '10년 경력의 베테랑 개발자 출신 강사입니다. 쉽고 재미있는 설명으로 파이썬과 알고리즘을 가르칩니다.',
-    profile_image: 'https://placehold.co/400x400.png',
-  },
-  {
-    id: 'teacher-uuid-2',
-    name: '이영희 선생님',
-    bio: '프론트엔드 전문가로, React와 Next.js를 활용한 인터랙티브 웹 개발 과정을 담당하고 있습니다.',
-    profile_image: 'https://placehold.co/400x400.png',
-  },
-  {
-    id: 'teacher-uuid-3',
-    name: '박민준 선생님',
-    bio: '게임 개발에 대한 깊은 열정을 가지고 있으며, Unity와 C#을 통해 학생들의 상상력을 현실로 만들어줍니다.',
-    profile_image: 'https://placehold.co/400x400.png',
-  },
-  {
-    id: 'teacher-uuid-4',
-    name: '최지아 선생님',
-    bio: '데이터 사이언스와 머신러닝 전문가입니다. 실용적인 예제로 AI의 세계를 안내합니다.',
-    profile_image: 'https://placehold.co/400x400.png',
-  },
-];
+import { InstructorDetailModal } from '@/components/ui/instructor-detail-modal';
+import { getInstructors } from '@/lib/actions';
 
 export function InstructorsSection() {
-  const topInstructor = mockInstructors[0];
-  const bottomInstructors = mockInstructors.slice(1);
+  const [instructors, setInstructors] = useState<Instructor[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [selectedInstructor, setSelectedInstructor] = useState<Instructor | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  useEffect(() => {
+    const fetchInstructors = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
+        
+        const result = await getInstructors();
+        
+        if (result.success && result.data) {
+          setInstructors(result.data);
+        } else {
+          setError(result.error || '강사진 정보를 불러올 수 없습니다.');
+          console.error('강사진 데이터 로딩 실패:', result.error);
+        }
+      } catch (err) {
+        console.error('강사진 정보 로딩 오류:', err);
+        setError('강사진 정보를 불러오는 중 오류가 발생했습니다.');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchInstructors();
+  }, []);
+
+  const handleInstructorClick = (instructor: Instructor) => {
+    setSelectedInstructor(instructor);
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setSelectedInstructor(null);
+  };
+
+  // 로딩 상태 표시
+  if (isLoading) {
+    return (
+      <section id="instructors" className="container w-full py-32 md:py-52">
+        <div className="flex flex-col items-center text-center space-y-4 mb-12">
+          <h2 className="text-4xl font-bold tracking-tighter sm:text-5xl font-headline">전문 강사진 소개</h2>
+          <p className="max-w-2xl text-lg text-muted-foreground">
+            열정과 실력을 겸비한 Coducation의 전문 강사님들을 소개합니다.
+          </p>
+        </div>
+        <div className="flex justify-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
+        </div>
+      </section>
+    );
+  }
+
+  // 에러가 있거나 강사진이 없으면 표시하지 않음
+  if (error || instructors.length === 0) {
+    console.warn('강사진 섹션 숨김:', { error, instructorsCount: instructors.length });
+    return null;
+  }
+
+  // 원장과 부원장을 상단 2칸으로, 나머지를 하단 3칸으로 배치
+  const topInstructors = instructors.slice(0, 2); // 원장, 부원장
+  const bottomInstructors = instructors.slice(2); // 나머지 강사진
 
   return (
     <section id="instructors" className="container w-full py-32 md:py-52">
@@ -42,27 +84,42 @@ export function InstructorsSection() {
         </p>
       </div>
 
-      <div className="flex flex-col items-center gap-8 w-full">
-        {/* Top row with 1 centered card */}
-        {topInstructor && (
-          <div className="flex justify-center w-full">
-            <div className="w-full max-w-sm">
-              <InstructorCard instructor={topInstructor} />
-            </div>
+      <div className="flex flex-col items-center gap-12 w-full">
+        {/* Top row with 2 cards (원장, 부원장) */}
+        {topInstructors.length > 0 && (
+          <div className="flex flex-wrap justify-center gap-8 w-full">
+            {topInstructors.map((instructor) => (
+              <div key={instructor.id} className="w-[340px] h-[250px]">
+                <InstructorCard 
+                  instructor={instructor} 
+                  onClick={() => handleInstructorClick(instructor)}
+                />
+              </div>
+            ))}
           </div>
         )}
         
-        {/* Bottom row with 3 cards */}
+        {/* Bottom row with 3 cards (나머지 강사진) */}
         {bottomInstructors.length > 0 && (
-            <div className="flex w-full max-w-7xl flex-col items-center justify-center gap-8 md:flex-row">
-                {bottomInstructors.map((instructor) => (
-                    <div key={instructor.id} className="w-full max-w-sm">
-                        <InstructorCard instructor={instructor} />
-                    </div>
-                ))}
-            </div>
+          <div className="flex flex-wrap justify-center gap-8 w-full">
+            {bottomInstructors.map((instructor) => (
+              <div key={instructor.id} className="w-[340px] h-[250px]">
+                <InstructorCard 
+                  instructor={instructor} 
+                  onClick={() => handleInstructorClick(instructor)}
+                />
+              </div>
+            ))}
+          </div>
         )}
       </div>
+
+      {/* 강사 상세 정보 모달 */}
+      <InstructorDetailModal
+        instructor={selectedInstructor}
+        isOpen={isModalOpen}
+        onClose={handleCloseModal}
+      />
     </section>
   );
 }

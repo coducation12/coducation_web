@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import Image from 'next/image';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,6 +11,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { Plus, Trash2, Save, X, Upload } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
+import { compressImageToBase64, validateImageFile, formatFileSize } from '@/lib/image-utils';
 
 export interface CurriculumData {
   id: string;
@@ -287,14 +289,18 @@ export default function EditCurriculumModal({
             <Label className="text-cyan-200">대표 이미지 <span className="text-cyan-400 text-xs">(선택)</span></Label>
             <div className="space-y-3">
               {formData.image ? (
-                <div className="relative">
-                  <img 
+                <div className="relative w-full h-48 rounded-lg border border-cyan-500/30 overflow-hidden">
+                  <Image 
                     src={formData.image.startsWith('data:') ? formData.image : formData.image} 
                     alt="커리큘럼 이미지" 
-                    className="w-full h-48 object-cover rounded-lg border border-cyan-500/30"
+                    fill
+                    className="object-cover"
+                    placeholder="blur"
+                    blurDataURL="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAAIAAoDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAhEAACAQMDBQAAAAAAAAAAAAABAgMABAUGIWGRkqGxwf/EABUBAQEAAAAAAAAAAAAAAAAAAAMF/8QAGhEAAgIDAAAAAAAAAAAAAAAAAAECEgMRkf/aAAwDAQACEQMRAD8AltJagyeH0AthI5xdrLcNM91BF5pX2HaH9bcfaSXWGaRmknyJckliyjqTzSlT54b6bk+h0R//2Q=="
                     onError={(e) => {
                       console.error('이미지 로드 실패:', formData.image);
-                      e.currentTarget.style.display = 'none';
+                      const target = e.target as HTMLImageElement;
+                      target.style.display = 'none';
                     }}
                   />
                   <Button
@@ -302,10 +308,18 @@ export default function EditCurriculumModal({
                     onClick={removeImage}
                     size="icon"
                     variant="outline"
-                    className="absolute top-2 right-2 border-red-500/50 text-red-400 hover:bg-red-500/20 hover:text-red-300"
+                    className="absolute top-2 right-2 border-red-500/50 text-red-400 hover:bg-red-500/20 hover:text-red-300 z-10"
                   >
                     <X className="w-4 h-4" />
                   </Button>
+                  {isUploading && (
+                    <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+                      <div className="text-white text-center">
+                        <div className="animate-spin w-8 h-8 border-4 border-white border-t-transparent rounded-full mx-auto mb-2"></div>
+                        <p>업로드 중...</p>
+                      </div>
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div className="border-2 border-dashed border-cyan-500/30 rounded-lg p-6 text-center">

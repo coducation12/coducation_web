@@ -116,7 +116,7 @@ export function ContactModal({ open, onOpenChange }: ContactModalProps) {
             <Input
               id="name"
               type="text"
-              placeholder="성함을 입력해주세요"
+              placeholder="성함 또는 자녀의 이름을 입력해주세요"
               value={formData.name}
               onChange={(e) => handleInputChange('name', e.target.value)}
               required
@@ -171,7 +171,7 @@ export function ContactModal({ open, onOpenChange }: ContactModalProps) {
             <Label htmlFor="message">문의 내용 *</Label>
             <Textarea
               id="message"
-              placeholder="궁금한 점이나 문의사항을 자세히 적어주세요"
+              placeholder="문의사항을 적어주세요."
               rows={4}
               value={formData.message}
               onChange={(e) => handleInputChange('message', e.target.value)}

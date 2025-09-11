@@ -126,6 +126,7 @@ export default function EditStudentModal({ student, isOpen, onClose, onSave }: E
         phone: "",
         parentPhone: "",
         email: "",
+        status: "",
         classSchedules: [] as ClassSchedule[]
     });
 
@@ -142,6 +143,7 @@ export default function EditStudentModal({ student, isOpen, onClose, onSave }: E
                 phone: student.phone,
                 parentPhone: student.parentPhone,
                 email: student.email,
+                status: student.status || "수강",
                 classSchedules: student.classSchedules || []
             });
         }
@@ -284,24 +286,54 @@ export default function EditStudentModal({ student, isOpen, onClose, onSave }: E
                         </div>
                     </div>
 
-                    <div className="space-y-2">
-                        <Label htmlFor="subject" className="text-cyan-200">과목</Label>
-                        <Select value={formData.subject} onValueChange={(value) => handleInputChange('subject', value)}>
-                            <SelectTrigger className="bg-background/40 border-cyan-400/40 text-cyan-100 focus:border-cyan-400/80">
-                                <SelectValue placeholder="과목을 선택하세요" />
-                            </SelectTrigger>
-                            <SelectContent className="bg-background border-cyan-400/40">
-                                {subjects.map((subject) => (
+                    <div className="flex gap-2 w-full min-w-0">
+                        <div className="flex-1 min-w-0 space-y-2">
+                            <Label htmlFor="subject" className="text-cyan-200">과목</Label>
+                            <Select value={formData.subject} onValueChange={(value) => handleInputChange('subject', value)}>
+                                <SelectTrigger className="bg-background/40 border-cyan-400/40 text-cyan-100 focus:border-cyan-400/80">
+                                    <SelectValue placeholder="과목을 선택하세요" />
+                                </SelectTrigger>
+                                <SelectContent className="bg-background border-cyan-400/40">
+                                    {subjects.map((subject) => (
+                                        <SelectItem
+                                            key={subject}
+                                            value={subject}
+                                            className="text-cyan-100 hover:bg-cyan-900/20"
+                                        >
+                                            {subject}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div className="flex-1 min-w-0 space-y-2">
+                            <Label htmlFor="status" className="text-cyan-200">수강 상태</Label>
+                            <Select value={formData.status} onValueChange={(value) => handleInputChange('status', value)}>
+                                <SelectTrigger className="bg-background/40 border-cyan-400/40 text-cyan-100 focus:border-cyan-400/80">
+                                    <SelectValue placeholder="상태를 선택하세요" />
+                                </SelectTrigger>
+                                <SelectContent className="bg-background border-cyan-400/40">
                                     <SelectItem
-                                        key={subject}
-                                        value={subject}
+                                        value="수강"
                                         className="text-cyan-100 hover:bg-cyan-900/20"
                                     >
-                                        {subject}
+                                        수강
                                     </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
+                                    <SelectItem
+                                        value="종료"
+                                        className="text-cyan-100 hover:bg-cyan-900/20"
+                                    >
+                                        종료
+                                    </SelectItem>
+                                    <SelectItem
+                                        value="휴강"
+                                        className="text-cyan-100 hover:bg-cyan-900/20"
+                                    >
+                                        휴강
+                                    </SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
                     </div>
 
                     <div className="space-y-2">

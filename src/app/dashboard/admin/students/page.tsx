@@ -51,7 +51,7 @@ export default function AdminStudentsPage() {
     const fetchStudents = async () => {
         const { data, error } = await supabase
             .from('students')
-            .select(`user_id, parent_id, current_curriculum_id, enrollment_start_date, attendance_schedule, users!students_user_id_fkey ( id, name, username, phone, birth_year, academy, created_at, email ), parent:users!students_parent_id_fkey ( phone )`);
+            .select(`user_id, parent_id, current_curriculum_id, enrollment_start_date, attendance_schedule, status, users!students_user_id_fkey ( id, name, username, phone, birth_year, academy, created_at, email ), parent:users!students_parent_id_fkey ( phone )`);
         
         if (error) {
             console.error('학생 목록 조회 오류:', error);
@@ -74,7 +74,7 @@ export default function AdminStudentsPage() {
             curriculum: '-', // DB에 별도 컬럼 필요시 수정
             progress: 0, // 추후 진도 연동
             attendance: 0, // 추후 출석 연동
-            status: '활성',
+            status: item.status || '수강', // DB의 status 컬럼 사용, 기본값은 '수강'
             joinDate: item.users?.created_at?.split('T')[0] || '-',
             lastLogin: '-',
             studentId: item.users?.username || item.user_id, // username 사용
@@ -177,6 +177,7 @@ export default function AdminStudentsPage() {
             formData.append('phone', studentData.phone);
             formData.append('parentPhone', studentData.parentPhone);
             formData.append('email', studentData.email);
+            formData.append('status', studentData.status);
             formData.append('classSchedules', JSON.stringify(studentData.classSchedules));
 
             const result = await updateStudent(formData);
@@ -295,8 +296,13 @@ export default function AdminStudentsPage() {
                                     </TableCell>
                                     <TableCell>
                                         <Badge 
-                                            variant={student.status === '활성' ? 'default' : 'secondary'}
-                                            className={student.status === '활성' ? 'bg-green-600' : 'bg-gray-600'}
+                                            variant={student.status === '수강' ? 'default' : 'secondary'}
+                                            className={
+                                                student.status === '수강' ? 'bg-green-600 text-white' :
+                                                student.status === '종료' ? 'bg-blue-600 text-white' :
+                                                student.status === '휴강' ? 'bg-yellow-600 text-white' :
+                                                'bg-gray-600 text-white'
+                                            }
                                         >
                                             {student.status}
                                         </Badge>

@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Plus, Edit, Trash2, Eye } from "lucide-react";
 import { useState, useEffect } from "react";
+import Image from "next/image";
 import AddCurriculumModal, { CurriculumFormData } from "@/app/dashboard/teacher/curriculum/components/AddCurriculumModal";
 import EditCurriculumModal, { CurriculumData } from "@/app/dashboard/teacher/curriculum/components/EditCurriculumModal";
 import { supabase } from "@/lib/supabase";
@@ -252,14 +253,28 @@ export default function CurriculumManager({ userRole = 'teacher' }: CurriculumMa
                                             <TableCell className="text-center">
                                                 <div className="flex justify-center">
                                                     {curriculum.image ? (
-                                                        <img 
-                                                            src={curriculum.image.startsWith('data:') ? curriculum.image : curriculum.image} 
-                                                            alt={curriculum.title}
-                                                            className="w-12 h-12 object-cover rounded border border-cyan-500/30"
-                                                            onError={(e) => {
-                                                                e.currentTarget.style.display = 'none';
-                                                            }}
-                                                        />
+                                                        <div className="relative w-12 h-12 rounded border border-cyan-500/30 overflow-hidden">
+                                                            <Image 
+                                                                src={curriculum.image.startsWith('data:') ? curriculum.image : curriculum.image} 
+                                                                alt={curriculum.title}
+                                                                width={48}
+                                                                height={48}
+                                                                className="object-cover"
+                                                                loading="lazy"
+                                                                placeholder="blur"
+                                                                blurDataURL="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAAIAAoDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAhEAACAQMDBQAAAAAAAAAAAAABAgMABAUGIWGRkqGxwf/EABUBAQEAAAAAAAAAAAAAAAAAAAMF/8QAGhEAAgIDAAAAAAAAAAAAAAAAAAECEgMRkf/aAAwDAQACEQMRAD8AltJagyeH0AthI5xdrLcNM91BF5pX2HaH9bcfaSXWGaRmknyJckliyjqTzSlT54b6bk+h0R//2Q=="
+                                                                onError={(e) => {
+                                                                    // 에러 시 fallback 처리
+                                                                    const target = e.target as HTMLImageElement;
+                                                                    target.style.display = 'none';
+                                                                    // 부모 요소에 fallback UI 표시
+                                                                    const parent = target.closest('.relative');
+                                                                    if (parent) {
+                                                                        parent.innerHTML = '<div class="w-12 h-12 bg-cyan-900/20 rounded border border-cyan-500/30 flex items-center justify-center"><span class="text-cyan-400 text-xs">No Image</span></div>';
+                                                                    }
+                                                                }}
+                                                            />
+                                                        </div>
                                                     ) : (
                                                         <div className="w-12 h-12 bg-cyan-900/20 rounded border border-cyan-500/30 flex items-center justify-center">
                                                             <span className="text-cyan-400 text-xs">No Image</span>

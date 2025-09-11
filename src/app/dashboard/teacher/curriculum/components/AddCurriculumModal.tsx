@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef } from 'react';
+import Image from 'next/image';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,6 +11,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { Plus, Trash2, Upload, X } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
+import { compressImage, validateImageFile, formatFileSize } from '@/lib/image-utils';
 
 export interface CurriculumFormData {
   title: string;
@@ -68,26 +70,40 @@ export default function AddCurriculumModal({ isOpen, onClose, onAddCurriculum }:
     
     setIsUploading(true);
     try {
-      // 파일 크기 체크 (5MB 제한)
-      if (file.size > 5 * 1024 * 1024) {
-        alert('파일 크기는 5MB 이하여야 합니다.');
+      // 파일 유효성 검사
+      const validation = validateImageFile(file, 10 * 1024 * 1024); // 10MB 제한
+      if (!validation.valid) {
+        alert(validation.error);
         setIsUploading(false);
         return;
       }
 
-      // 파일 형식 체크
-      const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
-      if (!allowedTypes.includes(file.type)) {
-        alert('JPG, PNG, GIF 파일만 업로드 가능합니다.');
-        setIsUploading(false);
-        return;
-      }
+      console.log(`원본 파일 크기: ${formatFileSize(file.size)}`);
 
-      // Supabase Storage에 업로드
-      const fileName = `${Date.now()}-${file.name}`;
+      // 이미지 압축 (커리큘럼 이미지)
+      const compressedBlob = await compressImage(file, {
+        maxWidth: 800,
+        maxHeight: 600,
+        quality: 0.8,
+        outputFormat: 'webp'
+      });
+
+      console.log(`압축 후 크기: ${formatFileSize(compressedBlob.size)} (${((compressedBlob.size / file.size) * 100).toFixed(1)}%)`);
+
+      // 압축된 파일을 File 객체로 변환
+      const compressedFile = new File([compressedBlob], file.name.replace(/\.[^/.]+$/, '.webp'), {
+        type: 'image/webp',
+        lastModified: Date.now(),
+      });
+
+      // Supabase Storage에 압축된 이미지 업로드
+      const fileName = `curriculum/${Date.now()}-${compressedFile.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
       const { data, error } = await supabase.storage
-        .from('curriculum-image')
-        .upload(fileName, file);
+        .from('content-images')
+        .upload(fileName, compressedFile, {
+          cacheControl: '31536000', // 1년 캐시
+          upsert: true
+        });
 
       if (error) {
         console.error('Storage 업로드 오류:', error);
@@ -98,7 +114,7 @@ export default function AddCurriculumModal({ isOpen, onClose, onAddCurriculum }:
 
       // 공개 URL 가져오기
       const { data: urlData } = supabase.storage
-        .from('curriculum-image')
+        .from('content-images')
         .getPublicUrl(fileName);
 
       setFormData(prev => ({ ...prev, image: urlData.publicUrl }));
@@ -240,14 +256,18 @@ export default function AddCurriculumModal({ isOpen, onClose, onAddCurriculum }:
             <Label className="text-cyan-200">대표 이미지 <span className="text-cyan-400 text-xs">(선택)</span></Label>
             <div className="space-y-3">
               {formData.image ? (
-                <div className="relative">
-                  <img 
+                <div className="relative w-full h-48 rounded-lg border border-cyan-500/30 overflow-hidden">
+                  <Image 
                     src={formData.image.startsWith('data:') ? formData.image : formData.image} 
                     alt="커리큘럼 이미지" 
-                    className="w-full h-48 object-cover rounded-lg border border-cyan-500/30"
+                    fill
+                    className="object-cover"
+                    placeholder="blur"
+                    blurDataURL="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAAIAAoDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAhEAACAQMDBQAAAAAAAAAAAAABAgMABAUGIWGRkqGxwf/EABUBAQEAAAAAAAAAAAAAAAAAAAMF/8QAGhEAAgIDAAAAAAAAAAAAAAAAAAECEgMRkf/aAAwDAQACEQMRAD8AltJagyeH0AthI5xdrLcNM91BF5pX2HaH9bcfaSXWGaRmknyJckliyjqTzSlT54b6bk+h0R//2Q=="
                     onError={(e) => {
                       console.error('이미지 로드 실패:', formData.image);
-                      e.currentTarget.style.display = 'none';
+                      const target = e.target as HTMLImageElement;
+                      target.style.display = 'none';
                     }}
                   />
                   <Button
@@ -255,10 +275,18 @@ export default function AddCurriculumModal({ isOpen, onClose, onAddCurriculum }:
                     onClick={removeImage}
                     size="icon"
                     variant="outline"
-                    className="absolute top-2 right-2 border-red-500/50 text-red-400 hover:bg-red-500/20 hover:text-red-300"
+                    className="absolute top-2 right-2 border-red-500/50 text-red-400 hover:bg-red-500/20 hover:text-red-300 z-10"
                   >
                     <X className="w-4 h-4" />
                   </Button>
+                  {isUploading && (
+                    <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+                      <div className="text-white text-center">
+                        <div className="animate-spin w-8 h-8 border-4 border-white border-t-transparent rounded-full mx-auto mb-2"></div>
+                        <p>업로드 중...</p>
+                      </div>
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div className="border-2 border-dashed border-cyan-500/30 rounded-lg p-6 text-center">

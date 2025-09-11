@@ -9,6 +9,7 @@ import { ChevronLeft, ChevronRight, MapPin, BookOpen, Users, Camera, Save, Plus,
 import Image from 'next/image';
 import { supabase } from '@/lib/supabase';
 import { updateContent, getContent } from '@/lib/actions';
+import { compressImage, validateImageFile, formatFileSize } from '@/lib/image-utils';
 
 export default function ContentManagePage() {
   const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
@@ -78,30 +79,41 @@ export default function ContentManagePage() {
       if (file) {
         setIsUploading(true);
         try {
-          // 파일 크기 체크 (5MB 제한)
-          if (file.size > 5 * 1024 * 1024) {
-            alert('파일 크기는 5MB 이하여야 합니다.');
+          // 파일 유효성 검사
+          const validation = validateImageFile(file, 10 * 1024 * 1024); // 10MB 제한
+          if (!validation.valid) {
+            alert(validation.error);
             setIsUploading(false);
             return;
           }
 
-          // 파일 형식 체크
-          const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
-          if (!allowedTypes.includes(file.type)) {
-            alert('JPG, PNG, GIF, WEBP 파일만 업로드 가능합니다.');
-            setIsUploading(false);
-            return;
-          }
+          console.log(`원본 파일 크기: ${formatFileSize(file.size)}`);
+
+          // 이미지 압축
+          const compressedBlob = await compressImage(file, {
+            maxWidth: 1200,
+            maxHeight: 1200,
+            quality: 0.85,
+            outputFormat: 'webp'
+          });
+
+          console.log(`압축 후 크기: ${formatFileSize(compressedBlob.size)} (${((compressedBlob.size / file.size) * 100).toFixed(1)}%)`);
+
+          // 압축된 파일을 File 객체로 변환
+          const compressedFile = new File([compressedBlob], file.name.replace(/\.[^/.]+$/, '.webp'), {
+            type: 'image/webp',
+            lastModified: Date.now(),
+          });
 
           // 파일명 정리 (특수문자 제거)
-          const cleanFileName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+          const cleanFileName = compressedFile.name.replace(/[^a-zA-Z0-9.-]/g, '_');
           const fileName = `${section}/${Date.now()}-${cleanFileName}`;
 
-          // Supabase Storage에 업로드 (content-images 버킷 사용)
+          // Supabase Storage에 압축된 이미지 업로드
           const { data, error } = await supabase.storage
             .from('content-images')
-            .upload(fileName, file, {
-              cacheControl: '3600',
+            .upload(fileName, compressedFile, {
+              cacheControl: '31536000', // 1년 캐시
               upsert: true
             });
 
@@ -452,6 +464,9 @@ export default function ContentManagePage() {
                     width={600}
                     height={400}
                     className="w-full h-full object-cover"
+                    placeholder="blur"
+                    blurDataURL="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAAIAAoDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAhEAACAQMDBQAAAAAAAAAAAAABAgMABAUGIWGRkqGxwf/EABUBAQEAAAAAAAAAAAAAAAAAAAMF/8QAGhEAAgIDAAAAAAAAAAAAAAAAAAECEgMRkf/aAAwDAQACEQMRAD8AltJagyeH0AthI5xdrLcNM91BF5pX2HaH9bcfaSXWGaRmknyJckliyjqTzSlT54b6bk+h0R//2Q=="
+                    priority={currentSlideIndex === 0}
                   />
                   <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center">
                     <div className="text-white text-center">

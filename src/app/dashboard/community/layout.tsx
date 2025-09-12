@@ -1,6 +1,8 @@
 import { getAuthenticatedUser } from "@/lib/auth";
 import { ParentSidebar } from "../parent/components/ParentSidebar";
 import { TeacherSidebar } from "../teacher/components/TeacherSidebar";
+import { StudentSidebar } from "../student/components/StudentSidebar";
+import { AdminSidebar } from "../admin/components/AdminSidebar";
 
 export default async function CommunityLayout({
   children,
@@ -28,6 +30,28 @@ export default async function CommunityLayout({
     return (
       <div className="flex h-screen bg-gradient-to-br from-[#0a1837] via-[#0a1a2f] to-[#0a1837]">
         <TeacherSidebar />
+        <main className="flex-1 overflow-hidden">
+          {children}
+        </main>
+      </div>
+    );
+  }
+
+  if (user.role === "student") {
+    return (
+      <div className="flex h-screen bg-gradient-to-br from-[#0a1837] via-[#0a1a2f] to-[#0a1837]">
+        <StudentSidebar user={user} />
+        <main className="flex-1 overflow-hidden">
+          {children}
+        </main>
+      </div>
+    );
+  }
+
+  if (user.role === "admin") {
+    return (
+      <div className="flex h-screen bg-gradient-to-br from-[#0a1837] via-[#0a1a2f] to-[#0a1837]">
+        <AdminSidebar />
         <main className="flex-1 overflow-hidden">
           {children}
         </main>

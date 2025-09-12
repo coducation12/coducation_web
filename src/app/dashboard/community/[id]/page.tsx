@@ -8,15 +8,15 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Textarea } from '@/components/ui/textarea';
 import { Calendar, User, MessageCircle, Heart, Share2, ArrowLeft } from 'lucide-react';
+import Image from 'next/image';
 import { 
-  Post, 
-  Comment, 
-  mockPosts, 
-  mockComments, 
-  roleColors, 
-  roleLabels, 
-  formatDate 
-} from '@/lib/community-data';
+  CommunityPost,
+  CommunityComment,
+  getCommunityPost,
+  getCommunityComments,
+  createCommunityComment
+} from '@/lib/community';
+import { formatDate, roleLabels } from '@/lib/community-utils';
 
 const badgeColorMap = {
   student: 'bg-cyan-700 text-white',
@@ -28,46 +28,74 @@ const badgeColorMap = {
 export default function PostDetailPage() {
   const params = useParams();
   const router = useRouter();
-  const [post, setPost] = useState<Post | null>(null);
-  const [comments, setComments] = useState<Comment[]>(mockComments);
+  const [post, setPost] = useState<CommunityPost | null>(null);
+  const [comments, setComments] = useState<CommunityComment[]>([]);
   const [newComment, setNewComment] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [commenting, setCommenting] = useState(false);
 
   useEffect(() => {
-    const foundPost = mockPosts.find(p => p.id === params.id);
-    if (foundPost) {
-      setPost(foundPost);
-    }
+    loadPostAndComments();
   }, [params.id]);
 
-  const handleLike = () => {
-    if (post) {
-      setPost({
-        ...post,
-        likes: post.isLiked ? post.likes - 1 : post.likes + 1,
-        isLiked: !post.isLiked
-      });
+  const loadPostAndComments = async () => {
+    try {
+      setLoading(true);
+      const [postData, commentsData] = await Promise.all([
+        getCommunityPost(params.id as string),
+        getCommunityComments(params.id as string)
+      ]);
+      
+      setPost(postData);
+      setComments(commentsData);
+    } catch (error) {
+      console.error('Failed to load post:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleAddComment = () => {
+  const handleLike = () => {
+    // TODO: 좋아요 기능 구현 (추후 좋아요 테이블 생성 후)
+    console.log('Like post:', post?.id);
+  };
+
+  const handleAddComment = async () => {
     if (!newComment.trim()) return;
 
-    const comment: Comment = {
-      id: Date.now().toString(),
-      content: newComment,
-      author: {
-        name: '현재 사용자',
-        role: 'student', // 실제로는 로그인된 사용자 정보에서 가져와야 함
-        avatar: '/avatars/default.jpg'
-      },
-      createdAt: new Date().toISOString()
-    };
-
-    setComments([comment, ...comments]);
-    setNewComment('');
+    try {
+      setCommenting(true);
+      await createCommunityComment(params.id as string, newComment);
+      setNewComment('');
+      // 댓글 목록 새로고침
+      const updatedComments = await getCommunityComments(params.id as string);
+      setComments(updatedComments);
+      // 게시글 댓글 수 업데이트
+      if (post) {
+        setPost({
+          ...post,
+          comments_count: post.comments_count + 1
+        });
+      }
+    } catch (error) {
+      console.error('Failed to add comment:', error);
+      alert('댓글 작성에 실패했습니다.');
+    } finally {
+      setCommenting(false);
+    }
   };
 
 
+
+  if (loading) {
+    return (
+      <div className="container mx-auto p-6 max-w-4xl">
+        <div className="text-center py-12">
+          <p className="text-cyan-200">게시글을 불러오는 중...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (!post) {
     return (
@@ -111,7 +139,7 @@ export default function PostDetailPage() {
                 </div>
                 <div className="flex items-center text-sm text-cyan-300 mt-1">
                   <Calendar className="h-4 w-4 mr-1" />
-                  {formatDate(post.createdAt)}
+                  {formatDate(post.created_at)}
                 </div>
               </div>
             </div>
@@ -126,16 +154,35 @@ export default function PostDetailPage() {
               {post.content}
             </div>
           </div>
+          
+          {/* 게시글 이미지 */}
+          {post.images && post.images.length > 0 && (
+            <div className="mb-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {post.images.map((imageUrl, index) => (
+                  <div key={index} className="relative aspect-video overflow-hidden rounded-lg border border-cyan-400/30">
+                    <Image
+                      src={imageUrl}
+                      alt={`게시글 이미지 ${index + 1}`}
+                      fill
+                      className="object-cover hover:scale-105 transition-transform duration-200"
+                      sizes="(max-width: 640px) 100vw, 50vw"
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
           <div className="flex items-center justify-between pt-4 border-t border-cyan-400/30">
             <div className="flex items-center space-x-3">
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={handleLike}
-                className={`flex items-center space-x-1 h-8 px-2 ${post.isLiked ? 'text-pink-300' : 'text-cyan-200'}`}
+                className={`flex items-center space-x-1 h-8 px-2 ${post.is_liked ? 'text-pink-300' : 'text-cyan-200'}`}
               >
-                <Heart className={`h-3 w-3 ${post.isLiked ? 'fill-current' : ''}`} />
-                <span className="text-xs">{post.likes}</span>
+                <Heart className={`h-3 w-3 ${post.is_liked ? 'fill-current' : ''}`} />
+                <span className="text-xs">{post.likes_count}</span>
               </Button>
               <Button variant="ghost" size="sm" className="flex items-center space-x-1 text-cyan-200 h-8 px-2">
                 <MessageCircle className="h-3 w-3" />
@@ -167,8 +214,12 @@ export default function PostDetailPage() {
                 className="bg-[#1a2a3a] text-cyan-100 border-cyan-400/30"
               />
               <div className="flex justify-end">
-                <Button className="bg-cyan-500 hover:bg-cyan-600 text-white font-bold shadow" onClick={handleAddComment} disabled={!newComment.trim()}>
-                  댓글 작성
+                <Button 
+                  className="bg-cyan-500 hover:bg-cyan-600 text-white font-bold shadow disabled:opacity-50" 
+                  onClick={handleAddComment} 
+                  disabled={!newComment.trim() || commenting}
+                >
+                  {commenting ? '작성 중...' : '댓글 작성'}
                 </Button>
               </div>
             </div>
@@ -189,7 +240,7 @@ export default function PostDetailPage() {
                       <Badge className={`w-[48px] min-w-[48px] max-w-[48px] text-xs font-bold px-0 py-0.5 flex items-center justify-center text-center ${badgeColorMap[comment.author.role]}`}>
                         {roleLabels[comment.author.role]}
                       </Badge>
-                      <span className="text-xs text-cyan-300">{formatDate(comment.createdAt)}</span>
+                      <span className="text-xs text-cyan-300">{formatDate(comment.created_at)}</span>
                     </div>
                     <p className="text-sm text-cyan-100 leading-relaxed font-medium">{comment.content}</p>
                   </div>

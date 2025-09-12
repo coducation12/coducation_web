@@ -3,8 +3,8 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Code2 } from 'lucide-react';
 import { useEffect, useState, useCallback } from 'react';
+import Image from 'next/image';
 
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -107,7 +107,15 @@ export function Header() {
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-14 max-w-screen-2xl items-center">
         <Link href="/" className="mr-6 flex items-center space-x-2">
-          <Code2 className="h-6 w-6 text-primary" />
+          <div className="relative h-8 w-8 flex-shrink-0">
+            <Image 
+              src="/logo.png" 
+              alt="Coducation Logo" 
+              fill
+              className="object-contain"
+              priority
+            />
+          </div>
           <span className="hidden font-bold font-headline sm:inline-block">
             Coducation
           </span>

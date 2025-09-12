@@ -4,21 +4,57 @@ import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
+import { createCommunityPost } from "@/lib/community";
+import { ImageUploader } from "@/components/ui/image-uploader";
+import { deleteImageFromStorage } from "@/lib/image-upload";
 
 export default function CommunityNewPage() {
   const router = useRouter();
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
+  const [images, setImages] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!title.trim() || !content.trim()) {
+      alert('제목과 내용을 모두 입력해주세요.');
+      return;
+    }
+    
     setLoading(true);
-    // TODO: 실제 저장 로직 구현 필요
-    setTimeout(() => {
-      setLoading(false);
+    try {
+      await createCommunityPost(title, content, images);
       router.push("/dashboard/community");
-    }, 600);
+    } catch (error) {
+      console.error('Failed to create post:', error);
+      alert('게시글 작성에 실패했습니다.');
+      // 게시글 작성 실패 시 업로드된 이미지들 삭제
+      for (const imageUrl of images) {
+        try {
+          await deleteImageFromStorage(imageUrl);
+        } catch (deleteError) {
+          console.error('Failed to delete image:', deleteError);
+        }
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleImageUpload = (imageUrl: string) => {
+    setImages(prev => [...prev, imageUrl]);
+  };
+
+  const handleImageRemove = async (imageUrl: string) => {
+    try {
+      await deleteImageFromStorage(imageUrl);
+      setImages(prev => prev.filter(url => url !== imageUrl));
+    } catch (error) {
+      console.error('Failed to delete image:', error);
+      alert('이미지 삭제에 실패했습니다.');
+    }
   };
 
   return (
@@ -45,6 +81,16 @@ export default function CommunityNewPage() {
               onChange={e => setContent(e.target.value)}
               className="bg-[#1a2a3a] text-cyan-100 border-cyan-400/30"
               required
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-cyan-200 mb-2">이미지</label>
+            <ImageUploader
+              onImageUpload={handleImageUpload}
+              onImageRemove={handleImageRemove}
+              images={images}
+              maxImages={5}
+              disabled={loading}
             />
           </div>
           <div className="flex justify-end gap-2">

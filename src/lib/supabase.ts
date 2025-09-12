@@ -140,6 +140,61 @@ export interface Database {
           created_at?: string;
         };
       };
+      community_posts: {
+        Row: {
+          id: string;
+          user_id: string;
+          title: string;
+          content: string;
+          images?: string[];
+          is_deleted?: boolean;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          title: string;
+          content: string;
+          images?: string[];
+          is_deleted?: boolean;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          title?: string;
+          content?: string;
+          images?: string[];
+          is_deleted?: boolean;
+          created_at?: string;
+        };
+      };
+      community_comments: {
+        Row: {
+          id: string;
+          post_id: string;
+          user_id: string;
+          content: string;
+          is_deleted?: boolean;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          post_id: string;
+          user_id: string;
+          content: string;
+          is_deleted?: boolean;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          post_id?: string;
+          user_id?: string;
+          content?: string;
+          is_deleted?: boolean;
+          created_at?: string;
+        };
+      };
     };
   };
 } 

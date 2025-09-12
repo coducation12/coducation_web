@@ -119,7 +119,7 @@ export default function TypingPage() {
                     </div>
                     <h3 className="text-lg lg:text-xl font-bold text-cyan-100 mb-2 transition-colors duration-300 group-hover:text-cyan-50">자리연습</h3>
                     <p className="text-cyan-300 text-sm transition-colors duration-300 group-hover:text-cyan-200">
-                      {selectedCategory === 'korean' ? '한글 자리 연습습' : '영어 자리 연습'}
+                      {selectedCategory === 'korean' ? '한글 자리 연습' : '영어 자리 연습'}
                     </p>
                   </div>
                 </StudentCard>

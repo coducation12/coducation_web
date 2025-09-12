@@ -6,7 +6,7 @@ import { Card } from '@/components/ui/card';
 import { X, Upload, Image as ImageIcon } from 'lucide-react';
 import Image from 'next/image';
 import { compressImage, validateImageFile } from '@/lib/image-compression';
-import { uploadImageToStorage } from '@/lib/image-upload';
+import { uploadImageToStorageClient } from '@/lib/client-image-upload';
 
 interface ImageUploaderProps {
   onImageUpload: (imageUrl: string) => void;
@@ -52,8 +52,8 @@ export function ImageUploader({
         // 이미지 압축
         const compressedFile = await compressImage(file);
         
-        // 업로드
-        const imageUrl = await uploadImageToStorage(compressedFile);
+        // 클라이언트에서 직접 업로드
+        const imageUrl = await uploadImageToStorageClient(compressedFile);
         onImageUpload(imageUrl);
       }
     } catch (error) {

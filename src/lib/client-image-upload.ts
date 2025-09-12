@@ -1,17 +1,10 @@
-'use server'
+// 클라이언트에서 직접 Supabase Storage 업로드
 
-import { supabase } from '@/lib/supabase'
+import { supabase } from '@/lib/supabase';
 
-// Supabase Storage에 이미지 업로드 (FormData 사용)
-export async function uploadImageToStorage(formData: FormData): Promise<string> {
+// 클라이언트에서 Supabase Storage에 이미지 업로드
+export async function uploadImageToStorageClient(file: File, folder = 'community-images'): Promise<string> {
   try {
-    const file = formData.get('file') as File;
-    const folder = formData.get('folder') as string || 'community';
-    
-    if (!file) {
-      throw new Error('파일이 제공되지 않았습니다.');
-    }
-
     // 파일명 생성 (타임스탬프 + 랜덤 문자열)
     const timestamp = Date.now();
     const randomString = Math.random().toString(36).substring(2, 15);
@@ -19,17 +12,12 @@ export async function uploadImageToStorage(formData: FormData): Promise<string> 
     const fileName = `${timestamp}_${randomString}.${fileExtension}`;
     const filePath = `${folder}/${fileName}`;
 
-    // File을 ArrayBuffer로 변환
-    const arrayBuffer = await file.arrayBuffer();
-    const uint8Array = new Uint8Array(arrayBuffer);
-
     // Supabase Storage에 업로드
     const { data, error } = await supabase.storage
       .from('content-images')
-      .upload(filePath, uint8Array, {
+      .upload(filePath, file, {
         cacheControl: '3600',
-        upsert: false,
-        contentType: file.type
+        upsert: false
       });
 
     if (error) {
@@ -49,8 +37,8 @@ export async function uploadImageToStorage(formData: FormData): Promise<string> 
   }
 }
 
-// 이미지 삭제
-export async function deleteImageFromStorage(imageUrl: string): Promise<void> {
+// 클라이언트에서 이미지 삭제
+export async function deleteImageFromStorageClient(imageUrl: string): Promise<void> {
   try {
     // URL에서 파일 경로 추출
     const url = new URL(imageUrl);

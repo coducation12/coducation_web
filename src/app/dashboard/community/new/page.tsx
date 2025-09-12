@@ -6,7 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { createCommunityPost } from "@/lib/community";
 import { ImageUploader } from "@/components/ui/image-uploader";
-import { deleteImageFromStorage } from "@/lib/image-upload";
+import { deleteImageFromStorageClient } from "@/lib/client-image-upload";
 
 export default function CommunityNewPage() {
   const router = useRouter();
@@ -33,7 +33,7 @@ export default function CommunityNewPage() {
       // 게시글 작성 실패 시 업로드된 이미지들 삭제
       for (const imageUrl of images) {
         try {
-          await deleteImageFromStorage(imageUrl);
+          await deleteImageFromStorageClient(imageUrl);
         } catch (deleteError) {
           console.error('Failed to delete image:', deleteError);
         }
@@ -49,7 +49,7 @@ export default function CommunityNewPage() {
 
   const handleImageRemove = async (imageUrl: string) => {
     try {
-      await deleteImageFromStorage(imageUrl);
+      await deleteImageFromStorageClient(imageUrl);
       setImages(prev => prev.filter(url => url !== imageUrl));
     } catch (error) {
       console.error('Failed to delete image:', error);

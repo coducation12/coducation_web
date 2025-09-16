@@ -164,17 +164,6 @@ export function AttendanceCalendar({ studentId }: AttendanceCalendarProps) {
           })}
         </div>
 
-        {/* 범례 */}
-        <div className="mt-4 flex items-center justify-center gap-4 text-sm flex-shrink-0">
-          <div className="flex items-center gap-1">
-            <div className="w-3 h-3 bg-green-500/20 border border-green-500/40" />
-            <StudentText variant="muted">출석</StudentText>
-          </div>
-          <div className="flex items-center gap-1">
-            <div className="w-3 h-3 ring-2 ring-cyan-400 ring-offset-1 ring-offset-transparent" />
-            <StudentText variant="muted">오늘</StudentText>
-          </div>
-        </div>
       </div>
     </div>
   );

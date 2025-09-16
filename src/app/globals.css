@@ -443,4 +443,14 @@ input::-ms-clear {
     scrollbar-width: thin;
     scrollbar-color: hsl(var(--primary) / 0.6) hsl(var(--background) / 0.3);
   }
+
+  /* 스크롤바 숨김 (기능은 유지) */
+  .scrollbar-hide {
+    -ms-overflow-style: none;  /* Internet Explorer 10+ */
+    scrollbar-width: none;  /* Firefox */
+  }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;  /* Safari and Chrome */
+  }
 }

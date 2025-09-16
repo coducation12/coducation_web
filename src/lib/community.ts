@@ -15,9 +15,7 @@ export interface CommunityPost {
     avatar?: string;
   };
   created_at: string;
-  likes_count: number;
   comments_count: number;
-  is_liked?: boolean;
 }
 
 export interface CommunityComment {
@@ -41,9 +39,18 @@ async function getCurrentUser() {
   return { userId, userRole };
 }
 
-// 모든 게시글 가져오기 (좋아요 수, 댓글 수 포함)
-export async function getCommunityPosts(): Promise<CommunityPost[]> {
+// 모든 게시글 가져오기 (페이지네이션 지원)
+export async function getCommunityPosts(page: number = 1, limit: number = 10): Promise<{ posts: CommunityPost[], totalCount: number, totalPages: number }> {
   const { userId } = await getCurrentUser();
+
+  // 전체 게시글 수 가져오기
+  const { count: totalCount } = await supabase
+    .from('community_posts')
+    .select('*', { count: 'exact', head: true })
+    .eq('is_deleted', false);
+
+  const totalPages = Math.ceil((totalCount || 0) / limit);
+  const offset = (page - 1) * limit;
 
   const { data: posts, error } = await supabase
     .from('community_posts')
@@ -60,27 +67,32 @@ export async function getCommunityPosts(): Promise<CommunityPost[]> {
       )
     `)
     .eq('is_deleted', false)
-    .order('created_at', { ascending: false });
+    .order('created_at', { ascending: false })
+    .range(offset, offset + limit - 1);
 
   if (error) {
     console.error('Error fetching posts:', error);
-    return [];
+    return { posts: [], totalCount: 0, totalPages: 0 };
   }
 
-  // 각 게시글의 좋아요 수와 댓글 수, 현재 사용자의 좋아요 여부 가져오기
+  // 클라이언트 사이드에서 관리자 게시글을 최상단으로 정렬
+  const sortedPosts = posts.sort((a, b) => {
+    // 관리자 게시글을 최상단에 배치
+    if (a.users?.role === 'admin' && b.users?.role !== 'admin') return -1;
+    if (a.users?.role !== 'admin' && b.users?.role === 'admin') return 1;
+    // 같은 타입 내에서는 최신순
+    return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+  });
+
+  // 각 게시글의 댓글 수 가져오기
   const postsWithCounts = await Promise.all(
-    posts.map(async (post) => {
+    sortedPosts.map(async (post) => {
       // 댓글 수 가져오기
       const { count: commentsCount } = await supabase
         .from('community_comments')
         .select('*', { count: 'exact', head: true })
         .eq('post_id', post.id)
         .eq('is_deleted', false);
-
-      // 좋아요 수 가져오기 (좋아요 테이블이 있다면)
-      // 현재는 임시로 0으로 설정
-      const likesCount = 0;
-      const isLiked = false;
 
       return {
         id: post.id,
@@ -94,14 +106,16 @@ export async function getCommunityPosts(): Promise<CommunityPost[]> {
           avatar: undefined
         },
         created_at: post.created_at,
-        likes_count: likesCount,
-        comments_count: commentsCount || 0,
-        is_liked: isLiked
+        comments_count: commentsCount || 0
       };
     })
   );
 
-  return postsWithCounts;
+  return {
+    posts: postsWithCounts,
+    totalCount: totalCount || 0,
+    totalPages
+  };
 }
 
 // 특정 게시글 가져오기
@@ -148,9 +162,7 @@ export async function getCommunityPost(postId: string): Promise<CommunityPost | 
       avatar: undefined
     },
     created_at: post.created_at,
-    likes_count: 0, // 좋아요 테이블 구현 후 업데이트
-    comments_count: commentsCount || 0,
-    is_liked: false
+    comments_count: commentsCount || 0
   };
 }
 
@@ -162,13 +174,18 @@ export async function createCommunityPost(title: string, content: string, images
     throw new Error('로그인이 필요합니다.');
   }
 
+  // 한국 시간으로 현재 시각 계산
+  const now = new Date();
+  const kstTime = new Date(now.getTime() + (9 * 60 * 60 * 1000)).toISOString();
+
   const { data, error } = await supabase
     .from('community_posts')
     .insert({
       title,
       content,
       images: images || [],
-      user_id: userId
+      user_id: userId,
+      created_at: kstTime
     })
     .select()
     .single();
@@ -227,12 +244,17 @@ export async function createCommunityComment(postId: string, content: string) {
     throw new Error('로그인이 필요합니다.');
   }
 
+  // 한국 시간으로 현재 시각 계산
+  const now = new Date();
+  const kstTime = new Date(now.getTime() + (9 * 60 * 60 * 1000)).toISOString();
+
   const { data, error } = await supabase
     .from('community_comments')
     .insert({
       post_id: postId,
       content,
-      user_id: userId
+      user_id: userId,
+      created_at: kstTime
     })
     .select()
     .single();

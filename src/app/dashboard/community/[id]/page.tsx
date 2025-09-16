@@ -7,15 +7,18 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Textarea } from '@/components/ui/textarea';
-import { Calendar, User, MessageCircle, Heart, Share2, ArrowLeft } from 'lucide-react';
+import { Calendar, User, MessageCircle, ArrowLeft, Trash2 } from 'lucide-react';
 import Image from 'next/image';
 import { 
   CommunityPost,
   CommunityComment,
   getCommunityPost,
   getCommunityComments,
-  createCommunityComment
+  createCommunityComment,
+  deleteCommunityPost,
+  deleteCommunityComment
 } from '@/lib/community';
+import { getCurrentUser } from '@/lib/actions';
 import { formatDate, roleLabels } from '@/lib/community-utils';
 
 const badgeColorMap = {
@@ -33,10 +36,23 @@ export default function PostDetailPage() {
   const [newComment, setNewComment] = useState('');
   const [loading, setLoading] = useState(true);
   const [commenting, setCommenting] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const [deletingComment, setDeletingComment] = useState<string | null>(null);
 
   useEffect(() => {
     loadPostAndComments();
+    loadCurrentUser();
   }, [params.id]);
+
+  const loadCurrentUser = async () => {
+    try {
+      const user = await getCurrentUser();
+      setCurrentUserId(user?.id || null);
+    } catch (error) {
+      console.error('Failed to load current user:', error);
+    }
+  };
 
   const loadPostAndComments = async () => {
     try {
@@ -55,9 +71,48 @@ export default function PostDetailPage() {
     }
   };
 
-  const handleLike = () => {
-    // TODO: 좋아요 기능 구현 (추후 좋아요 테이블 생성 후)
-    console.log('Like post:', post?.id);
+  const handleDeletePost = async () => {
+    if (!post || !confirm('정말로 이 게시글을 삭제하시겠습니까?')) {
+      return;
+    }
+
+    try {
+      setDeleting(true);
+      await deleteCommunityPost(post.id);
+      alert('게시글이 삭제되었습니다.');
+      router.push('/dashboard/community');
+    } catch (error) {
+      console.error('Failed to delete post:', error);
+      alert('게시글 삭제에 실패했습니다.');
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  const handleDeleteComment = async (commentId: string) => {
+    if (!confirm('정말로 이 댓글을 삭제하시겠습니까?')) {
+      return;
+    }
+
+    try {
+      setDeletingComment(commentId);
+      await deleteCommunityComment(commentId);
+      // 댓글 목록 새로고침
+      const updatedComments = await getCommunityComments(params.id as string);
+      setComments(updatedComments);
+      // 게시글 댓글 수 업데이트
+      if (post) {
+        setPost({
+          ...post,
+          comments_count: post.comments_count - 1
+        });
+      }
+    } catch (error) {
+      console.error('Failed to delete comment:', error);
+      alert('댓글 삭제에 실패했습니다.');
+    } finally {
+      setDeletingComment(null);
+    }
   };
 
   const handleAddComment = async () => {
@@ -108,7 +163,7 @@ export default function PostDetailPage() {
   }
 
   return (
-    <div className="container mx-auto p-6 max-w-4xl">
+    <div className="container mx-auto p-6 max-w-4xl h-screen overflow-y-auto scrollbar-hide">
       <div className="mb-6">
         <Button
           variant="ghost"
@@ -120,7 +175,11 @@ export default function PostDetailPage() {
         </Button>
       </div>
 
-      <Card className="mb-6 bg-transparent border border-cyan-400/30 text-cyan-100">
+      <Card className={`mb-6 bg-transparent text-cyan-100 ${
+        post.author.role === 'admin' 
+          ? 'border-2 border-cyan-400 shadow-[0_0_15px_0_rgba(0,255,255,0.4)]' 
+          : 'border border-cyan-400/30'
+      }`}>
         <CardHeader className="pb-3">
           <div className="flex items-start justify-between">
             <div className="flex items-center space-x-3">
@@ -133,7 +192,7 @@ export default function PostDetailPage() {
               <div>
                 <div className="flex items-center space-x-2">
                   <span className="font-bold text-cyan-200 text-lg">{post.author.name}</span>
-                  <Badge className={`w-[48px] min-w-[48px] max-w-[48px] text-xs font-bold px-0 py-0.5 flex items-center justify-center text-center ${badgeColorMap[post.author.role]}`}>
+                  <Badge className={`w-[48px] min-w-[48px] max-w-[48px] text-xs font-bold px-0 py-0.5 flex items-center justify-center text-center ${badgeColorMap[post.author.role]} hover:bg-opacity-100`}>
                     {roleLabels[post.author.role]}
                   </Badge>
                 </div>
@@ -143,6 +202,18 @@ export default function PostDetailPage() {
                 </div>
               </div>
             </div>
+            {currentUserId === post.user_id && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleDeletePost}
+                disabled={deleting}
+                className="text-red-400 hover:text-red-300 hover:bg-red-400/10"
+              >
+                <Trash2 className="h-4 w-4 mr-1" />
+                {deleting ? '삭제 중...' : '삭제'}
+              </Button>
+            )}
           </div>
         </CardHeader>
         <CardContent>
@@ -158,15 +229,20 @@ export default function PostDetailPage() {
           {/* 게시글 이미지 */}
           {post.images && post.images.length > 0 && (
             <div className="mb-6">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="flex flex-col items-center gap-4">
                 {post.images.map((imageUrl, index) => (
-                  <div key={index} className="relative aspect-video overflow-hidden rounded-lg border border-cyan-400/30">
+                  <div key={index} className="relative max-w-full overflow-hidden rounded-lg border border-cyan-400/30 bg-slate-800/50">
                     <Image
                       src={imageUrl}
                       alt={`게시글 이미지 ${index + 1}`}
-                      fill
-                      className="object-cover hover:scale-105 transition-transform duration-200"
-                      sizes="(max-width: 640px) 100vw, 50vw"
+                      width={0}
+                      height={0}
+                      sizes="(max-width: 768px) 100vw, (max-width: 1200px) 80vw, 70vw"
+                      className="w-auto h-auto max-w-full max-h-[500px] object-contain"
+                      style={{ 
+                        display: 'block',
+                        margin: '0 auto'
+                      }}
                     />
                   </div>
                 ))}
@@ -175,22 +251,9 @@ export default function PostDetailPage() {
           )}
           <div className="flex items-center justify-between pt-4 border-t border-cyan-400/30">
             <div className="flex items-center space-x-3">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleLike}
-                className={`flex items-center space-x-1 h-8 px-2 ${post.is_liked ? 'text-pink-300' : 'text-cyan-200'}`}
-              >
-                <Heart className={`h-3 w-3 ${post.is_liked ? 'fill-current' : ''}`} />
-                <span className="text-xs">{post.likes_count}</span>
-              </Button>
               <Button variant="ghost" size="sm" className="flex items-center space-x-1 text-cyan-200 h-8 px-2">
                 <MessageCircle className="h-3 w-3" />
                 <span className="text-xs">{comments.length}</span>
-              </Button>
-              <Button variant="ghost" size="sm" className="flex items-center space-x-1 text-cyan-200 h-8 px-2">
-                <Share2 className="h-3 w-3" />
-                <span className="text-xs">공유</span>
               </Button>
             </div>
           </div>
@@ -235,12 +298,25 @@ export default function PostDetailPage() {
                     </AvatarFallback>
                   </Avatar>
                   <div className="flex-1">
-                    <div className="flex items-center space-x-2 mb-2">
-                      <span className="font-semibold text-sm text-cyan-200">{comment.author.name}</span>
-                      <Badge className={`w-[48px] min-w-[48px] max-w-[48px] text-xs font-bold px-0 py-0.5 flex items-center justify-center text-center ${badgeColorMap[comment.author.role]}`}>
-                        {roleLabels[comment.author.role]}
-                      </Badge>
-                      <span className="text-xs text-cyan-300">{formatDate(comment.created_at)}</span>
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center space-x-2">
+                        <span className="font-semibold text-sm text-cyan-200">{comment.author.name}</span>
+                        <Badge className={`w-[48px] min-w-[48px] max-w-[48px] text-xs font-bold px-0 py-0.5 flex items-center justify-center text-center ${badgeColorMap[comment.author.role]} hover:bg-opacity-100`}>
+                          {roleLabels[comment.author.role]}
+                        </Badge>
+                        <span className="text-xs text-cyan-300">{formatDate(comment.created_at)}</span>
+                      </div>
+                      {currentUserId === comment.user_id && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDeleteComment(comment.id)}
+                          disabled={deletingComment === comment.id}
+                          className="text-red-400 hover:text-red-300 hover:bg-red-400/10 h-6 w-6 p-0"
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      )}
                     </div>
                     <p className="text-sm text-cyan-100 leading-relaxed font-medium">{comment.content}</p>
                   </div>

@@ -808,8 +808,13 @@ export default function BasicPage() {
       const durationMinutes = duration / (1000 * 60);
       let wordCPM = 0;
       
-      // 모든 글자를 틀렸으면 CPM을 0으로 설정
-      if (!isCorrect) {
+      // 절반 이상 틀렸으면 CPM을 0으로 설정
+      const correctCharCount = userInput.split('').reduce((count, char, index) => {
+        return count + (char === currentWord[index] ? 1 : 0);
+      }, 0);
+      const accuracyRatio = correctCharCount / currentWord.length;
+      
+      if (accuracyRatio < 0.5) {
         wordCPM = 0;
       } else {
         wordCPM = durationMinutes > 0 ? Math.round(characterCount / durationMinutes) : 0;

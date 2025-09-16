@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, memo } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -27,7 +27,7 @@ const badgeColorMap = {
   admin: 'bg-red-700 text-white',
 };
 
-export default function CommunityPage() {
+function CommunityPage() {
   const router = useRouter();
   const [posts, setPosts] = useState<CommunityPost[]>([]);
   const [newPost, setNewPost] = useState({ title: '', content: '' });
@@ -130,9 +130,46 @@ export default function CommunityPage() {
 
   if (loading) {
     return (
-      <div className="container mx-auto p-6 max-w-4xl pt-16 lg:pt-2">
-        <div className="flex justify-center items-center h-64">
-          <div className="text-cyan-200">게시글을 불러오는 중...</div>
+      <div className="container mx-auto p-6 max-w-4xl pt-16 lg:pt-2 h-screen overflow-y-auto scrollbar-hide">
+        <div className="flex justify-between items-center mb-6">
+          <div>
+            <h1 className="text-3xl font-bold text-cyan-100 drop-shadow-[0_0_6px_#00fff7]">커뮤니티</h1>
+            <p className="text-cyan-200 mt-2 font-medium drop-shadow">학습에 대한 이야기를 나누고 정보를 공유해보세요</p>
+          </div>
+          <Button className="bg-cyan-500 hover:bg-cyan-600 text-white font-bold shadow" onClick={() => router.push('/dashboard/community/new')}>
+            새 글 작성
+          </Button>
+        </div>
+
+        {/* 로딩 스켈레톤 */}
+        <div className="space-y-3">
+          {Array.from({ length: 5 }).map((_, index) => (
+            <Card key={index} className="bg-transparent border border-cyan-400/30 text-cyan-100 min-h-[56px] animate-pulse">
+              <CardContent className="py-2 px-4 flex items-center min-h-[56px] gap-3">
+                {/* 아바타 스켈레톤 */}
+                <div className="w-8 h-8 bg-cyan-400/20 rounded-full flex-shrink-0"></div>
+                
+                {/* 작성자 정보 스켈레톤 */}
+                <div className="flex flex-col justify-center min-w-[120px] max-w-[120px] flex-shrink-0 gap-1">
+                  <div className="flex items-center gap-1">
+                    <div className="w-12 h-4 bg-cyan-400/20 rounded"></div>
+                    <div className="w-16 h-3 bg-cyan-400/20 rounded"></div>
+                  </div>
+                  <div className="w-20 h-3 bg-cyan-400/20 rounded"></div>
+                </div>
+                
+                {/* 제목 스켈레톤 */}
+                <div className="flex-1 min-w-0">
+                  <div className="w-3/4 h-4 bg-cyan-400/20 rounded"></div>
+                </div>
+                
+                {/* 댓글 수 스켈레톤 */}
+                <div className="flex items-center min-w-[70px] max-w-[70px] flex-shrink-0 justify-end gap-2">
+                  <div className="w-8 h-4 bg-cyan-400/20 rounded"></div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
         </div>
       </div>
     );
@@ -285,4 +322,6 @@ export default function CommunityPage() {
       </div>
     </div>
   );
-} 
+}
+
+export default memo(CommunityPage); 

@@ -84,32 +84,35 @@ export async function getCommunityPosts(page: number = 1, limit: number = 10): P
     return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
   });
 
-  // 각 게시글의 댓글 수 가져오기
-  const postsWithCounts = await Promise.all(
-    sortedPosts.map(async (post) => {
-      // 댓글 수 가져오기
-      const { count: commentsCount } = await supabase
-        .from('community_comments')
-        .select('*', { count: 'exact', head: true })
-        .eq('post_id', post.id)
-        .eq('is_deleted', false);
+  // 모든 게시글의 댓글 수를 한 번에 가져오기
+  const postIds = sortedPosts.map(post => post.id);
+  const { data: commentCounts } = await supabase
+    .from('community_comments')
+    .select('post_id')
+    .in('post_id', postIds)
+    .eq('is_deleted', false);
 
-      return {
-        id: post.id,
-        title: post.title,
-        content: post.content,
-        images: post.images || [],
-        user_id: post.user_id,
-        author: {
-          name: post.users?.name || '익명',
-          role: post.users?.role || 'student',
-          avatar: undefined
-        },
-        created_at: post.created_at,
-        comments_count: commentsCount || 0
-      };
-    })
-  );
+  // 댓글 수를 게시글 ID별로 그룹화
+  const commentCountMap = commentCounts?.reduce((acc, comment) => {
+    acc[comment.post_id] = (acc[comment.post_id] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>) || {};
+
+  // 게시글 데이터와 댓글 수 결합
+  const postsWithCounts = sortedPosts.map(post => ({
+    id: post.id,
+    title: post.title,
+    content: post.content,
+    images: post.images || [],
+    user_id: post.user_id,
+    author: {
+      name: post.users?.name || '익명',
+      role: post.users?.role || 'student',
+      avatar: undefined
+    },
+    created_at: post.created_at,
+    comments_count: commentCountMap[post.id] || 0
+  }));
 
   return {
     posts: postsWithCounts,

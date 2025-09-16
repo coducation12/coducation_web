@@ -144,10 +144,70 @@ export default function PostDetailPage() {
 
   if (loading) {
     return (
-      <div className="container mx-auto p-6 max-w-4xl">
-        <div className="text-center py-12">
-          <p className="text-cyan-200">게시글을 불러오는 중...</p>
+      <div className="container mx-auto p-6 max-w-4xl h-screen overflow-y-auto scrollbar-hide">
+        <div className="mb-6">
+          <Button
+            variant="ghost"
+            onClick={() => router.back()}
+            className="flex items-center space-x-2 text-cyan-200 hover:text-cyan-100"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            <span>목록으로 돌아가기</span>
+          </Button>
         </div>
+
+        {/* 게시글 로딩 스켈레톤 */}
+        <Card className="mb-6 bg-transparent border border-cyan-400/30 text-cyan-100 animate-pulse">
+          <CardHeader className="pb-3">
+            <div className="flex items-start justify-between">
+              <div className="flex items-center space-x-3">
+                <div className="w-12 h-12 bg-cyan-400/20 rounded-full"></div>
+                <div>
+                  <div className="flex items-center space-x-2 mb-2">
+                    <div className="w-24 h-6 bg-cyan-400/20 rounded"></div>
+                    <div className="w-12 h-4 bg-cyan-400/20 rounded"></div>
+                  </div>
+                  <div className="w-32 h-4 bg-cyan-400/20 rounded"></div>
+                </div>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="w-3/4 h-8 bg-cyan-400/20 rounded mb-4 mx-auto"></div>
+            <div className="space-y-2">
+              <div className="w-full h-4 bg-cyan-400/20 rounded"></div>
+              <div className="w-5/6 h-4 bg-cyan-400/20 rounded"></div>
+              <div className="w-4/5 h-4 bg-cyan-400/20 rounded"></div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* 댓글 섹션 로딩 스켈레톤 */}
+        <Card className="bg-transparent border border-cyan-400/30 animate-pulse">
+          <CardHeader>
+            <div className="w-24 h-6 bg-cyan-400/20 rounded"></div>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div className="w-full h-20 bg-cyan-400/20 rounded"></div>
+              <div className="space-y-4">
+                {Array.from({ length: 3 }).map((_, index) => (
+                  <div key={index} className="flex space-x-3 p-4 border border-cyan-400/30 rounded-lg bg-transparent">
+                    <div className="w-8 h-8 bg-cyan-400/20 rounded-full"></div>
+                    <div className="flex-1">
+                      <div className="flex items-center space-x-2 mb-2">
+                        <div className="w-16 h-4 bg-cyan-400/20 rounded"></div>
+                        <div className="w-12 h-3 bg-cyan-400/20 rounded"></div>
+                        <div className="w-20 h-3 bg-cyan-400/20 rounded"></div>
+                      </div>
+                      <div className="w-3/4 h-4 bg-cyan-400/20 rounded"></div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     );
   }

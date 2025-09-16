@@ -39,20 +39,29 @@ async function getCurrentUser() {
   return { userId, userRole };
 }
 
-// 모든 게시글 가져오기 (페이지네이션 지원)
-export async function getCommunityPosts(page: number = 1, limit: number = 10): Promise<{ posts: CommunityPost[], totalCount: number, totalPages: number }> {
+// 모든 게시글 가져오기 (페이지네이션 및 검색 지원)
+export async function getCommunityPosts(page: number = 1, limit: number = 10, searchQuery?: string): Promise<{ posts: CommunityPost[], totalCount: number, totalPages: number }> {
   const { userId } = await getCurrentUser();
 
-  // 전체 게시글 수 가져오기
-  const { count: totalCount } = await supabase
+  // 검색 조건 설정
+  let query = supabase
     .from('community_posts')
     .select('*', { count: 'exact', head: true })
     .eq('is_deleted', false);
 
+  // 검색어가 있으면 제목과 내용에서 검색
+  if (searchQuery && searchQuery.trim()) {
+    query = query.or(`title.ilike.%${searchQuery.trim()}%,content.ilike.%${searchQuery.trim()}%`);
+  }
+
+  // 전체 게시글 수 가져오기
+  const { count: totalCount } = await query;
+
   const totalPages = Math.ceil((totalCount || 0) / limit);
   const offset = (page - 1) * limit;
 
-  const { data: posts, error } = await supabase
+  // 게시글 데이터 가져오기
+  let postsQuery = supabase
     .from('community_posts')
     .select(`
       id,
@@ -66,7 +75,14 @@ export async function getCommunityPosts(page: number = 1, limit: number = 10): P
         role
       )
     `)
-    .eq('is_deleted', false)
+    .eq('is_deleted', false);
+
+  // 검색어가 있으면 제목과 내용에서 검색
+  if (searchQuery && searchQuery.trim()) {
+    postsQuery = postsQuery.or(`title.ilike.%${searchQuery.trim()}%,content.ilike.%${searchQuery.trim()}%`);
+  }
+
+  const { data: posts, error } = await postsQuery
     .order('created_at', { ascending: false })
     .range(offset, offset + limit - 1);
 

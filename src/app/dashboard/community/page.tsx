@@ -9,13 +9,12 @@ import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Calendar, User, MessageCircle, ImageIcon, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Calendar, User, MessageCircle, ImageIcon, ChevronLeft, ChevronRight, Search } from 'lucide-react';
 import Image from 'next/image';
 import { 
   CommunityPost,
   getCommunityPosts,
-  createCommunityPost,
-  deleteCommunityPost
+  createCommunityPost
 } from '@/lib/community';
 import { getCurrentUser } from '@/lib/actions';
 import { formatDate, roleLabels } from '@/lib/community-utils';
@@ -34,32 +33,22 @@ function CommunityPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
-  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
-  const [deleting, setDeleting] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isSearching, setIsSearching] = useState(false);
   const postsPerPage = 15;
 
-  // 게시글 목록 로드 및 현재 사용자 정보 가져오기
+  // 게시글 목록 로드
   useEffect(() => {
     loadPosts();
-    loadCurrentUser();
-  }, [currentPage]);
-
-  const loadCurrentUser = async () => {
-    try {
-      const user = await getCurrentUser();
-      setCurrentUserId(user?.id || null);
-    } catch (error) {
-      console.error('Failed to load current user:', error);
-    }
-  };
+  }, [currentPage, searchQuery]);
 
   const loadPosts = async () => {
     try {
       setLoading(true);
-      const result = await getCommunityPosts(currentPage, postsPerPage);
+      const result = await getCommunityPosts(currentPage, postsPerPage, searchQuery);
       setPosts(result.posts);
       setTotalPages(result.totalPages);
       setTotalCount(result.totalCount);
@@ -88,24 +77,22 @@ function CommunityPage() {
     }
   };
 
-  const handleDeletePost = async (postId: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    
-    if (!confirm('정말로 이 게시글을 삭제하시겠습니까?')) {
-      return;
-    }
+  const handleSearch = async () => {
+    setIsSearching(true);
+    setCurrentPage(1); // 검색 시 첫 페이지로 이동
+    await loadPosts();
+    setIsSearching(false);
+  };
 
-    try {
-      setDeleting(postId);
-      await deleteCommunityPost(postId);
-      // 게시글 목록 새로고침
-      await loadPosts();
-    } catch (error) {
-      console.error('Failed to delete post:', error);
-      alert('게시글 삭제에 실패했습니다.');
-    } finally {
-      setDeleting(null);
+  const handleSearchKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleSearch();
     }
+  };
+
+  const handleClearSearch = () => {
+    setSearchQuery('');
+    setCurrentPage(1);
   };
 
   const handlePostClick = (postId: string) => {
@@ -134,7 +121,9 @@ function CommunityPage() {
         <div className="flex justify-between items-center mb-6">
           <div>
             <h1 className="text-3xl font-bold text-cyan-100 drop-shadow-[0_0_6px_#00fff7]">커뮤니티</h1>
-            <p className="text-cyan-200 mt-2 font-medium drop-shadow">학습에 대한 이야기를 나누고 정보를 공유해보세요</p>
+            <p className="text-cyan-200 mt-2 font-medium drop-shadow">
+              {isSearching ? '검색 중...' : '학습에 대한 이야기를 나누고 정보를 공유해보세요'}
+            </p>
           </div>
           <Button className="bg-cyan-500 hover:bg-cyan-600 text-white font-bold shadow" onClick={() => router.push('/dashboard/community/new')}>
             새 글 작성
@@ -180,7 +169,9 @@ function CommunityPage() {
       <div className="flex justify-between items-center mb-6">
         <div>
           <h1 className="text-3xl font-bold text-cyan-100 drop-shadow-[0_0_6px_#00fff7]">커뮤니티</h1>
-          <p className="text-cyan-200 mt-2 font-medium drop-shadow">학습에 대한 이야기를 나누고 정보를 공유해보세요</p>
+          <p className="text-cyan-200 mt-2 font-medium drop-shadow">
+            {searchQuery ? `"${searchQuery}" 검색 결과: ${totalCount}개` : '학습에 대한 이야기를 나누고 정보를 공유해보세요'}
+          </p>
         </div>
         <Button className="bg-cyan-500 hover:bg-cyan-600 text-white font-bold shadow" onClick={() => router.push('/dashboard/community/new')}>
           새 글 작성
@@ -190,7 +181,14 @@ function CommunityPage() {
       <div className="space-y-3">
         {posts.length === 0 ? (
           <div className="text-center py-12">
-            <p className="text-cyan-200">아직 게시글이 없습니다. 첫 번째 글을 작성해보세요!</p>
+            {searchQuery ? (
+              <div>
+                <p className="text-cyan-200">검색 결과가 없습니다.</p>
+                <p className="text-cyan-300 text-sm mt-2">다른 검색어로 시도해보세요.</p>
+              </div>
+            ) : (
+              <p className="text-cyan-200">아직 게시글이 없습니다. 첫 번째 글을 작성해보세요!</p>
+            )}
           </div>
         ) : (
           posts.map((post) => (
@@ -235,22 +233,12 @@ function CommunityPage() {
                     )}
                   </div>
                 </div>
-                {/* 4열: 댓글/삭제 */}
+                {/* 4열: 댓글 수 */}
                 <div className="flex items-center min-w-[70px] max-w-[70px] flex-shrink-0 justify-end gap-2">
                   <span className="flex items-center space-x-1">
                     <MessageCircle className="h-4 w-4" />
                     <span className="text-xs">{post.comments_count}</span>
                   </span>
-                  {currentUserId === post.user_id && (
-                    <button
-                      onClick={(e) => handleDeletePost(post.id, e)}
-                      className="flex items-center space-x-1 h-8 px-2 focus:outline-none text-red-400 hover:text-red-300 disabled:opacity-50"
-                      type="button"
-                      disabled={deleting === post.id}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
-                  )}
                 </div>
               </CardContent>
             </Card>
@@ -316,9 +304,34 @@ function CommunityPage() {
         </div>
       )}
 
-      {/* 페이지 정보 */}
-      <div className="text-center mt-4 text-cyan-300 text-sm">
-        총 {totalCount}개의 게시글 중 {((currentPage - 1) * postsPerPage) + 1}-{Math.min(currentPage * postsPerPage, totalCount)}개 표시
+      {/* 검색 UI */}
+      <div className="flex justify-center items-center mt-6 space-x-2">
+        <div className="flex items-center space-x-2">
+          <Input
+            type="text"
+            placeholder="제목 또는 내용으로 검색..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            onKeyPress={handleSearchKeyPress}
+            className="w-64 text-cyan-100 bg-transparent border-cyan-400/30 focus:border-cyan-400 placeholder:text-cyan-400/60"
+          />
+          <Button
+            onClick={handleSearch}
+            disabled={isSearching}
+            className="bg-cyan-500 hover:bg-cyan-600 text-white"
+          >
+            <Search className="h-4 w-4" />
+          </Button>
+          {searchQuery && (
+            <Button
+              onClick={handleClearSearch}
+              variant="outline"
+              className="text-cyan-200 border-cyan-400/30 hover:bg-cyan-400/10"
+            >
+              초기화
+            </Button>
+          )}
+        </div>
       </div>
     </div>
   );

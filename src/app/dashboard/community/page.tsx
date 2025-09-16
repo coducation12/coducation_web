@@ -43,12 +43,12 @@ function CommunityPage() {
   // 게시글 목록 로드
   useEffect(() => {
     loadPosts();
-  }, [currentPage, searchQuery]);
+  }, [currentPage]);
 
-  const loadPosts = async () => {
+  const loadPosts = async (query?: string) => {
     try {
       setLoading(true);
-      const result = await getCommunityPosts(currentPage, postsPerPage, searchQuery);
+      const result = await getCommunityPosts(currentPage, postsPerPage, query !== undefined ? query : searchQuery);
       setPosts(result.posts);
       setTotalPages(result.totalPages);
       setTotalCount(result.totalCount);
@@ -80,7 +80,7 @@ function CommunityPage() {
   const handleSearch = async () => {
     setIsSearching(true);
     setCurrentPage(1); // 검색 시 첫 페이지로 이동
-    await loadPosts();
+    await loadPosts(searchQuery);
     setIsSearching(false);
   };
 
@@ -90,9 +90,11 @@ function CommunityPage() {
     }
   };
 
-  const handleClearSearch = () => {
+  const handleClearSearch = async () => {
     setSearchQuery('');
     setCurrentPage(1);
+    // 검색 초기화 시 빈 쿼리로 로드
+    await loadPosts('');
   };
 
   const handlePostClick = (postId: string) => {

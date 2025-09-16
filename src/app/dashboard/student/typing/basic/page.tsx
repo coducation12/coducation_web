@@ -590,17 +590,16 @@ export default function BasicPage() {
       }
     }
     
-    // 정확도가 50% 미만이면 CPM/WPM을 0으로 설정
+    // 정확도에 따른 CPM 계산 (정확도 × 평균 CPM)
     let finalCPM = 0;
     let finalWPM = 0;
     
-    if (wordAccuracy >= 50) {
-      // CPM 상한선 설정 (현실적인 범위)
-      const cappedCPM = Math.min(averageCPM, 800);
+    if (wordAccuracy > 0) {
+      // 정확도를 소수로 변환 (예: 80% → 0.8)
+      const accuracyRatio = wordAccuracy / 100;
       
-      // 정확도에 따른 패널티 적용 (정확도가 낮을수록 패널티)
-      const accuracyMultiplier = Math.max(0.3, wordAccuracy / 100); // 최소 30%는 유지
-      finalCPM = Math.round(cappedCPM * accuracyMultiplier);
+      // 평균 CPM에 정확도를 곱함
+      finalCPM = Math.round(averageCPM * accuracyRatio);
       
       // WPM 계산 (5글자 = 1단어 기준)
       finalWPM = Math.round(finalCPM / 5);
@@ -807,7 +806,14 @@ export default function BasicPage() {
       
       // 개별 단어의 CPM 계산 (분당 문자 수)
       const durationMinutes = duration / (1000 * 60);
-      const wordCPM = durationMinutes > 0 ? Math.round(characterCount / durationMinutes) : 0;
+      let wordCPM = 0;
+      
+      // 모든 글자를 틀렸으면 CPM을 0으로 설정
+      if (!isCorrect) {
+        wordCPM = 0;
+      } else {
+        wordCPM = durationMinutes > 0 ? Math.round(characterCount / durationMinutes) : 0;
+      }
       
       const wordTiming: WordTiming = {
         word: currentWord,

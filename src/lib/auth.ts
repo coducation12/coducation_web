@@ -28,6 +28,8 @@ export async function getAuthenticatedUser(): Promise<User | null> {
       .single();
 
     if (error || !data) return null;
+    
+    
     return data as User;
   } catch (error) {
     console.error('Authentication error:', error);

@@ -16,8 +16,8 @@ import {
   getCommunityPosts,
   createCommunityPost
 } from '@/lib/community';
-import { getCurrentUser } from '@/lib/actions';
 import { formatDate, roleLabels } from '@/lib/community-utils';
+import { getCurrentUserClient } from '@/lib/client-auth';
 
 const badgeColorMap = {
   student: 'bg-cyan-700 text-white',
@@ -39,11 +39,23 @@ function CommunityPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
   const postsPerPage = 15;
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
   // 게시글 목록 로드
   useEffect(() => {
     loadPosts();
+    loadCurrentUser();
   }, [currentPage]);
+
+  const loadCurrentUser = async () => {
+    try {
+      // 간단한 사용자 ID만 가져오기 (삭제 권한 확인용)
+      const user = await getCurrentUserClient();
+      setCurrentUserId(user?.id || null);
+    } catch (error) {
+      // 에러 로그 제거 - 조용히 처리
+    }
+  };
 
   const loadPosts = async (query?: string) => {
     try {
@@ -53,7 +65,7 @@ function CommunityPage() {
       setTotalPages(result.totalPages);
       setTotalCount(result.totalCount);
     } catch (error) {
-      console.error('Failed to load posts:', error);
+      // 에러 로그 제거 - 조용히 처리
     } finally {
       setLoading(false);
     }
@@ -70,7 +82,7 @@ function CommunityPage() {
       // 게시글 목록 새로고침
       await loadPosts();
     } catch (error) {
-      console.error('Failed to create post:', error);
+      // 에러 로그 제거 - 조용히 처리
       alert('게시글 작성에 실패했습니다.');
     } finally {
       setCreating(false);

@@ -97,7 +97,7 @@ export async function getCurrentUser() {
 
     const { data, error } = await supabase
       .from('users')
-      .select('id, name, role')
+      .select('id, name, role, email, grade, phone, academy, birth_year, profile_image_url')
       .eq('id', userId)
       .single();
 
@@ -107,7 +107,7 @@ export async function getCurrentUser() {
 
     return data;
   } catch (error) {
-    console.error('사용자 정보 조회 오류:', error);
+    // 에러 로그 제거 - 조용히 처리
     return null;
   }
 }

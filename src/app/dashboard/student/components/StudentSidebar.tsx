@@ -5,7 +5,9 @@ import Link from "next/link";
 import { LayoutDashboard, BookOpen, Keyboard, Users, Menu, LogOut, User } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
-import { logout } from "@/lib/actions";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { logoutClient } from "@/lib/client-auth";
+import { useProfileImage } from "@/hooks/use-profile-image";
 
 const navItems = [
   { href: "/dashboard/student", label: "대시보드", icon: <LayoutDashboard className="w-5 h-5" /> },
@@ -15,18 +17,21 @@ const navItems = [
 ];
 
 interface StudentSidebarProps {
-  user: { name: string; role: string };
+  user: { name: string; role: string; profile_image_url?: string };
 }
 
 export function StudentSidebar({ user }: StudentSidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
   const [open, setOpen] = useState(false);
+  const profileImage = useProfileImage();
+  // DB의 프로필 이미지 URL을 우선적으로 사용
+  const displayProfileImage = user.profile_image_url || profileImage;
 
   const handleLogout = async () => {
     try {
-      // TODO: 배포 후 정상화 - Supabase Auth 로그아웃으로 복원 필요
-      await logout();
+      await logoutClient();
+      router.push("/");
     } catch (error) {
       console.error("로그아웃 실패:", error);
       // 에러가 발생해도 메인화면으로 이동
@@ -52,7 +57,12 @@ export function StudentSidebar({ user }: StudentSidebarProps) {
       </nav>
       <div className="p-4 border-t border-cyan-900/20 text-cyan-200 text-sm flex flex-col gap-4">
         <Link href="/dashboard/student/profile" className="flex items-center gap-3 hover:underline cursor-pointer">
-          <User className="w-5 h-5" />
+          <Avatar className="w-8 h-8 border border-cyan-400/30">
+            <AvatarImage src={displayProfileImage} alt="프로필 이미지" />
+            <AvatarFallback className="bg-cyan-900/50 text-cyan-100 text-sm">
+              {user.name?.charAt(0) || 'U'}
+            </AvatarFallback>
+          </Avatar>
           <span>{user.name} ({user.role})</span>
         </Link>
         <button 

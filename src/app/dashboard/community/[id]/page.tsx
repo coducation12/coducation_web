@@ -18,7 +18,6 @@ import {
   deleteCommunityPost,
   deleteCommunityComment
 } from '@/lib/community';
-import { getCurrentUser } from '@/lib/actions';
 import { formatDate, roleLabels } from '@/lib/community-utils';
 
 const badgeColorMap = {
@@ -47,10 +46,11 @@ export default function PostDetailPage() {
 
   const loadCurrentUser = async () => {
     try {
-      const user = await getCurrentUser();
+      // 간단한 사용자 ID만 가져오기 (삭제 권한 확인용)
+      const user = await getCurrentUserClient();
       setCurrentUserId(user?.id || null);
     } catch (error) {
-      console.error('Failed to load current user:', error);
+      // 에러 로그 제거 - 조용히 처리
     }
   };
 
@@ -65,7 +65,7 @@ export default function PostDetailPage() {
       setPost(postData);
       setComments(commentsData);
     } catch (error) {
-      console.error('Failed to load post:', error);
+      // 에러 로그 제거 - 조용히 처리
     } finally {
       setLoading(false);
     }
@@ -82,7 +82,7 @@ export default function PostDetailPage() {
       alert('게시글이 삭제되었습니다.');
       router.push('/dashboard/community');
     } catch (error) {
-      console.error('Failed to delete post:', error);
+      // 에러 로그 제거 - 조용히 처리
       alert('게시글 삭제에 실패했습니다.');
     } finally {
       setDeleting(false);
@@ -108,7 +108,7 @@ export default function PostDetailPage() {
         });
       }
     } catch (error) {
-      console.error('Failed to delete comment:', error);
+      // 에러 로그 제거 - 조용히 처리
       alert('댓글 삭제에 실패했습니다.');
     } finally {
       setDeletingComment(null);
@@ -133,7 +133,7 @@ export default function PostDetailPage() {
         });
       }
     } catch (error) {
-      console.error('Failed to add comment:', error);
+      // 에러 로그 제거 - 조용히 처리
       alert('댓글 작성에 실패했습니다.');
     } finally {
       setCommenting(false);
@@ -241,14 +241,14 @@ export default function PostDetailPage() {
           : 'border border-cyan-400/30'
       }`}>
         <CardHeader className="pb-3">
-          <div className="flex items-start justify-between">
-            <div className="flex items-center space-x-3">
-              <Avatar className="h-12 w-12">
-                <AvatarImage src={post.author.avatar} />
-                <AvatarFallback className="text-xs bg-cyan-900 text-cyan-100">
-                  <User className="h-6 w-6" />
-                </AvatarFallback>
-              </Avatar>
+            <div className="flex items-start justify-between">
+              <div className="flex items-center space-x-3">
+                <Avatar className="h-12 w-12">
+                  <AvatarImage src={post.author.avatar} />
+                  <AvatarFallback className="text-xs bg-cyan-900 text-cyan-100">
+                    <User className="h-6 w-6" />
+                  </AvatarFallback>
+                </Avatar>
               <div>
                 <div className="flex items-center space-x-2">
                   <span className="font-bold text-cyan-200 text-lg">{post.author.name}</span>

@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -28,14 +28,14 @@ export default function CommunityNewPage() {
       await createCommunityPost(title, content, images);
       router.push("/dashboard/community");
     } catch (error) {
-      console.error('Failed to create post:', error);
+      // 에러 로그 제거 - 조용히 처리
       alert('게시글 작성에 실패했습니다.');
       // 게시글 작성 실패 시 업로드된 이미지들 삭제
       for (const imageUrl of images) {
         try {
           await deleteImageFromStorageClient(imageUrl);
         } catch (deleteError) {
-          console.error('Failed to delete image:', deleteError);
+          // 에러 로그 제거 - 조용히 처리
         }
       }
     } finally {
@@ -52,7 +52,7 @@ export default function CommunityNewPage() {
       await deleteImageFromStorageClient(imageUrl);
       setImages(prev => prev.filter(url => url !== imageUrl));
     } catch (error) {
-      console.error('Failed to delete image:', error);
+      // 에러 로그 제거 - 조용히 처리
       alert('이미지 삭제에 실패했습니다.');
     }
   };
@@ -60,7 +60,9 @@ export default function CommunityNewPage() {
   return (
     <div className="flex flex-col items-center justify-center min-h-[60vh]">
       <div className="w-full max-w-xl bg-[#183c5a] border border-cyan-400/30 rounded-xl p-8 shadow-xl">
-        <h2 className="text-2xl font-bold text-cyan-100 mb-6 text-center">새 글 작성</h2>
+        <div className="mb-6">
+          <h2 className="text-2xl font-bold text-cyan-100">새 글 작성</h2>
+        </div>
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
             <label className="block text-sm font-medium text-cyan-200 mb-2">제목</label>

@@ -10,14 +10,13 @@ import { Textarea } from '@/components/ui/textarea';
 import { Calendar, User, MessageCircle, ArrowLeft, Trash2 } from 'lucide-react';
 import Image from 'next/image';
 import { 
-  CommunityPost,
-  CommunityComment,
   getCommunityPost,
   getCommunityComments,
   createCommunityComment,
   deleteCommunityPost,
   deleteCommunityComment
 } from '@/lib/community';
+import { CommunityPost, CommunityComment } from '@/types/community';
 import { formatDate, roleLabels } from '@/lib/community-utils';
 
 const badgeColorMap = {

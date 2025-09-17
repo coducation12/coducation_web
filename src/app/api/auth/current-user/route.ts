@@ -1,9 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getCurrentUser } from '@/lib/actions';
+import { NextResponse } from 'next/server';
+import { getAuthenticatedUser } from '@/lib/auth';
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
-    const user = await getCurrentUser();
+    const user = await getAuthenticatedUser();
     
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
     
     return NextResponse.json(user);
   } catch (error) {
-    // 에러 로그 제거 - 조용히 처리
+    console.error('API route error:', error);
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }

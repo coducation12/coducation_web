@@ -18,6 +18,7 @@ import {
 } from '@/lib/community';
 import { CommunityPost, CommunityComment } from '@/types/community';
 import { formatDate, roleLabels } from '@/lib/community-utils';
+import { getCurrentUserClient } from '@/lib/client-auth';
 
 const badgeColorMap = {
   student: 'bg-cyan-700 text-white',
@@ -35,6 +36,7 @@ export default function PostDetailPage() {
   const [loading, setLoading] = useState(true);
   const [commenting, setCommenting] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [currentUserRole, setCurrentUserRole] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [deletingComment, setDeletingComment] = useState<string | null>(null);
 
@@ -45,9 +47,10 @@ export default function PostDetailPage() {
 
   const loadCurrentUser = async () => {
     try {
-      // 간단한 사용자 ID만 가져오기 (삭제 권한 확인용)
+      // 사용자 ID와 역할 가져오기 (삭제 권한 확인용)
       const user = await getCurrentUserClient();
       setCurrentUserId(user?.id || null);
+      setCurrentUserRole(user?.role || null);
     } catch (error) {
       // 에러 로그 제거 - 조용히 처리
     }
@@ -234,11 +237,13 @@ export default function PostDetailPage() {
         </Button>
       </div>
 
-      <Card className={`mb-6 bg-transparent text-cyan-100 ${
-        post.author.role === 'admin' 
-          ? 'border-2 border-cyan-400 shadow-[0_0_15px_0_rgba(0,255,255,0.4)]' 
-          : 'border border-cyan-400/30'
-      }`}>
+              <Card className={`mb-6 bg-transparent text-cyan-100 ${
+                currentUserId === post.user_id
+                  ? 'border border-cyan-400/30 border-l-4 border-l-cyan-400'
+                  : post.author.role === 'admin' 
+                  ? 'border border-cyan-400/30 border-l-4 border-l-red-400' 
+                  : 'border border-cyan-400/30'
+              }`}>
         <CardHeader className="pb-3">
             <div className="flex items-start justify-between">
               <div className="flex items-center space-x-3">
@@ -261,7 +266,7 @@ export default function PostDetailPage() {
                 </div>
               </div>
             </div>
-            {currentUserId === post.user_id && (
+            {(currentUserId === post.user_id || currentUserRole === 'admin') && (
               <Button
                 variant="ghost"
                 size="sm"
@@ -365,7 +370,7 @@ export default function PostDetailPage() {
                         </Badge>
                         <span className="text-xs text-cyan-300">{formatDate(comment.created_at)}</span>
                       </div>
-                      {currentUserId === comment.user_id && (
+                      {(currentUserId === comment.user_id || currentUserRole === 'admin') && (
                         <Button
                           variant="ghost"
                           size="sm"

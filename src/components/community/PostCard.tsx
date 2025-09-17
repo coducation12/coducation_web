@@ -13,22 +13,26 @@ import Image from 'next/image';
 interface PostCardProps {
   post: CommunityPost;
   currentUserId: string | null;
+  currentUserRole: string | null;
   onClick: (postId: string) => void;
 }
 
 
-export const PostCard = memo(function PostCard({ post, currentUserId, onClick }: PostCardProps) {
+export const PostCard = memo(function PostCard({ post, currentUserId, currentUserRole, onClick }: PostCardProps) {
   const isCurrentUser = currentUserId === post.user_id;
+  const isAdmin = currentUserRole === 'admin';
 
   return (
-    <Card
-      className={`mb-3 cursor-pointer transition-all duration-200 hover:shadow-lg hover:scale-[1.02] ${
-        isCurrentUser 
-          ? 'border-2 border-cyan-400 shadow-[0_0_15px_0_rgba(0,255,255,0.3)]' 
-          : 'border border-cyan-400/30'
-      }`}
-      onClick={() => onClick(post.id)}
-    >
+            <Card
+              className={`mb-3 cursor-pointer transition-all duration-200 hover:shadow-lg hover:scale-[1.02] ${
+                isCurrentUser 
+                  ? 'border border-cyan-400/30 border-l-4 border-l-cyan-400' 
+                  : post.author.role === 'admin'
+                  ? 'border border-cyan-400/30 border-l-4 border-l-red-400'
+                  : 'border border-cyan-400/30'
+              }`}
+              onClick={() => onClick(post.id)}
+            >
       <CardContent className="py-2 px-4 flex items-center min-h-[56px] gap-3 whitespace-nowrap overflow-x-auto">
         {/* 1열: 아바타 */}
         <div className="flex items-center justify-center min-w-[44px] max-w-[44px] flex-shrink-0">
@@ -60,21 +64,14 @@ export const PostCard = memo(function PostCard({ post, currentUserId, onClick }:
           </h3>
         </div>
         
-        {/* 4열: 내용 미리보기 */}
-        <div className="flex-1 min-w-0 flex items-center">
-          <p className="text-xs text-cyan-200/80 truncate">
-            {post.content}
-          </p>
-        </div>
-        
-        {/* 5열: 이미지 아이콘 */}
+        {/* 4열: 이미지 아이콘 */}
         <div className="flex items-center justify-center min-w-[20px] max-w-[20px] flex-shrink-0">
           {post.images && post.images.length > 0 && (
             <ImageIcon className="h-4 w-4 text-cyan-400" />
           )}
         </div>
         
-        {/* 6열: 댓글 수 */}
+        {/* 5열: 댓글 수 */}
         <div className="flex items-center justify-center min-w-[40px] max-w-[40px] flex-shrink-0">
           <div className="flex items-center gap-1 text-xs text-cyan-300">
             <MessageCircle className="h-3 w-3" />

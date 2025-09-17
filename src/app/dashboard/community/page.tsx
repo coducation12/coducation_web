@@ -27,8 +27,9 @@ function CommunityPage() {
   const [totalCount, setTotalCount] = useState(0);
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
-  const postsPerPage = 15;
+  const postsPerPage = 10;
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [currentUserRole, setCurrentUserRole] = useState<string | null>(null);
 
   // 게시글 목록 로드
   useEffect(() => {
@@ -40,6 +41,7 @@ function CommunityPage() {
     try {
       const user = await getCurrentUserClient();
       setCurrentUserId(user?.id || null);
+      setCurrentUserRole(user?.role || null);
     } catch (error) {
       // 에러 로그 제거 - 조용히 처리
     }
@@ -97,10 +99,20 @@ function CommunityPage() {
               {isSearching ? '검색 중...' : '학습에 대한 이야기를 나누고 정보를 공유해보세요'}
             </p>
           </div>
-          <Button className="bg-cyan-500 hover:bg-cyan-600 text-white font-bold shadow" onClick={() => router.push('/dashboard/community/new')}>
-            <Plus className="h-4 w-4 mr-2" />
-            새 글 작성
-          </Button>
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <DialogTrigger asChild>
+              <Button className="bg-cyan-500 hover:bg-cyan-600 text-white font-bold shadow">
+                <Plus className="h-4 w-4 mr-2" />
+                새 글 작성
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="bg-[#183c5a] border-cyan-400/30 text-cyan-100 max-w-2xl">
+              <DialogHeader>
+                <DialogTitle className="text-xl font-bold text-cyan-100">새 글 작성</DialogTitle>
+              </DialogHeader>
+              <PostForm onSubmit={handleCreatePost} loading={creating} />
+            </DialogContent>
+          </Dialog>
         </div>
 
         {/* 로딩 스켈레톤 */}
@@ -140,33 +152,27 @@ function CommunityPage() {
             {isSearching ? '검색 중...' : '학습에 대한 이야기를 나누고 정보를 공유해보세요'}
           </p>
         </div>
-        <div className="flex gap-3">
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DialogTrigger asChild>
-              <Button className="bg-cyan-500 hover:bg-cyan-600 text-white font-bold shadow">
-                <Plus className="h-4 w-4 mr-2" />
-                새 글 작성
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="bg-[#183c5a] border-cyan-400/30 text-cyan-100 max-w-2xl">
-              <DialogHeader>
-                <DialogTitle className="text-xl font-bold text-cyan-100">새 글 작성</DialogTitle>
-              </DialogHeader>
-              <PostForm onSubmit={handleCreatePost} loading={creating} />
-            </DialogContent>
-          </Dialog>
-          <Button className="bg-cyan-500 hover:bg-cyan-600 text-white font-bold shadow" onClick={() => router.push('/dashboard/community/new')}>
-            <Plus className="h-4 w-4 mr-2" />
-            상세 작성
-          </Button>
-        </div>
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <DialogTrigger asChild>
+            <Button className="bg-cyan-500 hover:bg-cyan-600 text-white font-bold shadow">
+              <Plus className="h-4 w-4 mr-2" />
+              새 글 작성
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="bg-[#183c5a] border-cyan-400/30 text-cyan-100 max-w-2xl">
+            <DialogHeader>
+              <DialogTitle className="text-xl font-bold text-cyan-100">새 글 작성</DialogTitle>
+            </DialogHeader>
+            <PostForm onSubmit={handleCreatePost} loading={creating} />
+          </DialogContent>
+        </Dialog>
       </div>
 
       {/* 검색 바 */}
       <div className="mb-6">
         <div className="flex gap-3">
           <Input
-            placeholder="게시글을 검색하세요..."
+            placeholder="제목, 내용, 작성자로 검색하세요..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
@@ -200,6 +206,7 @@ function CommunityPage() {
               key={post.id}
               post={post}
               currentUserId={currentUserId}
+              currentUserRole={currentUserRole}
               onClick={handlePostClick}
             />
           ))}

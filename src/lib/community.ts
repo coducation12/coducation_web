@@ -41,7 +41,7 @@ async function getCurrentUser() {
 
 // 모든 게시글 가져오기 (페이지네이션 및 검색 지원)
 export async function getCommunityPosts(page: number = 1, limit: number = 10, searchQuery?: string): Promise<{ posts: CommunityPost[], totalCount: number, totalPages: number }> {
-  const { userId } = await getCurrentUser();
+  console.log('getCommunityPosts called with:', { page, limit, searchQuery });
 
   // 검색 조건 설정
   let query = supabase
@@ -49,9 +49,9 @@ export async function getCommunityPosts(page: number = 1, limit: number = 10, se
     .select('*', { count: 'exact', head: true })
     .eq('is_deleted', false);
 
-  // 검색어가 있으면 제목과 내용에서 검색
+  // 검색어가 있으면 제목, 내용, 작성자 이름에서 검색
   if (searchQuery && searchQuery.trim()) {
-    query = query.or(`title.ilike.%${searchQuery.trim()}%,content.ilike.%${searchQuery.trim()}%`);
+    query = query.or(`title.ilike.%${searchQuery.trim()}%,content.ilike.%${searchQuery.trim()}%,users.name.ilike.%${searchQuery.trim()}%`);
   }
 
   // 전체 게시글 수 가져오기
@@ -77,9 +77,9 @@ export async function getCommunityPosts(page: number = 1, limit: number = 10, se
     `)
     .eq('is_deleted', false);
 
-  // 검색어가 있으면 제목과 내용에서 검색
+  // 검색어가 있으면 제목, 내용, 작성자 이름에서 검색
   if (searchQuery && searchQuery.trim()) {
-    postsQuery = postsQuery.or(`title.ilike.%${searchQuery.trim()}%,content.ilike.%${searchQuery.trim()}%`);
+    postsQuery = postsQuery.or(`title.ilike.%${searchQuery.trim()}%,content.ilike.%${searchQuery.trim()}%,users.name.ilike.%${searchQuery.trim()}%`);
   }
 
   const { data: posts, error } = await postsQuery
@@ -91,8 +91,13 @@ export async function getCommunityPosts(page: number = 1, limit: number = 10, se
     return { posts: [], totalCount: 0, totalPages: 0 };
   }
 
+  // 중복 제거 (같은 ID를 가진 게시글 제거)
+  const uniquePosts = posts.filter((post, index, self) => 
+    index === self.findIndex(p => p.id === post.id)
+  );
+
   // 클라이언트 사이드에서 관리자 게시글을 최상단으로 정렬
-  const sortedPosts = posts.sort((a, b) => {
+  const sortedPosts = uniquePosts.sort((a, b) => {
     // 관리자 게시글을 최상단에 배치
     if (a.users?.role === 'admin' && b.users?.role !== 'admin') return -1;
     if (a.users?.role !== 'admin' && b.users?.role === 'admin') return 1;

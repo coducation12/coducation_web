@@ -21,6 +21,14 @@ function LoginForm() {
     const errorParam = searchParams.get('error')
     if (errorParam === 'true') {
       setError('로그인에 실패했습니다. 아이디/이메일과 비밀번호를 확인해주세요.')
+    } else if (errorParam === 'pending') {
+      setError('계정이 아직 승인되지 않았습니다. 담당교사의 승인을 기다려주세요.')
+    } else if (errorParam === 'suspended') {
+      setError('휴강 중인 계정입니다. 수강 재개 후 로그인해주세요.')
+    } else if (errorParam === 'terminated') {
+      setError('수강이 종료된 계정입니다. 관리자에게 문의해주세요.')
+    } else if (errorParam === 'inactive') {
+      setError('비활성화된 계정입니다. 관리자에게 문의해주세요.')
     }
   }, [searchParams])
 
@@ -112,6 +120,19 @@ function LoginForm() {
         >
           {isLoading ? '로그인 중...' : '로그인'}
         </Button>
+        
+        {userType === 'student' && (
+          <div className="mt-4 text-center">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => router.push('/student-signup')}
+              className="w-full border-sky-400 text-sky-400 hover:bg-sky-50 hover:text-sky-600"
+            >
+              회원가입
+            </Button>
+          </div>
+        )}
       </form>
     </div>
   )

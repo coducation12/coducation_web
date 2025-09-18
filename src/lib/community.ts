@@ -41,7 +41,7 @@ async function getCurrentUser() {
 
 // 모든 게시글 가져오기 (페이지네이션 및 검색 지원)
 export async function getCommunityPosts(page: number = 1, limit: number = 10, searchQuery?: string): Promise<{ posts: CommunityPost[], totalCount: number, totalPages: number }> {
-  console.log('getCommunityPosts called with:', { page, limit, searchQuery });
+  const { userId } = await getCurrentUser();
 
   // 검색 조건 설정
   let query = supabase
@@ -91,13 +91,8 @@ export async function getCommunityPosts(page: number = 1, limit: number = 10, se
     return { posts: [], totalCount: 0, totalPages: 0 };
   }
 
-  // 중복 제거 (같은 ID를 가진 게시글 제거)
-  const uniquePosts = posts.filter((post, index, self) => 
-    index === self.findIndex(p => p.id === post.id)
-  );
-
   // 클라이언트 사이드에서 관리자 게시글을 최상단으로 정렬
-  const sortedPosts = uniquePosts.sort((a, b) => {
+  const sortedPosts = posts.sort((a, b) => {
     // 관리자 게시글을 최상단에 배치
     if (a.users?.role === 'admin' && b.users?.role !== 'admin') return -1;
     if (a.users?.role !== 'admin' && b.users?.role === 'admin') return 1;

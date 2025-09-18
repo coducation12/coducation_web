@@ -237,13 +237,11 @@ export default function PostDetailPage() {
         </Button>
       </div>
 
-              <Card className={`mb-6 bg-transparent text-cyan-100 ${
-                currentUserId === post.user_id
-                  ? 'border border-cyan-400/30 border-l-4 border-l-cyan-400'
-                  : post.author.role === 'admin' 
-                  ? 'border border-cyan-400/30 border-l-4 border-l-red-400' 
-                  : 'border border-cyan-400/30'
-              }`}>
+      <Card className={`mb-6 bg-transparent text-cyan-100 ${
+        post.author.role === 'admin' 
+          ? 'border border-cyan-400/30 border-b-4 border-b-red-400' 
+          : 'border border-cyan-400/30'
+      }`}>
         <CardHeader className="pb-3">
             <div className="flex items-start justify-between">
               <div className="flex items-center space-x-3">

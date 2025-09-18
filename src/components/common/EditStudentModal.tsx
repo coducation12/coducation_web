@@ -143,7 +143,9 @@ export default function EditStudentModal({ student, isOpen, onClose, onSave }: E
                 phone: student.phone,
                 parentPhone: student.parentPhone,
                 email: student.email,
-                status: student.status || "수강",
+                status: student.status === 'active' ? '수강' : 
+                         student.status === 'pending' ? '가입 대기' : 
+                         student.status || "수강",
                 classSchedules: student.classSchedules || []
             });
         }
@@ -320,16 +322,16 @@ export default function EditStudentModal({ student, isOpen, onClose, onSave }: E
                                         수강
                                     </SelectItem>
                                     <SelectItem
-                                        value="종료"
-                                        className="text-cyan-100 hover:bg-cyan-900/20"
-                                    >
-                                        종료
-                                    </SelectItem>
-                                    <SelectItem
                                         value="휴강"
                                         className="text-cyan-100 hover:bg-cyan-900/20"
                                     >
                                         휴강
+                                    </SelectItem>
+                                    <SelectItem
+                                        value="종료"
+                                        className="text-cyan-100 hover:bg-cyan-900/20"
+                                    >
+                                        종료
                                     </SelectItem>
                                 </SelectContent>
                             </Select>

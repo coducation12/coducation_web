@@ -16,7 +16,10 @@ export interface Database {
           name: string;
           role: 'student' | 'parent' | 'teacher' | 'admin';
           birth_year?: number;
-          academy?: string;
+          phone?: string;
+          academy: string;
+          assigned_teacher_id?: string;
+          status: string;
           created_at: string;
         };
         Insert: {
@@ -25,7 +28,10 @@ export interface Database {
           name: string;
           role: 'student' | 'parent' | 'teacher' | 'admin';
           birth_year?: number;
-          academy?: string;
+          phone?: string;
+          academy: string;
+          assigned_teacher_id?: string;
+          status?: string;
           created_at?: string;
         };
         Update: {
@@ -34,7 +40,10 @@ export interface Database {
           name?: string;
           role?: 'student' | 'parent' | 'teacher' | 'admin';
           birth_year?: number;
+          phone?: string;
           academy?: string;
+          assigned_teacher_id?: string;
+          status?: string;
           created_at?: string;
         };
       };

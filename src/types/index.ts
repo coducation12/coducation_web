@@ -6,7 +6,10 @@ export interface User {
   name: string;
   role: UserRole;
   birth_year?: number;
-  academy?: string;
+  phone?: string;
+  academy: string;
+  assigned_teacher_id?: string;
+  status: string;
   created_at: string;
 }
 

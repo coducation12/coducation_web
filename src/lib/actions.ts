@@ -6,6 +6,22 @@ import { supabase } from '@/lib/supabase'
 import bcrypt from 'bcryptjs'
 import { compressImage, validateImageFile, formatFileSize } from '@/lib/image-utils'
 
+// 학생 가입 요청 관련 타입
+interface StudentSignupRequest {
+  id: number
+  username: string
+  name: string
+  birth_year?: number
+  academy: string
+  assigned_teacher_id: string
+  status: 'pending' | 'approved' | 'rejected'
+  requested_at: string
+  processed_at?: string
+  processed_by?: string
+  rejection_reason?: string
+  teacher_name?: string
+}
+
 // TODO: 배포 후 정상화 - 비밀번호 인증으로 복원 필요
 // 현재는 개발 편의를 위해 비밀번호 없이 로그인 허용
 // 배포 후에는 supabase.auth.signInWithPassword 사용하여 보안 강화 필요
@@ -20,12 +36,18 @@ export async function login(formData: FormData) {
     
     const { data: user, error } = await supabase
       .from('users')
-      .select('id, username, role, password')
+      .select('id, username, role, password, status')
       .eq('username', email)
       .in('role', ['teacher', 'admin']) // 강사와 관리자 모두 허용
       .single();
 
     if (!error && user) {
+      // 강사/관리자: active가 아니면 로그인 거부
+      if (user.status !== 'active') {
+        redirect('/login?error=pending')
+        return;
+      }
+      
       // 개발용: 비밀번호가 비어있으면 자동 로그인
       if (!password || password.trim() === '') {
         const cookieStore = await cookies();
@@ -54,12 +76,35 @@ export async function login(formData: FormData) {
     
     const { data: user, error } = await supabase
       .from('users')
-      .select('id, username, role, password')
+      .select('id, username, role, password, status')
       .eq('username', username)
       .in('role', ['student', 'parent'])
       .single();
 
     if (!error && user) {
+      // 사용자 상태 확인 (학생의 경우 수강 상태도 확인)
+      if (user.role === 'student') {
+        // 학생: active이면서 수강 중이어야 로그인 가능
+        if (user.status !== 'active' || user.status === '휴강' || user.status === '종료') {
+          if (user.status === 'pending') {
+            redirect('/login?error=pending')
+          } else if (user.status === '휴강') {
+            redirect('/login?error=suspended')
+          } else if (user.status === '종료') {
+            redirect('/login?error=terminated')
+          } else {
+            redirect('/login?error=inactive')
+          }
+          return;
+        }
+      } else {
+        // 학부모: active가 아니면 로그인 거부
+        if (user.status !== 'active') {
+          redirect('/login?error=pending')
+          return;
+        }
+      }
+      
       // 개발용: 비밀번호가 비어있으면 자동 로그인
       if (!password || password.trim() === '') {
         const cookieStore = await cookies();
@@ -360,17 +405,34 @@ export async function updateStudent(formData: FormData) {
       }
     });
 
-    // 4. students 테이블의 attendance_schedule과 status 업데이트
+    // 4. students 테이블의 attendance_schedule 업데이트
     const { error: studentError } = await supabase
       .from('students')
       .update({
-        attendance_schedule: Object.keys(attendanceSchedule).length > 0 ? attendanceSchedule : null,
-        status: studentData.status || '수강'
+        attendance_schedule: Object.keys(attendanceSchedule).length > 0 ? attendanceSchedule : null
       })
-      .eq('user_id', (await supabase.from('users').select('id').eq('username', studentData.studentId).single()).data?.id);
+      .eq('user_id', userData.id);
+
+    // 5. users 테이블의 status 업데이트 (통합된 상태 관리)
+    const statusMap: { [key: string]: string } = {
+      '수강': 'active',
+      '휴강': '휴강',
+      '종료': '종료'
+    };
+    
+    const { error: userStatusError } = await supabase
+      .from('users')
+      .update({
+        status: statusMap[studentData.status] || studentData.status || 'active'
+      })
+      .eq('id', userData.id);
 
     if (studentError) {
       return { success: false, error: studentError.message };
+    }
+
+    if (userStatusError) {
+      return { success: false, error: userStatusError.message };
     }
 
     return { success: true };
@@ -1264,6 +1326,203 @@ export async function getInstructors() {
   } catch (error) {
     console.error('강사진 정보 조회 중 오류:', error);
     return { success: false, error: '강사진 정보 조회 중 오류가 발생했습니다.' };
+  }
+}
+
+// ==================== 학생 회원가입 서버 액션 ====================
+
+// 학생 회원가입 서버 액션 (강사 추가 로직과 유사)
+export async function submitStudentSignup(formData: FormData) {
+  try {
+    const studentData = {
+      username: formData.get('username') as string,
+      name: formData.get('name') as string,
+      password: formData.get('password') as string,
+      phone: formData.get('phone') as string,
+      birthYear: formData.get('birthYear') as string,
+      academy: formData.get('academy') as string,
+      assignedTeacherId: formData.get('assignedTeacherId') as string
+    };
+
+    // 입력 데이터 검증
+    if (!studentData.username || !studentData.name || !studentData.password || !studentData.phone || !studentData.academy) {
+      return { success: false, error: '필수 정보를 모두 입력해주세요.' };
+    }
+
+    // 비밀번호 암호화
+    const passwordHash = await bcrypt.hash(studentData.password, 10);
+
+    // 사용자 계정 생성 (승인 대기 상태)
+    const { data: userData, error: userError } = await supabase
+      .from('users')
+      .insert({
+        username: studentData.username,
+        name: studentData.name,
+        role: 'student',
+        password: passwordHash,
+        phone: studentData.phone,
+        birth_year: studentData.birthYear ? parseInt(studentData.birthYear) : null,
+        academy: studentData.academy,
+        assigned_teacher_id: studentData.assignedTeacherId || null,
+        status: 'pending'
+      })
+      .select()
+      .single();
+
+    if (userError) {
+      console.error('학생 회원가입 오류:', userError);
+      
+      if (userError.code === '23505') {
+        return { success: false, error: '이미 사용 중인 아이디입니다.' };
+      } else if (userError.code === '23503') {
+        return { success: false, error: '선택한 담당교사 정보가 올바르지 않습니다.' };
+      } else {
+        return { success: false, error: userError.message || '회원가입 중 오류가 발생했습니다.' };
+      }
+    }
+
+    // students 테이블에도 데이터 생성
+    const { error: studentError } = await supabase
+      .from('students')
+      .insert({
+        user_id: userData.id,
+        parent_id: null, // 학부모는 나중에 연결
+        current_curriculum_id: null,
+        enrollment_start_date: new Date().toISOString().split('T')[0],
+        attendance_schedule: null,
+        assigned_teachers: studentData.assignedTeacherId ? [studentData.assignedTeacherId] : []
+      });
+
+    if (studentError) {
+      console.error('students 테이블 생성 오류:', studentError);
+      console.error('오류 코드:', studentError.code);
+      console.error('오류 메시지:', studentError.message);
+      console.error('오류 세부사항:', studentError.details);
+      console.error('오류 힌트:', studentError.hint);
+      // users 테이블 데이터는 이미 생성되었으므로 롤백하지 않음
+      return { success: false, error: `학생 데이터 생성 중 오류가 발생했습니다: ${studentError.message}` };
+    }
+
+    return { success: true, data: userData };
+
+  } catch (error) {
+    console.error('학생 회원가입 중 오류:', error);
+    return { success: false, error: '회원가입 중 오류가 발생했습니다.' };
+  }
+}
+
+// ==================== 학생 가입 요청 관련 액션 ====================
+
+// 학생 가입 요청 목록 조회 (교사용)
+export async function getStudentSignupRequests(teacherId?: string) {
+  try {
+    console.log('getStudentSignupRequests 호출됨, teacherId:', teacherId);
+    
+    let query = supabase
+      .from('users')
+      .select(`
+        *,
+        assigned_teacher:assigned_teacher_id(name)
+      `)
+      .eq('role', 'student')
+      .eq('status', 'pending')
+      .order('created_at', { ascending: false });
+
+    // 특정 교사의 담당 학생만 조회하는 경우
+    if (teacherId) {
+      console.log('특정 교사 필터 적용:', teacherId);
+      query = query.eq('assigned_teacher_id', teacherId);
+    }
+
+    const { data, error } = await query;
+    console.log('쿼리 결과:', { data, error });
+
+    if (error) {
+      console.error('학생 가입 요청 조회 중 오류:', error);
+      return { success: false, error: '학생 가입 요청 조회 중 오류가 발생했습니다.' };
+    }
+
+    // 데이터 매핑 (기존 인터페이스와 호환)
+    const requests = (data || []).map((user: any) => ({
+      id: user.id,
+      username: user.username,
+      name: user.name,
+      birth_year: user.birth_year,
+      academy: user.academy,
+      assigned_teacher_id: user.assigned_teacher_id || '',
+      status: user.status,
+      requested_at: user.created_at,
+      processed_at: null,
+      processed_by: null,
+      rejection_reason: null,
+      teacher_name: user.assigned_teacher?.name || '담당 교사 미지정'
+    }));
+
+    return { success: true, data: requests };
+
+  } catch (error) {
+    console.error('학생 가입 요청 조회 중 오류:', error);
+    return { success: false, error: '학생 가입 요청 조회 중 오류가 발생했습니다.' };
+  }
+}
+
+// 학생 가입 요청 승인
+export async function approveStudentSignupRequest(requestId: string) {
+  try {
+    // 현재 사용자 정보 가져오기
+    const user = await getAuthenticatedUser();
+    if (!user) {
+      return { success: false, error: '인증이 필요합니다.' };
+    }
+
+    // 사용자 상태를 active로 변경
+    const { error: updateError } = await supabase
+      .from('users')
+      .update({
+        status: 'active'
+      })
+      .eq('id', requestId)
+      .eq('status', 'pending');
+
+    if (updateError) {
+      console.error('가입 요청 승인 중 오류:', updateError);
+      return { success: false, error: '가입 요청 승인 중 오류가 발생했습니다.' };
+    }
+
+    return { success: true, message: '가입 요청이 승인되었습니다.' };
+
+  } catch (error) {
+    console.error('학생 가입 요청 승인 중 오류:', error);
+    return { success: false, error: '학생 가입 요청 승인 중 오류가 발생했습니다.' };
+  }
+}
+
+// 학생 가입 요청 거부
+export async function rejectStudentSignupRequest(requestId: string, rejectionReason?: string) {
+  try {
+    // 현재 사용자 정보 가져오기
+    const user = await getAuthenticatedUser();
+    if (!user) {
+      return { success: false, error: '인증이 필요합니다.' };
+    }
+
+    // 사용자 계정 삭제 (거부된 경우)
+    const { error } = await supabase
+      .from('users')
+      .delete()
+      .eq('id', requestId)
+      .eq('status', 'pending');
+
+    if (error) {
+      console.error('가입 요청 거부 중 오류:', error);
+      return { success: false, error: '가입 요청 거부 중 오류가 발생했습니다.' };
+    }
+
+    return { success: true, message: '가입 요청이 거부되었습니다.' };
+
+  } catch (error) {
+    console.error('학생 가입 요청 거부 중 오류:', error);
+    return { success: false, error: '학생 가입 요청 거부 중 오류가 발생했습니다.' };
   }
 }
 

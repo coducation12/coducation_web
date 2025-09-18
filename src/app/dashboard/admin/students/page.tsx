@@ -4,10 +4,14 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Mail, Phone } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Mail, Phone, CheckCircle, XCircle, Clock } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/lib/supabase";
-import { addStudent, updateStudent } from "@/lib/actions";
+import { addStudent, updateStudent, getStudentSignupRequests, approveStudentSignupRequest, rejectStudentSignupRequest, getCurrentUser } from "@/lib/actions";
 import AddStudentModal, { StudentFormData } from "@/components/common/AddStudentModal";
 import EditStudentModal from "@/components/common/EditStudentModal";
 import { useToast } from "@/hooks/use-toast";
@@ -37,21 +41,41 @@ interface ClassSchedule {
     endTime: string;
 }
 
+interface SignupRequest {
+    id: number;
+    username: string;
+    name: string;
+    birth_year?: number;
+    academy: string;
+    assigned_teacher_id: string;
+    status: 'pending' | 'approved' | 'rejected';
+    requested_at: string;
+    processed_at?: string;
+    processed_by?: string;
+    rejection_reason?: string;
+    teacher_name?: string;
+}
+
 export default function AdminStudentsPage() {
     const [students, setStudents] = useState<Student[]>([]);
+    const [signupRequests, setSignupRequests] = useState<SignupRequest[]>([]);
     const [search, setSearch] = useState("");
     const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [rejectionReason, setRejectionReason] = useState("");
+    const [isRejectDialogOpen, setIsRejectDialogOpen] = useState(false);
+    const [selectedRequestId, setSelectedRequestId] = useState<number | null>(null);
     const { toast } = useToast();
 
     useEffect(() => {
         fetchStudents();
+        fetchSignupRequests();
     }, []);
 
     const fetchStudents = async () => {
         const { data, error } = await supabase
             .from('students')
-            .select(`user_id, parent_id, current_curriculum_id, enrollment_start_date, attendance_schedule, status, users!students_user_id_fkey ( id, name, username, phone, birth_year, academy, created_at, email ), parent:users!students_parent_id_fkey ( phone )`);
+            .select(`user_id, parent_id, current_curriculum_id, enrollment_start_date, attendance_schedule, users!students_user_id_fkey ( id, name, username, phone, birth_year, academy, created_at, email, status ), parent:users!students_parent_id_fkey ( phone )`);
         
         if (error) {
             console.error('학생 목록 조회 오류:', error);
@@ -83,6 +107,83 @@ export default function AdminStudentsPage() {
         
 
         setStudents(mapped);
+    };
+
+    const fetchSignupRequests = async () => {
+        const result = await getStudentSignupRequests(); // 관리자는 모든 요청 조회
+        if (result.success) {
+            setSignupRequests(result.data || []);
+        } else {
+            console.error('가입 요청 조회 오류:', result.error);
+            toast({
+                title: "오류 발생",
+                description: "가입 요청을 불러오는 중 오류가 발생했습니다.",
+                variant: "destructive",
+            });
+        }
+    };
+
+    const handleApproveRequest = async (requestId: number) => {
+        try {
+            const result = await approveStudentSignupRequest(requestId);
+            if (result.success) {
+                toast({
+                    title: "가입 승인 완료",
+                    description: "학생 가입이 승인되었습니다.",
+                    variant: "default",
+                });
+                fetchSignupRequests();
+                fetchStudents(); // 학생 목록도 새로고침
+            } else {
+                toast({
+                    title: "승인 실패",
+                    description: result.error || "알 수 없는 오류가 발생했습니다.",
+                    variant: "destructive",
+                });
+            }
+        } catch (error) {
+            toast({
+                title: "오류 발생",
+                description: "가입 승인 중 오류가 발생했습니다.",
+                variant: "destructive",
+            });
+        }
+    };
+
+    const handleRejectRequest = async () => {
+        if (!selectedRequestId) return;
+
+        try {
+            const result = await rejectStudentSignupRequest(selectedRequestId, rejectionReason);
+            if (result.success) {
+                toast({
+                    title: "가입 거부 완료",
+                    description: "학생 가입이 거부되었습니다.",
+                    variant: "default",
+                });
+                fetchSignupRequests();
+                setIsRejectDialogOpen(false);
+                setRejectionReason("");
+                setSelectedRequestId(null);
+            } else {
+                toast({
+                    title: "거부 실패",
+                    description: result.error || "알 수 없는 오류가 발생했습니다.",
+                    variant: "destructive",
+                });
+            }
+        } catch (error) {
+            toast({
+                title: "오류 발생",
+                description: "가입 거부 중 오류가 발생했습니다.",
+                variant: "destructive",
+            });
+        }
+    };
+
+    const openRejectDialog = (requestId: number) => {
+        setSelectedRequestId(requestId);
+        setIsRejectDialogOpen(true);
     };
 
     // attendance_schedule을 classSchedules 형식으로 변환
@@ -213,6 +314,9 @@ export default function AdminStudentsPage() {
         student.studentId?.toLowerCase().includes(search.toLowerCase())
     );
 
+    const pendingRequests = signupRequests.filter(req => req.status === 'pending');
+    const processedRequests = signupRequests.filter(req => req.status !== 'pending');
+
     return (
         <div className="p-6 space-y-6">
             <div className="flex items-center justify-between">
@@ -222,98 +326,239 @@ export default function AdminStudentsPage() {
                 <AddStudentModal onAddStudent={handleAddStudent} />
             </div>
 
-            <Card className="bg-gradient-to-br from-cyan-900/20 to-blue-900/20 border-cyan-500/30">
-                <CardHeader>
-                    <div className="flex items-center justify-between">
-                        <CardTitle className="text-cyan-100">학생 목록</CardTitle>
-                        <div className="flex items-center space-x-2">
-                            <Input
-                                placeholder="학생 검색..."
-                                value={search}
-                                onChange={(e) => setSearch(e.target.value)}
-                                className="w-64 bg-background/40 border-cyan-400/40 text-cyan-100 placeholder:text-cyan-400/60 focus:border-cyan-400/80"
-                            />
-                        </div>
-                    </div>
-                </CardHeader>
-                <CardContent>
-                    <Table>
-                        <TableHeader>
-                            <TableRow className="border-cyan-500/20">
-                                <TableHead className="text-cyan-200">학생</TableHead>
-                                <TableHead className="text-cyan-200">연락처</TableHead>
-                                <TableHead className="text-cyan-200">과목</TableHead>
-                                <TableHead className="text-cyan-200">진도</TableHead>
-                                <TableHead className="text-cyan-200">출석률</TableHead>
-                                <TableHead className="text-cyan-200">상태</TableHead>
-                                <TableHead className="text-cyan-200">가입일</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {filteredStudents.map((student) => (
-                                <TableRow key={student.id} className="border-cyan-500/10 hover:bg-cyan-900/10">
-                                    <TableCell className="font-medium text-cyan-100">
-                                        <button 
-                                            onClick={() => handleEditStudent(student)}
-                                            className="text-cyan-100 hover:text-cyan-300 transition-colors cursor-pointer"
-                                        >
-                                            {student.name}
-                                        </button>
-                                    </TableCell>
-                                    <TableCell className="text-cyan-300">
-                                        <div className="flex items-center space-x-2">
-                                            <Phone className="w-4 h-4" />
-                                            <span>{student.phone}</span>
-                                        </div>
-                                        {student.parentPhone !== '-' && (
-                                            <div className="text-sm text-cyan-400 mt-1">
-                                                학부모: {student.parentPhone}
-                                            </div>
-                                        )}
-                                    </TableCell>
-                                    <TableCell className="text-cyan-300">{student.course}</TableCell>
-                                    <TableCell>
-                                        <div className="flex items-center space-x-2">
-                                            <div className="w-16 bg-cyan-900/30 rounded-full h-2">
-                                                <div 
-                                                    className="bg-cyan-500 h-2 rounded-full" 
-                                                    style={{ width: `${student.progress}%` }}
-                                                ></div>
-                                            </div>
-                                            <span className="text-cyan-300 text-sm">{student.progress}%</span>
-                                        </div>
-                                    </TableCell>
-                                    <TableCell>
-                                        <div className="flex items-center space-x-2">
-                                            <div className="w-16 bg-cyan-900/30 rounded-full h-2">
-                                                <div 
-                                                    className="bg-green-500 h-2 rounded-full" 
-                                                    style={{ width: `${student.attendance}%` }}
-                                                ></div>
-                                            </div>
-                                            <span className="text-cyan-300 text-sm">{student.attendance}%</span>
-                                        </div>
-                                    </TableCell>
-                                    <TableCell>
-                                        <Badge 
-                                            variant={student.status === '수강' ? 'default' : 'secondary'}
-                                            className={
-                                                student.status === '수강' ? 'bg-green-600 text-white' :
-                                                student.status === '종료' ? 'bg-blue-600 text-white' :
-                                                student.status === '휴강' ? 'bg-yellow-600 text-white' :
-                                                'bg-gray-600 text-white'
-                                            }
-                                        >
-                                            {student.status}
-                                        </Badge>
-                                    </TableCell>
-                                    <TableCell className="text-cyan-300">{student.joinDate}</TableCell>
-                                </TableRow>
-                            ))}
-                        </TableBody>
-                    </Table>
-                </CardContent>
-            </Card>
+            <Tabs defaultValue="students" className="space-y-6">
+                <TabsList className="grid w-full grid-cols-3 bg-cyan-900/20">
+                    <TabsTrigger value="students" className="text-cyan-200 data-[state=active]:bg-cyan-500">
+                        학생 목록
+                    </TabsTrigger>
+                    <TabsTrigger value="pending" className="text-cyan-200 data-[state=active]:bg-cyan-500">
+                        가입 요청 ({pendingRequests.length})
+                    </TabsTrigger>
+                    <TabsTrigger value="processed" className="text-cyan-200 data-[state=active]:bg-cyan-500">
+                        처리 완료 ({processedRequests.length})
+                    </TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="students">
+                    <Card className="bg-gradient-to-br from-cyan-900/20 to-blue-900/20 border-cyan-500/30">
+                        <CardHeader>
+                            <div className="flex items-center justify-between">
+                                <CardTitle className="text-cyan-100">학생 목록</CardTitle>
+                                <div className="flex items-center space-x-2">
+                                    <Input
+                                        placeholder="학생 검색..."
+                                        value={search}
+                                        onChange={(e) => setSearch(e.target.value)}
+                                        className="w-64 bg-background/40 border-cyan-400/40 text-cyan-100 placeholder:text-cyan-400/60 focus:border-cyan-400/80"
+                                    />
+                                </div>
+                            </div>
+                        </CardHeader>
+                        <CardContent>
+                            <Table>
+                                <TableHeader>
+                                    <TableRow className="border-cyan-500/20">
+                                        <TableHead className="text-cyan-200">학생</TableHead>
+                                        <TableHead className="text-cyan-200">연락처</TableHead>
+                                        <TableHead className="text-cyan-200">과목</TableHead>
+                                        <TableHead className="text-cyan-200">진도</TableHead>
+                                        <TableHead className="text-cyan-200">출석률</TableHead>
+                                        <TableHead className="text-cyan-200">상태</TableHead>
+                                        <TableHead className="text-cyan-200">가입일</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {filteredStudents.map((student) => (
+                                        <TableRow key={student.id} className="border-cyan-500/10 hover:bg-cyan-900/10">
+                                            <TableCell className="font-medium text-cyan-100">
+                                                <button 
+                                                    onClick={() => handleEditStudent(student)}
+                                                    className="text-cyan-100 hover:text-cyan-300 transition-colors cursor-pointer"
+                                                >
+                                                    {student.name}
+                                                </button>
+                                            </TableCell>
+                                            <TableCell className="text-cyan-300">
+                                                <div className="flex items-center space-x-2">
+                                                    <Phone className="w-4 h-4" />
+                                                    <span>{student.phone}</span>
+                                                </div>
+                                                {student.parentPhone !== '-' && (
+                                                    <div className="text-sm text-cyan-400 mt-1">
+                                                        학부모: {student.parentPhone}
+                                                    </div>
+                                                )}
+                                            </TableCell>
+                                            <TableCell className="text-cyan-300">{student.course}</TableCell>
+                                            <TableCell>
+                                                <div className="flex items-center space-x-2">
+                                                    <div className="w-16 bg-cyan-900/30 rounded-full h-2">
+                                                        <div 
+                                                            className="bg-cyan-500 h-2 rounded-full" 
+                                                            style={{ width: `${student.progress}%` }}
+                                                        ></div>
+                                                    </div>
+                                                    <span className="text-cyan-300 text-sm">{student.progress}%</span>
+                                                </div>
+                                            </TableCell>
+                                            <TableCell>
+                                                <div className="flex items-center space-x-2">
+                                                    <div className="w-16 bg-cyan-900/30 rounded-full h-2">
+                                                        <div 
+                                                            className="bg-green-500 h-2 rounded-full" 
+                                                            style={{ width: `${student.attendance}%` }}
+                                                        ></div>
+                                                    </div>
+                                                    <span className="text-cyan-300 text-sm">{student.attendance}%</span>
+                                                </div>
+                                            </TableCell>
+                                            <TableCell>
+                                                <Badge 
+                                                    variant={student.status === '수강' ? 'default' : 'secondary'}
+                                                    className={
+                                                        student.status === '수강' ? 'bg-green-600 text-white' :
+                                                        student.status === '종료' ? 'bg-blue-600 text-white' :
+                                                        student.status === '휴강' ? 'bg-yellow-600 text-white' :
+                                                        'bg-gray-600 text-white'
+                                                    }
+                                                >
+                                                    {student.status}
+                                                </Badge>
+                                            </TableCell>
+                                            <TableCell className="text-cyan-300">{student.joinDate}</TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+
+                <TabsContent value="pending">
+                    <Card className="bg-gradient-to-br from-cyan-900/20 to-blue-900/20 border-cyan-500/30">
+                        <CardHeader>
+                            <CardTitle className="text-cyan-100">가입 요청 대기</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            {pendingRequests.length === 0 ? (
+                                <div className="text-center py-8 text-cyan-300">
+                                    대기 중인 가입 요청이 없습니다.
+                                </div>
+                            ) : (
+                                <Table>
+                                    <TableHeader>
+                                        <TableRow className="border-cyan-500/20">
+                                            <TableHead className="text-cyan-200">이름</TableHead>
+                                            <TableHead className="text-cyan-200">아이디</TableHead>
+                                            <TableHead className="text-cyan-200">출생년도</TableHead>
+                                            <TableHead className="text-cyan-200">학원</TableHead>
+                                            <TableHead className="text-cyan-200">담당 교사</TableHead>
+                                            <TableHead className="text-cyan-200">요청일</TableHead>
+                                            <TableHead className="text-cyan-200">처리</TableHead>
+                                        </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {pendingRequests.map((request) => (
+                                            <TableRow key={request.id} className="border-cyan-500/10 hover:bg-cyan-900/10">
+                                                <TableCell className="font-medium text-cyan-100">
+                                                    {request.name}
+                                                </TableCell>
+                                                <TableCell className="text-cyan-300">{request.username}</TableCell>
+                                                <TableCell className="text-cyan-300">
+                                                    {request.birth_year || '-'}
+                                                </TableCell>
+                                                <TableCell className="text-cyan-300">
+                                                    {request.academy === 'coding-maker' ? '코딩메이커' : '광양코딩'}
+                                                </TableCell>
+                                                <TableCell className="text-cyan-300">
+                                                    {request.teacher_name || '-'}
+                                                </TableCell>
+                                                <TableCell className="text-cyan-300">
+                                                    {new Date(request.requested_at).toLocaleDateString()}
+                                                </TableCell>
+                                                <TableCell>
+                                                    <div className="flex space-x-2">
+                                                        <Button
+                                                            size="sm"
+                                                            onClick={() => handleApproveRequest(request.id)}
+                                                            className="bg-green-600 hover:bg-green-700 text-white"
+                                                        >
+                                                            <CheckCircle className="w-4 h-4 mr-1" />
+                                                            승인
+                                                        </Button>
+                                                        <Button
+                                                            size="sm"
+                                                            variant="destructive"
+                                                            onClick={() => openRejectDialog(request.id)}
+                                                        >
+                                                            <XCircle className="w-4 h-4 mr-1" />
+                                                            거부
+                                                        </Button>
+                                                    </div>
+                                                </TableCell>
+                                            </TableRow>
+                                        ))}
+                                    </TableBody>
+                                </Table>
+                            )}
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+
+                <TabsContent value="processed">
+                    <Card className="bg-gradient-to-br from-cyan-900/20 to-blue-900/20 border-cyan-500/30">
+                        <CardHeader>
+                            <CardTitle className="text-cyan-100">처리 완료된 요청</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            {processedRequests.length === 0 ? (
+                                <div className="text-center py-8 text-cyan-300">
+                                    처리된 요청이 없습니다.
+                                </div>
+                            ) : (
+                                <Table>
+                                    <TableHeader>
+                                        <TableRow className="border-cyan-500/20">
+                                            <TableHead className="text-cyan-200">이름</TableHead>
+                                            <TableHead className="text-cyan-200">아이디</TableHead>
+                                            <TableHead className="text-cyan-200">상태</TableHead>
+                                            <TableHead className="text-cyan-200">처리일</TableHead>
+                                            <TableHead className="text-cyan-200">거부 사유</TableHead>
+                                        </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {processedRequests.map((request) => (
+                                            <TableRow key={request.id} className="border-cyan-500/10 hover:bg-cyan-900/10">
+                                                <TableCell className="font-medium text-cyan-100">
+                                                    {request.name}
+                                                </TableCell>
+                                                <TableCell className="text-cyan-300">{request.username}</TableCell>
+                                                <TableCell>
+                                                    <Badge 
+                                                        className={
+                                                            request.status === 'approved' 
+                                                                ? 'bg-green-600 text-white' 
+                                                                : 'bg-red-600 text-white'
+                                                        }
+                                                    >
+                                                        {request.status === 'approved' ? '승인됨' : '거부됨'}
+                                                    </Badge>
+                                                </TableCell>
+                                                <TableCell className="text-cyan-300">
+                                                    {request.processed_at ? new Date(request.processed_at).toLocaleDateString() : '-'}
+                                                </TableCell>
+                                                <TableCell className="text-cyan-300">
+                                                    {request.rejection_reason || '-'}
+                                                </TableCell>
+                                            </TableRow>
+                                        ))}
+                                    </TableBody>
+                                </Table>
+                            )}
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+            </Tabs>
 
             <EditStudentModal
                 student={selectedStudent}
@@ -324,6 +569,44 @@ export default function AdminStudentsPage() {
                 }}
                 onSave={handleSaveStudent}
             />
+
+            <Dialog open={isRejectDialogOpen} onOpenChange={setIsRejectDialogOpen}>
+                <DialogContent className="bg-cyan-900/20 border-cyan-500/30">
+                    <DialogHeader>
+                        <DialogTitle className="text-cyan-100">가입 요청 거부</DialogTitle>
+                        <DialogDescription className="text-cyan-300">
+                            가입 요청을 거부하는 사유를 입력해주세요.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4">
+                        <Textarea
+                            placeholder="거부 사유를 입력하세요..."
+                            value={rejectionReason}
+                            onChange={(e) => setRejectionReason(e.target.value)}
+                            className="bg-background/40 border-cyan-400/40 text-cyan-100 placeholder:text-cyan-400/60"
+                        />
+                    </div>
+                    <DialogFooter>
+                        <Button
+                            variant="outline"
+                            onClick={() => {
+                                setIsRejectDialogOpen(false);
+                                setRejectionReason("");
+                                setSelectedRequestId(null);
+                            }}
+                            className="border-cyan-400/40 text-cyan-300 hover:bg-cyan-900/20"
+                        >
+                            취소
+                        </Button>
+                        <Button
+                            onClick={handleRejectRequest}
+                            className="bg-red-600 hover:bg-red-700 text-white"
+                        >
+                            거부
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 } 

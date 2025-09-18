@@ -23,16 +23,16 @@ export const PostCard = memo(function PostCard({ post, currentUserId, currentUse
   const isAdmin = currentUserRole === 'admin';
 
   return (
-            <Card
-              className={`mb-3 cursor-pointer transition-all duration-200 hover:shadow-lg hover:scale-[1.02] ${
-                isCurrentUser 
-                  ? 'border border-cyan-400/30 border-l-4 border-l-cyan-400' 
-                  : post.author.role === 'admin'
-                  ? 'border border-cyan-400/30 border-l-4 border-l-red-400'
-                  : 'border border-cyan-400/30'
-              }`}
-              onClick={() => onClick(post.id)}
-            >
+    <Card
+      className={`mb-3 cursor-pointer transition-all duration-200 hover:shadow-lg hover:scale-[1.02] ${
+        isCurrentUser 
+          ? 'border border-cyan-400/30 border-l-4 border-l-cyan-400' 
+          : post.author.role === 'admin'
+          ? 'border border-cyan-400/30 border-l-4 border-l-red-400'
+          : 'border border-cyan-400/30'
+      }`}
+      onClick={() => onClick(post.id)}
+    >
       <CardContent className="py-2 px-4 flex items-center min-h-[56px] gap-3 whitespace-nowrap overflow-x-auto">
         {/* 1열: 아바타 */}
         <div className="flex items-center justify-center min-w-[44px] max-w-[44px] flex-shrink-0">

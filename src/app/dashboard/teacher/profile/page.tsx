@@ -140,9 +140,10 @@ export default function TeacherProfilePage() {
 
       if (userError) {
         console.error('사용자 정보 업데이트 실패:', userError);
+        console.error('오류 상세:', JSON.stringify(userError, null, 2));
         toast({
           title: "오류",
-          description: "사용자 정보 업데이트에 실패했습니다.",
+          description: `사용자 정보 업데이트에 실패했습니다: ${userError.message || '알 수 없는 오류'}`,
           variant: "destructive",
         });
         return;
@@ -160,9 +161,10 @@ export default function TeacherProfilePage() {
 
       if (teacherError) {
         console.error('강사 정보 업데이트 실패:', teacherError);
+        console.error('오류 상세:', JSON.stringify(teacherError, null, 2));
         toast({
           title: "오류",
-          description: "강사 정보 업데이트에 실패했습니다.",
+          description: `강사 정보 업데이트에 실패했습니다: ${teacherError.message || '알 수 없는 오류'}`,
           variant: "destructive",
         });
         return;

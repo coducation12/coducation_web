@@ -1283,7 +1283,6 @@ export async function getInstructors() {
         profile_image_url,
         teachers!inner (
           bio,
-          image,
           certs,
           career,
           subject
@@ -1303,7 +1302,7 @@ export async function getInstructors() {
       id: teacher.id,
       name: teacher.name,
       bio: teacher.teachers.bio || '전문 강사',
-      profile_image: teacher.profile_image_url || teacher.teachers.image || 'https://placehold.co/400x400.png',
+      profile_image: teacher.profile_image_url || 'https://placehold.co/400x400.png',
       subject: teacher.teachers.subject || '코딩 교육',
       certs: teacher.teachers.certs || '',
       career: teacher.teachers.career || '',

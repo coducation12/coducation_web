@@ -72,7 +72,8 @@ export async function getCommunityPosts(page: number = 1, limit: number = 10, se
       created_at,
       users!community_posts_user_id_fkey (
         name,
-        role
+        role,
+        profile_image_url
       )
     `)
     .eq('is_deleted', false);
@@ -124,7 +125,8 @@ export async function getCommunityPosts(page: number = 1, limit: number = 10, se
     author: {
       name: post.users?.name || '익명',
       role: post.users?.role || 'student',
-      avatar: undefined
+      avatar: undefined,
+      profile_image_url: post.users?.profile_image_url
     },
     created_at: post.created_at,
     comments_count: commentCountMap[post.id] || 0
@@ -150,7 +152,8 @@ export async function getCommunityPost(postId: string): Promise<CommunityPost | 
       created_at,
       users!community_posts_user_id_fkey (
         name,
-        role
+        role,
+        profile_image_url
       )
     `)
     .eq('id', postId)
@@ -178,7 +181,8 @@ export async function getCommunityPost(postId: string): Promise<CommunityPost | 
     author: {
       name: post.users?.name || '익명',
       role: post.users?.role || 'student',
-      avatar: undefined
+      avatar: undefined,
+      profile_image_url: post.users?.profile_image_url
     },
     created_at: post.created_at,
     comments_count: commentsCount || 0
@@ -229,7 +233,8 @@ export async function getCommunityComments(postId: string): Promise<CommunityCom
       created_at,
       users!community_comments_user_id_fkey (
         name,
-        role
+        role,
+        profile_image_url
       )
     `)
     .eq('post_id', postId)
@@ -249,7 +254,8 @@ export async function getCommunityComments(postId: string): Promise<CommunityCom
     author: {
       name: comment.users?.name || '익명',
       role: comment.users?.role || 'student',
-      avatar: undefined
+      avatar: undefined,
+      profile_image_url: comment.users?.profile_image_url
     },
     created_at: comment.created_at
   }));

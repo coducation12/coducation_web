@@ -1054,7 +1054,8 @@ export async function updateTeacher(formData: FormData) {
       username: teacherData.email, // 이메일을 username으로 사용
       name: teacherData.name,
       email: teacherData.email,
-      phone: teacherData.phone
+      phone: teacherData.phone,
+      profile_image_url: teacherData.image
     };
 
     // 비밀번호가 입력된 경우에만 업데이트
@@ -1279,6 +1280,7 @@ export async function getInstructors() {
         name,
         email,
         phone,
+        profile_image_url,
         teachers!inner (
           bio,
           image,
@@ -1301,7 +1303,7 @@ export async function getInstructors() {
       id: teacher.id,
       name: teacher.name,
       bio: teacher.teachers.bio || '전문 강사',
-      profile_image: teacher.teachers.image || 'https://placehold.co/400x400.png',
+      profile_image: teacher.profile_image_url || teacher.teachers.image || 'https://placehold.co/400x400.png',
       subject: teacher.teachers.subject || '코딩 교육',
       certs: teacher.teachers.certs || '',
       career: teacher.teachers.career || '',

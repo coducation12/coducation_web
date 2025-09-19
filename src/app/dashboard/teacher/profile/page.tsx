@@ -10,6 +10,7 @@ import { supabase } from "@/lib/supabase";
 import { toast } from "@/hooks/use-toast";
 import { User, Save, ArrowLeft } from "lucide-react";
 import Link from "next/link";
+import ImageUpload from "@/components/ui/image-upload";
 
 interface UserInfo {
   id: string;
@@ -17,6 +18,7 @@ interface UserInfo {
   email: string;
   phone: string;
   academy: string;
+  profile_image_url?: string;
   created_at: string;
 }
 
@@ -39,7 +41,8 @@ export default function TeacherProfilePage() {
     academy: '',
     bio: '',
     certs: '',
-    career: ''
+    career: '',
+    profile_image_url: ''
   });
 
   useEffect(() => {
@@ -92,7 +95,8 @@ export default function TeacherProfilePage() {
         academy: userData.academy || '',
         bio: teacherData?.bio || '',
         certs: teacherData?.certs || '',
-        career: teacherData?.career || ''
+        career: teacherData?.career || '',
+        profile_image_url: userData.profile_image_url || ''
       });
 
     } catch (error) {
@@ -129,7 +133,8 @@ export default function TeacherProfilePage() {
           name: formData.name,
           email: formData.email,
           phone: formData.phone,
-          academy: formData.academy
+          academy: formData.academy,
+          profile_image_url: formData.profile_image_url
         })
         .eq('id', user.id);
 
@@ -213,6 +218,17 @@ export default function TeacherProfilePage() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
+            {/* 프로필 이미지 업로드 */}
+            <div>
+              <Label className="text-cyan-200">프로필 이미지</Label>
+              <ImageUpload
+                value={formData.profile_image_url}
+                onChange={(url) => handleInputChange('profile_image_url', url)}
+                label="프로필 이미지"
+                className="mt-2"
+              />
+            </div>
+            
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="name" className="text-cyan-200">이름</Label>

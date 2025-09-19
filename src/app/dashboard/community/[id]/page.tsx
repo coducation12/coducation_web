@@ -5,9 +5,9 @@ import { useParams, useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Textarea } from '@/components/ui/textarea';
-import { Calendar, User, MessageCircle, ArrowLeft, Trash2 } from 'lucide-react';
+import { Calendar, MessageCircle, ArrowLeft, Trash2 } from 'lucide-react';
+import { UserAvatar } from '@/components/community/UserAvatar';
 import Image from 'next/image';
 import { 
   getCommunityPost,
@@ -245,12 +245,11 @@ export default function PostDetailPage() {
         <CardHeader className="pb-3">
             <div className="flex items-start justify-between">
               <div className="flex items-center space-x-3">
-                <Avatar className="h-12 w-12">
-                  <AvatarImage src={post.author.avatar} />
-                  <AvatarFallback className="text-xs bg-cyan-900 text-cyan-100">
-                    <User className="h-6 w-6" />
-                  </AvatarFallback>
-                </Avatar>
+                <UserAvatar 
+                  src={post.author.profile_image_url || post.author.avatar} 
+                  name={post.author.name}
+                  size="lg"
+                />
               <div>
                 <div className="flex items-center space-x-2">
                   <span className="font-bold text-cyan-200 text-lg">{post.author.name}</span>
@@ -353,12 +352,11 @@ export default function PostDetailPage() {
             <div className="space-y-4">
               {comments.map((comment) => (
                 <div key={comment.id} className="flex space-x-3 p-4 border border-cyan-400/30 rounded-lg bg-transparent">
-                  <Avatar className="h-8 w-8">
-                    <AvatarImage src={comment.author.avatar} />
-                    <AvatarFallback className="text-xs bg-cyan-900 text-cyan-100">
-                      <User className="h-4 w-4" />
-                    </AvatarFallback>
-                  </Avatar>
+                  <UserAvatar 
+                    src={comment.author.profile_image_url || comment.author.avatar} 
+                    name={comment.author.name}
+                    size="md"
+                  />
                   <div className="flex-1">
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center space-x-2">

@@ -3,12 +3,12 @@
 import { memo } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { User, Trash2 } from 'lucide-react';
+import { Trash2 } from 'lucide-react';
 import { formatDate } from '@/lib/community-utils';
 import { CommunityComment } from '@/types/community';
 import { ROLE_LABELS, BADGE_COLOR_MAP } from '@/lib/community-constants';
+import { UserAvatar } from './UserAvatar';
 
 interface CommentCardProps {
   comment: CommunityComment;
@@ -26,12 +26,12 @@ export const CommentCard = memo(function CommentCard({ comment, currentUserId, o
       <CardContent className="py-3 px-4">
         <div className="flex items-start justify-between">
           <div className="flex items-start space-x-3 flex-1">
-            <Avatar className="h-8 w-8 flex-shrink-0">
-              <AvatarImage src={comment.author.avatar} />
-              <AvatarFallback className="text-xs bg-cyan-900 text-cyan-100">
-                <User className="h-4 w-4" />
-              </AvatarFallback>
-            </Avatar>
+            <UserAvatar 
+              src={comment.author.profile_image_url || comment.author.avatar} 
+              name={comment.author.name}
+              size="md"
+              className="flex-shrink-0"
+            />
             
             <div className="flex-1 min-w-0">
               <div className="flex items-center space-x-2 mb-1">

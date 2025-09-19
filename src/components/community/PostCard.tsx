@@ -3,11 +3,11 @@
 import { memo } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { User, MessageCircle, ImageIcon } from 'lucide-react';
+import { MessageCircle, ImageIcon } from 'lucide-react';
 import { formatDate } from '@/lib/community-utils';
 import { CommunityPost } from '@/types/community';
 import { ROLE_LABELS, BADGE_COLOR_MAP } from '@/lib/community-constants';
+import { UserAvatar } from './UserAvatar';
 import Image from 'next/image';
 
 interface PostCardProps {
@@ -36,12 +36,11 @@ export const PostCard = memo(function PostCard({ post, currentUserId, currentUse
       <CardContent className="py-2 px-4 flex items-center min-h-[56px] gap-3 whitespace-nowrap overflow-x-auto">
         {/* 1열: 아바타 */}
         <div className="flex items-center justify-center min-w-[44px] max-w-[44px] flex-shrink-0">
-          <Avatar className="h-8 w-8">
-            <AvatarImage src={post.author.avatar} />
-            <AvatarFallback className="text-xs bg-cyan-900 text-cyan-100">
-              <User className="h-4 w-4" />
-            </AvatarFallback>
-          </Avatar>
+          <UserAvatar 
+            src={post.author.profile_image_url || post.author.avatar} 
+            name={post.author.name}
+            size="md"
+          />
         </div>
         
         {/* 2열: 작성자(분류)/작성일 */}

@@ -127,3 +127,18 @@ export interface Instructor {
   email?: string;
   phone?: string;
 }
+
+export interface Consultation {
+  id: number;
+  name: string;
+  phone: string;
+  academy: string;
+  subject: string;
+  message: string;
+  privacy_consent: boolean;
+  status: 'pending' | 'completed';
+  created_at: string;
+  updated_at: string;
+  responded_at?: string;
+  response_note?: string;
+}

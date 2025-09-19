@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
-import { LayoutDashboard, BookOpen, Users, Menu, LogOut, GraduationCap, User, CalendarDays, UserCheck, Settings } from "lucide-react";
+import { LayoutDashboard, BookOpen, Users, Menu, LogOut, GraduationCap, User, CalendarDays, UserCheck, Settings, MessageSquare } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { logout } from "@/lib/actions";
@@ -14,6 +14,7 @@ const navItems = [
   { href: "/dashboard/admin/teachers", label: "강사관리", icon: <UserCheck className="w-5 h-5" /> },
   { href: "/dashboard/admin/timetable", label: "학원시간표", icon: <CalendarDays className="w-5 h-5" /> },
   { href: "/dashboard/admin/curriculum", label: "커리큘럼", icon: <BookOpen className="w-5 h-5" /> },
+  { href: "/dashboard/admin/consultations", label: "상담문의", icon: <MessageSquare className="w-5 h-5" /> },
   { href: "/dashboard/admin/community", label: "커뮤니티", icon: <Users className="w-5 h-5" /> },
   { href: "/dashboard/admin/content", label: "컨텐츠 관리", icon: <Settings className="w-5 h-5" /> },
 ];
@@ -76,6 +77,9 @@ export function AdminSidebar() {
             </Button>
           </SheetTrigger>
           <SheetContent side="top" className="p-0 w-full max-w-full bg-gradient-to-b from-[#0a1837] to-[#0a1a2f] border-b border-cyan-900/40">
+            <div className="sr-only">
+              <h2>메뉴</h2>
+            </div>
             {SidebarContent}
           </SheetContent>
         </Sheet>

@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
-import { LayoutDashboard, BookOpen, Keyboard, Users, Menu, LogOut, GraduationCap, User, CalendarDays } from "lucide-react";
+import { LayoutDashboard, BookOpen, Keyboard, Users, Menu, LogOut, GraduationCap, User, CalendarDays, MessageSquare } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { logout } from "@/lib/actions";
@@ -13,6 +13,7 @@ const navItems = [
   { href: "/dashboard/teacher/students", label: "학생관리", icon: <GraduationCap className="w-5 h-5" /> },
   { href: "/dashboard/teacher/timetable", label: "학원시간표", icon: <CalendarDays className="w-5 h-5" /> },
   { href: "/dashboard/teacher/curriculum", label: "커리큘럼", icon: <BookOpen className="w-5 h-5" /> },
+  { href: "/dashboard/teacher/consultations", label: "상담문의", icon: <MessageSquare className="w-5 h-5" /> },
   { href: "/dashboard/teacher/community", label: "커뮤니티", icon: <Users className="w-5 h-5" /> },
 ];
 
@@ -98,6 +99,9 @@ export function TeacherSidebar() {
             </Button>
           </SheetTrigger>
           <SheetContent side="top" className="p-0 w-full max-w-full bg-gradient-to-b from-[#0a1837] to-[#0a1a2f] border-b border-cyan-900/40">
+            <div className="sr-only">
+              <h2>메뉴</h2>
+            </div>
             {SidebarContent}
           </SheetContent>
         </Sheet>

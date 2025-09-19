@@ -1085,8 +1085,8 @@ export default function BasicPage() {
       </div>
 
       <div className="relative z-10 w-full h-full flex flex-col p-6 pt-20 lg:pt-6">
-        {/* 헤더 */}
-        <div className="flex items-center justify-between mb-8">
+          {/* 헤더 */}
+          <div className="flex items-center justify-between mb-4">
           <button
             onClick={() => router.back()}
             className="p-2 hover:bg-cyan-500/20 rounded-lg transition-colors border border-cyan-500/30"
@@ -1156,10 +1156,10 @@ export default function BasicPage() {
           </div>
 
           {/* 메인 연습 영역 */}
-          <div className="flex-1 flex flex-col items-center justify-center mb-8">
+          <div className="flex-1 flex flex-col items-center justify-center mb-4">
             {/* 이전 단어 CPM 표시 (단어연습 부분에서만, 고정 공간) */}
             {currentCharIndex >= 50 && (
-              <div className="mb-4 text-center h-10 flex items-center justify-center">
+              <div className="mb-2 text-center h-8 flex items-center justify-center">
                 {lastWordCPM !== null ? (
                   <div className="text-cyan-400 text-2xl font-bold">
                     {lastWordCPM} CPM
@@ -1171,9 +1171,9 @@ export default function BasicPage() {
             )}
             
             {/* 현재 입력할 글자와 다음 글자 */}
-            <div className="flex items-center justify-center gap-6 mb-8 relative">
+            <div className="flex items-center justify-center gap-6 mb-4 relative">
               {/* 현재 입력할 글자 - 항상 중앙에 (반응형) */}
-              <div className="bg-gradient-to-br from-cyan-500 to-blue-600 rounded-3xl p-8 lg:p-12 shadow-2xl shadow-cyan-500/25 border border-cyan-400/50 transition-all duration-200">
+              <div className="bg-gradient-to-br from-cyan-500 to-blue-600 rounded-3xl p-6 lg:p-8 shadow-2xl shadow-cyan-500/25 border border-cyan-400/50 transition-all duration-200">
                 <div className="text-center">
                   <div className={cn(
                     "text-sm mb-4 opacity-80",
@@ -1182,7 +1182,7 @@ export default function BasicPage() {
                     {isWrong ? "틀렸습니다!" : currentCharIndex < 10 ? "입력할 자리" : "입력할 단어"}
                   </div>
                   <div className={cn(
-                    "text-6xl lg:text-8xl font-bold leading-none transition-colors duration-150",
+                    "text-5xl lg:text-7xl font-bold leading-none transition-colors duration-150",
                     isWrong ? "text-red-800" : "text-white"
                   )}>
                     {currentChar}
@@ -1207,12 +1207,12 @@ export default function BasicPage() {
             
             {/* 단어 입력 필드 */}
             {currentCharIndex >= 50 && (
-              <div className="mb-6 text-center">
+              <div className="mb-4 text-center">
                 <div className="bg-transparent">
                   {/* 입력 필드 */}
                   <div className="mb-4">
                     {/* 글자별 표시를 위한 커스텀 입력 디스플레이 */}
-                    <div className="w-full max-w-2xl mx-auto px-2 py-2 text-center text-4xl lg:text-6xl font-bold min-h-[60px] lg:min-h-[80px] flex items-center justify-center">
+                    <div className="w-full max-w-2xl mx-auto px-2 py-2 text-center text-3xl lg:text-5xl font-bold min-h-[50px] lg:min-h-[60px] flex items-center justify-center">
                       {userInput.split('').map((char, index) => {
                         const isCorrect = index < currentWord.length && char === currentWord[index];
                         
@@ -1262,9 +1262,9 @@ export default function BasicPage() {
             )}
 
             {/* 가상 키보드 (모바일에서 숨김) */}
-            <div className="hidden lg:block bg-slate-800/90 backdrop-blur-sm rounded-3xl p-8 shadow-2xl border border-cyan-500/30">
+            <div className="hidden lg:block bg-slate-800/90 backdrop-blur-sm rounded-3xl p-6 shadow-2xl border border-cyan-500/30">
               {/* 진행도 막대바 */}
-              <div className="mb-6">
+              <div className="mb-4">
                 <div className="flex items-center justify-between mb-3">
                   <span className="text-cyan-300 text-sm">
                     {currentCharIndex < 50 ? '1단계: 자리 연습' : '2단계: 단어 연습'}
@@ -1290,16 +1290,11 @@ export default function BasicPage() {
               </div>
               
               {/* 키보드 헤더 */}
-              <div className="flex flex-col mb-6">
+              <div className="flex flex-col mb-4">
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-4">
-                    <div className="w-6 h-6 bg-gradient-to-r from-cyan-400 to-blue-400 rounded-full animate-pulse"></div>
-                    <span className="text-cyan-300 font-medium">가상 키보드</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 bg-cyan-400 rounded-full animate-pulse"></div>
-                    <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse" style={{animationDelay: '0.5s'}}></div>
-                    <div className="w-2 h-2 bg-purple-400 rounded-full animate-pulse" style={{animationDelay: '1s'}}></div>
                   </div>
                 </div>
                 

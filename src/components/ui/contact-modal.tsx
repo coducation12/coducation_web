@@ -21,6 +21,26 @@ import {
 } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 
+// 휴대폰번호 포맷팅 함수
+const formatPhoneNumber = (value: string): string => {
+  // 숫자만 추출
+  const numbers = value.replace(/[^0-9]/g, '');
+  
+  // 11자리 제한
+  if (numbers.length > 11) {
+    return numbers.slice(0, 11);
+  }
+  
+  // 하이픈 추가 (3-4-4 형식)
+  if (numbers.length <= 3) {
+    return numbers;
+  } else if (numbers.length <= 7) {
+    return `${numbers.slice(0, 3)}-${numbers.slice(3)}`;
+  } else {
+    return `${numbers.slice(0, 3)}-${numbers.slice(3, 7)}-${numbers.slice(7)}`;
+  }
+};
+
 interface ContactModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -104,6 +124,11 @@ export function ContactModal({ open, onOpenChange }: ContactModalProps) {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
+  const handlePhoneChange = (value: string) => {
+    const formattedPhone = formatPhoneNumber(value);
+    setFormData(prev => ({ ...prev, phone: formattedPhone }));
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
@@ -128,10 +153,11 @@ export function ContactModal({ open, onOpenChange }: ContactModalProps) {
             <Input
               id="phone"
               type="tel"
-              placeholder="연락 가능한 번호를 입력해주세요"
+              placeholder="010-1234-5678"
               value={formData.phone}
-              onChange={(e) => handleInputChange('phone', e.target.value)}
+              onChange={(e) => handlePhoneChange(e.target.value)}
               required
+              maxLength={13}
             />
           </div>
           

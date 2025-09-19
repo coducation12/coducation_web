@@ -1189,13 +1189,13 @@ export async function saveConsultation(formData: FormData) {
   }
 }
 
-// 관리자용: 모든 상담 문의 조회
+// 관리자/강사용: 모든 상담 문의 조회
 export async function getConsultations() {
   try {
-    // 관리자 권한 확인
+    // 관리자 또는 강사 권한 확인
     const userRole = cookies().get('user_role')?.value;
-    if (userRole !== 'admin') {
-      return { success: false, error: '관리자만 접근 가능합니다.' };
+    if (userRole !== 'admin' && userRole !== 'teacher') {
+      return { success: false, error: '관리자 또는 강사만 접근 가능합니다.' };
     }
 
     const { data, error } = await supabase
@@ -1216,13 +1216,13 @@ export async function getConsultations() {
   }
 }
 
-// 관리자용: 상담 문의 상태 업데이트
+// 관리자/강사용: 상담 문의 상태 업데이트
 export async function updateConsultationStatus(formData: FormData) {
   try {
-    // 관리자 권한 확인
+    // 관리자 또는 강사 권한 확인
     const userRole = cookies().get('user_role')?.value;
-    if (userRole !== 'admin') {
-      return { success: false, error: '관리자만 접근 가능합니다.' };
+    if (userRole !== 'admin' && userRole !== 'teacher') {
+      return { success: false, error: '관리자 또는 강사만 접근 가능합니다.' };
     }
 
     const consultationId = formData.get('consultationId') as string;

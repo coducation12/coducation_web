@@ -87,6 +87,9 @@ export function StudentSidebar({ user }: StudentSidebarProps) {
             </Button>
           </SheetTrigger>
           <SheetContent side="top" className="p-0 w-full max-w-full bg-gradient-to-b from-[#0a1837] to-[#0a1a2f] border-b border-cyan-900/40">
+            <div className="sr-only">
+              <h2>메뉴</h2>
+            </div>
             {SidebarContent}
           </SheetContent>
         </Sheet>

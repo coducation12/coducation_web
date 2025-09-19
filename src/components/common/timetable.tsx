@@ -178,7 +178,7 @@ export function Timetable({ title = "학원 시간표", className = "" }: Timeta
 
   if (isLoading) {
     return (
-      <div className={`p-6 space-y-6 ${className}`}>
+      <div className={`p-6 pt-20 lg:pt-6 space-y-6 ${className}`}>
         <div className="flex items-center justify-center py-20">
           <div className="text-cyan-200">시간표 데이터를 불러오는 중...</div>
         </div>
@@ -187,7 +187,7 @@ export function Timetable({ title = "학원 시간표", className = "" }: Timeta
   }
 
   return (
-    <div className={`p-6 space-y-6 ${className}`}>
+    <div className={`p-6 pt-20 lg:pt-6 space-y-6 ${className}`}>
       {/* 헤더 */}
       <div className="flex items-center justify-between">
         <div>

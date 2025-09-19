@@ -24,12 +24,12 @@ import {
 } from '@/components/ui/dialog';
 import { CalendarDays, Phone, User, MessageSquare, Building2, Filter } from 'lucide-react';
 
-const statusLabels = {
+const statusLabels: Record<'pending' | 'completed', string> = {
   pending: '대기중',
   completed: '완료'
 };
 
-const statusColors = {
+const statusColors: Record<'pending' | 'completed', string> = {
   pending: 'bg-yellow-100 text-yellow-800',
   completed: 'bg-green-100 text-green-800'
 };
@@ -48,7 +48,6 @@ const academyLabels = {
 
 export default function AdminConsultationsPage() {
   const [consultations, setConsultations] = useState<Consultation[]>([]);
-  const [filteredConsultations, setFilteredConsultations] = useState<Consultation[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedConsultation, setSelectedConsultation] = useState<Consultation | null>(null);
   const [responseNote, setResponseNote] = useState('');
@@ -59,10 +58,6 @@ export default function AdminConsultationsPage() {
   useEffect(() => {
     loadConsultations();
   }, []);
-
-  useEffect(() => {
-    filterConsultations();
-  }, [consultations, statusFilter, academyFilter]);
 
   const loadConsultations = async () => {
     try {
@@ -78,20 +73,6 @@ export default function AdminConsultationsPage() {
     } finally {
       setLoading(false);
     }
-  };
-
-  const filterConsultations = () => {
-    let filtered = [...consultations];
-
-    if (statusFilter !== 'all') {
-      filtered = filtered.filter(consultation => consultation.status === statusFilter);
-    }
-
-    if (academyFilter !== 'all') {
-      filtered = filtered.filter(consultation => consultation.academy === academyFilter);
-    }
-
-    setFilteredConsultations(filtered);
   };
 
   const handleStatusUpdate = async (consultationId: number, newStatus: string) => {
@@ -121,38 +102,45 @@ export default function AdminConsultationsPage() {
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleString('ko-KR', {
+    return new Intl.DateTimeFormat('ko-KR', {
       year: 'numeric',
       month: '2-digit',
       day: '2-digit',
       hour: '2-digit',
-      minute: '2-digit'
-    });
+      minute: '2-digit',
+    }).format(new Date(dateString));
   };
 
   const getStatusCounts = () => {
-    const counts = {
-      total: consultations.length,
-      pending: consultations.filter(c => c.status === 'pending').length,
-      completed: consultations.filter(c => c.status === 'completed').length
-    };
-    return counts;
+    const total = consultations.length;
+    const pending = consultations.filter(c => c.status === 'pending').length;
+    const completed = consultations.filter(c => c.status === 'completed').length;
+    return { total, pending, completed };
   };
 
-  const statusCounts = getStatusCounts();
+  const filteredConsultations = consultations.filter(consultation => {
+    const statusMatch = statusFilter === 'all' || consultation.status === statusFilter;
+    const academyMatch = academyFilter === 'all' || consultation.academy === academyFilter;
+    return statusMatch && academyMatch;
+  });
+
+  const pendingConsultations = filteredConsultations.filter(c => c.status === 'pending');
+  const completedConsultations = filteredConsultations.filter(c => c.status === 'completed');
+
+  const { total, pending, completed } = getStatusCounts();
 
   if (loading) {
     return (
-      <div className="container mx-auto p-6">
+      <div className="container mx-auto p-6 pt-20 lg:pt-6 space-y-6">
         <div className="flex items-center justify-center h-64">
-          <div className="text-lg">상담문의를 불러오는 중...</div>
+          <div className="text-cyan-400 text-lg">로딩 중...</div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
+    <div className="container mx-auto p-6 pt-20 lg:pt-6 space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold text-sky-600">상담문의 관리</h1>
         <Button onClick={loadConsultations} variant="outline">
@@ -161,80 +149,81 @@ export default function AdminConsultationsPage() {
       </div>
 
       {/* 통계 카드 */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Card className="border-2">
-          <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold text-gray-700">{statusCounts.total}</div>
-            <div className="text-sm text-gray-500">전체</div>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">전체 문의</p>
+                <p className="text-2xl font-bold text-sky-600">{total}</p>
+              </div>
+              <MessageSquare className="h-8 w-8 text-sky-600" />
+            </div>
           </CardContent>
         </Card>
+
         <Card className="border-2">
-          <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold text-yellow-600">{statusCounts.pending}</div>
-            <div className="text-sm text-gray-500">대기중</div>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">대기중</p>
+                <p className="text-2xl font-bold text-yellow-600">{pending}</p>
+              </div>
+              <div className="h-8 w-8 bg-yellow-100 rounded-full flex items-center justify-center">
+                <div className="h-4 w-4 bg-yellow-600 rounded-full"></div>
+              </div>
+            </div>
           </CardContent>
         </Card>
+
         <Card className="border-2">
-          <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold text-green-600">{statusCounts.completed}</div>
-            <div className="text-sm text-gray-500">완료</div>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">완료</p>
+                <p className="text-2xl font-bold text-green-600">{completed}</p>
+              </div>
+              <div className="h-8 w-8 bg-green-100 rounded-full flex items-center justify-center">
+                <div className="h-4 w-4 bg-green-600 rounded-full"></div>
+              </div>
+            </div>
           </CardContent>
         </Card>
       </div>
 
       {/* 필터 */}
-      <Card className="border-2">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Filter className="h-5 w-5" />
-            필터
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex gap-4">
-            <div className="flex-1">
-              <Label>상태</Label>
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">전체</SelectItem>
-                  <SelectItem value="pending">대기중</SelectItem>
-                  <SelectItem value="completed">완료</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="flex-1">
-              <Label>학원</Label>
-              <Select value={academyFilter} onValueChange={setAcademyFilter}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">전체</SelectItem>
-                  <SelectItem value="coding-maker">코딩메이커 (중마)</SelectItem>
-                  <SelectItem value="gwangyang-coding">광양코딩 (창덕)</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      <div className="flex flex-wrap gap-4">
+        <div className="flex items-center gap-2">
+          <Filter className="h-4 w-4 text-gray-600" />
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="w-32">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">전체</SelectItem>
+              <SelectItem value="pending">대기중</SelectItem>
+              <SelectItem value="completed">완료</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        <Select value={academyFilter} onValueChange={setAcademyFilter}>
+          <SelectTrigger className="w-48">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">전체 학원</SelectItem>
+            <SelectItem value="coding-maker">코딩메이커 (중마)</SelectItem>
+            <SelectItem value="gwangyang-coding">광양코딩 (창덕)</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
 
       {/* 대기중인 상담문의 */}
-      <div className="space-y-4">
-        <h2 className="text-xl font-semibold text-sky-600">대기중인 상담문의</h2>
-        <div className="grid gap-6">
-          {filteredConsultations.filter(c => c.status === 'pending').length === 0 ? (
-            <Card>
-              <CardContent className="p-8 text-center">
-                <MessageSquare className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-                <p className="text-lg text-gray-500">대기중인 상담문의가 없습니다.</p>
-              </CardContent>
-            </Card>
-          ) : (
-            filteredConsultations.filter(c => c.status === 'pending').map((consultation) => (
+      {pendingConsultations.length > 0 && (
+        <div className="space-y-4">
+          <h2 className="text-2xl font-bold text-sky-600">대기중인 상담문의</h2>
+          {pendingConsultations.map((consultation) => (
             <Card key={consultation.id} className="border-2">
               <CardHeader>
                 <div className="flex items-center justify-between">
@@ -267,7 +256,6 @@ export default function AdminConsultationsPage() {
                         {subjectLabels[consultation.subject as keyof typeof subjectLabels]}
                       </p>
                     </div>
-                    
                     <div>
                       <Label className="text-sm font-medium">문의 내용</Label>
                       <p className="text-sm text-white whitespace-pre-wrap">
@@ -276,93 +264,95 @@ export default function AdminConsultationsPage() {
                     </div>
                   </div>
 
-                    {consultation.response_note ? (
-                      <div className="pt-4 border-t">
-                        <div className="flex items-start justify-between">
-                          <div className="flex-1">
-                            <Label className="text-sm font-medium">응답 내용</Label>
-                            <p className="text-sm text-white whitespace-pre-wrap">
-                              {consultation.response_note}
-                            </p>
-                          </div>
-                          <div className="ml-4">
-                            <Dialog>
-                              <DialogTrigger asChild>
-                                <Button 
-                                  variant="outline" 
-                                  size="sm"
-                                  onClick={() => setSelectedConsultation(consultation)}
-                                >
-                                  처리하기
-                                </Button>
-                              </DialogTrigger>
-                      <DialogContent>
-                        <DialogHeader>
-                          <DialogTitle>상담문의 처리하기</DialogTitle>
-                        </DialogHeader>
-                        <div className="space-y-4">
-                          <div>
-                            <Label>상태 선택</Label>
-                            <Select
-                              defaultValue={consultation.status}
-                              onValueChange={(value) => {
-                                setSelectedConsultation(prev => 
-                                  prev ? { ...prev, status: value as any } : null
-                                );
-                              }}
-                            >
-                              <SelectTrigger>
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="pending">대기중</SelectItem>
-                                <SelectItem value="completed">완료</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-                          
-                          <div>
-                            <Label>응답 내용 (선택사항)</Label>
-                            <Textarea
-                              placeholder="상담 응답 내용을 입력하세요..."
-                              value={responseNote}
-                              onChange={(e) => setResponseNote(e.target.value)}
-                              rows={4}
-                            />
-                          </div>
-                          
-                          <div className="flex justify-end gap-2">
-                            <Button
-                              variant="outline"
-                              onClick={() => {
-                                setSelectedConsultation(null);
-                                setResponseNote('');
-                              }}
-                            >
-                              취소
-                            </Button>
-                            <Button
-                              onClick={() => {
-                                if (selectedConsultation) {
-                                  handleStatusUpdate(selectedConsultation.id, selectedConsultation.status);
-                                }
-                              }}
-                              disabled={isUpdating}
-                            >
-                              {isUpdating ? '업데이트 중...' : '처리하기'}
-                            </Button>
-                          </div>
+                  {consultation.response_note ? (
+                    <div className="pt-4 border-t">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <Label className="text-sm font-medium">응답 내용</Label>
+                          <p className="text-sm text-white whitespace-pre-wrap">
+                            {consultation.response_note}
+                          </p>
                         </div>
-                      </DialogContent>
-                    </Dialog>
+                        <div className="ml-4">
+                          <Dialog>
+                            <DialogTrigger asChild>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setSelectedConsultation(consultation)}
+                              >
+                                처리하기
+                              </Button>
+                            </DialogTrigger>
+                            <DialogContent>
+                              <DialogHeader>
+                                <DialogTitle>상담문의 처리하기</DialogTitle>
+                              </DialogHeader>
+                              <div className="space-y-4">
+                                <div>
+                                  <Label>상태 변경</Label>
+                                  <Select
+                                    value={consultation.status}
+                                    onValueChange={(value) => {
+                                      setSelectedConsultation({
+                                        ...consultation,
+                                        status: value as 'pending' | 'completed'
+                                      });
+                                    }}
+                                  >
+                                    <SelectTrigger>
+                                      <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="pending">대기중</SelectItem>
+                                      <SelectItem value="completed">완료</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                </div>
+                                
+                                <div>
+                                  <Label>응답 내용 (선택사항)</Label>
+                                  <Textarea
+                                    placeholder="상담 응답 내용을 입력하세요..."
+                                    value={responseNote}
+                                    onChange={(e) => setResponseNote(e.target.value)}
+                                    rows={4}
+                                  />
+                                </div>
+                                
+                                <div className="flex justify-end gap-2">
+                                  <Button
+                                    variant="outline"
+                                    onClick={() => {
+                                      setSelectedConsultation(null);
+                                      setResponseNote('');
+                                    }}
+                                  >
+                                    취소
+                                  </Button>
+                                  <Button
+                                    onClick={() => {
+                                      if (selectedConsultation) {
+                                        handleStatusUpdate(selectedConsultation.id, selectedConsultation.status);
+                                      }
+                                    }}
+                                    disabled={isUpdating}
+                                  >
+                                    {isUpdating ? '업데이트 중...' : '처리하기'}
+                                  </Button>
+                                </div>
+                              </div>
+                            </DialogContent>
+                          </Dialog>
+                        </div>
                       </div>
                     </div>
                   ) : (
                     <div className="flex justify-end pt-4 border-t">
                       <Dialog>
                         <DialogTrigger asChild>
-                          <Button 
-                            variant="outline" 
+                          <Button
+                            variant="outline"
                             size="sm"
                             onClick={() => setSelectedConsultation(consultation)}
                           >
@@ -375,13 +365,14 @@ export default function AdminConsultationsPage() {
                           </DialogHeader>
                           <div className="space-y-4">
                             <div>
-                              <Label>상태 선택</Label>
+                              <Label>상태 변경</Label>
                               <Select
-                                defaultValue={consultation.status}
+                                value={consultation.status}
                                 onValueChange={(value) => {
-                                  setSelectedConsultation(prev => 
-                                    prev ? { ...prev, status: value as any } : null
-                                  );
+                                  setSelectedConsultation({
+                                    ...consultation,
+                                    status: value as 'pending' | 'completed'
+                                  });
                                 }}
                               >
                                 <SelectTrigger>
@@ -433,98 +424,89 @@ export default function AdminConsultationsPage() {
                 </div>
               </CardContent>
             </Card>
-          ))
-        )}
+          ))}
         </div>
-      </div>
+      )}
 
       {/* 완료된 상담문의 */}
-      <div className="space-y-4">
-        <h2 className="text-xl font-semibold text-sky-600">완료된 상담문의</h2>
-        <div className="grid gap-6">
-          {filteredConsultations.filter(c => c.status === 'completed').length === 0 ? (
-            <Card>
-              <CardContent className="p-8 text-center">
-                <MessageSquare className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-                <p className="text-lg text-gray-500">완료된 상담문의가 없습니다.</p>
-              </CardContent>
-            </Card>
-          ) : (
-            filteredConsultations.filter(c => c.status === 'completed').map((consultation) => (
-              <Card key={consultation.id} className="border-2">
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="flex items-center gap-2">
-                      <User className="h-5 w-5" />
-                      {consultation.name}
-                      <span className="text-sm font-normal text-white ml-2">
-                        {consultation.phone}
-                      </span>
-                      <span className="text-sm font-normal text-white ml-4">
-                        <Building2 className="h-4 w-4 inline mr-1" />
-                        {academyLabels[consultation.academy as keyof typeof academyLabels]}
-                      </span>
-                      <span className="text-sm font-normal text-white ml-4">
-                        <CalendarDays className="h-4 w-4 inline mr-1" />
-                        {formatDate(consultation.created_at)}
-                      </span>
-                    </CardTitle>
-                    <Badge className={statusColors[consultation.status]}>
-                      {statusLabels[consultation.status]}
-                    </Badge>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <Label className="text-sm font-medium">문의 과목</Label>
-                        <p className="text-sm text-white">
-                          {subjectLabels[consultation.subject as keyof typeof subjectLabels]}
-                        </p>
-                      </div>
-                      
-                      <div>
-                        <Label className="text-sm font-medium">문의 내용</Label>
-                        <p className="text-sm text-white whitespace-pre-wrap">
-                          {consultation.message}
-                        </p>
-                      </div>
+      {completedConsultations.length > 0 && (
+        <div className="space-y-4">
+          <h2 className="text-2xl font-bold text-sky-600">완료된 상담문의</h2>
+          {completedConsultations.map((consultation) => (
+            <Card key={consultation.id} className="border-2">
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="flex items-center gap-2">
+                    <User className="h-5 w-5" />
+                    {consultation.name}
+                    <span className="text-sm font-normal text-white ml-2">
+                      {consultation.phone}
+                    </span>
+                    <span className="text-sm font-normal text-white ml-4">
+                      <Building2 className="h-4 w-4 inline mr-1" />
+                      {academyLabels[consultation.academy as keyof typeof academyLabels]}
+                    </span>
+                    <span className="text-sm font-normal text-white ml-4">
+                      <CalendarDays className="h-4 w-4 inline mr-1" />
+                      {formatDate(consultation.created_at)}
+                    </span>
+                  </CardTitle>
+                  <Badge className={statusColors[consultation.status]}>
+                    {statusLabels[consultation.status]}
+                  </Badge>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label className="text-sm font-medium">문의 과목</Label>
+                      <p className="text-sm text-white">
+                        {subjectLabels[consultation.subject as keyof typeof subjectLabels]}
+                      </p>
                     </div>
+                    <div>
+                      <Label className="text-sm font-medium">문의 내용</Label>
+                      <p className="text-sm text-white whitespace-pre-wrap">
+                        {consultation.message}
+                      </p>
+                    </div>
+                  </div>
 
-                    {consultation.response_note ? (
-                      <div className="pt-4 border-t">
-                        <div className="flex items-start justify-between">
-                          <div className="flex-1">
-                            <Label className="text-sm font-medium">응답 내용</Label>
-                            <p className="text-sm text-white whitespace-pre-wrap">
-                              {consultation.response_note}
-                            </p>
-                          </div>
-                          <div className="ml-4">
-                            <Dialog>
-                              <DialogTrigger asChild>
-                                <Button 
-                                  variant="outline" 
-                                  size="sm"
-                                  onClick={() => setSelectedConsultation(consultation)}
-                                >
-                                  처리하기
-                                </Button>
-                              </DialogTrigger>
+                  {consultation.response_note ? (
+                    <div className="pt-4 border-t">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <Label className="text-sm font-medium">응답 내용</Label>
+                          <p className="text-sm text-white whitespace-pre-wrap">
+                            {consultation.response_note}
+                          </p>
+                        </div>
+                        <div className="ml-4">
+                          <Dialog>
+                            <DialogTrigger asChild>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setSelectedConsultation(consultation)}
+                              >
+                                처리하기
+                              </Button>
+                            </DialogTrigger>
                             <DialogContent>
                               <DialogHeader>
                                 <DialogTitle>상담문의 처리하기</DialogTitle>
                               </DialogHeader>
                               <div className="space-y-4">
                                 <div>
-                                  <Label>상태 선택</Label>
+                                  <Label>상태 변경</Label>
                                   <Select
-                                    defaultValue={consultation.status}
+                                    value={consultation.status}
                                     onValueChange={(value) => {
-                                      setSelectedConsultation(prev => 
-                                        prev ? { ...prev, status: value as any } : null
-                                      );
+                                      setSelectedConsultation({
+                                        ...consultation,
+                                        status: value as 'pending' | 'completed'
+                                      });
                                     }}
                                   >
                                     <SelectTrigger>
@@ -573,86 +555,94 @@ export default function AdminConsultationsPage() {
                           </Dialog>
                         </div>
                       </div>
-                    ) : (
-                      <div className="flex justify-end pt-4 border-t">
-                        <Dialog>
-                          <DialogTrigger asChild>
-                            <Button 
-                              variant="outline" 
-                              size="sm"
-                              onClick={() => setSelectedConsultation(consultation)}
-                            >
-                              처리하기
-                            </Button>
-                          </DialogTrigger>
-                          <DialogContent>
-                            <DialogHeader>
-                              <DialogTitle>상담문의 처리하기</DialogTitle>
-                            </DialogHeader>
-                            <div className="space-y-4">
-                              <div>
-                                <Label>상태 선택</Label>
-                                <Select
-                                  defaultValue={consultation.status}
-                                  onValueChange={(value) => {
-                                    setSelectedConsultation(prev => 
-                                      prev ? { ...prev, status: value as any } : null
-                                    );
-                                  }}
-                                >
-                                  <SelectTrigger>
-                                    <SelectValue />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    <SelectItem value="pending">대기중</SelectItem>
-                                    <SelectItem value="completed">완료</SelectItem>
-                                  </SelectContent>
-                                </Select>
-                              </div>
-                              
-                              <div>
-                                <Label>응답 내용 (선택사항)</Label>
-                                <Textarea
-                                  placeholder="상담 응답 내용을 입력하세요..."
-                                  value={responseNote}
-                                  onChange={(e) => setResponseNote(e.target.value)}
-                                  rows={4}
-                                />
-                              </div>
-                              
-                              <div className="flex justify-end gap-2">
-                                <Button
-                                  variant="outline"
-                                  onClick={() => {
-                                    setSelectedConsultation(null);
-                                    setResponseNote('');
-                                  }}
-                                >
-                                  취소
-                                </Button>
-                                <Button
-                                  onClick={() => {
-                                    if (selectedConsultation) {
-                                      handleStatusUpdate(selectedConsultation.id, selectedConsultation.status);
-                                    }
-                                  }}
-                                  disabled={isUpdating}
-                                >
-                                  {isUpdating ? '업데이트 중...' : '처리하기'}
-                                </Button>
-                              </div>
+                    </div>
+                  ) : (
+                    <div className="flex justify-end pt-4 border-t">
+                      <Dialog>
+                        <DialogTrigger asChild>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setSelectedConsultation(consultation)}
+                          >
+                            처리하기
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent>
+                          <DialogHeader>
+                            <DialogTitle>상담문의 처리하기</DialogTitle>
+                          </DialogHeader>
+                          <div className="space-y-4">
+                            <div>
+                              <Label>상태 변경</Label>
+                              <Select
+                                value={consultation.status}
+                                onValueChange={(value) => {
+                                  setSelectedConsultation({
+                                    ...consultation,
+                                    status: value as 'pending' | 'completed'
+                                  });
+                                }}
+                              >
+                                <SelectTrigger>
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="pending">대기중</SelectItem>
+                                  <SelectItem value="completed">완료</SelectItem>
+                                </SelectContent>
+                              </Select>
                             </div>
-                          </DialogContent>
-                        </Dialog>
-                      </div>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            ))
-          )}
+                            
+                            <div>
+                              <Label>응답 내용 (선택사항)</Label>
+                              <Textarea
+                                placeholder="상담 응답 내용을 입력하세요..."
+                                value={responseNote}
+                                onChange={(e) => setResponseNote(e.target.value)}
+                                rows={4}
+                              />
+                            </div>
+                            
+                            <div className="flex justify-end gap-2">
+                              <Button
+                                variant="outline"
+                                onClick={() => {
+                                  setSelectedConsultation(null);
+                                  setResponseNote('');
+                                }}
+                              >
+                                취소
+                              </Button>
+                              <Button
+                                onClick={() => {
+                                  if (selectedConsultation) {
+                                    handleStatusUpdate(selectedConsultation.id, selectedConsultation.status);
+                                  }
+                                }}
+                                disabled={isUpdating}
+                              >
+                                {isUpdating ? '업데이트 중...' : '처리하기'}
+                              </Button>
+                            </div>
+                          </div>
+                        </DialogContent>
+                      </Dialog>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          ))}
         </div>
-      </div>
+      )}
+
+      {filteredConsultations.length === 0 && (
+        <div className="text-center py-12">
+          <MessageSquare className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+          <p className="text-gray-500 text-lg">상담문의가 없습니다.</p>
+        </div>
+      )}
     </div>
   );
 }

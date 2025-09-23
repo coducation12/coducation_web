@@ -6,13 +6,13 @@ export function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-start">
           {/* 왼쪽: 학원 정보 */}
           <div className="space-y-1">
-            <div className="text-sm">
-              <span className="font-semibold">코딩메이커(중마)</span>
-              <span className="text-muted-foreground ml-2">061-745-3355</span>
+            <div className="text-sm leading-tight">
+              <span className="font-semibold text-sm">코딩메이커(중마)</span>
+              <span className="text-muted-foreground text-sm ml-2">061-745-3355</span>
             </div>
-            <div className="text-sm">
-              <span className="font-semibold">광양코딩(창덕)</span>
-              <span className="text-muted-foreground ml-2">010-1234-5678</span>
+            <div className="text-sm leading-tight">
+              <span className="font-semibold text-sm">광양코딩(창덕)</span>
+              <span className="text-muted-foreground text-sm ml-2">010-1234-5678</span>
             </div>
           </div>
 

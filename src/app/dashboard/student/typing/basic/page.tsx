@@ -1232,20 +1232,6 @@ export default function BasicPage() {
                   )}
                 </div>
                 
-                {/* 입력 안내 */}
-                {currentCharIndex >= 50 && (
-                  <div className="text-slate-400 text-xs sm:text-sm space-y-1">
-                    <div>
-                      단어 입력 후 <span className="text-cyan-400">Enter</span> 또는 <span className="text-cyan-400">Space</span>를 눌러주세요
-                    </div>
-                    <div className="text-slate-500">
-                      {language === 'korean' 
-                        ? '💡 한글 입력이 안 되면 한/영 키를 눌러주세요'
-                        : '💡 English input not working? Press 한/영 key'
-                      }
-                    </div>
-                  </div>
-                )}
               </div>
             </div>
 

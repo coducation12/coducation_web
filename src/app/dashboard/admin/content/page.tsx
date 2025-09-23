@@ -55,7 +55,15 @@ export default function ContentManagePage() {
         description: '실제 문제를 해결하는 프로젝트를 통해 코딩 실력과 문제 해결 능력을 동시에 기릅니다.',
         image: 'https://placehold.co/600x400.png'
       }
-    ]
+    ],
+    featured_cards_title: '특별 프로그램',
+    featured_cards_subtitle: '다양한 특별 프로그램과 활동을 통해 학생들의 잠재력을 극대화합니다.',
+    featured_card_1_title: '창의적 프로젝트',
+    featured_card_1_image_1: 'https://placehold.co/300x200.png',
+    featured_card_1_image_2: 'https://placehold.co/300x200.png',
+    featured_card_2_title: '학습 환경',
+    featured_card_2_image_1: 'https://placehold.co/300x200.png',
+    featured_card_2_image_2: 'https://placehold.co/300x200.png'
   });
 
   // 컨텐츠 로드
@@ -70,7 +78,7 @@ export default function ContentManagePage() {
     loadContent();
   }, []);
 
-  const handleImageUpload = async (section: 'about' | 'academy', slideIndex?: number) => {
+  const handleImageUpload = async (section: 'about' | 'academy' | 'featured', slideIndex?: number, cardNumber?: number, imageNumber?: number) => {
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = 'image/*';
@@ -133,13 +141,16 @@ export default function ContentManagePage() {
 
           if (section === 'about') {
             setContent(prev => ({ ...prev, about_image: urlData.publicUrl }));
-          } else if (slideIndex !== undefined) {
+          } else if (section === 'academy' && slideIndex !== undefined) {
             setContent(prev => ({
               ...prev,
               academy_slides: prev.academy_slides.map((slide, idx) => 
                 idx === slideIndex ? { ...slide, image: urlData.publicUrl } : slide
               )
             }));
+          } else if (section === 'featured' && cardNumber && imageNumber) {
+            const imageKey = `featured_card_${cardNumber}_image_${imageNumber}`;
+            setContent(prev => ({ ...prev, [imageKey]: urlData.publicUrl }));
           }
         } catch (error) {
           console.error('이미지 업로드 오류:', error);
@@ -164,6 +175,14 @@ export default function ContentManagePage() {
     formData.append('academy_subtitle', content.academy_subtitle);
     formData.append('academy_features', JSON.stringify(content.academy_features));
     formData.append('academy_slides', JSON.stringify(content.academy_slides));
+    formData.append('featured_cards_title', content.featured_cards_title);
+    formData.append('featured_cards_subtitle', content.featured_cards_subtitle);
+    formData.append('featured_card_1_title', content.featured_card_1_title);
+    formData.append('featured_card_1_image_1', content.featured_card_1_image_1);
+    formData.append('featured_card_1_image_2', content.featured_card_1_image_2);
+    formData.append('featured_card_2_title', content.featured_card_2_title);
+    formData.append('featured_card_2_image_1', content.featured_card_2_image_1);
+    formData.append('featured_card_2_image_2', content.featured_card_2_image_2);
 
     const result = await updateContent(formData);
     if (result.success) {
@@ -541,6 +560,171 @@ export default function ContentManagePage() {
                   </CardContent>
                 </Card>
               ))}
+            </div>
+
+            {/* 새로운 2개 카드 섹션 */}
+            <div className="mt-16">
+              <div className="flex flex-col items-center text-center space-y-6 mb-12">
+                <div className="space-y-2 w-full max-w-4xl">
+                  <label className="text-orange-300 text-sm font-bold tracking-wider">🏷️ 카드 섹션 제목</label>
+                  <Input
+                    value={content.featured_cards_title}
+                    onChange={(e) => setContent(prev => ({ ...prev, featured_cards_title: e.target.value }))}
+                    className="text-3xl font-bold tracking-tighter sm:text-4xl font-headline bg-transparent border-2 border-orange-400/50 text-center text-white p-4"
+                    placeholder="카드 섹션 제목"
+                  />
+                </div>
+                <div className="space-y-2 w-full max-w-2xl">
+                  <label className="text-orange-300 text-sm font-bold tracking-wider">📝 카드 섹션 부제목</label>
+                  <Textarea
+                    value={content.featured_cards_subtitle}
+                    onChange={(e) => setContent(prev => ({ ...prev, featured_cards_subtitle: e.target.value }))}
+                    className="text-lg text-muted-foreground bg-transparent border-2 border-orange-400/30 text-center resize-none p-3"
+                    rows={2}
+                    placeholder="카드 섹션 부제목"
+                  />
+                </div>
+              </div>
+              
+              <div className="grid gap-8 md:grid-cols-2">
+                {/* 첫 번째 카드 */}
+                <Card className="border-2 border-orange-400/30 bg-orange-900/5 overflow-hidden">
+                  <CardHeader className="text-center pb-4">
+                    <div className="space-y-2">
+                      <label className="text-orange-300 text-sm font-bold tracking-wider">🏷️ 첫 번째 카드 제목</label>
+                      <Input
+                        value={content.featured_card_1_title}
+                        onChange={(e) => setContent(prev => ({ ...prev, featured_card_1_title: e.target.value }))}
+                        className="text-2xl font-headline text-center bg-transparent border-2 border-primary/50 text-white p-3"
+                        placeholder="첫 번째 카드 제목"
+                      />
+                    </div>
+                  </CardHeader>
+                  <CardContent className="p-0">
+                    <div className="grid grid-cols-2 gap-2 p-4">
+                      <div 
+                        className="relative h-32 rounded-lg overflow-hidden cursor-pointer group"
+                        onClick={() => handleImageUpload('featured', undefined, 1, 1)}
+                      >
+                        <Image 
+                          src={content.featured_card_1_image_1} 
+                          alt="첫 번째 카드 이미지 1"
+                          fill
+                          className="object-cover"
+                        />
+                        <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center">
+                          <div className="text-white text-center">
+                            <Camera className="w-6 h-6 mx-auto mb-1" />
+                            <p className="text-xs font-bold">이미지 변경</p>
+                          </div>
+                        </div>
+                        {isUploading && (
+                          <div className="absolute inset-0 bg-black/80 flex items-center justify-center">
+                            <div className="text-white text-center">
+                              <div className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full mx-auto mb-1"></div>
+                              <p className="text-xs">업로드 중...</p>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                      <div 
+                        className="relative h-32 rounded-lg overflow-hidden cursor-pointer group"
+                        onClick={() => handleImageUpload('featured', undefined, 1, 2)}
+                      >
+                        <Image 
+                          src={content.featured_card_1_image_2} 
+                          alt="첫 번째 카드 이미지 2"
+                          fill
+                          className="object-cover"
+                        />
+                        <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center">
+                          <div className="text-white text-center">
+                            <Camera className="w-6 h-6 mx-auto mb-1" />
+                            <p className="text-xs font-bold">이미지 변경</p>
+                          </div>
+                        </div>
+                        {isUploading && (
+                          <div className="absolute inset-0 bg-black/80 flex items-center justify-center">
+                            <div className="text-white text-center">
+                              <div className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full mx-auto mb-1"></div>
+                              <p className="text-xs">업로드 중...</p>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* 두 번째 카드 */}
+                <Card className="border-2 border-orange-400/30 bg-orange-900/5 overflow-hidden">
+                  <CardHeader className="text-center pb-4">
+                    <div className="space-y-2">
+                      <label className="text-orange-300 text-sm font-bold tracking-wider">🏷️ 두 번째 카드 제목</label>
+                      <Input
+                        value={content.featured_card_2_title}
+                        onChange={(e) => setContent(prev => ({ ...prev, featured_card_2_title: e.target.value }))}
+                        className="text-2xl font-headline text-center bg-transparent border-2 border-primary/50 text-white p-3"
+                        placeholder="두 번째 카드 제목"
+                      />
+                    </div>
+                  </CardHeader>
+                  <CardContent className="p-0">
+                    <div className="grid grid-cols-2 gap-2 p-4">
+                      <div 
+                        className="relative h-32 rounded-lg overflow-hidden cursor-pointer group"
+                        onClick={() => handleImageUpload('featured', undefined, 2, 1)}
+                      >
+                        <Image 
+                          src={content.featured_card_2_image_1} 
+                          alt="두 번째 카드 이미지 1"
+                          fill
+                          className="object-cover"
+                        />
+                        <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center">
+                          <div className="text-white text-center">
+                            <Camera className="w-6 h-6 mx-auto mb-1" />
+                            <p className="text-xs font-bold">이미지 변경</p>
+                          </div>
+                        </div>
+                        {isUploading && (
+                          <div className="absolute inset-0 bg-black/80 flex items-center justify-center">
+                            <div className="text-white text-center">
+                              <div className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full mx-auto mb-1"></div>
+                              <p className="text-xs">업로드 중...</p>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                      <div 
+                        className="relative h-32 rounded-lg overflow-hidden cursor-pointer group"
+                        onClick={() => handleImageUpload('featured', undefined, 2, 2)}
+                      >
+                        <Image 
+                          src={content.featured_card_2_image_2} 
+                          alt="두 번째 카드 이미지 2"
+                          fill
+                          className="object-cover"
+                        />
+                        <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center">
+                          <div className="text-white text-center">
+                            <Camera className="w-6 h-6 mx-auto mb-1" />
+                            <p className="text-xs font-bold">이미지 변경</p>
+                          </div>
+                        </div>
+                        {isUploading && (
+                          <div className="absolute inset-0 bg-black/80 flex items-center justify-center">
+                            <div className="text-white text-center">
+                              <div className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full mx-auto mb-1"></div>
+                              <p className="text-xs">업로드 중...</p>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
             </div>
           </div>
         </section>

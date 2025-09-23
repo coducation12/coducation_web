@@ -154,6 +154,78 @@ export function AcademySection() {
           </Card>
         ))}
       </div>
+
+      {/* 새로운 2개 카드 섹션 */}
+      <div className="mt-16">
+        <div className="flex flex-col items-center text-center space-y-4 mb-12">
+          <h3 className="text-3xl font-bold tracking-tighter sm:text-4xl font-headline">
+            {content?.featured_cards_title || '특별 프로그램'}
+          </h3>
+          <p className="max-w-2xl text-lg text-muted-foreground">
+            {content?.featured_cards_subtitle || '다양한 특별 프로그램과 활동을 통해 학생들의 잠재력을 극대화합니다.'}
+          </p>
+        </div>
+        
+        <div className="grid gap-8 md:grid-cols-2">
+          {/* 첫 번째 카드 */}
+          <Card className="cyber-card overflow-hidden">
+            <CardHeader className="text-center pb-4">
+              <CardTitle className="text-2xl font-headline">
+                {content?.featured_card_1_title || '창의적 프로젝트'}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-0">
+              <div className="grid grid-cols-2 gap-2 p-4">
+                <div className="relative h-32 rounded-lg overflow-hidden">
+                  <Image 
+                    src={content?.featured_card_1_image_1 || 'https://placehold.co/300x200.png'} 
+                    alt="프로젝트 이미지 1"
+                    fill
+                    className="object-cover"
+                  />
+                </div>
+                <div className="relative h-32 rounded-lg overflow-hidden">
+                  <Image 
+                    src={content?.featured_card_1_image_2 || 'https://placehold.co/300x200.png'} 
+                    alt="프로젝트 이미지 2"
+                    fill
+                    className="object-cover"
+                  />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* 두 번째 카드 */}
+          <Card className="cyber-card overflow-hidden">
+            <CardHeader className="text-center pb-4">
+              <CardTitle className="text-2xl font-headline">
+                {content?.featured_card_2_title || '학습 환경'}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-0">
+              <div className="grid grid-cols-2 gap-2 p-4">
+                <div className="relative h-32 rounded-lg overflow-hidden">
+                  <Image 
+                    src={content?.featured_card_2_image_1 || 'https://placehold.co/300x200.png'} 
+                    alt="학습환경 이미지 1"
+                    fill
+                    className="object-cover"
+                  />
+                </div>
+                <div className="relative h-32 rounded-lg overflow-hidden">
+                  <Image 
+                    src={content?.featured_card_2_image_2 || 'https://placehold.co/300x200.png'} 
+                    alt="학습환경 이미지 2"
+                    fill
+                    className="object-cover"
+                  />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
     </section>
   );
 }

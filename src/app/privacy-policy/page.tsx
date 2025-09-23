@@ -98,9 +98,9 @@ export default function PrivacyPolicyPage() {
             <div className="text-slate-300 mb-6">
               <p className="mb-2">개인정보 처리에 관한 업무를 총괄해서 책임지고, 개인정보 처리와 관련한 정보주체의 불만처리 및 피해구제 등을 위하여 아래와 같이 개인정보 보호책임자를 지정하고 있습니다:</p>
               <div className="bg-slate-700/50 p-4 rounded-lg">
-                <p><strong>개인정보 보호책임자:</strong> 김코딩</p>
+                <p><strong>개인정보 보호책임자:</strong> 김경종</p>
                 <p><strong>연락처:</strong> 061-745-3355</p>
-                <p><strong>이메일:</strong> privacy@coducation.com</p>
+                <p><strong>이메일:</strong> coducationone@gmail.com</p>
               </div>
             </div>
 

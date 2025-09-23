@@ -1,67 +1,9 @@
 'use client';
 
 import Image from 'next/image';
-import { NoticeCard } from '@/components/notices/notice-card';
 import { getContent } from '@/lib/actions';
 import { useState, useEffect } from 'react';
-import type { Notice } from '@/types';
 
-const mockNotices: Notice[] = [
-  {
-    id: '1',
-    title: '여름방학 특강 개설 안내',
-    content: '파이썬 기초와 게임 개발 특강이 개설되었습니다. 많은 관심 바랍니다.',
-    author_id: 'admin-uuid',
-    author_name: '관리자',
-    is_notice: true,
-    created_at: '2024-07-20T10:00:00Z',
-  },
-  {
-    id: '2',
-    title: '새로운 커리큘럼: 웹 풀스택 과정',
-    content: 'React와 Node.js를 다루는 웹 풀스택 과정이 새롭게 추가되었습니다.',
-    author_id: 'teacher-uuid-1',
-    author_name: '김선생',
-    is_notice: false,
-    created_at: '2024-07-18T14:30:00Z',
-  },
-  {
-    id: '3',
-    title: '코딩 경진대회 수상 소식',
-    content: '본원 학생이 전국 코딩 경진대회에서 대상을 수상했습니다!',
-    author_id: 'admin-uuid',
-    author_name: '관리자',
-    is_notice: true,
-    created_at: '2024-07-15T09:00:00Z',
-  },
-  {
-    id: '4',
-    title: '학원 시설 점검 안내 (7/25)',
-    content: '7월 25일은 학원 시설 전체 점검으로 하루 휴강합니다.',
-    author_id: 'admin-uuid',
-    author_name: '관리자',
-    is_notice: true,
-    created_at: '2024-07-14T11:00:00Z',
-  },
-  {
-    id: '5',
-    title: '학부모 간담회 개최',
-    content: '자녀의 학습 현황 공유 및 교육 상담을 위한 학부모 간담회를 개최합니다.',
-    author_id: 'admin-uuid',
-    author_name: '관리자',
-    is_notice: false,
-    created_at: '2024-07-12T10:00:00Z',
-  },
-  {
-    id: '6',
-    title: '블록코딩반 신규 모집',
-    content: '초등학생을 위한 스크래치, 엔트리 블록코딩반을 새롭게 모집합니다.',
-    author_id: 'teacher-uuid-3',
-    author_name: '박민준 선생님',
-    is_notice: false,
-    created_at: '2024-07-10T15:00:00Z',
-  },
-];
 
 export function AboutSection() {
   const [content, setContent] = useState<any>(null);
@@ -113,16 +55,6 @@ export function AboutSection() {
         </div>
       </div>
 
-      <div className="mt-24">
-        <div className="flex flex-col items-center text-center space-y-4 mb-12">
-            <h3 className="text-4xl font-bold tracking-tighter sm:text-5xl font-headline">Coducation 소식</h3>
-        </div>
-        <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
-            {mockNotices.map((notice) => (
-                <NoticeCard key={notice.id} notice={notice} />
-            ))}
-        </div>
-      </div>
     </section>
   );
 }

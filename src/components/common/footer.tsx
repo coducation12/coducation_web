@@ -1,5 +1,4 @@
-import { Code2, Github, Instagram, Facebook } from 'lucide-react';
-import Link from 'next/link';
+import { Code2 } from 'lucide-react';
 
 export function Footer() {
   return (
@@ -12,17 +11,6 @@ export function Footer() {
             <br />
             <span className="font-headline">&copy; 2024 Coducation. All Rights Reserved.</span>
           </p>
-        </div>
-        <div className="flex items-center gap-4">
-          <Link href="#" aria-label="Github">
-            <Github className="h-5 w-5 text-muted-foreground transition-colors hover:text-foreground" />
-          </Link>
-          <Link href="#" aria-label="Instagram">
-            <Instagram className="h-5 w-5 text-muted-foreground transition-colors hover:text-foreground" />
-          </Link>
-          <Link href="#" aria-label="Facebook">
-            <Facebook className="h-5 w-5 text-muted-foreground transition-colors hover:text-foreground" />
-          </Link>
         </div>
       </div>
     </footer>

@@ -228,32 +228,8 @@ export default function WordPage() {
     return words[nextIndex % words.length];
   }, [currentCharIndex, words]);
 
-  // 현재 단어와 다음 단어 업데이트
-  const updateCurrentAndNextChar = useCallback(() => {
-    const currentItem = getCurrentItem();
-    const nextItem = getNextItem();
-    
-    setCurrentChar(currentItem);
-    setNextChar(nextItem);
-    setCurrentWord(currentItem);
-    
 
-    
-    // 한글 자모 분해
-    if (language === 'korean' && currentItem) {
-      const decomposed = currentItem.split('').flatMap(char => decomposeHangul(char));
-      setCurrentJamos(decomposed);
-      setCurrentJamoIndex(0);
-    } else {
-      setCurrentJamos([]);
-      setCurrentJamoIndex(0);
-    }
-  }, [getCurrentItem, getNextItem, language, currentCharIndex]);
 
-  // 현재 상태가 변경될 때마다 자동 업데이트
-  useEffect(() => {
-    updateCurrentAndNextChar();
-  }, [language, currentCharIndex, updateCurrentAndNextChar]);
 
   // 언어 변경 시 단어 재생성
   useEffect(() => {
@@ -380,31 +356,156 @@ export default function WordPage() {
     }
   }, []);
 
-  // 언어 변경 시 초기화
-  const changeLanguage = () => {
-    const newLanguage = language === 'korean' ? 'english' : 'korean';
-    setLanguage(newLanguage);
-    setCurrentCharIndex(0);
-    setInputHistory([]);
-    setCorrectHistory([]);
-    setUserInput('');
-    setWordTimings([]);
-    setCurrentWordStartTime(null);
-    wordStartTimeRef.current = null;
-    setCurrentJamoIndex(0);
-    setCurrentJamos([]);
-    setIsComposing(false);
-    setCompositionData('');
-    setLastWordCPM(null);
-    setStartTime(null);
-    setHasStarted(false);
-    setTotalKeyPresses(0);
-    setResult(null);
-    setShowResultModal(false);
+  // 자동 한영 전환 함수 (개선된 버전)
+  const switchToKoreanIME = useCallback(async () => {
+    console.log('한글 IME로 전환 시도');
     
-    // IME 상태 힌트 설정
-    setTimeout(() => setIMEHint(newLanguage), 100);
-  };
+    try {
+      const inputElement = document.querySelector('input[type="text"]') as HTMLInputElement;
+      if (!inputElement) {
+        console.log('입력 요소를 찾을 수 없음');
+        return;
+      }
+
+      // 1. 기본 속성 설정
+      inputElement.setAttribute('lang', 'ko');
+      inputElement.setAttribute('inputmode', 'text');
+      inputElement.setAttribute('data-lang', 'korean');
+      
+      // 2. IME 힌트 설정
+      setIMEHint('korean');
+      
+      // 3. navigator.keyboard API 시도 (HTTPS에서만 작동)
+      if ('keyboard' in navigator && 'lock' in (navigator as any).keyboard) {
+        try {
+          await (navigator as any).keyboard.lock(['HangulMode']);
+          console.log('navigator.keyboard.lock 성공');
+        } catch (keyboardError) {
+          console.log('navigator.keyboard.lock 실패:', keyboardError);
+        }
+      }
+      
+      // 4. 포커스 재설정으로 IME 변경 유도
+      inputElement.blur();
+      setTimeout(() => {
+        inputElement.focus();
+        
+        // 5. 한글 입력을 위한 추가 시도
+        try {
+          if ('setComposition' in inputElement) {
+            (inputElement as any).setComposition('', 'ko');
+          }
+          
+          // 6. 키보드 이벤트 시뮬레이션 (한글 전환 키)
+          const event = new KeyboardEvent('keydown', {
+            key: 'HangulMode',
+            code: 'HangulMode',
+            keyCode: 21, // 한글 전환 키 코드
+            which: 21,
+            bubbles: true,
+            cancelable: true
+          });
+          inputElement.dispatchEvent(event);
+        } catch (compositionError) {
+          console.log('setComposition 실패:', compositionError);
+        }
+      }, 50);
+      
+    } catch (error) {
+      console.log('한글 IME 전환 실패:', error);
+      // 실패 시 기본 IME 힌트만 설정
+      setIMEHint('korean');
+    }
+  }, [setIMEHint]);
+
+  const switchToEnglishIME = useCallback(async () => {
+    console.log('영어 IME로 전환 시도');
+    
+    try {
+      const inputElement = document.querySelector('input[type="text"]') as HTMLInputElement;
+      if (!inputElement) {
+        console.log('입력 요소를 찾을 수 없음');
+        return;
+      }
+
+      // 1. 기본 속성 설정
+      inputElement.setAttribute('lang', 'en');
+      inputElement.setAttribute('inputmode', 'text');
+      inputElement.setAttribute('data-lang', 'english');
+      
+      // 2. IME 힌트 설정
+      setIMEHint('english');
+      
+      // 3. navigator.keyboard API 시도
+      if ('keyboard' in navigator && 'lock' in (navigator as any).keyboard) {
+        try {
+          await (navigator as any).keyboard.lock(['EnglishMode']);
+          console.log('navigator.keyboard.lock 성공');
+        } catch (keyboardError) {
+          console.log('navigator.keyboard.lock 실패:', keyboardError);
+        }
+      }
+      
+      // 4. 포커스 재설정으로 IME 변경 유도
+      inputElement.blur();
+      setTimeout(() => {
+        inputElement.focus();
+        
+        // 5. 영어 입력을 위한 추가 시도
+        try {
+          // 6. 키보드 이벤트 시뮬레이션 (영어 전환 키)
+          const event = new KeyboardEvent('keydown', {
+            key: 'HangulMode',
+            code: 'HangulMode', 
+            keyCode: 21, // 한글 전환 키 코드 (토글)
+            which: 21,
+            bubbles: true,
+            cancelable: true
+          });
+          inputElement.dispatchEvent(event);
+        } catch (eventError) {
+          console.log('키보드 이벤트 시뮬레이션 실패:', eventError);
+        }
+      }, 50);
+      
+    } catch (error) {
+      console.log('영어 IME 전환 실패:', error);
+      // 실패 시 기본 IME 힌트만 설정
+      setIMEHint('english');
+    }
+  }, [setIMEHint]);
+
+  // 현재 단어와 다음 단어 업데이트
+  const updateCurrentAndNextChar = useCallback(() => {
+    const currentItem = getCurrentItem();
+    const nextItem = getNextItem();
+    
+    setCurrentChar(currentItem);
+    setNextChar(nextItem);
+    setCurrentWord(currentItem);
+    
+    // 자동 한영 전환
+    if (language === 'korean') {
+      switchToKoreanIME();
+    } else {
+      switchToEnglishIME();
+    }
+    
+    // 한글 자모 분해
+    if (language === 'korean' && currentItem) {
+      const decomposed = currentItem.split('').flatMap(char => decomposeHangul(char));
+      setCurrentJamos(decomposed);
+      setCurrentJamoIndex(0);
+    } else {
+      setCurrentJamos([]);
+      setCurrentJamoIndex(0);
+    }
+  }, [getCurrentItem, getNextItem, language, currentCharIndex, switchToKoreanIME, switchToEnglishIME]);
+
+  // 현재 상태가 변경될 때마다 자동 업데이트
+  useEffect(() => {
+    updateCurrentAndNextChar();
+  }, [language, currentCharIndex, updateCurrentAndNextChar]);
 
   // 연습 초기화
   const resetTyping = () => {
@@ -661,10 +762,18 @@ export default function WordPage() {
     };
   }, [checkWordInput, userInput, showResultModal]);
 
-  // 페이지 로드 시 IME 힌트 설정
+  // 페이지 로드 시 자동 한영 전환
   useEffect(() => {
-    setTimeout(() => setIMEHint(language), 200);
-  }, [language, setIMEHint]);
+    const timer = setTimeout(() => {
+      if (language === 'korean') {
+        switchToKoreanIME();
+      } else {
+        switchToEnglishIME();
+      }
+    }, 200);
+    
+    return () => clearTimeout(timer);
+  }, [language, switchToKoreanIME, switchToEnglishIME]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 relative overflow-hidden">
@@ -677,80 +786,66 @@ export default function WordPage() {
         <div className="absolute top-1/3 right-1/3 w-12 h-12 border border-cyan-300 rounded-full animate-pulse" style={{animationDelay: '1.5s'}}></div>
       </div>
 
-      <div className="relative z-10 w-full h-full flex flex-col p-6 pt-20 lg:pt-6">
+      <div className="relative z-10 w-full h-full flex flex-col p-3 pt-16 sm:p-4 sm:pt-18 lg:p-6 lg:pt-6">
           {/* 헤더 */}
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center justify-between mb-2 sm:mb-3 lg:mb-4">
         <button
           onClick={() => router.back()}
-            className="p-2 hover:bg-cyan-500/20 rounded-lg transition-colors border border-cyan-500/30"
+            className="p-1.5 sm:p-2 hover:bg-cyan-500/20 rounded-lg transition-colors border border-cyan-500/30"
         >
-            <ArrowLeft className="w-6 h-6 text-cyan-400" />
+            <ArrowLeft className="w-5 h-5 sm:w-6 sm:h-6 text-cyan-400" />
         </button>
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-cyan-400 via-blue-400 to-purple-400 bg-clip-text text-transparent">
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-cyan-400 via-blue-400 to-purple-400 bg-clip-text text-transparent">
             낱말연습
           </h1>
-          <div className="w-16"></div>
-      </div>
-
-      <div className="max-w-6xl mx-auto w-full flex-1 flex flex-col">
-                  {/* 언어 선택 */}
-          <div className="flex justify-center lg:justify-end mb-6">
-          <div className="flex bg-slate-800/80 backdrop-blur-sm rounded-full p-1 shadow-lg border border-cyan-500/30">
+          <div className="flex items-center gap-2">
             <button
-              onClick={() => changeLanguage()}
-              className={cn(
-                "px-4 lg:px-6 py-2 rounded-full font-medium transition-all duration-200",
-                language === 'korean'
-                  ? "bg-gradient-to-r from-cyan-500 to-blue-500 text-white shadow-lg shadow-cyan-500/25"
-                  : "text-cyan-300 hover:text-cyan-100"
-              )}
+              onClick={() => switchToKoreanIME()}
+              className="px-3 py-1.5 text-xs bg-cyan-500/20 text-cyan-300 rounded-lg border border-cyan-500/30 hover:bg-cyan-500/30 transition-colors"
             >
-              한국어
+              한글
             </button>
             <button
-              onClick={() => changeLanguage()}
-              className={cn(
-                "px-4 lg:px-6 py-2 rounded-full font-medium transition-all duration-200",
-                language === 'english'
-                  ? "bg-gradient-to-r from-cyan-500 to-blue-500 text-white shadow-lg shadow-cyan-500/25"
-                  : "text-cyan-300 hover:text-cyan-100"
-              )}
+              onClick={() => switchToEnglishIME()}
+              className="px-3 py-1.5 text-xs bg-cyan-500/20 text-cyan-300 rounded-lg border border-cyan-500/30 hover:bg-cyan-500/30 transition-colors"
             >
               ENG
             </button>
           </div>
-        </div>
+      </div>
+
+      <div className="max-w-6xl mx-auto w-full flex-1 flex flex-col">
 
 
 
           {/* 메인 연습 영역 */}
-          <div className="flex-1 flex flex-col items-center justify-center mb-4">
+          <div className="flex-1 flex flex-col items-center justify-center mb-1 sm:mb-2 animate-in fade-in-0 slide-in-from-bottom-4 duration-500">
             {/* 이전 단어 CPM 표시 (고정 공간) */}
-            <div className="mb-2 text-center h-8 flex items-center justify-center">
+            <div className="mb-1 text-center h-4 sm:h-5 lg:h-6 flex items-center justify-center">
               {lastWordCPM !== null ? (
-                <div className="text-cyan-400 text-2xl font-bold">
+                <div className="text-cyan-400 text-lg sm:text-xl font-bold">
                   {lastWordCPM} CPM
                 </div>
               ) : (
-                <div className="h-8"></div> // 빈 공간 유지
+                <div className="h-4 sm:h-5 lg:h-6"></div> // 빈 공간 유지
               )}
             </div>
             
 
             
             {/* 현재 입력할 단어와 다음 단어 */}
-            <div className="flex items-center justify-center gap-6 mb-4 relative">
+            <div className="flex items-center justify-center gap-3 sm:gap-4 lg:gap-6 mb-1 sm:mb-2 relative">
               {/* 현재 입력할 단어 - 항상 중앙에 */}
-              <div className="bg-gradient-to-br from-cyan-500 to-blue-600 rounded-3xl p-6 lg:p-8 shadow-2xl shadow-cyan-500/25 border border-cyan-400/50 transition-all duration-200">
+              <div className="bg-gradient-to-br from-cyan-500 to-blue-600 rounded-2xl sm:rounded-3xl p-4 sm:p-6 lg:p-8 shadow-2xl shadow-cyan-500/25 border border-cyan-400/50 transition-all duration-300 animate-in zoom-in-95 fade-in-0 duration-300">
                 <div className="text-center">
                   <div className={cn(
-                    "text-sm mb-4 opacity-80",
+                    "text-xs sm:text-sm mb-2 sm:mb-3 lg:mb-4 opacity-80",
                     isWrong ? "text-red-800" : "text-cyan-100"
                   )}>
                     {isWrong ? "틀렸습니다!" : "입력할 단어"}
                   </div>
                   <div className={cn(
-                    "text-5xl lg:text-7xl font-bold leading-none transition-colors duration-150",
+                    "text-3xl sm:text-4xl lg:text-5xl xl:text-7xl font-bold leading-none transition-colors duration-150",
                     isWrong ? "text-red-800" : "text-white"
                   )}>
                     {currentChar}
@@ -760,10 +855,10 @@ export default function WordPage() {
 
               {/* 다음 입력할 단어 - 오른쪽에 작게 */}
               {nextChar && (
-                <div className="bg-transparent rounded-2xl p-6 border border-slate-600/50 absolute right-0 top-1/2 transform -translate-y-1/2 translate-x-[120%]">
+                <div className="bg-transparent rounded-xl sm:rounded-2xl p-3 sm:p-4 lg:p-6 border border-slate-600/50 absolute right-0 top-1/2 transform -translate-y-1/2 translate-x-[100%] sm:translate-x-[120%]">
                   <div className="text-center">
-                    <div className="text-slate-400 text-xs mb-2 opacity-80">다음 단어</div>
-                    <div className="text-slate-300 text-4xl font-bold leading-none">
+                    <div className="text-slate-400 text-xs mb-1 sm:mb-2 opacity-80">다음 단어</div>
+                    <div className="text-slate-300 text-2xl sm:text-3xl lg:text-4xl font-bold leading-none">
                       {nextChar}
                     </div>
                     </div>
@@ -772,12 +867,12 @@ export default function WordPage() {
                   </div>
 
             {/* 단어 입력창 */}
-            <div className="mb-4 text-center">
+            <div className="mb-1 sm:mb-2 text-center">
               <div className="bg-transparent">
                 {/* 입력 필드 */}
-                <div className="mb-4">
+                <div className="mb-1 sm:mb-2">
                   {/* 글자별 표시를 위한 커스텀 입력 디스플레이 */}
-                                      <div className="w-full max-w-2xl mx-auto px-2 py-2 text-center text-3xl lg:text-5xl font-bold min-h-[50px] lg:min-h-[60px] flex items-center justify-center">
+                                      <div className="w-full max-w-xl sm:max-w-2xl mx-auto px-2 py-1 sm:py-2 text-center text-2xl sm:text-3xl lg:text-5xl font-bold min-h-[40px] sm:min-h-[50px] lg:min-h-[60px] flex items-center justify-center">
                     {userInput.split('').map((char, index) => {
                       const isCorrect = index < currentWord.length && char === currentWord[index];
                       
@@ -829,17 +924,17 @@ export default function WordPage() {
                     </div>
                     
                                                 {/* 입력 안내 */}
-                <div className="text-slate-400 text-sm">
+                <div className="text-slate-400 text-xs sm:text-sm">
                   단어 입력 후 <span className="text-cyan-400">Enter</span> 또는 <span className="text-cyan-400">Space</span>를 눌러주세요
                 </div>
                         </div>
                     </div>
                     
           {/* 가상 키보드 (모바일에서 숨김) */}
-            <div className="hidden lg:block bg-slate-800/90 backdrop-blur-sm rounded-3xl p-6 shadow-2xl border border-cyan-500/30 w-full max-w-4xl">
+            <div className="hidden lg:block bg-slate-800/90 backdrop-blur-sm rounded-2xl xl:rounded-3xl p-3 xl:p-4 shadow-2xl border border-cyan-500/30 w-full max-w-4xl animate-in fade-in-0 slide-in-from-bottom-2 duration-700 delay-200">
               {/* 진행도 막대바 */}
-              <div className="mb-4">
-                <div className="flex items-center justify-between mb-3">
+              <div className="mb-3">
+                <div className="flex items-center justify-between mb-2">
                   <span className="text-cyan-300 text-sm">
                     낱말 연습
                   </span>
@@ -856,8 +951,8 @@ export default function WordPage() {
               </div>
               
               {/* 키보드 헤더 */}
-              <div className="flex flex-col mb-4">
-                <div className="flex items-center justify-between mb-4">
+              <div className="flex flex-col mb-3">
+                <div className="flex items-center justify-between mb-2">
 
 
                         </div>
@@ -866,7 +961,7 @@ export default function WordPage() {
               {/* 실제 키보드와 동일한 레이아웃 */}
               <div className="flex flex-col items-center">
                 {/* 첫 번째 행: 숫자와 기호 */}
-                <div className="flex space-x-1 mb-3">
+                <div className="flex space-x-1 mb-2">
                   <div className="w-12 h-12 rounded-lg border-2 flex items-center justify-center text-xs font-bold border-cyan-500/50 bg-slate-700 text-cyan-300 shadow-sm hover:bg-slate-600 hover:border-cyan-400 transition-all duration-200 cursor-pointer">
                     ~
                   </div>
@@ -890,7 +985,7 @@ export default function WordPage() {
                 </div>
             
                 {/* 두 번째 행: Tab과 자음/모음 */}
-                <div className="flex space-x-1 mb-3">
+                <div className="flex space-x-1 mb-2">
                   <div className="w-16 h-12 rounded-lg border-2 flex items-center justify-start pl-2 text-xs font-bold border-cyan-500/50 bg-slate-700 text-cyan-300 shadow-sm hover:bg-slate-600 hover:border-cyan-400 transition-all duration-200 cursor-pointer">
                     Tab
                   </div>
@@ -928,7 +1023,7 @@ export default function WordPage() {
           </div>
 
                 {/* 세 번째 행: Caps Lock과 자음/모음, Enter */}
-                <div className="flex space-x-1 mb-3 justify-center">
+                <div className="flex space-x-1 mb-2 justify-center">
                   <div className="w-20 h-12 rounded-lg border-2 flex items-center justify-start pl-2 text-xs font-bold border-cyan-500/50 bg-slate-700 text-cyan-300 shadow-sm hover:bg-slate-600 hover:border-cyan-400 transition-all duration-200 cursor-pointer">
                     Caps
                 </div>
@@ -967,7 +1062,7 @@ export default function WordPage() {
             </div>
             
                 {/* 네 번째 행: Shift와 자음/모음, 기호 */}
-                <div className="flex space-x-1 mb-3 justify-center">
+                <div className="flex space-x-1 mb-2 justify-center">
                   <div className="w-24 h-12 rounded-lg border-2 flex items-center justify-start pl-2 text-xs font-bold border-cyan-500/50 bg-slate-700 text-cyan-300 shadow-sm hover:bg-slate-600 hover:border-cyan-400 transition-all duration-200 cursor-pointer">
                     ⇧
                   </div>

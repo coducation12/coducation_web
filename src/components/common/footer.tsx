@@ -1,4 +1,6 @@
 
+import Link from 'next/link';
+
 export function Footer() {
   return (
     <footer className="border-t bg-slate-50 dark:bg-slate-900">
@@ -20,9 +22,13 @@ export function Footer() {
           <div className="text-center space-y-1">
             <div className="font-bold text-lg text-primary">Coducation</div>
             <div className="flex justify-center gap-4 text-xs text-muted-foreground">
-              <span>정보보호방침</span>
+              <Link href="/privacy-policy" className="hover:text-cyan-400 transition-colors">
+                정보보호방침
+              </Link>
               <span>•</span>
-              <span>이용약관</span>
+              <Link href="/terms-of-service" className="hover:text-cyan-400 transition-colors">
+                이용약관
+              </Link>
             </div>
           </div>
 

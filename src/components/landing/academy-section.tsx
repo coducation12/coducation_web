@@ -139,55 +139,30 @@ export function AcademySection() {
       
       <AcademyCarousel slides={academySlides} />
 
-      <div className="w-full grid gap-8 md:grid-cols-3">
-        {academyFeatures.map((feature, index) => (
-          <Card key={index} className="flex flex-col cyber-card">
-            <CardHeader className="flex flex-col items-center text-center">
-              {index === 0 && <MapPin className="h-8 w-8 text-primary" />}
-              {index === 1 && <BookOpen className="h-8 w-8 text-primary" />}
-              {index === 2 && <Users className="h-8 w-8 text-primary" />}
-              <CardTitle className="mt-4 font-headline">{feature.title}</CardTitle>
-            </CardHeader>
-            <CardContent className="text-center text-muted-foreground flex-grow">
-              {feature.description}
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
-      {/* 새로운 2개 카드 섹션 */}
-      <div className="mt-16">
-        <div className="flex flex-col items-center text-center space-y-4 mb-12">
-          <h3 className="text-3xl font-bold tracking-tighter sm:text-4xl font-headline">
-            {content?.featured_cards_title || '특별 프로그램'}
-          </h3>
-          <p className="max-w-2xl text-lg text-muted-foreground">
-            {content?.featured_cards_subtitle || '다양한 특별 프로그램과 활동을 통해 학생들의 잠재력을 극대화합니다.'}
-          </p>
-        </div>
-        
+      {/* 학원 지점 안내 카드 섹션 */}
+      <div className="mt-8">
         <div className="grid gap-8 md:grid-cols-2">
-          {/* 첫 번째 카드 */}
+          {/* 첫 번째 카드 - 코딩메이커(중마) */}
           <Card className="cyber-card overflow-hidden">
             <CardHeader className="text-center pb-4">
               <CardTitle className="text-2xl font-headline">
-                {content?.featured_card_1_title || '창의적 프로젝트'}
+                {content?.featured_card_1_title || '코딩메이커(중마)'}
               </CardTitle>
             </CardHeader>
             <CardContent className="p-0">
-              <div className="grid grid-cols-2 gap-2 p-4">
+              <div className="grid grid-rows-2 gap-2 p-4">
                 <div className="relative h-32 rounded-lg overflow-hidden">
                   <Image 
-                    src={content?.featured_card_1_image_1 || 'https://placehold.co/300x200.png'} 
-                    alt="프로젝트 이미지 1"
+                    src={content?.featured_card_1_image_1 || 'https://placehold.co/400x300.png'} 
+                    alt="코딩메이커 중마 이미지 1"
                     fill
                     className="object-cover"
                   />
                 </div>
                 <div className="relative h-32 rounded-lg overflow-hidden">
                   <Image 
-                    src={content?.featured_card_1_image_2 || 'https://placehold.co/300x200.png'} 
-                    alt="프로젝트 이미지 2"
+                    src={content?.featured_card_1_image_2 || 'https://placehold.co/400x300.png'} 
+                    alt="코딩메이커 중마 이미지 2"
                     fill
                     className="object-cover"
                   />
@@ -196,27 +171,27 @@ export function AcademySection() {
             </CardContent>
           </Card>
 
-          {/* 두 번째 카드 */}
+          {/* 두 번째 카드 - 광양코딩(창덕) */}
           <Card className="cyber-card overflow-hidden">
             <CardHeader className="text-center pb-4">
               <CardTitle className="text-2xl font-headline">
-                {content?.featured_card_2_title || '학습 환경'}
+                {content?.featured_card_2_title || '광양코딩(창덕)'}
               </CardTitle>
             </CardHeader>
             <CardContent className="p-0">
-              <div className="grid grid-cols-2 gap-2 p-4">
+              <div className="grid grid-rows-2 gap-2 p-4">
                 <div className="relative h-32 rounded-lg overflow-hidden">
                   <Image 
-                    src={content?.featured_card_2_image_1 || 'https://placehold.co/300x200.png'} 
-                    alt="학습환경 이미지 1"
+                    src={content?.featured_card_2_image_1 || 'https://placehold.co/400x300.png'} 
+                    alt="광양코딩 창덕 이미지 1"
                     fill
                     className="object-cover"
                   />
                 </div>
                 <div className="relative h-32 rounded-lg overflow-hidden">
                   <Image 
-                    src={content?.featured_card_2_image_2 || 'https://placehold.co/300x200.png'} 
-                    alt="학습환경 이미지 2"
+                    src={content?.featured_card_2_image_2 || 'https://placehold.co/400x300.png'} 
+                    alt="광양코딩 창덕 이미지 2"
                     fill
                     className="object-cover"
                   />

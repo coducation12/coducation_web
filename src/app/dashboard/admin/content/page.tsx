@@ -25,45 +25,29 @@ export default function ContentManagePage() {
     about_image: 'https://placehold.co/600x400.png',
     academy_title: '코딩메이커 학원 안내',
     academy_subtitle: '창의력과 기술이 만나는 곳, 코딩메이커 학원에 오신 것을 환영합니다.',
-    academy_features: [
-      {
-        title: '최적의 학습 환경',
-        description: '전남 광양에 위치한 저희 학원은 학생들이 코딩에만 집중할 수 있도록 쾌적하고 현대적인 학습 공간을 제공합니다.'
-      },
-      {
-        title: '체계적인 교육 철학',
-        description: '프로젝트 기반 학습(PBL)을 통해 학생들이 실제 문제를 해결하며 배우는 실용적인 교육을 추구합니다.'
-      },
-      {
-        title: '소수 정예 맞춤 수업',
-        description: '소수 정예로 클래스를 운영하여 강사가 학생 한 명 한 명에게 집중하고, 맞춤형 피드백을 제공합니다.'
-      }
-    ],
     academy_slides: [
       {
-        title: '최첨단 학습 환경',
-        description: '학생들이 창의력을 마음껏 발휘할 수 있는 현대적이고 영감을 주는 공간을 제공합니다.',
+        title: '새로운 과정 개설 안내',
+        description: '파이썬 기초와 게임 개발 특강이 개설되었습니다. 많은 관심 바랍니다.',
         image: 'https://placehold.co/600x400.png'
       },
       {
-        title: '개인별 맞춤 지도',
-        description: '소수 정예 수업으로 강사가 학생 한 명 한 명에게 집중하여 잠재력을 최대로 이끌어냅니다.',
+        title: '코딩 경진대회 수상 소식',
+        description: '본원 학생이 전국 코딩 경진대회에서 대상을 수상했습니다!',
         image: 'https://placehold.co/600x400.png'
       },
       {
-        title: '실전 프로젝트 중심',
-        description: '실제 문제를 해결하는 프로젝트를 통해 코딩 실력과 문제 해결 능력을 동시에 기릅니다.',
+        title: '학원 시설 점검 안내',
+        description: '7월 25일은 학원 시설 전체 점검으로 하루 휴강합니다.',
         image: 'https://placehold.co/600x400.png'
       }
     ],
-    featured_cards_title: '특별 프로그램',
-    featured_cards_subtitle: '다양한 특별 프로그램과 활동을 통해 학생들의 잠재력을 극대화합니다.',
-    featured_card_1_title: '창의적 프로젝트',
-    featured_card_1_image_1: 'https://placehold.co/300x200.png',
-    featured_card_1_image_2: 'https://placehold.co/300x200.png',
-    featured_card_2_title: '학습 환경',
-    featured_card_2_image_1: 'https://placehold.co/300x200.png',
-    featured_card_2_image_2: 'https://placehold.co/300x200.png'
+    featured_card_1_title: '코딩메이커(중마)',
+    featured_card_1_image_1: 'https://placehold.co/400x300.png',
+    featured_card_1_image_2: 'https://placehold.co/400x300.png',
+    featured_card_2_title: '광양코딩(창덕)',
+    featured_card_2_image_1: 'https://placehold.co/400x300.png',
+    featured_card_2_image_2: 'https://placehold.co/400x300.png'
   });
 
   // 컨텐츠 로드
@@ -173,10 +157,7 @@ export default function ContentManagePage() {
     formData.append('about_image', content.about_image);
     formData.append('academy_title', content.academy_title); // DB 기본값 유지
     formData.append('academy_subtitle', content.academy_subtitle);
-    formData.append('academy_features', JSON.stringify(content.academy_features));
     formData.append('academy_slides', JSON.stringify(content.academy_slides));
-    formData.append('featured_cards_title', content.featured_cards_title);
-    formData.append('featured_cards_subtitle', content.featured_cards_subtitle);
     formData.append('featured_card_1_title', content.featured_card_1_title);
     formData.append('featured_card_1_image_1', content.featured_card_1_image_1);
     formData.append('featured_card_1_image_2', content.featured_card_1_image_2);
@@ -520,95 +501,31 @@ export default function ContentManagePage() {
               </div>
             </div>
 
-            {/* 특징 카드 섹션 */}
-            <div className="w-full grid gap-8 md:grid-cols-3">
-              {content.academy_features.map((feature, index) => (
-                <Card key={index} className="flex flex-col border-2 border-orange-400/30 bg-orange-900/5">
-                  <CardHeader className="flex flex-col items-center text-center space-y-4">
-                    {index === 0 && <MapPin className="h-8 w-8 text-primary" />}
-                    {index === 1 && <BookOpen className="h-8 w-8 text-primary" />}
-                    {index === 2 && <Users className="h-8 w-8 text-primary" />}
-                    <div className="space-y-2 w-full">
-                      <label className="text-orange-300 text-xs font-bold tracking-wider">🏷️ 특징 제목</label>
-                      <Input
-                        value={feature.title}
-                        onChange={(e) => {
-                          const newFeatures = [...content.academy_features];
-                          newFeatures[index].title = e.target.value;
-                          setContent(prev => ({ ...prev, academy_features: newFeatures }));
-                        }}
-                        className="text-xl font-headline text-center bg-transparent border-2 border-primary/50 font-bold p-3"
-                        placeholder="특징 제목"
-                      />
-                    </div>
-                  </CardHeader>
-                  <CardContent className="text-center text-muted-foreground flex-grow">
-                    <div className="space-y-2">
-                      <label className="text-orange-300 text-xs font-bold tracking-wider">📝 특징 설명</label>
-                      <Textarea
-                        value={feature.description}
-                        onChange={(e) => {
-                          const newFeatures = [...content.academy_features];
-                          newFeatures[index].description = e.target.value;
-                          setContent(prev => ({ ...prev, academy_features: newFeatures }));
-                        }}
-                        className="text-sm leading-relaxed bg-transparent border-2 border-primary/30 text-center resize-none p-3 w-full"
-                        rows={4}
-                        placeholder="특징 설명"
-                      />
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-
-            {/* 새로운 2개 카드 섹션 */}
-            <div className="mt-16">
-              <div className="flex flex-col items-center text-center space-y-6 mb-12">
-                <div className="space-y-2 w-full max-w-4xl">
-                  <label className="text-orange-300 text-sm font-bold tracking-wider">🏷️ 카드 섹션 제목</label>
-                  <Input
-                    value={content.featured_cards_title}
-                    onChange={(e) => setContent(prev => ({ ...prev, featured_cards_title: e.target.value }))}
-                    className="text-3xl font-bold tracking-tighter sm:text-4xl font-headline bg-transparent border-2 border-orange-400/50 text-center text-white p-4"
-                    placeholder="카드 섹션 제목"
-                  />
-                </div>
-                <div className="space-y-2 w-full max-w-2xl">
-                  <label className="text-orange-300 text-sm font-bold tracking-wider">📝 카드 섹션 부제목</label>
-                  <Textarea
-                    value={content.featured_cards_subtitle}
-                    onChange={(e) => setContent(prev => ({ ...prev, featured_cards_subtitle: e.target.value }))}
-                    className="text-lg text-muted-foreground bg-transparent border-2 border-orange-400/30 text-center resize-none p-3"
-                    rows={2}
-                    placeholder="카드 섹션 부제목"
-                  />
-                </div>
-              </div>
-              
+            {/* 학원 지점 안내 카드 섹션 */}
+            <div className="mt-8">
               <div className="grid gap-8 md:grid-cols-2">
-                {/* 첫 번째 카드 */}
+                {/* 첫 번째 카드 - 코딩메이커(중마) */}
                 <Card className="border-2 border-orange-400/30 bg-orange-900/5 overflow-hidden">
                   <CardHeader className="text-center pb-4">
                     <div className="space-y-2">
-                      <label className="text-orange-300 text-sm font-bold tracking-wider">🏷️ 첫 번째 카드 제목</label>
+                      <label className="text-orange-300 text-sm font-bold tracking-wider">🏷️ 코딩메이커(중마) 제목</label>
                       <Input
                         value={content.featured_card_1_title}
                         onChange={(e) => setContent(prev => ({ ...prev, featured_card_1_title: e.target.value }))}
                         className="text-2xl font-headline text-center bg-transparent border-2 border-primary/50 text-white p-3"
-                        placeholder="첫 번째 카드 제목"
+                        placeholder="코딩메이커(중마)"
                       />
                     </div>
                   </CardHeader>
                   <CardContent className="p-0">
-                    <div className="grid grid-cols-2 gap-2 p-4">
+                    <div className="grid grid-rows-2 gap-2 p-4">
                       <div 
                         className="relative h-32 rounded-lg overflow-hidden cursor-pointer group"
                         onClick={() => handleImageUpload('featured', undefined, 1, 1)}
                       >
                         <Image 
                           src={content.featured_card_1_image_1} 
-                          alt="첫 번째 카드 이미지 1"
+                          alt="코딩메이커 중마 이미지 1"
                           fill
                           className="object-cover"
                         />
@@ -633,7 +550,7 @@ export default function ContentManagePage() {
                       >
                         <Image 
                           src={content.featured_card_1_image_2} 
-                          alt="첫 번째 카드 이미지 2"
+                          alt="코딩메이커 중마 이미지 2"
                           fill
                           className="object-cover"
                         />
@@ -656,28 +573,28 @@ export default function ContentManagePage() {
                   </CardContent>
                 </Card>
 
-                {/* 두 번째 카드 */}
+                {/* 두 번째 카드 - 광양코딩(창덕) */}
                 <Card className="border-2 border-orange-400/30 bg-orange-900/5 overflow-hidden">
                   <CardHeader className="text-center pb-4">
                     <div className="space-y-2">
-                      <label className="text-orange-300 text-sm font-bold tracking-wider">🏷️ 두 번째 카드 제목</label>
+                      <label className="text-orange-300 text-sm font-bold tracking-wider">🏷️ 광양코딩(창덕) 제목</label>
                       <Input
                         value={content.featured_card_2_title}
                         onChange={(e) => setContent(prev => ({ ...prev, featured_card_2_title: e.target.value }))}
                         className="text-2xl font-headline text-center bg-transparent border-2 border-primary/50 text-white p-3"
-                        placeholder="두 번째 카드 제목"
+                        placeholder="광양코딩(창덕)"
                       />
                     </div>
                   </CardHeader>
                   <CardContent className="p-0">
-                    <div className="grid grid-cols-2 gap-2 p-4">
+                    <div className="grid grid-rows-2 gap-2 p-4">
                       <div 
                         className="relative h-32 rounded-lg overflow-hidden cursor-pointer group"
                         onClick={() => handleImageUpload('featured', undefined, 2, 1)}
                       >
                         <Image 
                           src={content.featured_card_2_image_1} 
-                          alt="두 번째 카드 이미지 1"
+                          alt="광양코딩 창덕 이미지 1"
                           fill
                           className="object-cover"
                         />
@@ -702,7 +619,7 @@ export default function ContentManagePage() {
                       >
                         <Image 
                           src={content.featured_card_2_image_2} 
-                          alt="두 번째 카드 이미지 2"
+                          alt="광양코딩 창덕 이미지 2"
                           fill
                           className="object-cover"
                         />

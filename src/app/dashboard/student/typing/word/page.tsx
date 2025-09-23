@@ -356,123 +356,14 @@ export default function WordPage() {
     }
   }, []);
 
-  // 자동 한영 전환 함수 (개선된 버전)
-  const switchToKoreanIME = useCallback(async () => {
-    console.log('한글 IME로 전환 시도');
-    
-    try {
-      const inputElement = document.querySelector('input[type="text"]') as HTMLInputElement;
-      if (!inputElement) {
-        console.log('입력 요소를 찾을 수 없음');
-        return;
-      }
-
-      // 1. 기본 속성 설정
-      inputElement.setAttribute('lang', 'ko');
+  // IME 힌트만 설정 (자동 전환은 브라우저 제한으로 불가능)
+  const setIMELanguage = useCallback((targetLanguage: 'korean' | 'english') => {
+    const inputElement = document.querySelector('input[type="text"]') as HTMLInputElement;
+    if (inputElement) {
+      inputElement.setAttribute('lang', targetLanguage === 'korean' ? 'ko' : 'en');
       inputElement.setAttribute('inputmode', 'text');
-      inputElement.setAttribute('data-lang', 'korean');
-      
-      // 2. IME 힌트 설정
-      setIMEHint('korean');
-      
-      // 3. navigator.keyboard API 시도 (HTTPS에서만 작동)
-      if ('keyboard' in navigator && 'lock' in (navigator as any).keyboard) {
-        try {
-          await (navigator as any).keyboard.lock(['HangulMode']);
-          console.log('navigator.keyboard.lock 성공');
-        } catch (keyboardError) {
-          console.log('navigator.keyboard.lock 실패:', keyboardError);
-        }
-      }
-      
-      // 4. 포커스 재설정으로 IME 변경 유도
-      inputElement.blur();
-      setTimeout(() => {
-        inputElement.focus();
-        
-        // 5. 한글 입력을 위한 추가 시도
-        try {
-          if ('setComposition' in inputElement) {
-            (inputElement as any).setComposition('', 'ko');
-          }
-          
-          // 6. 키보드 이벤트 시뮬레이션 (한글 전환 키)
-          const event = new KeyboardEvent('keydown', {
-            key: 'HangulMode',
-            code: 'HangulMode',
-            keyCode: 21, // 한글 전환 키 코드
-            which: 21,
-            bubbles: true,
-            cancelable: true
-          });
-          inputElement.dispatchEvent(event);
-        } catch (compositionError) {
-          console.log('setComposition 실패:', compositionError);
-        }
-      }, 50);
-      
-    } catch (error) {
-      console.log('한글 IME 전환 실패:', error);
-      // 실패 시 기본 IME 힌트만 설정
-      setIMEHint('korean');
     }
-  }, [setIMEHint]);
-
-  const switchToEnglishIME = useCallback(async () => {
-    console.log('영어 IME로 전환 시도');
-    
-    try {
-      const inputElement = document.querySelector('input[type="text"]') as HTMLInputElement;
-      if (!inputElement) {
-        console.log('입력 요소를 찾을 수 없음');
-        return;
-      }
-
-      // 1. 기본 속성 설정
-      inputElement.setAttribute('lang', 'en');
-      inputElement.setAttribute('inputmode', 'text');
-      inputElement.setAttribute('data-lang', 'english');
-      
-      // 2. IME 힌트 설정
-      setIMEHint('english');
-      
-      // 3. navigator.keyboard API 시도
-      if ('keyboard' in navigator && 'lock' in (navigator as any).keyboard) {
-        try {
-          await (navigator as any).keyboard.lock(['EnglishMode']);
-          console.log('navigator.keyboard.lock 성공');
-        } catch (keyboardError) {
-          console.log('navigator.keyboard.lock 실패:', keyboardError);
-        }
-      }
-      
-      // 4. 포커스 재설정으로 IME 변경 유도
-      inputElement.blur();
-      setTimeout(() => {
-        inputElement.focus();
-        
-        // 5. 영어 입력을 위한 추가 시도
-        try {
-          // 6. 키보드 이벤트 시뮬레이션 (영어 전환 키)
-          const event = new KeyboardEvent('keydown', {
-            key: 'HangulMode',
-            code: 'HangulMode', 
-            keyCode: 21, // 한글 전환 키 코드 (토글)
-            which: 21,
-            bubbles: true,
-            cancelable: true
-          });
-          inputElement.dispatchEvent(event);
-        } catch (eventError) {
-          console.log('키보드 이벤트 시뮬레이션 실패:', eventError);
-        }
-      }, 50);
-      
-    } catch (error) {
-      console.log('영어 IME 전환 실패:', error);
-      // 실패 시 기본 IME 힌트만 설정
-      setIMEHint('english');
-    }
+    setIMEHint(targetLanguage);
   }, [setIMEHint]);
 
   // 현재 단어와 다음 단어 업데이트
@@ -484,12 +375,8 @@ export default function WordPage() {
     setNextChar(nextItem);
     setCurrentWord(currentItem);
     
-    // 자동 한영 전환
-    if (language === 'korean') {
-      switchToKoreanIME();
-    } else {
-      switchToEnglishIME();
-    }
+    // IME 힌트 설정 (자동 전환은 브라우저 제한으로 불가능)
+    setIMELanguage(language);
     
     // 한글 자모 분해
     if (language === 'korean' && currentItem) {
@@ -500,7 +387,7 @@ export default function WordPage() {
       setCurrentJamos([]);
       setCurrentJamoIndex(0);
     }
-  }, [getCurrentItem, getNextItem, language, currentCharIndex, switchToKoreanIME, switchToEnglishIME]);
+  }, [getCurrentItem, getNextItem, language, currentCharIndex, setIMELanguage]);
 
   // 현재 상태가 변경될 때마다 자동 업데이트
   useEffect(() => {
@@ -762,18 +649,14 @@ export default function WordPage() {
     };
   }, [checkWordInput, userInput, showResultModal]);
 
-  // 페이지 로드 시 자동 한영 전환
+  // 페이지 로드 시 IME 힌트 설정
   useEffect(() => {
     const timer = setTimeout(() => {
-      if (language === 'korean') {
-        switchToKoreanIME();
-      } else {
-        switchToEnglishIME();
-      }
+      setIMELanguage(language);
     }, 200);
     
     return () => clearTimeout(timer);
-  }, [language, switchToKoreanIME, switchToEnglishIME]);
+  }, [language, setIMELanguage]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 relative overflow-hidden">
@@ -799,18 +682,12 @@ export default function WordPage() {
             낱말연습
           </h1>
           <div className="flex items-center gap-2">
-            <button
-              onClick={() => switchToKoreanIME()}
-              className="px-3 py-1.5 text-xs bg-cyan-500/20 text-cyan-300 rounded-lg border border-cyan-500/30 hover:bg-cyan-500/30 transition-colors"
-            >
-              한글
-            </button>
-            <button
-              onClick={() => switchToEnglishIME()}
-              className="px-3 py-1.5 text-xs bg-cyan-500/20 text-cyan-300 rounded-lg border border-cyan-500/30 hover:bg-cyan-500/30 transition-colors"
-            >
-              ENG
-            </button>
+            <div className="text-xs text-cyan-300 bg-cyan-500/10 px-2 py-1 rounded border border-cyan-500/20">
+              {language === 'korean' ? '한글 모드' : '영어 모드'}
+            </div>
+            <div className="text-xs text-slate-400">
+              한영전환: <span className="text-cyan-400 font-mono">한/영</span>
+            </div>
           </div>
       </div>
 
@@ -924,8 +801,16 @@ export default function WordPage() {
                     </div>
                     
                                                 {/* 입력 안내 */}
-                <div className="text-slate-400 text-xs sm:text-sm">
-                  단어 입력 후 <span className="text-cyan-400">Enter</span> 또는 <span className="text-cyan-400">Space</span>를 눌러주세요
+                <div className="text-slate-400 text-xs sm:text-sm space-y-1">
+                  <div>
+                    단어 입력 후 <span className="text-cyan-400">Enter</span> 또는 <span className="text-cyan-400">Space</span>를 눌러주세요
+                  </div>
+                  <div className="text-slate-500">
+                    {language === 'korean' 
+                      ? '💡 한글 입력이 안 되면 한/영 키를 눌러주세요'
+                      : '💡 English input not working? Press 한/영 key'
+                    }
+                  </div>
                 </div>
                         </div>
                     </div>

@@ -200,7 +200,7 @@ export async function addStudent(formData: FormData) {
         role: 'parent',
         password: parentPasswordHash,
         phone: studentData.parentPhone || null,
-        academy: '코딩메이커',
+        academy: 'coding-maker',
         created_at: new Date().toISOString()
       })
       .select()
@@ -225,7 +225,7 @@ export async function addStudent(formData: FormData) {
         password: studentPasswordHash,
         phone: studentData.phone,
         birth_year: studentData.birthYear ? parseInt(studentData.birthYear) : null,
-        academy: '코딩메이커',
+        academy: 'coding-maker',
         created_at: new Date().toISOString()
       })
       .select()
@@ -920,7 +920,7 @@ export async function addTeacher(formData: FormData) {
         password: passwordHash,
         email: teacherData.email,
         phone: teacherData.phone,
-        academy: '코딩메이커',
+        academy: 'coding-maker',
         created_at: new Date().toISOString()
       })
       .select()

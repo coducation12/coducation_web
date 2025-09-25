@@ -347,58 +347,53 @@ export default function StudentSignupPage() {
               />
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="academy" className="text-white">학원 *</Label>
-              <Select
-                value={formData.academy}
-                onValueChange={(value) => {
-                  handleInputChange('academy', value)
-                  handleInputChange('assignedTeacherId', '') // 학원 변경 시 교사 선택 초기화
-                }}
-                disabled={loading}
-              >
-                <SelectTrigger className="bg-background/40 border-cyan-400/40 text-cyan-100 focus:border-cyan-400/80">
-                  <SelectValue placeholder="학원을 선택하세요" />
-                </SelectTrigger>
-                <SelectContent className="bg-background border-cyan-400/40">
-                  <SelectItem value="coding-maker" className="text-cyan-100 hover:bg-cyan-900/20">코딩메이커</SelectItem>
-                  <SelectItem value="gwangyang-coding" className="text-cyan-100 hover:bg-cyan-900/20">광양코딩</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="assignedTeacher" className="text-white">담당 교사 *</Label>
-              <Select
-                value={formData.assignedTeacherId}
-                onValueChange={(value) => handleInputChange('assignedTeacherId', value)}
-                disabled={loading || !formData.academy || teachersLoading}
-              >
-                <SelectTrigger className="bg-background/40 border-cyan-400/40 text-cyan-100 focus:border-cyan-400/80">
-                  <SelectValue placeholder={
-                    !formData.academy 
-                      ? "먼저 학원을 선택하세요" 
-                      : teachersLoading 
-                        ? "교사 목록을 불러오는 중..." 
-                        : "담당 교사를 선택하세요"
-                  } />
-                </SelectTrigger>
-                <SelectContent className="bg-background border-cyan-400/40">
-                  {teachers
-                    .filter(teacher => !formData.academy || teacher.academy === formData.academy)
-                    .map((teacher) => (
-                    <SelectItem key={teacher.id} value={teacher.id} className="text-cyan-100 hover:bg-cyan-900/20">
-                      {teacher.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {!formData.academy && (
-                <p className="text-xs text-cyan-400 mt-1">먼저 학원을 선택해주세요</p>
-              )}
-              {teachersLoading && (
-                <p className="text-xs text-cyan-400 mt-1">교사 목록을 불러오는 중...</p>
-              )}
+            <div className="flex gap-2 w-full min-w-0">
+              <div className="flex-1 min-w-0 space-y-2">
+                <Label htmlFor="academy" className="text-white">학원 *</Label>
+                <Select
+                  value={formData.academy}
+                  onValueChange={(value) => {
+                    handleInputChange('academy', value)
+                    handleInputChange('assignedTeacherId', '') // 학원 변경 시 교사 선택 초기화
+                  }}
+                  disabled={loading}
+                >
+                  <SelectTrigger className="bg-background/40 border-cyan-400/40 text-cyan-100 focus:border-cyan-400/80">
+                    <SelectValue placeholder="학원을 선택하세요" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-background border-cyan-400/40">
+                    <SelectItem value="coding-maker" className="text-cyan-100 hover:bg-cyan-900/20">코딩메이커</SelectItem>
+                    <SelectItem value="gwangyang-coding" className="text-cyan-100 hover:bg-cyan-900/20">광양코딩</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex-1 min-w-0 space-y-2">
+                <Label htmlFor="assignedTeacher" className="text-white">담당 교사 *</Label>
+                <Select
+                  value={formData.assignedTeacherId}
+                  onValueChange={(value) => handleInputChange('assignedTeacherId', value)}
+                  disabled={loading || !formData.academy || teachersLoading}
+                >
+                  <SelectTrigger className="bg-background/40 border-cyan-400/40 text-cyan-100 focus:border-cyan-400/80">
+                    <SelectValue placeholder={
+                      !formData.academy 
+                        ? "먼저 학원을 선택하세요" 
+                        : teachersLoading 
+                          ? "교사 목록을 불러오는 중..." 
+                          : "담당 교사를 선택하세요"
+                    } />
+                  </SelectTrigger>
+                  <SelectContent className="bg-background border-cyan-400/40">
+                    {teachers
+                      .filter(teacher => !formData.academy || teacher.academy === formData.academy)
+                      .map((teacher) => (
+                      <SelectItem key={teacher.id} value={teacher.id} className="text-cyan-100 hover:bg-cyan-900/20">
+                        {teacher.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
 
 

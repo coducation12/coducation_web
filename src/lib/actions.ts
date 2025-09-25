@@ -785,6 +785,12 @@ export async function updateContent(formData: FormData) {
       academy_subtitle: formData.get('academy_subtitle') as string,
       academy_features: JSON.parse(formData.get('academy_features') as string),
       academy_slides: JSON.parse(formData.get('academy_slides') as string),
+      featured_card_1_title: formData.get('featured_card_1_title') as string,
+      featured_card_1_image_1: formData.get('featured_card_1_image_1') as string,
+      featured_card_1_image_2: formData.get('featured_card_1_image_2') as string,
+      featured_card_2_title: formData.get('featured_card_2_title') as string,
+      featured_card_2_image_1: formData.get('featured_card_2_image_1') as string,
+      featured_card_2_image_2: formData.get('featured_card_2_image_2') as string,
       updated_at: new Date().toISOString()
     };
 

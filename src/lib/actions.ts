@@ -1538,24 +1538,8 @@ export async function approveStudentSignupRequest(requestId: string) {
         return { success: false, error: '학생 데이터 생성 중 오류가 발생했습니다.' };
       }
     } else {
-      // 기존 students 테이블 데이터가 있으면 assigned_teachers 업데이트
-      const { error: updateStudentError } = await supabase
-        .from('students')
-        .update({
-          assigned_teachers: [] // 승인 시 담당 교사 배열 초기화
-        })
-        .eq('user_id', requestId);
-
-      if (updateStudentError) {
-        console.error('students 테이블 업데이트 중 오류:', updateStudentError);
-        // users 테이블 상태를 다시 pending으로 롤백
-        await supabase
-          .from('users')
-          .update({ status: 'pending' })
-          .eq('id', requestId);
-        
-        return { success: false, error: '학생 데이터 업데이트 중 오류가 발생했습니다.' };
-      }
+      // 기존 students 테이블 데이터가 있으면 그대로 유지 (업데이트 불필요)
+      console.log('students 테이블에 이미 데이터가 존재합니다. 승인 완료.');
     }
 
     return { success: true, message: '가입 요청이 승인되었습니다.' };

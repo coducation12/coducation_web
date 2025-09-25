@@ -80,7 +80,7 @@ export default function AdminStudentsPage() {
                 current_curriculum_id, 
                 enrollment_start_date, 
                 attendance_schedule,
-                users!inner ( 
+                users!students_user_id_fkey ( 
                     id, 
                     name, 
                     username, 

@@ -158,6 +158,21 @@ export default function ContentManagePage() {
     formData.append('academy_title', content.academy_title); // DB 기본값 유지
     formData.append('academy_subtitle', content.academy_subtitle);
     formData.append('academy_slides', JSON.stringify(content.academy_slides));
+    // academy_features 필드 추가 (기본값 유지)
+    formData.append('academy_features', JSON.stringify([
+      {
+        title: "최적의 학습 환경",
+        description: "전남 광양에 위치한 저희 학원은 학생들이 코딩에만 집중할 수 있도록 쾌적하고 현대적인 학습 공간을 제공합니다."
+      },
+      {
+        title: "체계적인 교육 철학",
+        description: "프로젝트 기반 학습(PBL)을 통해 학생들이 실제 문제를 해결하며 배우는 실용적인 교육을 추구합니다."
+      },
+      {
+        title: "소수 정예 맞춤 수업",
+        description: "소수 정예로 클래스를 운영하여 강사가 학생 한 명 한 명에게 집중하고, 맞춤형 피드백을 제공합니다."
+      }
+    ]));
     formData.append('featured_card_1_title', content.featured_card_1_title);
     formData.append('featured_card_1_image_1', content.featured_card_1_image_1);
     formData.append('featured_card_1_image_2', content.featured_card_1_image_2);

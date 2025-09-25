@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -8,6 +8,13 @@ import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { addStudent } from '@/lib/actions'
+import { supabase } from '@/lib/supabase'
+
+interface Teacher {
+  id: string
+  name: string
+  academy: string
+}
 
 // 한글을 영문으로 변환하는 함수
 const convertKoreanToEnglish = (korean: string): string => {
@@ -56,10 +63,6 @@ const validatePhoneNumber = (phone: string): boolean => {
   return numbers.length === 11 && numbers.startsWith('010');
 };
 
-const subjects = [
-  "React", "Python", "알고리즘", "웹 개발", "JavaScript", "TypeScript", 
-  "Node.js", "데이터베이스", "머신러닝", "앱 개발"
-];
 
 
 export default function StudentSignupPage() {
@@ -67,10 +70,12 @@ export default function StudentSignupPage() {
     name: '',
     birthYear: '',
     password: '',
-    subject: '',
+    confirmPassword: '',
     phone: '',
     parentPhone: '',
-    email: ''
+    email: '',
+    academy: '',
+    assignedTeacherId: ''
   })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -81,6 +86,39 @@ export default function StudentSignupPage() {
   const generatedUsername = formData.name && formData.birthYear 
     ? `${formData.name}${formData.birthYear.slice(-2)}`
     : '';
+
+  // 교사 목록 상태 추가
+  const [teachers, setTeachers] = useState<Teacher[]>([])
+  const [teachersLoading, setTeachersLoading] = useState(true)
+
+  // 교사 목록 불러오기
+  useEffect(() => {
+    const fetchTeachers = async () => {
+      setTeachersLoading(true)
+      try {
+        const { data, error } = await supabase
+          .from('users')
+          .select('id, name, academy')
+          .eq('role', 'teacher')
+          .order('name')
+
+        if (error) {
+          console.error('교사 목록 조회 오류:', error)
+          setError('교사 목록을 불러오는 중 오류가 발생했습니다.')
+          return
+        }
+        
+        setTeachers(data || [])
+      } catch (error) {
+        console.error('교사 목록 불러오기 실패:', error)
+        setError('교사 목록을 불러오는 중 오류가 발생했습니다.')
+      } finally {
+        setTeachersLoading(false)
+      }
+    }
+
+    fetchTeachers()
+  }, [])
 
 
   const handleInputChange = (field: string, value: string) => {
@@ -99,8 +137,20 @@ export default function StudentSignupPage() {
   const validateForm = () => {
     // 필수 필드 검증
     if (!formData.name || !formData.birthYear || !formData.password || 
-        !formData.subject || !formData.phone) {
+        !formData.confirmPassword || !formData.phone || !formData.academy || !formData.assignedTeacherId) {
       setError("필수 필드를 모두 입력해주세요.");
+      return false;
+    }
+
+    // 비밀번호 확인 검증
+    if (formData.password !== formData.confirmPassword) {
+      setError("비밀번호가 일치하지 않습니다.");
+      return false;
+    }
+
+    // 비밀번호 길이 검증
+    if (formData.password.length < 6) {
+      setError("비밀번호는 6자 이상이어야 합니다.");
       return false;
     }
 
@@ -157,11 +207,13 @@ export default function StudentSignupPage() {
       formDataToSubmit.append('name', formData.name)
       formDataToSubmit.append('birthYear', formData.birthYear)
       formDataToSubmit.append('password', formData.password)
-      formDataToSubmit.append('subject', formData.subject)
+      formDataToSubmit.append('subject', '프로그래밍') // 기본값으로 설정
       formDataToSubmit.append('phone', formData.phone)
       formDataToSubmit.append('parentPhone', formData.parentPhone || '')
       formDataToSubmit.append('email', formData.email || '')
       formDataToSubmit.append('classSchedules', JSON.stringify([]))
+      formDataToSubmit.append('academy', formData.academy)
+      formDataToSubmit.append('assignedTeacherId', formData.assignedTeacherId)
 
       // 서버 액션 호출
       const result = await addStudent(formDataToSubmit)
@@ -199,7 +251,7 @@ export default function StudentSignupPage() {
             <div className="bg-sky-900/20 border border-sky-500/30 rounded-lg p-6 text-center">
               <Label className="text-sky-200 font-medium text-lg">자동 생성된 아이디</Label>
               <p className="text-sky-100 text-3xl font-mono font-bold mt-2">
-                {generatedUsername || '이름과 출생년도를 입력하세요'}
+                {generatedUsername || ''}
               </p>
             </div>
 
@@ -244,23 +296,16 @@ export default function StudentSignupPage() {
                 />
               </div>
               <div className="flex-1 min-w-0 space-y-2">
-                <Label htmlFor="subject" className="text-white">과목 *</Label>
-                <Select value={formData.subject} onValueChange={(value) => handleInputChange("subject", value)}>
-                  <SelectTrigger className="bg-background/40 border-cyan-400/40 text-cyan-100 focus:border-cyan-400/80">
-                    <SelectValue placeholder="과목을 선택하세요" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-background border-cyan-400/40">
-                    {subjects.map((subject) => (
-                      <SelectItem
-                        key={subject}
-                        value={subject}
-                        className="text-cyan-100 hover:bg-cyan-900/20"
-                      >
-                        {subject}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Label htmlFor="confirmPassword" className="text-white">비밀번호 확인 *</Label>
+                <Input
+                  id="confirmPassword"
+                  type="password"
+                  value={formData.confirmPassword}
+                  onChange={(e) => handleInputChange("confirmPassword", e.target.value)}
+                  placeholder="비밀번호를 다시 입력하세요"
+                  className="bg-background/40 border-cyan-400/40 text-cyan-100 placeholder:text-cyan-400/60 focus:border-cyan-400/80"
+                  autoComplete="new-password"
+                />
               </div>
             </div>
 
@@ -300,6 +345,60 @@ export default function StudentSignupPage() {
                 className="bg-background/40 border-cyan-400/40 text-cyan-100 placeholder:text-cyan-400/60 focus:border-cyan-400/80"
                 autoComplete="off"
               />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="academy" className="text-white">학원 *</Label>
+              <Select
+                value={formData.academy}
+                onValueChange={(value) => {
+                  handleInputChange('academy', value)
+                  handleInputChange('assignedTeacherId', '') // 학원 변경 시 교사 선택 초기화
+                }}
+                disabled={loading}
+              >
+                <SelectTrigger className="bg-background/40 border-cyan-400/40 text-cyan-100 focus:border-cyan-400/80">
+                  <SelectValue placeholder="학원을 선택하세요" />
+                </SelectTrigger>
+                <SelectContent className="bg-background border-cyan-400/40">
+                  <SelectItem value="coding-maker" className="text-cyan-100 hover:bg-cyan-900/20">코딩메이커</SelectItem>
+                  <SelectItem value="gwangyang-coding" className="text-cyan-100 hover:bg-cyan-900/20">광양코딩</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="assignedTeacher" className="text-white">담당 교사 *</Label>
+              <Select
+                value={formData.assignedTeacherId}
+                onValueChange={(value) => handleInputChange('assignedTeacherId', value)}
+                disabled={loading || !formData.academy || teachersLoading}
+              >
+                <SelectTrigger className="bg-background/40 border-cyan-400/40 text-cyan-100 focus:border-cyan-400/80">
+                  <SelectValue placeholder={
+                    !formData.academy 
+                      ? "먼저 학원을 선택하세요" 
+                      : teachersLoading 
+                        ? "교사 목록을 불러오는 중..." 
+                        : "담당 교사를 선택하세요"
+                  } />
+                </SelectTrigger>
+                <SelectContent className="bg-background border-cyan-400/40">
+                  {teachers
+                    .filter(teacher => !formData.academy || teacher.academy === formData.academy)
+                    .map((teacher) => (
+                    <SelectItem key={teacher.id} value={teacher.id} className="text-cyan-100 hover:bg-cyan-900/20">
+                      {teacher.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {!formData.academy && (
+                <p className="text-xs text-cyan-400 mt-1">먼저 학원을 선택해주세요</p>
+              )}
+              {teachersLoading && (
+                <p className="text-xs text-cyan-400 mt-1">교사 목록을 불러오는 중...</p>
+              )}
             </div>
 
 

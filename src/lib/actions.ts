@@ -217,7 +217,20 @@ export async function addStudent(formData: FormData, isSignup: boolean = false) 
       }
     }
 
-    // 2. users 테이블에 학생 정보 등록 (비밀번호 포함)
+    // 2. 중복 아이디 검사 (회원가입 시에만)
+    if (isSignup) {
+      const { data: existingUser } = await supabase
+        .from('users')
+        .select('id')
+        .eq('username', studentData.studentId)
+        .single();
+      
+      if (existingUser) {
+        return { success: false, error: '이미 사용 중인 아이디입니다. 다른 이름이나 출생년도를 입력해주세요.' };
+      }
+    }
+
+    // 3. users 테이블에 학생 정보 등록 (비밀번호 포함)
     // 학생 비밀번호 해시 처리
     const studentPasswordHash = await bcrypt.hash(studentData.password, 10);
     

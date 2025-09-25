@@ -299,7 +299,7 @@ export async function addStudent(formData: FormData, isSignup: boolean = false) 
       assigned_teachers: isSignup ? (studentData.assignedTeacherId ? [studentData.assignedTeacherId] : []) : (currentUserRole === 'teacher' && currentUserId ? [currentUserId] : []),
       parent_id: parentId,
       current_curriculum_id: null,
-      enrollment_start_date: isSignup ? null : new Date().toISOString().split('T')[0], // 회원가입 시에는 null
+      enrollment_start_date: new Date().toISOString().split('T')[0], // 회원가입 시에도 현재 날짜로 설정
       attendance_schedule: Object.keys(attendanceSchedule).length > 0 ? attendanceSchedule : null,
       created_at: new Date().toISOString()
     };

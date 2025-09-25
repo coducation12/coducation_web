@@ -206,8 +206,8 @@ export default function StudentSignupPage() {
       formDataToSubmit.append('academy', formData.academy)
       formDataToSubmit.append('assignedTeacherId', formData.assignedTeacherId)
 
-      // 서버 액션 호출
-      const result = await addStudent(formDataToSubmit)
+      // 서버 액션 호출 (회원가입 모드)
+      const result = await addStudent(formDataToSubmit, true)
 
       if (result.success) {
         // 성공 메시지 표시

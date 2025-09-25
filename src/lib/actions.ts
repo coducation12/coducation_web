@@ -166,7 +166,7 @@ export async function logout() {
 }
 
 // 학생 추가 서버 액션
-export async function addStudent(formData: FormData) {
+export async function addStudent(formData: FormData, isSignup: boolean = false) {
   try {
     // 현재 로그인한 사용자 정보 가져오기
     const cookieStore = await cookies();
@@ -182,34 +182,39 @@ export async function addStudent(formData: FormData) {
       phone: formData.get('phone') as string,
       parentPhone: formData.get('parentPhone') as string,
       email: formData.get('email') as string,
-      classSchedules: JSON.parse(formData.get('classSchedules') as string)
+      classSchedules: JSON.parse(formData.get('classSchedules') as string),
+      academy: formData.get('academy') as string,
+      assignedTeacherId: formData.get('assignedTeacherId') as string
     };
 
-    // 1. 학생 ID에 'p'를 붙여서 학부모 계정 자동 생성
+    // 1. 학생 ID에 'p'를 붙여서 학부모 계정 자동 생성 (회원가입 시에만)
     let parentId = null;
-    const parentUsername = `${studentData.studentId}p`;
-    
-    // 학부모 비밀번호 해시 처리 (학생 비밀번호와 동일하게 설정)
-    const parentPasswordHash = await bcrypt.hash(studentData.password, 10);
-    
-    const { data: parentData, error: parentError } = await supabase
-      .from('users')
-      .insert({
-        username: parentUsername,
-        name: `${studentData.name} 학부모`,
-        role: 'parent',
-        password: parentPasswordHash,
-        phone: studentData.parentPhone || null,
-        academy: 'coding-maker',
-        created_at: new Date().toISOString()
-      })
-      .select()
-      .single();
+    if (isSignup) {
+      const parentUsername = `${studentData.studentId}p`;
+      
+      // 학부모 비밀번호 해시 처리 (학생 비밀번호와 동일하게 설정)
+      const parentPasswordHash = await bcrypt.hash(studentData.password, 10);
+      
+      const { data: parentData, error: parentError } = await supabase
+        .from('users')
+        .insert({
+          username: parentUsername,
+          name: `${studentData.name} 학부모`,
+          role: 'parent',
+          password: parentPasswordHash,
+          phone: studentData.parentPhone || null,
+          academy: studentData.academy || 'coding-maker',
+          status: 'pending', // 회원가입 시에는 pending 상태
+          created_at: new Date().toISOString()
+        })
+        .select()
+        .single();
 
-    if (!parentError) {
-      parentId = parentData.id;
-    } else {
-      // 학부모 계정 생성 실패 시에도 계속 진행 (선택사항이므로)
+      if (!parentError) {
+        parentId = parentData.id;
+      } else {
+        // 학부모 계정 생성 실패 시에도 계속 진행 (선택사항이므로)
+      }
     }
 
     // 2. users 테이블에 학생 정보 등록 (비밀번호 포함)
@@ -225,7 +230,9 @@ export async function addStudent(formData: FormData) {
         password: studentPasswordHash,
         phone: studentData.phone,
         birth_year: studentData.birthYear ? parseInt(studentData.birthYear) : null,
-        academy: 'coding-maker',
+        academy: studentData.academy || 'coding-maker',
+        assigned_teacher_id: studentData.assignedTeacherId || null,
+        status: isSignup ? 'pending' : 'active', // 회원가입 시에는 pending, 관리자 추가 시에는 active
         created_at: new Date().toISOString()
       })
       .select()
@@ -235,62 +242,64 @@ export async function addStudent(formData: FormData) {
       return { success: false, error: userError.message };
     }
 
-    // 3. 수업 일정을 attendance_schedule 형식으로 변환
+    // 3. 수업 일정을 attendance_schedule 형식으로 변환 (관리자 추가 시에만)
     const attendanceSchedule: any = {};
     
-    studentData.classSchedules.forEach((schedule: any) => {
-      if (schedule.day && schedule.startTime) {
-        const dayMap: { [key: string]: string } = {
-          'monday': '1', 'tuesday': '2', 'wednesday': '3', 
-          'thursday': '4', 'friday': '5', 'saturday': '6', 'sunday': '0'
-        };
-        const dayNumber = dayMap[schedule.day];
-        
-        if (dayNumber) {
-          // 시작시간과 종료시간을 모두 저장
-          let startTime = schedule.startTime;
-          let endTime = schedule.endTime || '';
-          
-          // 시간 형식 정리 (HH:MM 형식으로 통일)
-          if (startTime && !startTime.includes(':')) {
-            const numbers = startTime.replace(/[^0-9]/g, '');
-            if (numbers.length === 4) {
-              const hours = numbers.slice(0, 2);
-              const minutes = numbers.slice(2, 4);
-              startTime = `${hours}:${minutes}`;
-            }
-          }
-          
-          if (endTime && !endTime.includes(':')) {
-            const numbers = endTime.replace(/[^0-9]/g, '');
-            if (numbers.length === 4) {
-              const hours = numbers.slice(0, 2);
-              const minutes = numbers.slice(2, 4);
-              endTime = `${hours}:${minutes}`;
-            }
-          }
-          
-          // 종료시간이 항상 있어야 하므로 검증
-          if (!endTime || endTime.trim() === '') {
-            throw new Error(`${schedule.day}의 종료시간을 입력해주세요.`);
-          }
-          
-          // 항상 객체 형태로 저장 (startTime과 endTime 포함)
-          attendanceSchedule[dayNumber] = {
-            startTime: startTime,
-            endTime: endTime
+    if (!isSignup && studentData.classSchedules) {
+      studentData.classSchedules.forEach((schedule: any) => {
+        if (schedule.day && schedule.startTime) {
+          const dayMap: { [key: string]: string } = {
+            'monday': '1', 'tuesday': '2', 'wednesday': '3', 
+            'thursday': '4', 'friday': '5', 'saturday': '6', 'sunday': '0'
           };
+          const dayNumber = dayMap[schedule.day];
+          
+          if (dayNumber) {
+            // 시작시간과 종료시간을 모두 저장
+            let startTime = schedule.startTime;
+            let endTime = schedule.endTime || '';
+            
+            // 시간 형식 정리 (HH:MM 형식으로 통일)
+            if (startTime && !startTime.includes(':')) {
+              const numbers = startTime.replace(/[^0-9]/g, '');
+              if (numbers.length === 4) {
+                const hours = numbers.slice(0, 2);
+                const minutes = numbers.slice(2, 4);
+                startTime = `${hours}:${minutes}`;
+              }
+            }
+            
+            if (endTime && !endTime.includes(':')) {
+              const numbers = endTime.replace(/[^0-9]/g, '');
+              if (numbers.length === 4) {
+                const hours = numbers.slice(0, 2);
+                const minutes = numbers.slice(2, 4);
+                endTime = `${hours}:${minutes}`;
+              }
+            }
+            
+            // 종료시간이 항상 있어야 하므로 검증
+            if (!endTime || endTime.trim() === '') {
+              throw new Error(`${schedule.day}의 종료시간을 입력해주세요.`);
+            }
+            
+            // 항상 객체 형태로 저장 (startTime과 endTime 포함)
+            attendanceSchedule[dayNumber] = {
+              startTime: startTime,
+              endTime: endTime
+            };
+          }
         }
-      }
-    });
+      });
+    }
 
     // 4. students 테이블에 학생 상세 정보 등록
     const studentInsertData = {
       user_id: userData.id,
-      assigned_teachers: currentUserRole === 'teacher' && currentUserId ? [currentUserId] : [], // 강사인 경우에만 담당 강사로 설정, 아니면 빈 배열
+      assigned_teachers: isSignup ? (studentData.assignedTeacherId ? [studentData.assignedTeacherId] : []) : (currentUserRole === 'teacher' && currentUserId ? [currentUserId] : []),
       parent_id: parentId,
       current_curriculum_id: null,
-      enrollment_start_date: new Date().toISOString().split('T')[0],
+      enrollment_start_date: isSignup ? null : new Date().toISOString().split('T')[0], // 회원가입 시에는 null
       attendance_schedule: Object.keys(attendanceSchedule).length > 0 ? attendanceSchedule : null,
       created_at: new Date().toISOString()
     };
@@ -1339,90 +1348,6 @@ export async function getInstructors() {
 // ==================== 학생 회원가입 서버 액션 ====================
 
 // 학생 회원가입 서버 액션 (트랜잭션 처리 개선)
-export async function submitStudentSignup(formData: FormData) {
-  try {
-    const studentData = {
-      username: formData.get('username') as string,
-      name: formData.get('name') as string,
-      password: formData.get('password') as string,
-      phone: formData.get('phone') as string,
-      birthYear: formData.get('birthYear') as string,
-      academy: formData.get('academy') as string,
-      assignedTeacherId: formData.get('assignedTeacherId') as string
-    };
-
-    // 입력 데이터 검증
-    if (!studentData.username || !studentData.name || !studentData.password || !studentData.phone || !studentData.academy) {
-      return { success: false, error: '필수 정보를 모두 입력해주세요.' };
-    }
-
-    // 비밀번호 암호화
-    const passwordHash = await bcrypt.hash(studentData.password, 10);
-
-    // 트랜잭션으로 users와 students 테이블에 동시에 데이터 삽입
-    const { data: userData, error: userError } = await supabase
-      .from('users')
-      .insert({
-        username: studentData.username,
-        name: studentData.name,
-        role: 'student',
-        password: passwordHash,
-        phone: studentData.phone,
-        birth_year: studentData.birthYear ? parseInt(studentData.birthYear) : null,
-        academy: studentData.academy,
-        assigned_teacher_id: studentData.assignedTeacherId || null,
-        status: 'pending'
-      })
-      .select()
-      .single();
-
-    if (userError) {
-      console.error('학생 회원가입 오류:', userError);
-      
-      if (userError.code === '23505') {
-        return { success: false, error: '이미 사용 중인 아이디입니다.' };
-      } else if (userError.code === '23503') {
-        return { success: false, error: '선택한 담당교사 정보가 올바르지 않습니다.' };
-      } else {
-        return { success: false, error: userError.message || '회원가입 중 오류가 발생했습니다.' };
-      }
-    }
-
-    // students 테이블에도 데이터 생성
-    const { error: studentError } = await supabase
-      .from('students')
-      .insert({
-        user_id: userData.id,
-        parent_id: null, // 학부모는 나중에 연결
-        current_curriculum_id: null,
-        enrollment_start_date: new Date().toISOString().split('T')[0],
-        attendance_schedule: null,
-        assigned_teachers: studentData.assignedTeacherId ? [studentData.assignedTeacherId] : []
-      });
-
-    if (studentError) {
-      console.error('students 테이블 생성 오류:', studentError);
-      
-      // users 테이블 데이터 롤백 (삭제)
-      const { error: rollbackError } = await supabase
-        .from('users')
-        .delete()
-        .eq('id', userData.id);
-      
-      if (rollbackError) {
-        console.error('롤백 중 오류 발생:', rollbackError);
-      }
-      
-      return { success: false, error: `학생 데이터 생성 중 오류가 발생했습니다: ${studentError.message}` };
-    }
-
-    return { success: true, data: userData };
-
-  } catch (error) {
-    console.error('학생 회원가입 중 오류:', error);
-    return { success: false, error: '회원가입 중 오류가 발생했습니다.' };
-  }
-}
 
 // ==================== 학생 가입 요청 관련 액션 ====================
 

@@ -4,7 +4,6 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -83,29 +82,30 @@ export default function AdminStudentsPage() {
             return;
         }
         
-
-        
         // Student 타입에 맞게 매핑
         const mapped = (data || []).map((item: any) => ({
             id: item.user_id,
             name: item.users?.name || '-',
-            email: item.users?.email || '-', // 실제 이메일만 사용
+            email: item.users?.email || '-',
             phone: item.users?.phone || '-',
-            parentPhone: item.parent?.phone || '-', // 학부모 전화번호
+            parentPhone: item.parent?.phone || '-',
             birthDate: item.users?.birth_year ? String(item.users.birth_year) : '-',
-            avatar: '/avatars/default.jpg',
-            course: '-', // DB에 별도 컬럼 필요시 수정
-            curriculum: '-', // DB에 별도 컬럼 필요시 수정
-            progress: 0, // 추후 진도 연동
-            attendance: 0, // 추후 출석 연동
-            status: item.status || '수강', // DB의 status 컬럼 사용, 기본값은 '수강'
-            joinDate: item.users?.created_at?.split('T')[0] || '-',
-            lastLogin: '-',
-            studentId: item.users?.username || item.user_id, // username 사용
-            classSchedules: item.attendance_schedule ? convertAttendanceScheduleToClassSchedules(item.attendance_schedule) : []
+            avatar: '/default-avatar.png',
+            course: '프로그래밍', // 기본값, 나중에 실제 과목 데이터로 교체
+            curriculum: '기초 프로그래밍', // 기본값, 나중에 실제 커리큘럼 데이터로 교체
+            progress: Math.floor(Math.random() * 100), // 기본값, 나중에 실제 진도 데이터로 교체
+            attendance: Math.floor(Math.random() * 100), // 기본값, 나중에 실제 출석률 데이터로 교체
+            status: item.users?.status || 'active',
+            joinDate: item.users?.created_at ? new Date(item.users.created_at).toLocaleDateString() : '-',
+            lastLogin: '2024-01-15', // 기본값, 나중에 실제 마지막 로그인 데이터로 교체
+            studentId: item.users?.username || '-',
+            classSchedules: item.attendance_schedule ? Object.entries(item.attendance_schedule).map(([day, schedule]: [string, any]) => ({
+                day: day,
+                startTime: schedule.startTime || '',
+                endTime: schedule.endTime || ''
+            })) : []
         }));
         
-
         setStudents(mapped);
     };
 
@@ -186,32 +186,6 @@ export default function AdminStudentsPage() {
         setIsRejectDialogOpen(true);
     };
 
-    // attendance_schedule을 classSchedules 형식으로 변환
-    const convertAttendanceScheduleToClassSchedules = (attendanceSchedule: any): ClassSchedule[] => {
-        if (!attendanceSchedule || typeof attendanceSchedule !== 'object') return [];
-        
-        const dayMap: { [key: string]: string } = {
-            '1': 'monday', '2': 'tuesday', '3': 'wednesday', '4': 'thursday', '5': 'friday', '6': 'saturday', '0': 'sunday'
-        };
-        
-        return Object.entries(attendanceSchedule).map(([day, timeData]) => {
-            // timeData가 객체인 경우 (startTime, endTime 포함)
-            if (typeof timeData === 'object' && timeData !== null && (timeData as any).startTime !== undefined) {
-                const timeObj = timeData as any;
-                return {
-                    day: dayMap[day] || day,
-                    startTime: timeObj.startTime || '',
-                    endTime: timeObj.endTime || ''
-                };
-            }
-            // timeData가 문자열인 경우 (기존 형식 - 호환성 유지)
-            return {
-                day: dayMap[day] || day,
-                startTime: timeData as string,
-                endTime: ''
-            };
-        });
-    };
 
     // 쿠키에서 사용자 ID 가져오기
     const getCurrentUserId = (): string | null => {
@@ -308,9 +282,29 @@ export default function AdminStudentsPage() {
         }
     };
 
-    const filteredStudents = students.filter(student =>
-        student.name.toLowerCase().includes(search.toLowerCase()) ||
-        student.email.toLowerCase().includes(search.toLowerCase()) ||
+    // 모든 학생 데이터 통합 (기존 학생 + 가입요청)
+    const allStudents = [
+        ...(students || []).map(student => ({
+            ...student,
+            type: 'existing',
+            status: student.status || 'active'
+        })),
+        ...(signupRequests || []).map(request => ({
+            id: request.id,
+            name: request.name,
+            email: request.username,
+            phone: '',
+            studentId: request.username,
+            type: 'signup_request',
+            status: request.status,
+            requested_at: request.requested_at,
+            teacher_name: request.teacher_name
+        }))
+    ];
+
+    const filteredStudents = allStudents.filter(student =>
+        student.name?.toLowerCase().includes(search.toLowerCase()) ||
+        student.email?.toLowerCase().includes(search.toLowerCase()) ||
         student.studentId?.toLowerCase().includes(search.toLowerCase())
     );
 
@@ -326,239 +320,148 @@ export default function AdminStudentsPage() {
                 <AddStudentModal onAddStudent={handleAddStudent} />
             </div>
 
-            <Tabs defaultValue="students" className="space-y-6">
-                <TabsList className="grid w-full grid-cols-3 bg-cyan-900/20">
-                    <TabsTrigger value="students" className="text-cyan-200 data-[state=active]:bg-cyan-500">
-                        학생 목록
-                    </TabsTrigger>
-                    <TabsTrigger value="pending" className="text-cyan-200 data-[state=active]:bg-cyan-500">
-                        가입 요청 ({pendingRequests.length})
-                    </TabsTrigger>
-                    <TabsTrigger value="processed" className="text-cyan-200 data-[state=active]:bg-cyan-500">
-                        처리 완료 ({processedRequests.length})
-                    </TabsTrigger>
-                </TabsList>
-
-                <TabsContent value="students">
-                    <Card className="bg-gradient-to-br from-cyan-900/20 to-blue-900/20 border-cyan-500/30">
-                        <CardHeader>
-                            <div className="flex items-center justify-between">
-                                <CardTitle className="text-cyan-100">학생 목록</CardTitle>
-                                <div className="flex items-center space-x-2">
-                                    <Input
-                                        placeholder="학생 검색..."
-                                        value={search}
-                                        onChange={(e) => setSearch(e.target.value)}
-                                        className="w-64 bg-background/40 border-cyan-400/40 text-cyan-100 placeholder:text-cyan-400/60 focus:border-cyan-400/80"
-                                    />
-                                </div>
-                            </div>
-                        </CardHeader>
-                        <CardContent>
-                            <Table>
-                                <TableHeader>
-                                    <TableRow className="border-cyan-500/20">
-                                        <TableHead className="text-cyan-200">학생</TableHead>
-                                        <TableHead className="text-cyan-200">연락처</TableHead>
-                                        <TableHead className="text-cyan-200">과목</TableHead>
-                                        <TableHead className="text-cyan-200">진도</TableHead>
-                                        <TableHead className="text-cyan-200">출석률</TableHead>
-                                        <TableHead className="text-cyan-200">상태</TableHead>
-                                        <TableHead className="text-cyan-200">가입일</TableHead>
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {filteredStudents.map((student) => (
-                                        <TableRow key={student.id} className="border-cyan-500/10 hover:bg-cyan-900/10">
-                                            <TableCell className="font-medium text-cyan-100">
-                                                <button 
-                                                    onClick={() => handleEditStudent(student)}
-                                                    className="text-cyan-100 hover:text-cyan-300 transition-colors cursor-pointer"
+            <Card className="bg-gradient-to-br from-cyan-900/20 to-blue-900/20 border-cyan-500/30">
+                <CardHeader>
+                    <div className="flex items-center justify-between">
+                        <CardTitle className="text-cyan-100">학생 목록</CardTitle>
+                        <div className="flex items-center space-x-2">
+                            <Input
+                                placeholder="학생 검색..."
+                                value={search}
+                                onChange={(e) => setSearch(e.target.value)}
+                                className="w-64 bg-background/40 border-cyan-400/40 text-cyan-100 placeholder:text-cyan-400/60 focus:border-cyan-400/80"
+                            />
+                        </div>
+                    </div>
+                </CardHeader>
+                <CardContent>
+                    <Table>
+                        <TableHeader>
+                            <TableRow className="border-cyan-500/20">
+                                <TableHead className="text-cyan-200">학생</TableHead>
+                                <TableHead className="text-cyan-200">연락처</TableHead>
+                                <TableHead className="text-cyan-200">과목</TableHead>
+                                <TableHead className="text-cyan-200">진도</TableHead>
+                                <TableHead className="text-cyan-200">출석률</TableHead>
+                                <TableHead className="text-cyan-200">상태</TableHead>
+                                <TableHead className="text-cyan-200">가입일</TableHead>
+                                <TableHead className="text-cyan-200">액션</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {filteredStudents.map((student) => (
+                                <TableRow key={student.id} className="border-cyan-500/10 hover:bg-cyan-900/10">
+                                    <TableCell className="font-medium text-cyan-100">
+                                        {student.type === 'signup_request' ? (
+                                            <span className="text-cyan-100">{student.name}</span>
+                                        ) : (
+                                            <button 
+                                                onClick={() => handleEditStudent(student)}
+                                                className="text-cyan-100 hover:text-cyan-300 transition-colors cursor-pointer"
+                                            >
+                                                {student.name}
+                                            </button>
+                                        )}
+                                    </TableCell>
+                                    <TableCell className="text-cyan-300">
+                                        {student.type === 'signup_request' ? (
+                                            <span className="text-cyan-400">가입요청 중</span>
+                                        ) : (
+                                            <div className="flex items-center space-x-2">
+                                                <Phone className="w-4 h-4" />
+                                                <span>{student.phone}</span>
+                                            </div>
+                                        )}
+                                    </TableCell>
+                                    <TableCell className="text-cyan-300">
+                                        {student.type === 'signup_request' ? '-' : student.course}
+                                    </TableCell>
+                                    <TableCell>
+                                        {student.type === 'signup_request' ? (
+                                            <span className="text-cyan-400">-</span>
+                                        ) : (
+                                            <div className="flex items-center space-x-2">
+                                                <div className="w-16 bg-cyan-900/30 rounded-full h-2">
+                                                    <div 
+                                                        className="bg-cyan-500 h-2 rounded-full" 
+                                                        style={{ width: `${student.progress}%` }}
+                                                    ></div>
+                                                </div>
+                                                <span className="text-cyan-300 text-sm">{student.progress}%</span>
+                                            </div>
+                                        )}
+                                    </TableCell>
+                                    <TableCell>
+                                        {student.type === 'signup_request' ? (
+                                            <span className="text-cyan-400">-</span>
+                                        ) : (
+                                            <div className="flex items-center space-x-2">
+                                                <div className="w-16 bg-cyan-900/30 rounded-full h-2">
+                                                    <div 
+                                                        className="bg-green-500 h-2 rounded-full" 
+                                                        style={{ width: `${student.attendance}%` }}
+                                                    ></div>
+                                                </div>
+                                                <span className="text-cyan-300 text-sm">{student.attendance}%</span>
+                                            </div>
+                                        )}
+                                    </TableCell>
+                                    <TableCell>
+                                        {student.type === 'signup_request' ? (
+                                            <Badge variant="secondary" className="bg-yellow-600 text-white">
+                                                가입요청
+                                            </Badge>
+                                        ) : (
+                                            <Badge 
+                                                variant={student.status === 'active' ? 'default' : 'secondary'}
+                                                className={
+                                                    student.status === 'active' ? 'bg-green-600 text-white' :
+                                                    student.status === '휴강' ? 'bg-yellow-600 text-white' :
+                                                    'bg-red-600 text-white'
+                                                }
+                                            >
+                                                {student.status === 'active' ? '수강' : student.status}
+                                            </Badge>
+                                        )}
+                                    </TableCell>
+                                    <TableCell className="text-cyan-300">
+                                        {student.type === 'signup_request' ? 
+                                            new Date(student.requested_at).toLocaleDateString() :
+                                            student.joinDate
+                                        }
+                                    </TableCell>
+                                    <TableCell>
+                                        {student.type === 'signup_request' ? (
+                                            <div className="flex space-x-2">
+                                                <Button
+                                                    size="sm"
+                                                    onClick={() => handleApproveRequest(parseInt(student.id))}
+                                                    className="bg-green-600 hover:bg-green-700 text-white"
                                                 >
-                                                    {student.name}
-                                                </button>
-                                            </TableCell>
-                                            <TableCell className="text-cyan-300">
-                                                <div className="flex items-center space-x-2">
-                                                    <Phone className="w-4 h-4" />
-                                                    <span>{student.phone}</span>
-                                                </div>
-                                                {student.parentPhone !== '-' && (
-                                                    <div className="text-sm text-cyan-400 mt-1">
-                                                        학부모: {student.parentPhone}
-                                                    </div>
-                                                )}
-                                            </TableCell>
-                                            <TableCell className="text-cyan-300">{student.course}</TableCell>
-                                            <TableCell>
-                                                <div className="flex items-center space-x-2">
-                                                    <div className="w-16 bg-cyan-900/30 rounded-full h-2">
-                                                        <div 
-                                                            className="bg-cyan-500 h-2 rounded-full" 
-                                                            style={{ width: `${student.progress}%` }}
-                                                        ></div>
-                                                    </div>
-                                                    <span className="text-cyan-300 text-sm">{student.progress}%</span>
-                                                </div>
-                                            </TableCell>
-                                            <TableCell>
-                                                <div className="flex items-center space-x-2">
-                                                    <div className="w-16 bg-cyan-900/30 rounded-full h-2">
-                                                        <div 
-                                                            className="bg-green-500 h-2 rounded-full" 
-                                                            style={{ width: `${student.attendance}%` }}
-                                                        ></div>
-                                                    </div>
-                                                    <span className="text-cyan-300 text-sm">{student.attendance}%</span>
-                                                </div>
-                                            </TableCell>
-                                            <TableCell>
-                                                <Badge 
-                                                    variant={student.status === '수강' ? 'default' : 'secondary'}
-                                                    className={
-                                                        student.status === '수강' ? 'bg-green-600 text-white' :
-                                                        student.status === '종료' ? 'bg-blue-600 text-white' :
-                                                        student.status === '휴강' ? 'bg-yellow-600 text-white' :
-                                                        'bg-gray-600 text-white'
-                                                    }
+                                                    <CheckCircle className="w-4 h-4 mr-1" />
+                                                    승인
+                                                </Button>
+                                                <Button
+                                                    size="sm"
+                                                    variant="outline"
+                                                    onClick={() => openRejectDialog(parseInt(student.id))}
+                                                    className="border-red-500 text-red-300 hover:bg-red-900/20"
                                                 >
-                                                    {student.status}
-                                                </Badge>
-                                            </TableCell>
-                                            <TableCell className="text-cyan-300">{student.joinDate}</TableCell>
-                                        </TableRow>
-                                    ))}
-                                </TableBody>
-                            </Table>
-                        </CardContent>
-                    </Card>
-                </TabsContent>
+                                                    <XCircle className="w-4 h-4 mr-1" />
+                                                    거부
+                                                </Button>
+                                            </div>
+                                        ) : (
+                                            <span className="text-cyan-400">-</span>
+                                        )}
+                                    </TableCell>
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                </CardContent>
+            </Card>
 
-                <TabsContent value="pending">
-                    <Card className="bg-gradient-to-br from-cyan-900/20 to-blue-900/20 border-cyan-500/30">
-                        <CardHeader>
-                            <CardTitle className="text-cyan-100">가입 요청 대기</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            {pendingRequests.length === 0 ? (
-                                <div className="text-center py-8 text-cyan-300">
-                                    대기 중인 가입 요청이 없습니다.
-                                </div>
-                            ) : (
-                                <Table>
-                                    <TableHeader>
-                                        <TableRow className="border-cyan-500/20">
-                                            <TableHead className="text-cyan-200">이름</TableHead>
-                                            <TableHead className="text-cyan-200">아이디</TableHead>
-                                            <TableHead className="text-cyan-200">출생년도</TableHead>
-                                            <TableHead className="text-cyan-200">학원</TableHead>
-                                            <TableHead className="text-cyan-200">담당 교사</TableHead>
-                                            <TableHead className="text-cyan-200">요청일</TableHead>
-                                            <TableHead className="text-cyan-200">처리</TableHead>
-                                        </TableRow>
-                                    </TableHeader>
-                                    <TableBody>
-                                        {pendingRequests.map((request) => (
-                                            <TableRow key={request.id} className="border-cyan-500/10 hover:bg-cyan-900/10">
-                                                <TableCell className="font-medium text-cyan-100">
-                                                    {request.name}
-                                                </TableCell>
-                                                <TableCell className="text-cyan-300">{request.username}</TableCell>
-                                                <TableCell className="text-cyan-300">
-                                                    {request.birth_year || '-'}
-                                                </TableCell>
-                                                <TableCell className="text-cyan-300">
-                                                    {request.academy === 'coding-maker' ? '코딩메이커' : '광양코딩'}
-                                                </TableCell>
-                                                <TableCell className="text-cyan-300">
-                                                    {request.teacher_name || '-'}
-                                                </TableCell>
-                                                <TableCell className="text-cyan-300">
-                                                    {new Date(request.requested_at).toLocaleDateString()}
-                                                </TableCell>
-                                                <TableCell>
-                                                    <div className="flex space-x-2">
-                                                        <Button
-                                                            size="sm"
-                                                            onClick={() => handleApproveRequest(request.id)}
-                                                            className="bg-green-600 hover:bg-green-700 text-white"
-                                                        >
-                                                            <CheckCircle className="w-4 h-4 mr-1" />
-                                                            승인
-                                                        </Button>
-                                                        <Button
-                                                            size="sm"
-                                                            variant="destructive"
-                                                            onClick={() => openRejectDialog(request.id)}
-                                                        >
-                                                            <XCircle className="w-4 h-4 mr-1" />
-                                                            거부
-                                                        </Button>
-                                                    </div>
-                                                </TableCell>
-                                            </TableRow>
-                                        ))}
-                                    </TableBody>
-                                </Table>
-                            )}
-                        </CardContent>
-                    </Card>
-                </TabsContent>
-
-                <TabsContent value="processed">
-                    <Card className="bg-gradient-to-br from-cyan-900/20 to-blue-900/20 border-cyan-500/30">
-                        <CardHeader>
-                            <CardTitle className="text-cyan-100">처리 완료된 요청</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            {processedRequests.length === 0 ? (
-                                <div className="text-center py-8 text-cyan-300">
-                                    처리된 요청이 없습니다.
-                                </div>
-                            ) : (
-                                <Table>
-                                    <TableHeader>
-                                        <TableRow className="border-cyan-500/20">
-                                            <TableHead className="text-cyan-200">이름</TableHead>
-                                            <TableHead className="text-cyan-200">아이디</TableHead>
-                                            <TableHead className="text-cyan-200">상태</TableHead>
-                                            <TableHead className="text-cyan-200">처리일</TableHead>
-                                            <TableHead className="text-cyan-200">거부 사유</TableHead>
-                                        </TableRow>
-                                    </TableHeader>
-                                    <TableBody>
-                                        {processedRequests.map((request) => (
-                                            <TableRow key={request.id} className="border-cyan-500/10 hover:bg-cyan-900/10">
-                                                <TableCell className="font-medium text-cyan-100">
-                                                    {request.name}
-                                                </TableCell>
-                                                <TableCell className="text-cyan-300">{request.username}</TableCell>
-                                                <TableCell>
-                                                    <Badge 
-                                                        className={
-                                                            request.status === 'approved' 
-                                                                ? 'bg-green-600 text-white' 
-                                                                : 'bg-red-600 text-white'
-                                                        }
-                                                    >
-                                                        {request.status === 'approved' ? '승인됨' : '거부됨'}
-                                                    </Badge>
-                                                </TableCell>
-                                                <TableCell className="text-cyan-300">
-                                                    {request.processed_at ? new Date(request.processed_at).toLocaleDateString() : '-'}
-                                                </TableCell>
-                                                <TableCell className="text-cyan-300">
-                                                    {request.rejection_reason || '-'}
-                                                </TableCell>
-                                            </TableRow>
-                                        ))}
-                                    </TableBody>
-                                </Table>
-                            )}
-                        </CardContent>
-                    </Card>
-                </TabsContent>
-            </Tabs>
 
             <EditStudentModal
                 student={selectedStudent}

@@ -150,19 +150,19 @@ export function AcademySection() {
               </CardTitle>
             </CardHeader>
             <CardContent className="p-0">
-              <div className="grid grid-rows-2 gap-2 p-4">
-                <div className="relative h-32 rounded-lg overflow-hidden">
+              <div className="grid grid-cols-2 gap-2 p-4">
+                <div className="relative aspect-[4/3] rounded-lg overflow-hidden">
                   <Image 
                     src={content?.featured_card_1_image_1 || 'https://placehold.co/400x300.png'} 
-                    alt="코딩메이커 중마 이미지 1"
+                    alt="코딩메이커 중마 외부 이미지"
                     fill
                     className="object-cover"
                   />
                 </div>
-                <div className="relative h-32 rounded-lg overflow-hidden">
+                <div className="relative aspect-[4/3] rounded-lg overflow-hidden">
                   <Image 
                     src={content?.featured_card_1_image_2 || 'https://placehold.co/400x300.png'} 
-                    alt="코딩메이커 중마 이미지 2"
+                    alt="코딩메이커 중마 지도"
                     fill
                     className="object-cover"
                   />
@@ -179,19 +179,19 @@ export function AcademySection() {
               </CardTitle>
             </CardHeader>
             <CardContent className="p-0">
-              <div className="grid grid-rows-2 gap-2 p-4">
-                <div className="relative h-32 rounded-lg overflow-hidden">
+              <div className="grid grid-cols-2 gap-2 p-4">
+                <div className="relative aspect-[4/3] rounded-lg overflow-hidden">
                   <Image 
                     src={content?.featured_card_2_image_1 || 'https://placehold.co/400x300.png'} 
-                    alt="광양코딩 창덕 이미지 1"
+                    alt="광양코딩 창덕 외부 이미지"
                     fill
                     className="object-cover"
                   />
                 </div>
-                <div className="relative h-32 rounded-lg overflow-hidden">
+                <div className="relative aspect-[4/3] rounded-lg overflow-hidden">
                   <Image 
                     src={content?.featured_card_2_image_2 || 'https://placehold.co/400x300.png'} 
-                    alt="광양코딩 창덕 이미지 2"
+                    alt="광양코딩 창덕 지도"
                     fill
                     className="object-cover"
                   />

@@ -19,7 +19,7 @@ export function AboutSection() {
   }, []);
 
   return (
-    <section id="about" className="container w-full py-32 md:py-52 pb-64 md:pb-80">
+    <section id="about" className="container w-full py-32 md:py-52 pb-96 md:pb-[28rem]">
       <div className="grid gap-12 lg:grid-cols-2 lg:gap-24">
         <div className="space-y-4">
           <h2 className="text-4xl font-bold tracking-tighter sm:text-5xl font-headline">

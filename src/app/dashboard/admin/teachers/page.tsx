@@ -38,9 +38,9 @@ export default function AdminTeachersPage() {
             const { data, error } = await supabase
                 .from('users')
                 .select(`
-                    id, name, email, phone, username, created_at,
+                    id, name, email, phone, username, created_at, profile_image_url,
                     teachers (
-                        bio, certs, career, image, subject
+                        bio, certs, career, subject
                     )
                 `)
                 .eq('role', 'teacher');
@@ -59,7 +59,7 @@ export default function AdminTeachersPage() {
                 subject: teacher.teachers?.subject || '코딩 교육', // subject 컬럼에서 직접 가져오기
                 status: '활성' as const,
                 createdAt: teacher.created_at,
-                image: teacher.teachers?.image || ''
+                image: teacher.profile_image_url || ''
             }));
 
             setTeachers(mappedTeachers);

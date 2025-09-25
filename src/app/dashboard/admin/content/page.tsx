@@ -518,21 +518,21 @@ export default function ContentManagePage() {
                     </div>
                   </CardHeader>
                   <CardContent className="p-0">
-                    <div className="grid grid-rows-2 gap-2 p-4">
+                    <div className="grid grid-cols-2 gap-2 p-4">
                       <div 
-                        className="relative h-32 rounded-lg overflow-hidden cursor-pointer group"
+                        className="relative aspect-[4/3] rounded-lg overflow-hidden cursor-pointer group"
                         onClick={() => handleImageUpload('featured', undefined, 1, 1)}
                       >
                         <Image 
                           src={content.featured_card_1_image_1} 
-                          alt="코딩메이커 중마 이미지 1"
+                          alt="코딩메이커 중마 외부 이미지"
                           fill
                           className="object-cover"
                         />
                         <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center">
                           <div className="text-white text-center">
                             <Camera className="w-6 h-6 mx-auto mb-1" />
-                            <p className="text-xs font-bold">이미지 변경</p>
+                            <p className="text-xs font-bold">외부 이미지 변경</p>
                           </div>
                         </div>
                         {isUploading && (
@@ -545,19 +545,19 @@ export default function ContentManagePage() {
                         )}
                       </div>
                       <div 
-                        className="relative h-32 rounded-lg overflow-hidden cursor-pointer group"
+                        className="relative aspect-[4/3] rounded-lg overflow-hidden cursor-pointer group"
                         onClick={() => handleImageUpload('featured', undefined, 1, 2)}
                       >
                         <Image 
                           src={content.featured_card_1_image_2} 
-                          alt="코딩메이커 중마 이미지 2"
+                          alt="코딩메이커 중마 지도"
                           fill
                           className="object-cover"
                         />
                         <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center">
                           <div className="text-white text-center">
                             <Camera className="w-6 h-6 mx-auto mb-1" />
-                            <p className="text-xs font-bold">이미지 변경</p>
+                            <p className="text-xs font-bold">지도 이미지 변경</p>
                           </div>
                         </div>
                         {isUploading && (
@@ -587,21 +587,21 @@ export default function ContentManagePage() {
                     </div>
                   </CardHeader>
                   <CardContent className="p-0">
-                    <div className="grid grid-rows-2 gap-2 p-4">
+                    <div className="grid grid-cols-2 gap-2 p-4">
                       <div 
-                        className="relative h-32 rounded-lg overflow-hidden cursor-pointer group"
+                        className="relative aspect-[4/3] rounded-lg overflow-hidden cursor-pointer group"
                         onClick={() => handleImageUpload('featured', undefined, 2, 1)}
                       >
                         <Image 
                           src={content.featured_card_2_image_1} 
-                          alt="광양코딩 창덕 이미지 1"
+                          alt="광양코딩 창덕 외부 이미지"
                           fill
                           className="object-cover"
                         />
                         <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center">
                           <div className="text-white text-center">
                             <Camera className="w-6 h-6 mx-auto mb-1" />
-                            <p className="text-xs font-bold">이미지 변경</p>
+                            <p className="text-xs font-bold">외부 이미지 변경</p>
                           </div>
                         </div>
                         {isUploading && (
@@ -614,19 +614,19 @@ export default function ContentManagePage() {
                         )}
                       </div>
                       <div 
-                        className="relative h-32 rounded-lg overflow-hidden cursor-pointer group"
+                        className="relative aspect-[4/3] rounded-lg overflow-hidden cursor-pointer group"
                         onClick={() => handleImageUpload('featured', undefined, 2, 2)}
                       >
                         <Image 
                           src={content.featured_card_2_image_2} 
-                          alt="광양코딩 창덕 이미지 2"
+                          alt="광양코딩 창덕 지도"
                           fill
                           className="object-cover"
                         />
                         <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center">
                           <div className="text-white text-center">
                             <Camera className="w-6 h-6 mx-auto mb-1" />
-                            <p className="text-xs font-bold">이미지 변경</p>
+                            <p className="text-xs font-bold">지도 이미지 변경</p>
                           </div>
                         </div>
                         {isUploading && (

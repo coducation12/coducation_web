@@ -76,7 +76,25 @@ export default function TeacherStudentsPage() {
         
         let query = supabase
             .from('students')
-            .select(`user_id, parent_id, current_curriculum_id, enrollment_start_date, attendance_schedule, users!students_user_id_fkey ( id, name, username, phone, birth_year, academy, created_at, email, status ), parent:users!students_parent_id_fkey ( phone )`)
+            .select(`
+                user_id, 
+                parent_id, 
+                current_curriculum_id, 
+                enrollment_start_date, 
+                attendance_schedule,
+                users!inner ( 
+                    id, 
+                    name, 
+                    username, 
+                    phone, 
+                    birth_year, 
+                    academy, 
+                    created_at, 
+                    email, 
+                    status 
+                ), 
+                parent:users!students_parent_id_fkey ( phone )
+            `)
             .not('users.status', 'eq', 'pending'); // pending 상태인 학생 제외
         
         // 강사인 경우 담당 학생만 조회

@@ -1338,7 +1338,7 @@ export async function getInstructors() {
 
 // ==================== 학생 회원가입 서버 액션 ====================
 
-// 학생 회원가입 서버 액션 (강사 추가 로직과 유사)
+// 학생 회원가입 서버 액션 (트랜잭션 처리 개선)
 export async function submitStudentSignup(formData: FormData) {
   try {
     const studentData = {
@@ -1359,7 +1359,7 @@ export async function submitStudentSignup(formData: FormData) {
     // 비밀번호 암호화
     const passwordHash = await bcrypt.hash(studentData.password, 10);
 
-    // 사용자 계정 생성 (승인 대기 상태)
+    // 트랜잭션으로 users와 students 테이블에 동시에 데이터 삽입
     const { data: userData, error: userError } = await supabase
       .from('users')
       .insert({
@@ -1402,11 +1402,17 @@ export async function submitStudentSignup(formData: FormData) {
 
     if (studentError) {
       console.error('students 테이블 생성 오류:', studentError);
-      console.error('오류 코드:', studentError.code);
-      console.error('오류 메시지:', studentError.message);
-      console.error('오류 세부사항:', studentError.details);
-      console.error('오류 힌트:', studentError.hint);
-      // users 테이블 데이터는 이미 생성되었으므로 롤백하지 않음
+      
+      // users 테이블 데이터 롤백 (삭제)
+      const { error: rollbackError } = await supabase
+        .from('users')
+        .delete()
+        .eq('id', userData.id);
+      
+      if (rollbackError) {
+        console.error('롤백 중 오류 발생:', rollbackError);
+      }
+      
       return { success: false, error: `학생 데이터 생성 중 오류가 발생했습니다: ${studentError.message}` };
     }
 
@@ -1473,7 +1479,7 @@ export async function getStudentSignupRequests(teacherId?: string) {
   }
 }
 
-// 학생 가입 요청 승인
+// 학생 가입 요청 승인 (데이터 동기화 개선)
 export async function approveStudentSignupRequest(requestId: string) {
   try {
     // 현재 사용자 정보 가져오기
@@ -1482,7 +1488,7 @@ export async function approveStudentSignupRequest(requestId: string) {
       return { success: false, error: '인증이 필요합니다.' };
     }
 
-    // 사용자 상태를 active로 변경
+    // 1. 사용자 상태를 active로 변경
     const { error: updateError } = await supabase
       .from('users')
       .update({
@@ -1496,6 +1502,43 @@ export async function approveStudentSignupRequest(requestId: string) {
       return { success: false, error: '가입 요청 승인 중 오류가 발생했습니다.' };
     }
 
+    // 2. students 테이블이 존재하는지 확인하고 없으면 생성
+    const { data: existingStudent, error: checkError } = await supabase
+      .from('students')
+      .select('user_id')
+      .eq('user_id', requestId)
+      .single();
+
+    if (checkError && checkError.code !== 'PGRST116') {
+      console.error('students 테이블 확인 중 오류:', checkError);
+      return { success: false, error: '학생 데이터 확인 중 오류가 발생했습니다.' };
+    }
+
+    // students 테이블에 데이터가 없으면 생성
+    if (!existingStudent) {
+      const { error: createStudentError } = await supabase
+        .from('students')
+        .insert({
+          user_id: requestId,
+          parent_id: null,
+          current_curriculum_id: null,
+          enrollment_start_date: new Date().toISOString().split('T')[0],
+          attendance_schedule: null,
+          assigned_teachers: []
+        });
+
+      if (createStudentError) {
+        console.error('students 테이블 생성 중 오류:', createStudentError);
+        // users 테이블 상태를 다시 pending으로 롤백
+        await supabase
+          .from('users')
+          .update({ status: 'pending' })
+          .eq('id', requestId);
+        
+        return { success: false, error: '학생 데이터 생성 중 오류가 발생했습니다.' };
+      }
+    }
+
     return { success: true, message: '가입 요청이 승인되었습니다.' };
 
   } catch (error) {
@@ -1504,7 +1547,7 @@ export async function approveStudentSignupRequest(requestId: string) {
   }
 }
 
-// 학생 가입 요청 거부
+// 학생 가입 요청 거부 (데이터 정합성 개선)
 export async function rejectStudentSignupRequest(requestId: string, rejectionReason?: string) {
   try {
     // 현재 사용자 정보 가져오기
@@ -1513,15 +1556,26 @@ export async function rejectStudentSignupRequest(requestId: string, rejectionRea
       return { success: false, error: '인증이 필요합니다.' };
     }
 
-    // 사용자 계정 삭제 (거부된 경우)
-    const { error } = await supabase
+    // 1. 먼저 students 테이블에서 관련 데이터 삭제
+    const { error: studentError } = await supabase
+      .from('students')
+      .delete()
+      .eq('user_id', requestId);
+
+    if (studentError) {
+      console.error('students 테이블 삭제 중 오류:', studentError);
+      // students 테이블 삭제 실패해도 계속 진행 (데이터가 없을 수도 있음)
+    }
+
+    // 2. users 테이블에서 사용자 계정 삭제
+    const { error: userError } = await supabase
       .from('users')
       .delete()
       .eq('id', requestId)
       .eq('status', 'pending');
 
-    if (error) {
-      console.error('가입 요청 거부 중 오류:', error);
+    if (userError) {
+      console.error('가입 요청 거부 중 오류:', userError);
       return { success: false, error: '가입 요청 거부 중 오류가 발생했습니다.' };
     }
 

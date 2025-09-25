@@ -63,7 +63,7 @@ export default function AdminStudentsPage() {
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [rejectionReason, setRejectionReason] = useState("");
     const [isRejectDialogOpen, setIsRejectDialogOpen] = useState(false);
-    const [selectedRequestId, setSelectedRequestId] = useState<number | null>(null);
+    const [selectedRequestId, setSelectedRequestId] = useState<string | null>(null);
     const { toast } = useToast();
 
     useEffect(() => {
@@ -74,7 +74,8 @@ export default function AdminStudentsPage() {
     const fetchStudents = async () => {
         const { data, error } = await supabase
             .from('students')
-            .select(`user_id, parent_id, current_curriculum_id, enrollment_start_date, attendance_schedule, users!students_user_id_fkey ( id, name, username, phone, birth_year, academy, created_at, email, status ), parent:users!students_parent_id_fkey ( phone )`);
+            .select(`user_id, parent_id, current_curriculum_id, enrollment_start_date, attendance_schedule, users!students_user_id_fkey ( id, name, username, phone, birth_year, academy, created_at, email, status ), parent:users!students_parent_id_fkey ( phone )`)
+            .not('users.status', 'eq', 'pending'); // pending 상태인 학생 제외
         
         if (error) {
             console.error('학생 목록 조회 오류:', error);
@@ -123,7 +124,7 @@ export default function AdminStudentsPage() {
         }
     };
 
-    const handleApproveRequest = async (requestId: number) => {
+    const handleApproveRequest = async (requestId: string) => {
         try {
             const result = await approveStudentSignupRequest(requestId);
             if (result.success) {
@@ -181,7 +182,7 @@ export default function AdminStudentsPage() {
         }
     };
 
-    const openRejectDialog = (requestId: number) => {
+    const openRejectDialog = (requestId: string) => {
         setSelectedRequestId(requestId);
         setIsRejectDialogOpen(true);
     };
@@ -435,7 +436,7 @@ export default function AdminStudentsPage() {
                                             <div className="flex space-x-2">
                                                 <Button
                                                     size="sm"
-                                                    onClick={() => handleApproveRequest(parseInt(student.id))}
+                                                    onClick={() => handleApproveRequest(student.id)}
                                                     className="bg-green-600 hover:bg-green-700 text-white"
                                                 >
                                                     <CheckCircle className="w-4 h-4 mr-1" />
@@ -444,7 +445,7 @@ export default function AdminStudentsPage() {
                                                 <Button
                                                     size="sm"
                                                     variant="outline"
-                                                    onClick={() => openRejectDialog(parseInt(student.id))}
+                                                    onClick={() => openRejectDialog(student.id)}
                                                     className="border-red-500 text-red-300 hover:bg-red-900/20"
                                                 >
                                                     <XCircle className="w-4 h-4 mr-1" />

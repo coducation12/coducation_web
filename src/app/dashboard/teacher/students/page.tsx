@@ -62,7 +62,7 @@ export default function TeacherStudentsPage() {
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [rejectionReason, setRejectionReason] = useState("");
     const [isRejectDialogOpen, setIsRejectDialogOpen] = useState(false);
-    const [selectedRequestId, setSelectedRequestId] = useState<number | null>(null);
+    const [selectedRequestId, setSelectedRequestId] = useState<string | null>(null);
     const { toast } = useToast();
 
     useEffect(() => {
@@ -71,15 +71,17 @@ export default function TeacherStudentsPage() {
     }, []);
 
     const fetchStudents = async () => {
-        const currentUserId = getCurrentUserId();
+        // 서버 액션을 사용하여 현재 사용자 정보 가져오기
+        const currentUser = await getCurrentUser();
         
         let query = supabase
             .from('students')
-            .select(`user_id, parent_id, current_curriculum_id, enrollment_start_date, attendance_schedule, users!students_user_id_fkey ( id, name, username, phone, birth_year, academy, created_at, email, status ), parent:users!students_parent_id_fkey ( phone )`);
+            .select(`user_id, parent_id, current_curriculum_id, enrollment_start_date, attendance_schedule, users!students_user_id_fkey ( id, name, username, phone, birth_year, academy, created_at, email, status ), parent:users!students_parent_id_fkey ( phone )`)
+            .not('users.status', 'eq', 'pending'); // pending 상태인 학생 제외
         
         // 강사인 경우 담당 학생만 조회
-        if (currentUserId) {
-            query = query.contains('assigned_teachers', [currentUserId]);
+        if (currentUser?.id) {
+            query = query.contains('assigned_teachers', [currentUser.id]);
         }
         
         const { data, error } = await query;
@@ -119,15 +121,16 @@ export default function TeacherStudentsPage() {
 
     const fetchSignupRequests = async () => {
         try {
-            const currentUserId = getCurrentUserId();
-            console.log('현재 사용자 ID:', currentUserId);
+            // 서버 액션을 사용하여 현재 사용자 정보 가져오기
+            const currentUser = await getCurrentUser();
+            console.log('현재 사용자 정보:', currentUser);
             
-            if (!currentUserId) {
-                console.log('사용자 ID를 가져올 수 없습니다.');
+            if (!currentUser || !currentUser.id) {
+                console.log('사용자 정보를 가져올 수 없습니다.');
                 return;
             }
 
-            const result = await getStudentSignupRequests(currentUserId);
+            const result = await getStudentSignupRequests(currentUser.id);
             console.log('가입 요청 조회 결과:', result);
             
             if (result.success) {
@@ -142,7 +145,7 @@ export default function TeacherStudentsPage() {
         }
     };
 
-    const handleApproveRequest = async (requestId: number) => {
+    const handleApproveRequest = async (requestId: string) => {
         try {
             const result = await approveStudentSignupRequest(requestId);
             if (result.success) {
@@ -169,7 +172,7 @@ export default function TeacherStudentsPage() {
         }
     };
 
-    const openRejectDialog = (requestId: number) => {
+    const openRejectDialog = (requestId: string) => {
         setSelectedRequestId(requestId);
         setIsRejectDialogOpen(true);
     };
@@ -205,13 +208,6 @@ export default function TeacherStudentsPage() {
         }
     };
 
-    // 쿠키에서 사용자 ID 가져오기
-    const getCurrentUserId = (): string | null => {
-        if (typeof document === 'undefined') return null;
-        const cookies = document.cookie.split(';');
-        const userCookie = cookies.find(cookie => cookie.trim().startsWith('user_id='));
-        return userCookie ? userCookie.split('=')[1] : null;
-    };
 
     const handleAddStudent = async (studentData: StudentFormData) => {
         try {
@@ -452,7 +448,7 @@ export default function TeacherStudentsPage() {
                                             <div className="flex space-x-2">
                                                 <Button
                                                     size="sm"
-                                                    onClick={() => handleApproveRequest(parseInt(student.id))}
+                                                    onClick={() => handleApproveRequest(student.id)}
                                                     className="bg-green-600 hover:bg-green-700 text-white"
                                                 >
                                                     <CheckCircle className="w-4 h-4 mr-1" />
@@ -461,7 +457,7 @@ export default function TeacherStudentsPage() {
                                                 <Button
                                                     size="sm"
                                                     variant="outline"
-                                                    onClick={() => openRejectDialog(parseInt(student.id))}
+                                                    onClick={() => openRejectDialog(student.id)}
                                                     className="border-red-500 text-red-300 hover:bg-red-900/20"
                                                 >
                                                     <XCircle className="w-4 h-4 mr-1" />

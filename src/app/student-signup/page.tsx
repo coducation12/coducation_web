@@ -73,7 +73,6 @@ export default function StudentSignupPage() {
     confirmPassword: '',
     phone: '',
     parentPhone: '',
-    email: '',
     academy: '',
     assignedTeacherId: ''
   })
@@ -170,14 +169,6 @@ export default function StudentSignupPage() {
     }
 
 
-    // 이메일 형식 검증 (입력된 경우에만)
-    if (formData.email) {
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(formData.email)) {
-        setError("올바른 이메일 형식을 입력해주세요.");
-        return false;
-      }
-    }
 
     // 전화번호 형식 검증
     if (!validatePhoneNumber(formData.phone)) {
@@ -210,7 +201,7 @@ export default function StudentSignupPage() {
       formDataToSubmit.append('subject', '프로그래밍') // 기본값으로 설정
       formDataToSubmit.append('phone', formData.phone)
       formDataToSubmit.append('parentPhone', formData.parentPhone || '')
-      formDataToSubmit.append('email', formData.email || '')
+      formDataToSubmit.append('email', '')
       formDataToSubmit.append('classSchedules', JSON.stringify([]))
       formDataToSubmit.append('academy', formData.academy)
       formDataToSubmit.append('assignedTeacherId', formData.assignedTeacherId)
@@ -237,119 +228,107 @@ export default function StudentSignupPage() {
   }
 
   return (
-    <div className="flex items-center justify-center min-h-[calc(100vh-11rem)] py-12">
-      <Card className="mx-auto max-w-2xl w-full bg-black/40 border-sky-500/20">
-        <CardHeader className="text-center">
-          <CardTitle className="text-2xl font-bold text-white">학생 회원가입</CardTitle>
-          <CardDescription className="text-gray-300">
+    <div className="flex items-center justify-center min-h-[calc(100vh-11rem)] py-4 px-4 sm:py-8 sm:px-6 lg:py-12">
+      <Card className="mx-auto w-full max-w-sm sm:max-w-md md:max-w-lg lg:max-w-2xl bg-black/40 border-sky-500/20">
+        <CardHeader className="text-center px-4 sm:px-6">
+          <CardTitle className="text-xl sm:text-2xl font-bold text-white">학생 회원가입</CardTitle>
+          <CardDescription className="text-sm sm:text-base text-gray-300">
             가입 요청 후 담당 교사의 승인을 받아야 합니다
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-6">
+        <CardContent className="px-4 sm:px-6">
+          <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
             {/* 자동 생성된 아이디 표시 */}
-            <div className="bg-sky-900/20 border border-sky-500/30 rounded-lg p-6 text-center">
-              <Label className="text-sky-200 font-medium text-lg">자동 생성된 아이디</Label>
-              <p className="text-sky-100 text-3xl font-mono font-bold mt-2">
+            <div className="bg-sky-900/20 border border-sky-500/30 rounded-lg p-4 sm:p-6 text-center">
+              <Label className="text-sky-200 font-medium text-base sm:text-lg">자동 생성된 아이디</Label>
+              <p className="text-sky-100 text-2xl sm:text-3xl font-mono font-bold mt-2">
                 {generatedUsername || ''}
               </p>
             </div>
 
-            <div className="flex gap-2 w-full min-w-0">
+            <div className="flex flex-col sm:flex-row gap-2 w-full min-w-0">
               <div className="flex-1 min-w-0 space-y-2">
-                <Label htmlFor="name" className="text-white">이름 *</Label>
+                <Label htmlFor="name" className="text-white text-sm sm:text-base">이름 *</Label>
                 <Input
                   id="name"
                   value={formData.name}
                   onChange={(e) => handleInputChange("name", e.target.value)}
                   placeholder="학생 이름을 입력하세요"
-                  className="bg-background/40 border-cyan-400/40 text-cyan-100 placeholder:text-cyan-400/60 focus:border-cyan-400/80"
+                  className="bg-background/40 border-cyan-400/40 text-cyan-100 placeholder:text-cyan-400/60 focus:border-cyan-400/80 text-sm sm:text-base"
                   autoComplete="off"
                 />
               </div>
               <div className="flex-1 min-w-0 space-y-2">
-                <Label htmlFor="birthYear" className="text-white">출생년도 *</Label>
+                <Label htmlFor="birthYear" className="text-white text-sm sm:text-base">출생년도 *</Label>
                 <Input
                   id="birthYear"
                   type="text"
                   value={formData.birthYear}
                   onChange={(e) => handleInputChange("birthYear", e.target.value)}
                   placeholder="예: 2010"
-                  className="bg-background/40 border-cyan-400/40 text-cyan-100 placeholder:text-cyan-400/60 focus:border-cyan-400/80"
+                  className="bg-background/40 border-cyan-400/40 text-cyan-100 placeholder:text-cyan-400/60 focus:border-cyan-400/80 text-sm sm:text-base"
                   maxLength={4}
                   autoComplete="off"
                 />
               </div>
             </div>
 
-            <div className="flex gap-2 w-full min-w-0">
+            <div className="flex flex-col sm:flex-row gap-2 w-full min-w-0">
               <div className="flex-1 min-w-0 space-y-2">
-                <Label htmlFor="password" className="text-white">비밀번호 *</Label>
+                <Label htmlFor="password" className="text-white text-sm sm:text-base">비밀번호 *</Label>
                 <Input
                   id="password"
                   type="password"
                   value={formData.password}
                   onChange={(e) => handleInputChange("password", e.target.value)}
                   placeholder="비밀번호를 입력하세요"
-                  className="bg-background/40 border-cyan-400/40 text-cyan-100 placeholder:text-cyan-400/60 focus:border-cyan-400/80"
+                  className="bg-background/40 border-cyan-400/40 text-cyan-100 placeholder:text-cyan-400/60 focus:border-cyan-400/80 text-sm sm:text-base"
                   autoComplete="new-password"
                 />
               </div>
               <div className="flex-1 min-w-0 space-y-2">
-                <Label htmlFor="confirmPassword" className="text-white">비밀번호 확인 *</Label>
+                <Label htmlFor="confirmPassword" className="text-white text-sm sm:text-base">비밀번호 확인 *</Label>
                 <Input
                   id="confirmPassword"
                   type="password"
                   value={formData.confirmPassword}
                   onChange={(e) => handleInputChange("confirmPassword", e.target.value)}
                   placeholder="비밀번호를 다시 입력하세요"
-                  className="bg-background/40 border-cyan-400/40 text-cyan-100 placeholder:text-cyan-400/60 focus:border-cyan-400/80"
+                  className="bg-background/40 border-cyan-400/40 text-cyan-100 placeholder:text-cyan-400/60 focus:border-cyan-400/80 text-sm sm:text-base"
                   autoComplete="new-password"
                 />
               </div>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="phone" className="text-white">연락처 *</Label>
-              <div className="flex items-center gap-2">
+              <Label htmlFor="phone" className="text-white text-sm sm:text-base">연락처 *</Label>
+              <div className="flex flex-col sm:flex-row items-center gap-2">
                 <Input
                   id="phone"
                   value={formData.phone}
                   onChange={(e) => handlePhoneChange("phone", e.target.value)}
                   placeholder="학생 연락처 (숫자만 입력)"
-                  className="flex-1 bg-background/40 border-cyan-400/40 text-cyan-100 placeholder:text-cyan-400/60 focus:border-cyan-400/80"
+                  className="flex-1 bg-background/40 border-cyan-400/40 text-cyan-100 placeholder:text-cyan-400/60 focus:border-cyan-400/80 text-sm sm:text-base"
                   maxLength={13}
                   autoComplete="off"
                 />
-                <span className="text-cyan-400 text-lg">/</span>
+                <span className="text-cyan-400 text-lg hidden sm:block">/</span>
                 <Input
                   id="parentPhone"
                   value={formData.parentPhone}
                   onChange={(e) => handlePhoneChange("parentPhone", e.target.value)}
                   placeholder="학부모 연락처 (선택)"
-                  className="flex-1 bg-background/40 border-cyan-400/40 text-cyan-100 placeholder:text-cyan-400/60 focus:border-cyan-400/80"
+                  className="flex-1 bg-background/40 border-cyan-400/40 text-cyan-100 placeholder:text-cyan-400/60 focus:border-cyan-400/80 text-sm sm:text-base"
                   maxLength={13}
                   autoComplete="off"
                 />
               </div>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="email" className="text-white">이메일 <span className="text-cyan-400 text-xs">(선택)</span></Label>
-              <Input
-                id="email"
-                type="email"
-                value={formData.email}
-                onChange={(e) => handleInputChange("email", e.target.value)}
-                placeholder="example@email.com"
-                className="bg-background/40 border-cyan-400/40 text-cyan-100 placeholder:text-cyan-400/60 focus:border-cyan-400/80"
-                autoComplete="off"
-              />
-            </div>
 
-            <div className="flex gap-2 w-full min-w-0">
+            <div className="flex flex-col sm:flex-row gap-2 w-full min-w-0">
               <div className="flex-1 min-w-0 space-y-2">
-                <Label htmlFor="academy" className="text-white">학원 *</Label>
+                <Label htmlFor="academy" className="text-white text-sm sm:text-base">학원 *</Label>
                 <Select
                   value={formData.academy}
                   onValueChange={(value) => {
@@ -358,7 +337,7 @@ export default function StudentSignupPage() {
                   }}
                   disabled={loading}
                 >
-                  <SelectTrigger className="bg-background/40 border-cyan-400/40 text-cyan-100 focus:border-cyan-400/80">
+                  <SelectTrigger className="bg-background/40 border-cyan-400/40 text-cyan-100 focus:border-cyan-400/80 text-sm sm:text-base">
                     <SelectValue placeholder="학원을 선택하세요" />
                   </SelectTrigger>
                   <SelectContent className="bg-background border-cyan-400/40">
@@ -368,13 +347,13 @@ export default function StudentSignupPage() {
                 </Select>
               </div>
               <div className="flex-1 min-w-0 space-y-2">
-                <Label htmlFor="assignedTeacher" className="text-white">담당 교사 *</Label>
+                <Label htmlFor="assignedTeacher" className="text-white text-sm sm:text-base">담당 교사 *</Label>
                 <Select
                   value={formData.assignedTeacherId}
                   onValueChange={(value) => handleInputChange('assignedTeacherId', value)}
                   disabled={loading || !formData.academy || teachersLoading}
                 >
-                  <SelectTrigger className="bg-background/40 border-cyan-400/40 text-cyan-100 focus:border-cyan-400/80">
+                  <SelectTrigger className="bg-background/40 border-cyan-400/40 text-cyan-100 focus:border-cyan-400/80 text-sm sm:text-base">
                     <SelectValue placeholder={
                       !formData.academy 
                         ? "먼저 학원을 선택하세요" 
@@ -411,13 +390,13 @@ export default function StudentSignupPage() {
 
             <Button
               type="submit"
-              className="w-full bg-sky-600 hover:bg-sky-700 text-white"
+              className="w-full bg-sky-600 hover:bg-sky-700 text-white text-sm sm:text-base py-2 sm:py-3"
               disabled={loading}
             >
               {loading ? '가입 요청 중...' : '가입 요청'}
             </Button>
 
-            <div className="text-center text-gray-400">
+            <div className="text-center text-gray-400 text-sm sm:text-base">
               이미 계정이 있으신가요?{' '}
               <button
                 type="button"

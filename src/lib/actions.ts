@@ -299,7 +299,7 @@ export async function addStudent(formData: FormData, isSignup: boolean = false) 
       assigned_teachers: isSignup ? (studentData.assignedTeacherId ? [studentData.assignedTeacherId] : []) : (currentUserRole === 'teacher' && currentUserId ? [currentUserId] : []),
       parent_id: parentId,
       current_curriculum_id: null,
-      enrollment_start_date: new Date().toISOString().split('T')[0], // 회원가입 시에도 현재 날짜로 설정
+      // enrollment_start_date는 데이터베이스 기본값(CURRENT_DATE) 사용
       attendance_schedule: Object.keys(attendanceSchedule).length > 0 ? attendanceSchedule : null,
       created_at: new Date().toISOString()
     };

@@ -1,20 +1,33 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { supabase } from '@/lib/supabase'
-import { submitStudentSignup } from '@/lib/actions'
+import { addStudent } from '@/lib/actions'
 
-interface Teacher {
-  id: string
-  name: string
-  academy: string
-}
+// 한글을 영문으로 변환하는 함수
+const convertKoreanToEnglish = (korean: string): string => {
+  const koreanToEnglish: { [key: string]: string } = {
+    'ㄱ': 'r', 'ㄴ': 's', 'ㄷ': 'e', 'ㄹ': 'f', 'ㅁ': 'a', 'ㅂ': 'q', 'ㅅ': 't', 'ㅇ': 'd', 'ㅈ': 'w', 'ㅊ': 'c', 'ㅋ': 'z', 'ㅌ': 'x', 'ㅍ': 'v', 'ㅎ': 'g',
+    'ㅏ': 'k', 'ㅑ': 'i', 'ㅓ': 'j', 'ㅕ': 'u', 'ㅗ': 'h', 'ㅛ': 'y', 'ㅜ': 'n', 'ㅠ': 'b', 'ㅡ': 'm', 'ㅣ': 'l',
+    'ㄲ': 'R', 'ㄸ': 'E', 'ㅃ': 'Q', 'ㅆ': 'T', 'ㅉ': 'W'
+  };
+  
+  let result = '';
+  for (let i = 0; i < korean.length; i++) {
+    const char = korean[i];
+    if (koreanToEnglish[char]) {
+      result += koreanToEnglish[char];
+    } else {
+      result += char;
+    }
+  }
+  return result;
+};
 
 // 휴대폰번호 포맷팅 함수
 const formatPhoneNumber = (value: string): string => {
@@ -36,52 +49,39 @@ const formatPhoneNumber = (value: string): string => {
   }
 };
 
+
+// 휴대폰번호 유효성 검사 함수
+const validatePhoneNumber = (phone: string): boolean => {
+  const numbers = phone.replace(/[^0-9]/g, '');
+  return numbers.length === 11 && numbers.startsWith('010');
+};
+
+const subjects = [
+  "React", "Python", "알고리즘", "웹 개발", "JavaScript", "TypeScript", 
+  "Node.js", "데이터베이스", "머신러닝", "앱 개발"
+];
+
+
 export default function StudentSignupPage() {
   const [formData, setFormData] = useState({
-    username: '',
-    password: '',
-    confirmPassword: '',
     name: '',
     birthYear: '',
+    password: '',
+    subject: '',
     phone: '',
-    academy: '',
-    assignedTeacherId: ''
+    parentPhone: '',
+    email: ''
   })
-  const [teachers, setTeachers] = useState<Teacher[]>([])
   const [loading, setLoading] = useState(false)
-  const [teachersLoading, setTeachersLoading] = useState(true)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState(false)
   const router = useRouter()
 
-  // 교사 목록 불러오기
-  useEffect(() => {
-    const fetchTeachers = async () => {
-      setTeachersLoading(true)
-      try {
-        const { data, error } = await supabase
-          .from('users')
-          .select('id, name, academy')
-          .eq('role', 'teacher')
-          .order('name')
+  // 자동 생성된 아이디 계산
+  const generatedUsername = formData.name && formData.birthYear 
+    ? `${formData.name}${formData.birthYear.slice(-2)}`
+    : '';
 
-        if (error) {
-          console.error('교사 목록 조회 오류:', error)
-          setError('교사 목록을 불러오는 중 오류가 발생했습니다.')
-          return
-        }
-        
-        setTeachers(data || [])
-      } catch (error) {
-        console.error('교사 목록 불러오기 실패:', error)
-        setError('교사 목록을 불러오는 중 오류가 발생했습니다.')
-      } finally {
-        setTeachersLoading(false)
-      }
-    }
-
-    fetchTeachers()
-  }, [])
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }))
@@ -89,54 +89,57 @@ export default function StudentSignupPage() {
   }
 
   // 휴대폰번호 입력 처리
-  const handlePhoneChange = (value: string) => {
+  const handlePhoneChange = (field: 'phone' | 'parentPhone', value: string) => {
     const formattedValue = formatPhoneNumber(value)
-    setFormData(prev => ({ ...prev, phone: formattedValue }))
+    setFormData(prev => ({ ...prev, [field]: formattedValue }))
     setError('')
   }
 
+
   const validateForm = () => {
-    if (!formData.username.trim()) {
-      setError('아이디를 입력해주세요.')
-      return false
+    // 필수 필드 검증
+    if (!formData.name || !formData.birthYear || !formData.password || 
+        !formData.subject || !formData.phone) {
+      setError("필수 필드를 모두 입력해주세요.");
+      return false;
     }
-    if (formData.username.length < 3) {
-      setError('아이디는 3자 이상이어야 합니다.')
-      return false
+
+    // 생년 형식 검증
+    const yearRegex = /^\d{4}$/;
+    if (!yearRegex.test(formData.birthYear)) {
+      setError('출생년도를 4자리(yyyy)로 입력해주세요.');
+      return false;
     }
-    if (!formData.password) {
-      setError('비밀번호를 입력해주세요.')
-      return false
+
+    // 생년 유효성 검증 (1900년 ~ 현재년도)
+    const currentYear = new Date().getFullYear();
+    const birthYear = parseInt(formData.birthYear);
+    if (birthYear < 1900 || birthYear > currentYear) {
+      setError('올바른 출생년도를 입력해주세요.');
+      return false;
     }
-    if (formData.password.length < 6) {
-      setError('비밀번호는 6자 이상이어야 합니다.')
-      return false
+
+
+    // 이메일 형식 검증 (입력된 경우에만)
+    if (formData.email) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(formData.email)) {
+        setError("올바른 이메일 형식을 입력해주세요.");
+        return false;
+      }
     }
-    if (formData.password !== formData.confirmPassword) {
-      setError('비밀번호가 일치하지 않습니다.')
-      return false
+
+    // 전화번호 형식 검증
+    if (!validatePhoneNumber(formData.phone)) {
+      setError("올바른 휴대폰번호를 입력해주세요. (010으로 시작하는 11자리)");
+      return false;
     }
-    if (!formData.name.trim()) {
-      setError('이름을 입력해주세요.')
-      return false
+    if (formData.parentPhone && !validatePhoneNumber(formData.parentPhone)) {
+      setError("올바른 학부모 휴대폰번호를 입력해주세요. (010으로 시작하는 11자리)");
+      return false;
     }
-    if (!formData.phone.trim()) {
-      setError('휴대폰번호를 입력해주세요.')
-      return false
-    }
-    if (!formData.phone.match(/^01[0-9]-\d{3,4}-\d{4}$/)) {
-      setError('휴대폰번호 형식이 올바르지 않습니다. (예: 010-1234-5678)')
-      return false
-    }
-    if (!formData.academy) {
-      setError('학원을 선택해주세요.')
-      return false
-    }
-    if (!formData.assignedTeacherId) {
-      setError('담당 교사를 선택해주세요.')
-      return false
-    }
-    return true
+
+    return true;
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -148,27 +151,20 @@ export default function StudentSignupPage() {
     setError('')
 
     try {
-      // 가입 요청 데이터 검증
-      console.log('가입 요청 데이터:', {
-        username: formData.username,
-        name: formData.name,
-        phone: formData.phone,
-        academy: formData.academy,
-        assigned_teacher_id: formData.assignedTeacherId
-      })
-
-      // FormData로 변환하여 서버 액션 호출 (강사 추가 로직과 동일한 방식)
+      // FormData로 변환하여 서버 액션 호출
       const formDataToSubmit = new FormData()
-      formDataToSubmit.append('username', formData.username)
+      formDataToSubmit.append('studentId', generatedUsername)
       formDataToSubmit.append('name', formData.name)
-      formDataToSubmit.append('password', formData.password)
-      formDataToSubmit.append('phone', formData.phone)
       formDataToSubmit.append('birthYear', formData.birthYear)
-      formDataToSubmit.append('academy', formData.academy)
-      formDataToSubmit.append('assignedTeacherId', formData.assignedTeacherId || '')
+      formDataToSubmit.append('password', formData.password)
+      formDataToSubmit.append('subject', formData.subject)
+      formDataToSubmit.append('phone', formData.phone)
+      formDataToSubmit.append('parentPhone', formData.parentPhone || '')
+      formDataToSubmit.append('email', formData.email || '')
+      formDataToSubmit.append('classSchedules', JSON.stringify([]))
 
       // 서버 액션 호출
-      const result = await submitStudentSignup(formDataToSubmit)
+      const result = await addStudent(formDataToSubmit)
 
       if (result.success) {
         // 성공 메시지 표시
@@ -188,14 +184,9 @@ export default function StudentSignupPage() {
     }
   }
 
-  // 선택된 학원에 따른 교사 필터링
-  const filteredTeachers = teachers.filter(teacher => 
-    !formData.academy || teacher.academy === formData.academy
-  )
-
   return (
     <div className="flex items-center justify-center min-h-[calc(100vh-11rem)] py-12">
-      <Card className="mx-auto max-w-md w-full bg-black/40 border-sky-500/20">
+      <Card className="mx-auto max-w-2xl w-full bg-black/40 border-sky-500/20">
         <CardHeader className="text-center">
           <CardTitle className="text-2xl font-bold text-white">학생 회원가입</CardTitle>
           <CardDescription className="text-gray-300">
@@ -203,149 +194,130 @@ export default function StudentSignupPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="username" className="text-white">아이디 *</Label>
-                <Input
-                  id="username"
-                  value={formData.username}
-                  onChange={(e) => handleInputChange('username', e.target.value)}
-                  placeholder="3자 이상"
-                  disabled={loading}
-                  autoComplete="off"
-                />
-              </div>
-              <div>
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {/* 자동 생성된 아이디 표시 */}
+            <div className="bg-sky-900/20 border border-sky-500/30 rounded-lg p-6 text-center">
+              <Label className="text-sky-200 font-medium text-lg">자동 생성된 아이디</Label>
+              <p className="text-sky-100 text-3xl font-mono font-bold mt-2">
+                {generatedUsername || '이름과 출생년도를 입력하세요'}
+              </p>
+            </div>
+
+            <div className="flex gap-2 w-full min-w-0">
+              <div className="flex-1 min-w-0 space-y-2">
                 <Label htmlFor="name" className="text-white">이름 *</Label>
                 <Input
                   id="name"
                   value={formData.name}
-                  onChange={(e) => handleInputChange('name', e.target.value)}
-                  placeholder="실명"
-                  disabled={loading}
+                  onChange={(e) => handleInputChange("name", e.target.value)}
+                  placeholder="학생 이름을 입력하세요"
+                  className="bg-background/40 border-cyan-400/40 text-cyan-100 placeholder:text-cyan-400/60 focus:border-cyan-400/80"
+                  autoComplete="off"
+                />
+              </div>
+              <div className="flex-1 min-w-0 space-y-2">
+                <Label htmlFor="birthYear" className="text-white">출생년도 *</Label>
+                <Input
+                  id="birthYear"
+                  type="text"
+                  value={formData.birthYear}
+                  onChange={(e) => handleInputChange("birthYear", e.target.value)}
+                  placeholder="예: 2010"
+                  className="bg-background/40 border-cyan-400/40 text-cyan-100 placeholder:text-cyan-400/60 focus:border-cyan-400/80"
+                  maxLength={4}
+                  autoComplete="off"
                 />
               </div>
             </div>
 
-            <div>
-              <Label htmlFor="password" className="text-white">비밀번호 *</Label>
+            <div className="flex gap-2 w-full min-w-0">
+              <div className="flex-1 min-w-0 space-y-2">
+                <Label htmlFor="password" className="text-white">비밀번호 *</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  value={formData.password}
+                  onChange={(e) => handleInputChange("password", e.target.value)}
+                  placeholder="비밀번호를 입력하세요"
+                  className="bg-background/40 border-cyan-400/40 text-cyan-100 placeholder:text-cyan-400/60 focus:border-cyan-400/80"
+                  autoComplete="new-password"
+                />
+              </div>
+              <div className="flex-1 min-w-0 space-y-2">
+                <Label htmlFor="subject" className="text-white">과목 *</Label>
+                <Select value={formData.subject} onValueChange={(value) => handleInputChange("subject", value)}>
+                  <SelectTrigger className="bg-background/40 border-cyan-400/40 text-cyan-100 focus:border-cyan-400/80">
+                    <SelectValue placeholder="과목을 선택하세요" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-background border-cyan-400/40">
+                    {subjects.map((subject) => (
+                      <SelectItem
+                        key={subject}
+                        value={subject}
+                        className="text-cyan-100 hover:bg-cyan-900/20"
+                      >
+                        {subject}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="phone" className="text-white">연락처 *</Label>
+              <div className="flex items-center gap-2">
+                <Input
+                  id="phone"
+                  value={formData.phone}
+                  onChange={(e) => handlePhoneChange("phone", e.target.value)}
+                  placeholder="학생 연락처 (숫자만 입력)"
+                  className="flex-1 bg-background/40 border-cyan-400/40 text-cyan-100 placeholder:text-cyan-400/60 focus:border-cyan-400/80"
+                  maxLength={13}
+                  autoComplete="off"
+                />
+                <span className="text-cyan-400 text-lg">/</span>
+                <Input
+                  id="parentPhone"
+                  value={formData.parentPhone}
+                  onChange={(e) => handlePhoneChange("parentPhone", e.target.value)}
+                  placeholder="학부모 연락처 (선택)"
+                  className="flex-1 bg-background/40 border-cyan-400/40 text-cyan-100 placeholder:text-cyan-400/60 focus:border-cyan-400/80"
+                  maxLength={13}
+                  autoComplete="off"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="email" className="text-white">이메일 <span className="text-cyan-400 text-xs">(선택)</span></Label>
               <Input
-                id="password"
-                type="password"
-                value={formData.password}
-                onChange={(e) => handleInputChange('password', e.target.value)}
-                placeholder="6자 이상"
-                disabled={loading}
-                autoComplete="new-password"
+                id="email"
+                type="email"
+                value={formData.email}
+                onChange={(e) => handleInputChange("email", e.target.value)}
+                placeholder="example@email.com"
+                className="bg-background/40 border-cyan-400/40 text-cyan-100 placeholder:text-cyan-400/60 focus:border-cyan-400/80"
+                autoComplete="off"
               />
             </div>
 
-            <div>
-              <Label htmlFor="confirmPassword" className="text-white">비밀번호 확인 *</Label>
-              <Input
-                id="confirmPassword"
-                type="password"
-                value={formData.confirmPassword}
-                onChange={(e) => handleInputChange('confirmPassword', e.target.value)}
-                placeholder="비밀번호 재입력"
-                disabled={loading}
-                autoComplete="new-password"
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="phone" className="text-white">휴대폰번호 *</Label>
-              <Input
-                id="phone"
-                type="tel"
-                value={formData.phone}
-                onChange={(e) => handlePhoneChange(e.target.value)}
-                placeholder="010-1234-5678"
-                disabled={loading}
-                maxLength={13}
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="birthYear" className="text-white">출생년도</Label>
-              <Input
-                id="birthYear"
-                type="number"
-                value={formData.birthYear}
-                onChange={(e) => handleInputChange('birthYear', e.target.value)}
-                placeholder="예: 2010"
-                min="1990"
-                max="2024"
-                disabled={loading}
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="academy" className="text-white">학원 *</Label>
-              <Select
-                value={formData.academy}
-                onValueChange={(value) => {
-                  handleInputChange('academy', value)
-                  handleInputChange('assignedTeacherId', '') // 학원 변경 시 교사 선택 초기화
-                }}
-                disabled={loading}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="학원을 선택하세요" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="coding-maker">코딩메이커</SelectItem>
-                  <SelectItem value="gwangyang-coding">광양코딩</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <Label htmlFor="teacher" className="text-white">담당 교사 *</Label>
-              <Select
-                value={formData.assignedTeacherId}
-                onValueChange={(value) => handleInputChange('assignedTeacherId', value)}
-                disabled={loading || !formData.academy || teachersLoading}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder={
-                    teachersLoading 
-                      ? "교사 목록을 불러오는 중..." 
-                      : "담당 교사를 선택하세요"
-                  } />
-                </SelectTrigger>
-                <SelectContent>
-                  {filteredTeachers.map((teacher) => (
-                    <SelectItem key={teacher.id} value={teacher.id}>
-                      {teacher.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {!formData.academy && (
-                <p className="text-xs text-gray-400 mt-1">먼저 학원을 선택해주세요</p>
-              )}
-              {teachersLoading && (
-                <p className="text-xs text-gray-400 mt-1">교사 목록을 불러오는 중...</p>
-              )}
-            </div>
 
             {error && (
-              <div className="text-red-400 text-sm text-center bg-red-900/20 p-2 rounded">
+              <div className="text-red-400 text-sm text-center">
                 {error}
               </div>
             )}
 
             {success && (
-              <div className="text-sky-400 text-sm text-center bg-sky-900/20 p-2 rounded">
-                가입 요청이 완료되었습니다! 담당 교사의 승인을 기다려주세요.
+              <div className="text-green-400 text-sm text-center">
+                가입요청이 완료되었습니다. 담당교사의 승인을 기다려주세요.
               </div>
             )}
 
             <Button
               type="submit"
-              className="w-full bg-sky-500 hover:bg-sky-600 text-white font-bold"
+              className="w-full bg-sky-600 hover:bg-sky-700 text-white"
               disabled={loading}
             >
               {loading ? '가입 요청 중...' : '가입 요청'}

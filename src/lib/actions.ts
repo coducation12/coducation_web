@@ -187,57 +187,71 @@ export async function addStudent(formData: FormData, isSignup: boolean = false) 
       assignedTeacherId: formData.get('assignedTeacherId') as string
     };
 
-    // 1. 학생 ID에 'p'를 붙여서 학부모 계정 자동 생성 (회원가입 시에만)
-    let parentId = null;
+    // 회원가입인 경우 새로운 시스템 사용
     if (isSignup) {
-      const parentUsername = `${studentData.studentId}p`;
-      
-      // 학부모 비밀번호 해시 처리 (학생 비밀번호와 동일하게 설정)
-      const parentPasswordHash = await bcrypt.hash(studentData.password, 10);
-      
-      const { data: parentData, error: parentError } = await supabase
-        .from('users')
-        .insert({
-          username: parentUsername,
-          name: `${studentData.name} 학부모`,
-          role: 'parent',
-          password: parentPasswordHash,
-          phone: studentData.parentPhone || null,
-          academy: studentData.academy || 'coding-maker',
-          status: 'pending', // 회원가입 시에는 pending 상태
-          created_at: new Date().toISOString()
-        })
-        .select()
-        .single();
-
-      if (!parentError) {
-        parentId = parentData.id;
-      } else {
-        // 학부모 계정 생성 실패 시에도 계속 진행 (선택사항이므로)
-      }
+      return await createStudentSignupRequest({
+        studentId: studentData.studentId,
+        name: studentData.name,
+        birthYear: studentData.birthYear,
+        password: studentData.password,
+        phone: studentData.phone,
+        parentPhone: studentData.parentPhone,
+        academy: studentData.academy,
+        assignedTeacherId: studentData.assignedTeacherId
+      });
     }
 
-    // 2. 중복 아이디 검사 (회원가입 시에만)
-    if (isSignup) {
-      const { data: existingUser } = await supabase
-        .from('users')
-        .select('id')
-        .eq('username', studentData.studentId)
-        .single();
-      
-      if (existingUser) {
-        return { success: false, error: '이미 사용 중인 아이디입니다. 다른 이름이나 출생년도를 입력해주세요.' };
-      }
+    // 관리자가 학생을 직접 추가하는 경우 (기존 로직 유지)
+    // 서버 측 유효성 검증
+    // 이름 검증 (한글만 허용, 2-10자)
+    const nameRegex = /^[가-힣]{2,10}$/;
+    if (!nameRegex.test(studentData.name)) {
+      return { success: false, error: '이름은 한글 2-10자로만 입력 가능합니다.' };
     }
 
-    // 3. users 테이블에 학생 정보 등록 (비밀번호 포함)
-    // 학생 비밀번호 해시 처리
+    // 출생년도 검증 (4자리 숫자, 1900-현재년도)
+    const yearRegex = /^\d{4}$/;
+    if (!yearRegex.test(studentData.birthYear)) {
+      return { success: false, error: '출생년도는 4자리 숫자로 입력해주세요.' };
+    }
+
+    const currentYear = new Date().getFullYear();
+    const birthYear = parseInt(studentData.birthYear);
+    if (birthYear < 1900 || birthYear > currentYear) {
+      return { success: false, error: '올바른 출생년도를 입력해주세요. (1900년 ~ 현재년도)' };
+    }
+
+    // 1. 학생 ID에 'p'를 붙여서 학부모 계정 자동 생성
+    const parentUsername = `${studentData.studentId}p`;
+    const parentPasswordHash = await bcrypt.hash(studentData.password, 10);
+
+    const { data: parentData, error: parentError } = await supabase
+      .from('users')
+      .insert({
+        username: parentUsername,
+        name: `${studentData.name} 학부모`,
+        role: 'parent',
+        password: parentPasswordHash,
+        phone: studentData.parentPhone || null,
+        academy: studentData.academy || 'coding-maker',
+        status: 'active', // 관리자 추가 시에는 바로 active
+        created_at: new Date().toISOString()
+      })
+      .select()
+      .single();
+
+    if (parentError) {
+      console.error('학부모 계정 생성 실패:', parentError);
+      return { success: false, error: '학부모 계정 생성에 실패했습니다.' };
+    }
+
+    // 2. users 테이블에 학생 정보 등록
     const studentPasswordHash = await bcrypt.hash(studentData.password, 10);
-    
+
     const { data: userData, error: userError } = await supabase
       .from('users')
       .insert({
-        username: studentData.studentId, // 항상 학생 ID를 username으로 사용
+        username: studentData.studentId,
         name: studentData.name,
         role: 'student',
         password: studentPasswordHash,
@@ -245,34 +259,35 @@ export async function addStudent(formData: FormData, isSignup: boolean = false) 
         birth_year: studentData.birthYear ? parseInt(studentData.birthYear) : null,
         academy: studentData.academy || 'coding-maker',
         assigned_teacher_id: studentData.assignedTeacherId || null,
-        status: isSignup ? 'pending' : 'active', // 회원가입 시에는 pending, 관리자 추가 시에는 active
+        status: 'active', // 관리자 추가 시에는 바로 active
         created_at: new Date().toISOString()
       })
       .select()
       .single();
 
     if (userError) {
+      // 학부모 계정 롤백
+      await supabase.from('users').delete().eq('id', parentData.id);
       return { success: false, error: userError.message };
     }
 
-    // 3. 수업 일정을 attendance_schedule 형식으로 변환 (관리자 추가 시에만)
+    // 3. 수업 일정을 attendance_schedule 형식으로 변환
     const attendanceSchedule: any = {};
-    
-    if (!isSignup && studentData.classSchedules) {
+
+    if (studentData.classSchedules) {
       studentData.classSchedules.forEach((schedule: any) => {
         if (schedule.day && schedule.startTime) {
           const dayMap: { [key: string]: string } = {
-            'monday': '1', 'tuesday': '2', 'wednesday': '3', 
+            'monday': '1', 'tuesday': '2', 'wednesday': '3',
             'thursday': '4', 'friday': '5', 'saturday': '6', 'sunday': '0'
           };
           const dayNumber = dayMap[schedule.day];
-          
+
           if (dayNumber) {
-            // 시작시간과 종료시간을 모두 저장
             let startTime = schedule.startTime;
             let endTime = schedule.endTime || '';
-            
-            // 시간 형식 정리 (HH:MM 형식으로 통일)
+
+            // 시간 형식 정리
             if (startTime && !startTime.includes(':')) {
               const numbers = startTime.replace(/[^0-9]/g, '');
               if (numbers.length === 4) {
@@ -281,7 +296,7 @@ export async function addStudent(formData: FormData, isSignup: boolean = false) 
                 startTime = `${hours}:${minutes}`;
               }
             }
-            
+
             if (endTime && !endTime.includes(':')) {
               const numbers = endTime.replace(/[^0-9]/g, '');
               if (numbers.length === 4) {
@@ -290,13 +305,11 @@ export async function addStudent(formData: FormData, isSignup: boolean = false) 
                 endTime = `${hours}:${minutes}`;
               }
             }
-            
-            // 종료시간이 항상 있어야 하므로 검증
+
             if (!endTime || endTime.trim() === '') {
               throw new Error(`${schedule.day}의 종료시간을 입력해주세요.`);
             }
-            
-            // 항상 객체 형태로 저장 (startTime과 endTime 포함)
+
             attendanceSchedule[dayNumber] = {
               startTime: startTime,
               endTime: endTime
@@ -309,19 +322,21 @@ export async function addStudent(formData: FormData, isSignup: boolean = false) 
     // 4. students 테이블에 학생 상세 정보 등록
     const studentInsertData = {
       user_id: userData.id,
-      assigned_teachers: isSignup ? (studentData.assignedTeacherId ? [studentData.assignedTeacherId] : []) : (currentUserRole === 'teacher' && currentUserId ? [currentUserId] : []),
-      parent_id: parentId,
+      assigned_teachers: currentUserRole === 'teacher' && currentUserId ? [currentUserId] : [],
+      parent_id: parentData.id,
       current_curriculum_id: null,
-      // enrollment_start_date는 데이터베이스 기본값(CURRENT_DATE) 사용
       attendance_schedule: Object.keys(attendanceSchedule).length > 0 ? attendanceSchedule : null,
       created_at: new Date().toISOString()
     };
-    
+
     const { error: studentError } = await supabase
       .from('students')
       .insert(studentInsertData);
 
     if (studentError) {
+      // 롤백: users 테이블에서 학생과 학부모 계정 삭제
+      await supabase.from('users').delete().eq('id', userData.id);
+      await supabase.from('users').delete().eq('id', parentData.id);
       return { success: false, error: studentError.message };
     }
 
@@ -345,20 +360,36 @@ export async function updateStudent(formData: FormData) {
       parentPhone: formData.get('parentPhone') as string,
       email: formData.get('email') as string,
       status: formData.get('status') as string,
-      classSchedules: JSON.parse(formData.get('classSchedules') as string)
+      classSchedules: formData.get('classSchedules') ? JSON.parse(formData.get('classSchedules') as string) : []
     };
+
+    console.log('받은 학생 데이터:', studentData);
 
     // 1. 학생 계정 정보 업데이트
     const updateData: any = {
       name: studentData.name,
       phone: studentData.phone,
       birth_year: studentData.birthYear ? parseInt(studentData.birthYear) : null,
+      status: studentData.status === '휴강' ? 'suspended' : 'active' // 상태 업데이트 (suspended 또는 active만 허용)
     };
+
+    console.log('업데이트할 데이터:', updateData);
 
     // 비밀번호가 입력된 경우에만 업데이트
     if (studentData.password) {
       const studentPasswordHash = await bcrypt.hash(studentData.password, 10);
       updateData.password = studentPasswordHash;
+    }
+
+    // 먼저 사용자 ID를 가져오기
+    const { data: existingUser, error: userFetchError } = await supabase
+      .from('users')
+      .select('id')
+      .eq('username', studentData.studentId)
+      .single();
+
+    if (userFetchError || !existingUser) {
+      return { success: false, error: '학생을 찾을 수 없습니다.' };
     }
 
     const { error: userError } = await supabase
@@ -379,88 +410,68 @@ export async function updateStudent(formData: FormData) {
 
     // 학부모 업데이트 실패는 무시 (선택사항)
 
-    // 3. 수업 일정을 attendance_schedule 형식으로 변환
-    const attendanceSchedule: any = {};
-    
-    studentData.classSchedules.forEach((schedule: any) => {
-      if (schedule.day && schedule.startTime) {
-        const dayMap: { [key: string]: string } = {
-          'monday': '1', 'tuesday': '2', 'wednesday': '3', 
-          'thursday': '4', 'friday': '5', 'saturday': '6', 'sunday': '0'
-        };
-        const dayNumber = dayMap[schedule.day];
-        if (dayNumber) {
-          // 시작시간과 종료시간을 모두 저장
-          let startTime = schedule.startTime;
-          let endTime = schedule.endTime || '';
-          
-          // 시간 형식 정리 (HH:MM 형식으로 통일)
-          if (startTime && !startTime.includes(':')) {
-            const numbers = startTime.replace(/[^0-9]/g, '');
-            if (numbers.length === 4) {
-              const hours = numbers.slice(0, 2);
-              const minutes = numbers.slice(2, 4);
-              startTime = `${hours}:${minutes}`;
-            }
-          }
-          
-          if (endTime && !endTime.includes(':')) {
-            const numbers = endTime.replace(/[^0-9]/g, '');
-            if (numbers.length === 4) {
-              const hours = numbers.slice(0, 2);
-              const minutes = numbers.slice(2, 4);
-              endTime = `${hours}:${minutes}`;
-            }
-          }
-          
-          // 종료시간이 항상 있어야 하므로 검증
-          if (!endTime || endTime.trim() === '') {
-            throw new Error(`${schedule.day}의 종료시간을 입력해주세요.`);
-          }
-          
-          // 항상 객체 형태로 저장 (startTime과 endTime 포함)
-          attendanceSchedule[dayNumber] = {
-            startTime: startTime,
-            endTime: endTime
+    // 3. 수업 일정 업데이트 (선택사항)
+    if (studentData.classSchedules && studentData.classSchedules.length > 0) {
+      // 수업 일정을 attendance_schedule 형식으로 변환
+      const attendanceSchedule: any = {};
+      
+      studentData.classSchedules.forEach((schedule: any) => {
+        if (schedule.day && schedule.startTime && schedule.endTime) {
+          const dayMap: { [key: string]: string } = {
+            'monday': '1', 'tuesday': '2', 'wednesday': '3', 
+            'thursday': '4', 'friday': '5', 'saturday': '6', 'sunday': '0'
           };
+          const dayNumber = dayMap[schedule.day];
+          if (dayNumber) {
+            // 시간 형식 정리 (HH:MM 형식으로 통일)
+            let startTime = schedule.startTime;
+            let endTime = schedule.endTime;
+            
+            if (startTime && !startTime.includes(':')) {
+              const numbers = startTime.replace(/[^0-9]/g, '');
+              if (numbers.length === 4) {
+                const hours = numbers.slice(0, 2);
+                const minutes = numbers.slice(2, 4);
+                startTime = `${hours}:${minutes}`;
+              }
+            }
+            
+            if (endTime && !endTime.includes(':')) {
+              const numbers = endTime.replace(/[^0-9]/g, '');
+              if (numbers.length === 4) {
+                const hours = numbers.slice(0, 2);
+                const minutes = numbers.slice(2, 4);
+                endTime = `${hours}:${minutes}`;
+              }
+            }
+            
+            attendanceSchedule[dayNumber] = {
+              startTime: startTime,
+              endTime: endTime
+            };
+          }
+        }
+      });
+
+      // students 테이블의 attendance_schedule 업데이트
+      if (Object.keys(attendanceSchedule).length > 0) {
+        const { error: studentError } = await supabase
+          .from('students')
+          .update({
+            attendance_schedule: attendanceSchedule
+          })
+          .eq('user_id', existingUser.id);
+
+        if (studentError) {
+          console.warn('수업 일정 업데이트 실패 (무시):', studentError);
         }
       }
-    });
-
-    // 4. students 테이블의 attendance_schedule 업데이트
-    const { error: studentError } = await supabase
-      .from('students')
-      .update({
-        attendance_schedule: Object.keys(attendanceSchedule).length > 0 ? attendanceSchedule : null
-      })
-      .eq('user_id', userData.id);
-
-    // 5. users 테이블의 status 업데이트 (통합된 상태 관리)
-    const statusMap: { [key: string]: string } = {
-      '수강': 'active',
-      '휴강': '휴강',
-      '종료': '종료'
-    };
-    
-    const { error: userStatusError } = await supabase
-      .from('users')
-      .update({
-        status: statusMap[studentData.status] || studentData.status || 'active'
-      })
-      .eq('id', userData.id);
-
-    if (studentError) {
-      return { success: false, error: studentError.message };
     }
 
-    if (userStatusError) {
-      return { success: false, error: userStatusError.message };
-    }
-
-    return { success: true };
-  } catch (error) {
+    return { success: true, message: '학생 정보가 성공적으로 업데이트되었습니다.' };
+  } catch (error: any) {
     console.error('학생 정보 수정 중 오류:', error);
-    return { success: false, error: '학생 정보 수정 중 오류가 발생했습니다.' };
+    return { success: false, error: error.message || '학생 정보 수정 중 오류가 발생했습니다.' };
   }
 }
 
@@ -1362,52 +1373,237 @@ export async function getInstructors() {
 
 // 학생 회원가입 서버 액션 (트랜잭션 처리 개선)
 
-// ==================== 학생 가입 요청 관련 액션 ====================
+// ==================== 새로운 학생 가입 요청 시스템 ====================
 
-// 학생 가입 요청 목록 조회 (교사용)
-export async function getStudentSignupRequests(teacherId?: string) {
+// 새로운 승인 시스템을 위한 타입 정의
+interface NewStudentSignupRequest {
+  id: string;
+  student_id: string;
+  parent_id?: string;
+  academy: string;
+  assigned_teacher_id?: string;
+  status: 'pending' | 'approved' | 'rejected';
+  requested_at: string;
+  processed_at?: string;
+  processed_by?: string;
+  rejection_reason?: string;
+  student_name?: string;
+  student_username?: string;
+  teacher_name?: string;
+}
+
+// 학생 가입 요청 생성 (회원가입 시)
+export async function createStudentSignupRequest(studentData: {
+  studentId: string;
+  name: string;
+  birthYear: string;
+  password: string;
+  phone: string;
+  parentPhone: string;
+  academy: string;
+  assignedTeacherId: string;
+}) {
   try {
-    console.log('getStudentSignupRequests 호출됨, teacherId:', teacherId);
-    
-    let query = supabase
+    // 서버 측 유효성 검증
+    // 이름 검증 (한글만 허용, 2-10자)
+    const nameRegex = /^[가-힣]{2,10}$/;
+    if (!nameRegex.test(studentData.name)) {
+      return { success: false, error: '이름은 한글 2-10자로만 입력 가능합니다.' };
+    }
+
+    // 출생년도 검증 (4자리 숫자, 1900-현재년도)
+    const yearRegex = /^\d{4}$/;
+    if (!yearRegex.test(studentData.birthYear)) {
+      return { success: false, error: '출생년도는 4자리 숫자로 입력해주세요.' };
+    }
+
+    const currentYear = new Date().getFullYear();
+    const birthYear = parseInt(studentData.birthYear);
+    if (birthYear < 1900 || birthYear > currentYear) {
+      return { success: false, error: '올바른 출생년도를 입력해주세요. (1900년 ~ 현재년도)' };
+    }
+
+    const cookieStore = await cookies();
+    const currentUserId = cookieStore.get('user_id')?.value;
+
+    // 1. 학부모 계정 생성
+    const parentUsername = `${studentData.studentId}p`;
+    const parentPasswordHash = await bcrypt.hash(studentData.password, 10);
+
+    const { data: parentData, error: parentError } = await supabase
       .from('users')
+      .insert({
+        username: parentUsername,
+        name: `${studentData.name} 학부모`,
+        role: 'parent',
+        password: parentPasswordHash,
+        phone: studentData.parentPhone || null,
+        academy: studentData.academy,
+        status: 'pending',
+        created_at: new Date().toISOString()
+      })
+      .select()
+      .single();
+
+    if (parentError) {
+      console.error('학부모 계정 생성 실패:', parentError);
+      return { success: false, error: '학부모 계정 생성에 실패했습니다.' };
+    }
+
+    // 2. 중복 아이디 검사
+    const { data: existingUser } = await supabase
+      .from('users')
+      .select('id')
+      .eq('username', studentData.studentId)
+      .single();
+
+    if (existingUser) {
+      return { success: false, error: '이미 사용 중인 아이디입니다. 다른 이름이나 출생년도를 입력해주세요.' };
+    }
+
+    // 3. 학생 계정 생성
+    const studentPasswordHash = await bcrypt.hash(studentData.password, 10);
+
+    const { data: studentUserData, error: studentUserError } = await supabase
+      .from('users')
+      .insert({
+        username: studentData.studentId,
+        name: studentData.name,
+        role: 'student',
+        password: studentPasswordHash,
+        phone: studentData.phone,
+        birth_year: studentData.birthYear ? parseInt(studentData.birthYear) : null,
+        academy: studentData.academy,
+        assigned_teacher_id: studentData.assignedTeacherId || null,
+        status: 'pending',
+        created_at: new Date().toISOString()
+      })
+      .select()
+      .single();
+
+    if (studentUserError) {
+      // 학부모 계정 롤백
+      await supabase.from('users').delete().eq('id', parentData.id);
+      return { success: false, error: studentUserError.message };
+    }
+
+    // 4. students 테이블에 데이터 생성
+    const { error: studentError } = await supabase
+      .from('students')
+      .insert({
+        user_id: studentUserData.id,
+        assigned_teachers: studentData.assignedTeacherId ? [studentData.assignedTeacherId] : [],
+        parent_id: parentData.id,
+        current_curriculum_id: null,
+        attendance_schedule: null,
+        created_at: new Date().toISOString()
+      });
+
+    if (studentError) {
+      // 롤백: users 테이블에서 학생과 학부모 계정 삭제
+      await supabase.from('users').delete().eq('id', studentUserData.id);
+      await supabase.from('users').delete().eq('id', parentData.id);
+      return { success: false, error: studentError.message };
+    }
+
+    // 5. student_signup_requests 테이블에 기록 생성
+    const { error: signupRequestError } = await supabase
+      .from('student_signup_requests')
+      .insert({
+        student_id: studentUserData.id,
+        parent_id: parentData.id,
+        academy: studentData.academy,
+        assigned_teacher_id: studentData.assignedTeacherId || null,
+        status: 'pending',
+        requested_at: new Date().toISOString()
+      });
+
+    if (signupRequestError) {
+      console.error('가입 요청 기록 생성 실패:', signupRequestError);
+      // 롤백: users와 students 테이블에서 데이터 삭제
+      await supabase.from('students').delete().eq('user_id', studentUserData.id);
+      await supabase.from('users').delete().eq('id', studentUserData.id);
+      await supabase.from('users').delete().eq('id', parentData.id);
+      return { success: false, error: '가입 요청 기록 생성에 실패했습니다.' };
+    }
+
+    return { success: true, data: studentUserData };
+
+  } catch (error) {
+    console.error('학생 가입 요청 생성 중 오류:', error);
+    return { success: false, error: '학생 가입 요청 생성 중 오류가 발생했습니다.' };
+  }
+}
+
+// 학생 가입 요청 목록 조회 (새로운 시스템)
+export async function getNewStudentSignupRequests(teacherId?: string) {
+  try {
+    let query = supabase
+      .from('student_signup_requests')
       .select(`
-        *,
-        assigned_teacher:assigned_teacher_id(name)
+        id,
+        student_id,
+        parent_id,
+        academy,
+        assigned_teacher_id,
+        status,
+        requested_at,
+        processed_at,
+        processed_by,
+        rejection_reason
       `)
-      .eq('role', 'student')
       .eq('status', 'pending')
-      .order('created_at', { ascending: false });
+      .order('requested_at', { ascending: false });
 
     // 특정 교사의 담당 학생만 조회하는 경우
     if (teacherId) {
-      console.log('특정 교사 필터 적용:', teacherId);
       query = query.eq('assigned_teacher_id', teacherId);
     }
 
     const { data, error } = await query;
-    console.log('쿼리 결과:', { data, error });
 
     if (error) {
       console.error('학생 가입 요청 조회 중 오류:', error);
       return { success: false, error: '학생 가입 요청 조회 중 오류가 발생했습니다.' };
     }
 
-    // 데이터 매핑 (기존 인터페이스와 호환)
-    const requests = (data || []).map((user: any) => ({
-      id: user.id,
-      username: user.username,
-      name: user.name,
-      birth_year: user.birth_year,
-      academy: user.academy,
-      assigned_teacher_id: user.assigned_teacher_id || '',
-      status: user.status,
-      requested_at: user.created_at,
-      processed_at: null,
-      processed_by: null,
-      rejection_reason: null,
-      teacher_name: user.assigned_teacher?.name || '담당 교사 미지정'
-    }));
+    // 학생 정보와 담당 교사 정보를 별도로 조회
+    const studentIds = (data || []).map((request: any) => request.student_id);
+    const teacherIds = (data || []).map((request: any) => request.assigned_teacher_id).filter(Boolean);
+    
+    // 학생 정보 조회
+    const { data: studentsData } = await supabase
+      .from('users')
+      .select('id, username, name, birth_year, phone')
+      .in('id', studentIds);
+    
+    // 담당 교사 정보 조회
+    const { data: teachersData } = await supabase
+      .from('users')
+      .select('id, name')
+      .in('id', teacherIds);
+
+    // 데이터 매핑
+    const requests = (data || []).map((request: any) => {
+      const student = studentsData?.find(s => s.id === request.student_id);
+      const teacher = teachersData?.find(t => t.id === request.assigned_teacher_id);
+      
+      return {
+        id: request.id,
+        student_id: request.student_id,
+        student_name: student?.name || '',
+        student_username: student?.username || '',
+        birth_year: student?.birth_year,
+        academy: request.academy,
+        assigned_teacher_id: request.assigned_teacher_id || '',
+        status: request.status,
+        requested_at: request.requested_at,
+        processed_at: request.processed_at,
+        processed_by: request.processed_by,
+        rejection_reason: request.rejection_reason,
+        teacher_name: teacher?.name || '담당 교사 미지정'
+      };
+    });
 
     return { success: true, data: requests };
 
@@ -1417,68 +1613,81 @@ export async function getStudentSignupRequests(teacherId?: string) {
   }
 }
 
-// 학생 가입 요청 승인 (데이터 동기화 개선)
-export async function approveStudentSignupRequest(requestId: string) {
+// 학생 가입 요청 승인 (새로운 시스템)
+export async function approveNewStudentSignupRequest(requestId: string) {
   try {
-    // 현재 사용자 정보 가져오기
     const user = await getAuthenticatedUser();
     if (!user) {
       return { success: false, error: '인증이 필요합니다.' };
     }
 
-    // 1. 사용자 상태를 active로 변경
-    const { error: updateError } = await supabase
+    // 1. 가입 요청 정보 조회
+    const { data: requestData, error: requestError } = await supabase
+      .from('student_signup_requests')
+      .select('student_id, parent_id, status')
+      .eq('id', requestId)
+      .eq('status', 'pending')
+      .single();
+
+    if (requestError || !requestData) {
+      return { success: false, error: '가입 요청을 찾을 수 없습니다.' };
+    }
+
+    // 2. 학생과 학부모 계정 상태를 active로 변경
+    const { error: studentUpdateError } = await supabase
       .from('users')
       .update({
         status: 'active'
       })
-      .eq('id', requestId)
-      .eq('status', 'pending');
+      .in('id', [requestData.student_id, requestData.parent_id]);
 
-    if (updateError) {
-      console.error('가입 요청 승인 중 오류:', updateError);
-      return { success: false, error: '가입 요청 승인 중 오류가 발생했습니다.' };
+    if (studentUpdateError) {
+      console.error('사용자 상태 업데이트 중 오류:', studentUpdateError);
+      return { success: false, error: '사용자 상태 업데이트 중 오류가 발생했습니다.' };
     }
 
-    // 2. students 테이블이 존재하는지 확인하고 없으면 생성
-    const { data: existingStudent, error: checkError } = await supabase
+    // 3. students 테이블의 enrollment_start_date 업데이트
+    const { error: studentDataUpdateError } = await supabase
       .from('students')
-      .select('user_id')
-      .eq('user_id', requestId)
-      .single();
+      .update({
+        enrollment_start_date: new Date().toISOString().split('T')[0]
+      })
+      .eq('user_id', requestData.student_id);
 
-    if (checkError && checkError.code !== 'PGRST116') {
-      console.error('students 테이블 확인 중 오류:', checkError);
-      return { success: false, error: '학생 데이터 확인 중 오류가 발생했습니다.' };
+    if (studentDataUpdateError) {
+      console.error('학생 데이터 업데이트 중 오류:', studentDataUpdateError);
+      // 롤백
+      await supabase
+        .from('users')
+        .update({ status: 'pending' })
+        .in('id', [requestData.student_id, requestData.parent_id]);
+      return { success: false, error: '학생 데이터 업데이트 중 오류가 발생했습니다.' };
     }
 
-    // students 테이블에 데이터가 없으면 생성, 있으면 assigned_teachers 업데이트
-    if (!existingStudent) {
-      const { error: createStudentError } = await supabase
-        .from('students')
-        .insert({
-          user_id: requestId,
-          parent_id: null,
-          current_curriculum_id: null,
-          enrollment_start_date: new Date().toISOString().split('T')[0],
-          attendance_schedule: null,
-          assigned_teachers: []
-        });
+    // 4. 가입 요청 상태를 approved로 변경
+    const { error: requestUpdateError } = await supabase
+      .from('student_signup_requests')
+      .update({
+        status: 'approved',
+        processed_at: new Date().toISOString(),
+        processed_by: user.id
+      })
+      .eq('id', requestId);
 
-      if (createStudentError) {
-        console.error('students 테이블 생성 중 오류:', createStudentError);
-        // users 테이블 상태를 다시 pending으로 롤백
-        await supabase
-          .from('users')
-          .update({ status: 'pending' })
-          .eq('id', requestId);
-        
-        return { success: false, error: '학생 데이터 생성 중 오류가 발생했습니다.' };
-      }
-    } else {
-      // 기존 students 테이블 데이터가 있으면 그대로 유지 (업데이트 불필요)
-      console.log('students 테이블에 이미 데이터가 존재합니다. 승인 완료.');
+    if (requestUpdateError) {
+      console.error('가입 요청 상태 업데이트 중 오류:', requestUpdateError);
+      return { success: false, error: '가입 요청 상태 업데이트 중 오류가 발생했습니다.' };
     }
+
+    // 5. 승인 로그 기록
+    await supabase
+      .from('approval_logs')
+      .insert({
+        request_id: requestId,
+        action: 'approved',
+        processed_by: user.id,
+        processed_at: new Date().toISOString()
+      });
 
     return { success: true, message: '가입 요청이 승인되었습니다.' };
 
@@ -1488,37 +1697,74 @@ export async function approveStudentSignupRequest(requestId: string) {
   }
 }
 
-// 학생 가입 요청 거부 (데이터 정합성 개선)
-export async function rejectStudentSignupRequest(requestId: string, rejectionReason?: string) {
+// 학생 가입 요청 거부 (새로운 시스템)
+export async function rejectNewStudentSignupRequest(requestId: string, rejectionReason?: string) {
   try {
-    // 현재 사용자 정보 가져오기
     const user = await getAuthenticatedUser();
     if (!user) {
       return { success: false, error: '인증이 필요합니다.' };
     }
 
-    // 1. 먼저 students 테이블에서 관련 데이터 삭제
+    // 1. 가입 요청 정보 조회
+    const { data: requestData, error: requestError } = await supabase
+      .from('student_signup_requests')
+      .select('student_id, parent_id, status')
+      .eq('id', requestId)
+      .eq('status', 'pending')
+      .single();
+
+    if (requestError || !requestData) {
+      return { success: false, error: '가입 요청을 찾을 수 없습니다.' };
+    }
+
+    // 2. students 테이블에서 관련 데이터 삭제
     const { error: studentError } = await supabase
       .from('students')
       .delete()
-      .eq('user_id', requestId);
+      .eq('user_id', requestData.student_id);
 
     if (studentError) {
       console.error('students 테이블 삭제 중 오류:', studentError);
-      // students 테이블 삭제 실패해도 계속 진행 (데이터가 없을 수도 있음)
     }
 
-    // 2. users 테이블에서 사용자 계정 삭제
+    // 3. users 테이블에서 학생과 학부모 계정 삭제
     const { error: userError } = await supabase
       .from('users')
       .delete()
-      .eq('id', requestId)
+      .in('id', [requestData.student_id, requestData.parent_id])
       .eq('status', 'pending');
 
     if (userError) {
-      console.error('가입 요청 거부 중 오류:', userError);
-      return { success: false, error: '가입 요청 거부 중 오류가 발생했습니다.' };
+      console.error('사용자 계정 삭제 중 오류:', userError);
+      return { success: false, error: '사용자 계정 삭제 중 오류가 발생했습니다.' };
     }
+
+    // 4. 가입 요청 상태를 rejected로 변경
+    const { error: requestUpdateError } = await supabase
+      .from('student_signup_requests')
+      .update({
+        status: 'rejected',
+        processed_at: new Date().toISOString(),
+        processed_by: user.id,
+        rejection_reason: rejectionReason || null
+      })
+      .eq('id', requestId);
+
+    if (requestUpdateError) {
+      console.error('가입 요청 상태 업데이트 중 오류:', requestUpdateError);
+      return { success: false, error: '가입 요청 상태 업데이트 중 오류가 발생했습니다.' };
+    }
+
+    // 5. 거부 로그 기록
+    await supabase
+      .from('approval_logs')
+      .insert({
+        request_id: requestId,
+        action: 'rejected',
+        processed_by: user.id,
+        processed_at: new Date().toISOString(),
+        reason: rejectionReason || null
+      });
 
     return { success: true, message: '가입 요청이 거부되었습니다.' };
 

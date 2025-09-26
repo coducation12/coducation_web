@@ -207,37 +207,7 @@ export default function AddStudentModal({ onAddStudent, triggerText = "학생 �
             return;
         }
 
-        // 수업 일정 검증
-        const validSchedules = formData.classSchedules.filter(schedule => {
-            if (!schedule.day || !schedule.startTime || !schedule.endTime) {
-                alert("모든 수업 일정에 요일, 시작시간, 종료시간을 입력해주세요.");
-                return false;
-            }
-            
-            // 시간 형식 검증
-            const startTimeValid = validateTime(schedule.startTime);
-            const endTimeValid = validateTime(schedule.endTime);
-            
-            if (!startTimeValid || !endTimeValid) {
-                alert(`올바른 시간 형식을 입력해주세요. (예: 1430 → 14:30)`);
-                return false;
-            }
-            
-            // 시작 시간이 종료 시간보다 빠른지 검증
-            const startNumbers = schedule.startTime.replace(/[^0-9]/g, '');
-            const endNumbers = schedule.endTime.replace(/[^0-9]/g, '');
-            if (parseInt(startNumbers) >= parseInt(endNumbers)) {
-                alert('종료 시간은 시작 시간보다 늦어야 합니다.');
-                return false;
-            }
-            
-            return true;
-        });
-        
-        if (validSchedules.length === 0) {
-            alert("최소 하나의 유효한 수업 일정을 입력해주세요.");
-            return;
-        }
+        // 수업 일정은 선택사항으로 변경 (검증 제거)
 
         // 이메일 형식 검증 (입력된 경우에만)
         if (formData.email) {
@@ -258,10 +228,10 @@ export default function AddStudentModal({ onAddStudent, triggerText = "학생 �
             return;
         }
 
-        // 유효한 수업 일정만 포함하여 제출
+        // 수업 일정은 선택사항으로 제출
         const submitData = {
             ...formData,
-            classSchedules: validSchedules
+            classSchedules: formData.classSchedules
         };
 
         onAddStudent(submitData);
@@ -430,7 +400,10 @@ export default function AddStudentModal({ onAddStudent, triggerText = "학생 �
 
                     <div className="space-y-3">
                         <div className="flex items-center justify-between">
-                            <Label className="text-cyan-200">수업 일정 *</Label>
+                            <div>
+                                <Label className="text-cyan-200">수업 일정</Label>
+                                <p className="text-xs text-cyan-300/70">선택사항입니다</p>
+                            </div>
                             <Button
                                 type="button"
                                 onClick={addSchedule}

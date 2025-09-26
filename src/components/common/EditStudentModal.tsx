@@ -143,9 +143,9 @@ export default function EditStudentModal({ student, isOpen, onClose, onSave }: E
                 phone: student.phone,
                 parentPhone: student.parentPhone,
                 email: student.email,
-                status: student.status === 'active' ? '수강' : 
-                         student.status === 'pending' ? '가입 대기' : 
-                         student.status || "수강",
+                status: student.status === '수강' ? '수강' : 
+                         student.status === '승인대기' ? '승인대기' :
+                         student.status === '휴강' ? '휴강' : '수강',
                 classSchedules: student.classSchedules || []
             });
         }
@@ -200,21 +200,7 @@ export default function EditStudentModal({ student, isOpen, onClose, onSave }: E
         setIsLoading(true);
         
         try {
-            // 수업 일정 검증
-            const validSchedules = formData.classSchedules.filter(schedule => {
-                if (!schedule.day || !schedule.startTime || !schedule.endTime) {
-                    alert("모든 수업 일정에 요일, 시작시간, 종료시간을 입력해주세요.");
-                    return false;
-                }
-                return true;
-            });
-            
-            if (validSchedules.length === 0) {
-                alert("최소 하나의 유효한 수업 일정을 입력해주세요.");
-                setIsLoading(false);
-                return;
-            }
-            
+            // 수업 일정은 선택적 입력으로 변경 (검증 제거)
             await onSave(formData);
             onClose();
         } catch (error) {
@@ -327,12 +313,6 @@ export default function EditStudentModal({ student, isOpen, onClose, onSave }: E
                                     >
                                         휴강
                                     </SelectItem>
-                                    <SelectItem
-                                        value="종료"
-                                        className="text-cyan-100 hover:bg-cyan-900/20"
-                                    >
-                                        종료
-                                    </SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>
@@ -378,7 +358,10 @@ export default function EditStudentModal({ student, isOpen, onClose, onSave }: E
 
                     <div className="space-y-3">
                         <div className="flex items-center justify-between">
-                            <Label className="text-cyan-200">수업 일정</Label>
+                            <div>
+                                <Label className="text-cyan-200">수업 일정</Label>
+                                <p className="text-xs text-cyan-300/70">선택사항입니다</p>
+                            </div>
                             <Button
                                 type="button"
                                 onClick={addSchedule}

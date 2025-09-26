@@ -121,7 +121,14 @@ export default function StudentSignupPage() {
 
 
   const handleInputChange = (field: string, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }))
+    // 출생년도 입력 시 숫자만 허용 (4자리 제한)
+    if (field === 'birthYear') {
+      const numbersOnly = value.replace(/[^0-9]/g, '').slice(0, 4);
+      setFormData(prev => ({ ...prev, [field]: numbersOnly }))
+    }
+    else {
+      setFormData(prev => ({ ...prev, [field]: value }))
+    }
     setError('')
   }
 
@@ -141,6 +148,19 @@ export default function StudentSignupPage() {
       return false;
     }
 
+    // 이름 유효성 검증 (한글만 허용, 공백/특수문자/숫자 불가)
+    const nameRegex = /^[가-힣]+$/;
+    if (!nameRegex.test(formData.name)) {
+      setError("이름은 한글만 입력해주세요. (예: 홍길동)");
+      return false;
+    }
+
+    // 이름 길이 검증 (2-10자)
+    if (formData.name.length < 2 || formData.name.length > 10) {
+      setError("이름은 2자 이상 10자 이하로 입력해주세요.");
+      return false;
+    }
+
     // 비밀번호 확인 검증
     if (formData.password !== formData.confirmPassword) {
       setError("비밀번호가 일치하지 않습니다.");
@@ -153,10 +173,10 @@ export default function StudentSignupPage() {
       return false;
     }
 
-    // 생년 형식 검증
+    // 생년 형식 검증 (4자리 숫자만)
     const yearRegex = /^\d{4}$/;
     if (!yearRegex.test(formData.birthYear)) {
-      setError('출생년도를 4자리(yyyy)로 입력해주세요.');
+      setError('출생년도를 4자리 숫자로 입력해주세요. (예: 2010)');
       return false;
     }
 
@@ -164,11 +184,9 @@ export default function StudentSignupPage() {
     const currentYear = new Date().getFullYear();
     const birthYear = parseInt(formData.birthYear);
     if (birthYear < 1900 || birthYear > currentYear) {
-      setError('올바른 출생년도를 입력해주세요.');
+      setError(`출생년도는 1900년부터 ${currentYear}년까지 입력 가능합니다.`);
       return false;
     }
-
-
 
     // 전화번호 형식 검증
     if (!validatePhoneNumber(formData.phone)) {
@@ -253,10 +271,11 @@ export default function StudentSignupPage() {
                   id="name"
                   value={formData.name}
                   onChange={(e) => handleInputChange("name", e.target.value)}
-                  placeholder="학생 이름을 입력하세요"
+                  placeholder="예: 홍길동"
                   className="bg-background/40 border-cyan-400/40 text-cyan-100 placeholder:text-cyan-400/60 focus:border-cyan-400/80 text-sm sm:text-base"
                   autoComplete="off"
                 />
+                <p className="text-xs text-cyan-300/70">한글 2-10자로 입력해주세요</p>
               </div>
               <div className="flex-1 min-w-0 space-y-2">
                 <Label htmlFor="birthYear" className="text-white text-sm sm:text-base">출생년도 *</Label>
@@ -270,6 +289,7 @@ export default function StudentSignupPage() {
                   maxLength={4}
                   autoComplete="off"
                 />
+                <p className="text-xs text-cyan-300/70">4자리 숫자로 입력해주세요</p>
               </div>
             </div>
 

@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Mail, Phone, CheckCircle, XCircle, Clock } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/lib/supabase";
-import { addStudent, updateStudent, getStudentSignupRequests, approveStudentSignupRequest, rejectStudentSignupRequest, getCurrentUser } from "@/lib/actions";
+import { addStudent, updateStudent, getCurrentUser } from "@/lib/actions";
 import AddStudentModal, { StudentFormData } from "@/components/common/AddStudentModal";
 import EditStudentModal from "@/components/common/EditStudentModal";
 import { useToast } from "@/hooks/use-toast";
@@ -40,39 +40,28 @@ interface ClassSchedule {
     endTime: string;
 }
 
-interface SignupRequest {
-    id: number;
-    username: string;
-    name: string;
-    birth_year?: number;
-    academy: string;
-    assigned_teacher_id: string;
-    status: 'pending' | 'approved' | 'rejected';
-    requested_at: string;
-    processed_at?: string;
-    rejection_reason?: string;
-    teacher_name?: string;
-}
 
 export default function TeacherStudentsPage() {
     const [students, setStudents] = useState<Student[]>([]);
-    const [signupRequests, setSignupRequests] = useState<SignupRequest[]>([]);
     const [search, setSearch] = useState("");
     const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-    const [rejectionReason, setRejectionReason] = useState("");
-    const [isRejectDialogOpen, setIsRejectDialogOpen] = useState(false);
-    const [selectedRequestId, setSelectedRequestId] = useState<string | null>(null);
     const { toast } = useToast();
 
     useEffect(() => {
         fetchStudents();
-        fetchSignupRequests();
     }, []);
 
     const fetchStudents = async () => {
-        // 서버 액션을 사용하여 현재 사용자 정보 가져오기
-        const currentUser = await getCurrentUser();
+        // Supabase 인증을 사용하여 현재 사용자 정보 가져오기
+        const { data: { user }, error: authError } = await supabase.auth.getUser();
+        
+        const currentUserId = user?.id || (() => {
+            if (typeof document === 'undefined') return null;
+            const cookies = document.cookie.split(';');
+            const userCookie = cookies.find(cookie => cookie.trim().startsWith('user_id='));
+            return userCookie ? userCookie.split('=')[1] : null;
+        })();
         
         let query = supabase
             .from('students')
@@ -82,6 +71,7 @@ export default function TeacherStudentsPage() {
                 current_curriculum_id, 
                 enrollment_start_date, 
                 attendance_schedule,
+                assigned_teachers,
                 users!students_user_id_fkey ( 
                     id, 
                     name, 
@@ -95,11 +85,11 @@ export default function TeacherStudentsPage() {
                 ), 
                 parent:users!students_parent_id_fkey ( phone )
             `)
-            .not('users.status', 'eq', 'pending'); // pending 상태인 학생 제외
+            // 모든 상태의 학생 포함 (active, pending)
         
         // 강사인 경우 담당 학생만 조회
-        if (currentUser?.id) {
-            query = query.contains('assigned_teachers', [currentUser.id]);
+        if (currentUserId) {
+            query = query.contains('assigned_teachers', [currentUserId]);
         }
         
         const { data, error } = await query;
@@ -111,7 +101,7 @@ export default function TeacherStudentsPage() {
         }
         
         // Student 타입에 맞게 매핑
-        const mapped = (data || []).map((item: any) => ({
+        let mapped = (data || []).map((item: any) => ({
             id: item.user_id,
             name: item.users?.name || '-',
             email: item.users?.email || '-',
@@ -123,7 +113,8 @@ export default function TeacherStudentsPage() {
             curriculum: '기초 프로그래밍', // 기본값, 나중에 실제 커리큘럼 데이터로 교체
             progress: Math.floor(Math.random() * 100), // 기본값, 나중에 실제 진도 데이터로 교체
             attendance: Math.floor(Math.random() * 100), // 기본값, 나중에 실제 출석률 데이터로 교체
-            status: item.users?.status || 'active',
+            status: item.users?.status === 'pending' ? '승인대기' : 
+                    item.users?.status === 'suspended' ? '휴강' : '수강',
             joinDate: item.users?.created_at ? new Date(item.users.created_at).toLocaleDateString() : '-',
             lastLogin: '2024-01-15', // 기본값, 나중에 실제 마지막 로그인 데이터로 교체
             studentId: item.users?.username || '-',
@@ -134,97 +125,19 @@ export default function TeacherStudentsPage() {
             })) : []
         }));
         
+        // 강사인 경우 클라이언트 사이드에서 추가 필터링
+        if (currentUserId) {
+            mapped = mapped.filter(student => {
+                const studentData = data?.find(item => item.user_id === student.id);
+                const isAssigned = studentData?.assigned_teachers?.includes(currentUserId);
+                return isAssigned;
+            });
+        }
+        
         setStudents(mapped);
     };
 
-    const fetchSignupRequests = async () => {
-        try {
-            // 서버 액션을 사용하여 현재 사용자 정보 가져오기
-            const currentUser = await getCurrentUser();
-            console.log('현재 사용자 정보:', currentUser);
-            
-            if (!currentUser || !currentUser.id) {
-                console.log('사용자 정보를 가져올 수 없습니다.');
-                return;
-            }
 
-            const result = await getStudentSignupRequests(currentUser.id);
-            console.log('가입 요청 조회 결과:', result);
-            
-            if (result.success) {
-                setSignupRequests(result.data || []);
-            } else {
-                console.error('가입 요청 조회 실패:', result.error);
-                setSignupRequests([]);
-            }
-        } catch (error) {
-            console.error('가입 요청 조회 중 오류:', error);
-            setSignupRequests([]);
-        }
-    };
-
-    const handleApproveRequest = async (requestId: string) => {
-        try {
-            const result = await approveStudentSignupRequest(requestId);
-            if (result.success) {
-                toast({
-                    title: "가입 승인 완료",
-                    description: "학생 가입이 승인되었습니다.",
-                    variant: "default",
-                });
-                fetchSignupRequests();
-                fetchStudents();
-            } else {
-                toast({
-                    title: "승인 실패",
-                    description: result.error || "알 수 없는 오류가 발생했습니다.",
-                    variant: "destructive",
-                });
-            }
-        } catch (error) {
-            toast({
-                title: "오류 발생",
-                description: "가입 승인 중 오류가 발생했습니다.",
-                variant: "destructive",
-            });
-        }
-    };
-
-    const openRejectDialog = (requestId: string) => {
-        setSelectedRequestId(requestId);
-        setIsRejectDialogOpen(true);
-    };
-
-    const handleRejectRequest = async () => {
-        if (!selectedRequestId) return;
-
-        try {
-            const result = await rejectStudentSignupRequest(selectedRequestId, rejectionReason);
-            if (result.success) {
-                toast({
-                    title: "가입 거부 완료",
-                    description: "학생 가입이 거부되었습니다.",
-                    variant: "default",
-                });
-                fetchSignupRequests();
-                setIsRejectDialogOpen(false);
-                setRejectionReason("");
-                setSelectedRequestId(null);
-            } else {
-                toast({
-                    title: "거부 실패",
-                    description: result.error || "알 수 없는 오류가 발생했습니다.",
-                    variant: "destructive",
-                });
-            }
-        } catch (error) {
-            toast({
-                title: "오류 발생",
-                description: "가입 거부 중 오류가 발생했습니다.",
-                variant: "destructive",
-            });
-        }
-    };
 
 
     const handleAddStudent = async (studentData: StudentFormData) => {
@@ -315,27 +228,23 @@ export default function TeacherStudentsPage() {
         }
     };
 
-    // 모든 학생 데이터 통합 (기존 학생 + 가입요청)
-    const allStudents = [
-        ...(students || []).map(student => ({
-            ...student,
-            type: 'existing',
-            status: student.status || 'active'
-        })),
-        ...(signupRequests || []).map(request => ({
-            id: request.id,
-            name: request.name,
-            email: request.username,
-            phone: '',
-            studentId: request.username,
-            type: 'signup_request',
-            status: request.status,
-            requested_at: request.requested_at,
-            teacher_name: request.teacher_name
-        }))
-    ];
+    // 모든 학생 데이터 (기존 학생만)
+    const allStudents = (students || []).map(student => ({
+        ...student,
+        type: 'existing',
+        status: student.status || 'active',
+        uniqueKey: `existing-${student.id}` // 고유 키 생성
+    }));
 
-    const filteredStudents = allStudents.filter(student =>
+    // 학생 목록 정렬 (승인대기 학생을 맨 아래로)
+    const sortedStudents = [...allStudents].sort((a, b) => {
+        // 승인대기 상태인 학생을 맨 아래로
+        if (a.status === '승인대기' && b.status !== '승인대기') return 1;
+        if (a.status !== '승인대기' && b.status === '승인대기') return -1;
+        return 0;
+    });
+
+    const filteredStudents = sortedStudents.filter(student =>
         student.name?.toLowerCase().includes(search.toLowerCase()) ||
         student.email?.toLowerCase().includes(search.toLowerCase()) ||
         student.studentId?.toLowerCase().includes(search.toLowerCase())
@@ -381,7 +290,7 @@ export default function TeacherStudentsPage() {
                         </TableHeader>
                         <TableBody>
                             {filteredStudents.map((student) => (
-                                <TableRow key={student.id} className="border-cyan-500/10 hover:bg-cyan-900/10">
+                                <TableRow key={student.uniqueKey} className="border-cyan-500/10 hover:bg-cyan-900/10">
                                     <TableCell className="font-medium text-cyan-100">
                                         {student.type === 'signup_request' ? (
                                             <span className="text-cyan-100">{student.name}</span>
@@ -439,19 +348,35 @@ export default function TeacherStudentsPage() {
                                     </TableCell>
                                     <TableCell>
                                         {student.type === 'signup_request' ? (
-                                            <Badge variant="secondary" className="bg-yellow-600 text-white">
-                                                가입요청
+                                            <Badge 
+                                                variant="outline"
+                                                className="border-yellow-500/50 text-yellow-400"
+                                            >
+                                                <Clock className="w-3 h-3 mr-1" />
+                                                승인대기
                                             </Badge>
                                         ) : (
                                             <Badge 
-                                                variant={student.status === 'active' ? 'default' : 'secondary'}
+                                                variant="outline"
                                                 className={
-                                                    student.status === 'active' ? 'bg-green-600 text-white' :
-                                                    student.status === '휴강' ? 'bg-yellow-600 text-white' :
-                                                    'bg-red-600 text-white'
+                                                    student.status === '승인대기'
+                                                        ? "border-yellow-500/50 text-yellow-400"
+                                                        : student.status === '휴강'
+                                                        ? "border-orange-500/50 text-orange-400"
+                                                        : "border-green-500/50 text-green-400"
                                                 }
                                             >
-                                                {student.status === 'active' ? '수강' : student.status}
+                                                {student.status === '승인대기' ? (
+                                                    <>
+                                                        <Clock className="w-3 h-3 mr-1" />
+                                                        승인대기
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <CheckCircle className="w-3 h-3 mr-1" />
+                                                        {student.status}
+                                                    </>
+                                                )}
                                             </Badge>
                                         )}
                                     </TableCell>
@@ -503,43 +428,6 @@ export default function TeacherStudentsPage() {
                 onSave={handleSaveStudent}
             />
 
-            <Dialog open={isRejectDialogOpen} onOpenChange={setIsRejectDialogOpen}>
-                <DialogContent className="bg-cyan-900/20 border-cyan-500/30">
-                    <DialogHeader>
-                        <DialogTitle className="text-cyan-100">가입 요청 거부</DialogTitle>
-                        <DialogDescription className="text-cyan-300">
-                            가입 요청을 거부하는 사유를 입력해주세요.
-                        </DialogDescription>
-                    </DialogHeader>
-                    <div className="space-y-4">
-                        <Textarea
-                            placeholder="거부 사유를 입력하세요..."
-                            value={rejectionReason}
-                            onChange={(e) => setRejectionReason(e.target.value)}
-                            className="bg-background/40 border-cyan-400/40 text-cyan-100 placeholder:text-cyan-400/60"
-                        />
-                    </div>
-                    <DialogFooter>
-                        <Button
-                            variant="outline"
-                            onClick={() => {
-                                setIsRejectDialogOpen(false);
-                                setRejectionReason("");
-                                setSelectedRequestId(null);
-                            }}
-                            className="border-cyan-400/40 text-cyan-300 hover:bg-cyan-900/20"
-                        >
-                            취소
-                        </Button>
-                        <Button
-                            onClick={handleRejectRequest}
-                            className="bg-red-600 hover:bg-red-700 text-white"
-                        >
-                            거부
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
         </div>
     );
 }

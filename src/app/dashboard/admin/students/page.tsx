@@ -4,13 +4,14 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Mail, Phone, CheckCircle, XCircle, Clock } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/lib/supabase";
-import { addStudent, updateStudent, getStudentSignupRequests, approveStudentSignupRequest, rejectStudentSignupRequest, getCurrentUser } from "@/lib/actions";
+import { addStudent, updateStudent, getCurrentUser } from "@/lib/actions";
 import AddStudentModal, { StudentFormData } from "@/components/common/AddStudentModal";
 import EditStudentModal from "@/components/common/EditStudentModal";
 import { useToast } from "@/hooks/use-toast";
@@ -32,6 +33,8 @@ interface Student {
     lastLogin: string;
     studentId?: string;
     classSchedules?: ClassSchedule[];
+    assignedTeacherId?: string;
+    assignedTeacherName?: string;
 }
 
 interface ClassSchedule {
@@ -40,38 +43,81 @@ interface ClassSchedule {
     endTime: string;
 }
 
-interface SignupRequest {
-    id: number;
-    username: string;
-    name: string;
-    birth_year?: number;
-    academy: string;
-    assigned_teacher_id: string;
-    status: 'pending' | 'approved' | 'rejected';
-    requested_at: string;
-    processed_at?: string;
-    processed_by?: string;
-    rejection_reason?: string;
-    teacher_name?: string;
-}
 
 export default function AdminStudentsPage() {
     const [students, setStudents] = useState<Student[]>([]);
-    const [signupRequests, setSignupRequests] = useState<SignupRequest[]>([]);
     const [search, setSearch] = useState("");
     const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-    const [rejectionReason, setRejectionReason] = useState("");
-    const [isRejectDialogOpen, setIsRejectDialogOpen] = useState(false);
-    const [selectedRequestId, setSelectedRequestId] = useState<string | null>(null);
+    const [teachers, setTeachers] = useState<{id: string, name: string}[]>([]);
     const { toast } = useToast();
 
+    // 담당강사별 색상 매핑 함수
+    const getTeacherColor = (teacherName: string) => {
+        if (teacherName === '미지정') return 'text-gray-400';
+        
+        const colors = [
+            'text-blue-300',    // 파란색
+            'text-green-300',   // 초록색
+            'text-yellow-300',  // 노란색
+            'text-purple-300',  // 보라색
+            'text-pink-300',    // 분홍색
+            'text-orange-300',  // 주황색
+            'text-cyan-300',    // 청록색
+            'text-red-300',     // 빨간색
+        ];
+        
+        // 강사 이름의 해시값을 사용해서 일관된 색상 할당
+        let hash = 0;
+        for (let i = 0; i < teacherName.length; i++) {
+            hash = ((hash << 5) - hash + teacherName.charCodeAt(i)) & 0xffffffff;
+        }
+        return colors[Math.abs(hash) % colors.length];
+    };
+
     useEffect(() => {
-        fetchStudents();
-        fetchSignupRequests();
+        const loadData = async () => {
+            await fetchTeachers();
+            await fetchStudents();
+        };
+        loadData();
     }, []);
 
+    const fetchTeachers = async () => {
+        try {
+            const { data, error } = await supabase
+                .from('users')
+                .select('id, name')
+                .eq('role', 'teacher')
+                .eq('status', 'active');
+
+            if (error) {
+                console.error('강사 목록 조회 오류:', error);
+                return;
+            }
+
+            setTeachers(data || []);
+            console.log('로드된 강사 목록:', data);
+        } catch (error) {
+            console.error('강사 목록 조회 중 오류:', error);
+        }
+    };
+
     const fetchStudents = async () => {
+        // 먼저 강사 목록을 다시 조회
+        const { data: teachersData, error: teachersError } = await supabase
+            .from('users')
+            .select('id, name')
+            .eq('role', 'teacher')
+            .eq('status', 'active');
+
+        if (teachersError) {
+            console.error('강사 목록 조회 오류:', teachersError);
+        }
+
+        const currentTeachers = teachersData || [];
+        console.log('fetchStudents에서 조회한 강사 목록:', currentTeachers);
+
         const { data, error } = await supabase
             .from('students')
             .select(`
@@ -80,6 +126,7 @@ export default function AdminStudentsPage() {
                 current_curriculum_id, 
                 enrollment_start_date, 
                 attendance_schedule,
+                assigned_teachers,
                 users!students_user_id_fkey ( 
                     id, 
                     name, 
@@ -89,11 +136,12 @@ export default function AdminStudentsPage() {
                     academy, 
                     created_at, 
                     email, 
-                    status 
+                    status,
+                    assigned_teacher_id
                 ), 
                 parent:users!students_parent_id_fkey ( phone )
             `)
-            .not('users.status', 'eq', 'pending'); // pending 상태인 학생 제외
+            // 모든 상태의 학생 포함 (active, pending)
         
         if (error) {
             console.error('학생 목록 조회 오류:', error);
@@ -102,108 +150,50 @@ export default function AdminStudentsPage() {
         }
         
         // Student 타입에 맞게 매핑
-        const mapped = (data || []).map((item: any) => ({
-            id: item.user_id,
-            name: item.users?.name || '-',
-            email: item.users?.email || '-',
-            phone: item.users?.phone || '-',
-            parentPhone: item.parent?.phone || '-',
-            birthDate: item.users?.birth_year ? String(item.users.birth_year) : '-',
-            avatar: '/default-avatar.png',
-            course: '프로그래밍', // 기본값, 나중에 실제 과목 데이터로 교체
-            curriculum: '기초 프로그래밍', // 기본값, 나중에 실제 커리큘럼 데이터로 교체
-            progress: Math.floor(Math.random() * 100), // 기본값, 나중에 실제 진도 데이터로 교체
-            attendance: Math.floor(Math.random() * 100), // 기본값, 나중에 실제 출석률 데이터로 교체
-            status: item.users?.status || 'active',
-            joinDate: item.users?.created_at ? new Date(item.users.created_at).toLocaleDateString() : '-',
-            lastLogin: '2024-01-15', // 기본값, 나중에 실제 마지막 로그인 데이터로 교체
-            studentId: item.users?.username || '-',
-            classSchedules: item.attendance_schedule ? Object.entries(item.attendance_schedule).map(([day, schedule]: [string, any]) => ({
-                day: day,
-                startTime: schedule.startTime || '',
-                endTime: schedule.endTime || ''
-            })) : []
-        }));
+        const mapped = (data || []).map((item: any) => {
+            // 담당강사 정보 찾기 (students 테이블의 assigned_teachers 배열에서 첫 번째 강사)
+            const assignedTeacherId = item.assigned_teachers && item.assigned_teachers.length > 0 ? item.assigned_teachers[0] : null;
+            
+            // currentTeachers 배열에서 찾기 시도
+            let assignedTeacher = currentTeachers.find(teacher => teacher.id === assignedTeacherId);
+            
+            // currentTeachers 배열에서 찾지 못한 경우, 임시로 assignedTeacherId를 사용해서 이름 생성
+            if (!assignedTeacher && assignedTeacherId) {
+                assignedTeacher = { id: assignedTeacherId, name: `강사 ${assignedTeacherId.slice(-4)}` };
+            }
+            
+            console.log('학생:', item.users?.name, 'assigned_teachers:', item.assigned_teachers, 'assignedTeacherId:', assignedTeacherId, 'assignedTeacher:', assignedTeacher);
+            
+            return {
+                id: item.user_id,
+                name: item.users?.name || '-',
+                email: item.users?.email || '-',
+                phone: item.users?.phone || '-',
+                parentPhone: item.parent?.phone || '-',
+                birthDate: item.users?.birth_year ? String(item.users.birth_year) : '-',
+                avatar: '/default-avatar.png',
+                course: '프로그래밍', // 기본값, 나중에 실제 과목 데이터로 교체
+                curriculum: '기초 프로그래밍', // 기본값, 나중에 실제 커리큘럼 데이터로 교체
+                progress: Math.floor(Math.random() * 100), // 기본값, 나중에 실제 진도 데이터로 교체
+                attendance: Math.floor(Math.random() * 100), // 기본값, 나중에 실제 출석률 데이터로 교체
+                status: item.users?.status === 'pending' ? '승인대기' : 
+                        item.users?.status === 'suspended' ? '휴강' : '수강',
+                joinDate: item.users?.created_at ? new Date(item.users.created_at).toLocaleDateString() : '-',
+                lastLogin: '2024-01-15', // 기본값, 나중에 실제 마지막 로그인 데이터로 교체
+                studentId: item.users?.username || '-',
+                assignedTeacherId: assignedTeacherId,
+                assignedTeacherName: assignedTeacher?.name || '미지정',
+                classSchedules: item.attendance_schedule ? Object.entries(item.attendance_schedule).map(([day, schedule]: [string, any]) => ({
+                    day: day,
+                    startTime: schedule.startTime || '',
+                    endTime: schedule.endTime || ''
+                })) : []
+            };
+        });
         
         setStudents(mapped);
     };
 
-    const fetchSignupRequests = async () => {
-        const result = await getStudentSignupRequests(); // 관리자는 모든 요청 조회
-        if (result.success) {
-            setSignupRequests(result.data || []);
-        } else {
-            console.error('가입 요청 조회 오류:', result.error);
-            toast({
-                title: "오류 발생",
-                description: "가입 요청을 불러오는 중 오류가 발생했습니다.",
-                variant: "destructive",
-            });
-        }
-    };
-
-    const handleApproveRequest = async (requestId: string) => {
-        try {
-            const result = await approveStudentSignupRequest(requestId);
-            if (result.success) {
-                toast({
-                    title: "가입 승인 완료",
-                    description: "학생 가입이 승인되었습니다.",
-                    variant: "default",
-                });
-                fetchSignupRequests();
-                fetchStudents(); // 학생 목록도 새로고침
-            } else {
-                toast({
-                    title: "승인 실패",
-                    description: result.error || "알 수 없는 오류가 발생했습니다.",
-                    variant: "destructive",
-                });
-            }
-        } catch (error) {
-            toast({
-                title: "오류 발생",
-                description: "가입 승인 중 오류가 발생했습니다.",
-                variant: "destructive",
-            });
-        }
-    };
-
-    const handleRejectRequest = async () => {
-        if (!selectedRequestId) return;
-
-        try {
-            const result = await rejectStudentSignupRequest(selectedRequestId, rejectionReason);
-            if (result.success) {
-                toast({
-                    title: "가입 거부 완료",
-                    description: "학생 가입이 거부되었습니다.",
-                    variant: "default",
-                });
-                fetchSignupRequests();
-                setIsRejectDialogOpen(false);
-                setRejectionReason("");
-                setSelectedRequestId(null);
-            } else {
-                toast({
-                    title: "거부 실패",
-                    description: result.error || "알 수 없는 오류가 발생했습니다.",
-                    variant: "destructive",
-                });
-            }
-        } catch (error) {
-            toast({
-                title: "오류 발생",
-                description: "가입 거부 중 오류가 발생했습니다.",
-                variant: "destructive",
-            });
-        }
-    };
-
-    const openRejectDialog = (requestId: string) => {
-        setSelectedRequestId(requestId);
-        setIsRejectDialogOpen(true);
-    };
 
 
     // 쿠키에서 사용자 ID 가져오기
@@ -260,6 +250,50 @@ export default function AdminStudentsPage() {
         setIsEditModalOpen(true);
     };
 
+    const handleTeacherChange = async (studentId: string, teacherId: string) => {
+        try {
+            // students 테이블의 assigned_teachers 배열 업데이트
+            const assignedTeachers = teacherId === 'none' ? [] : [teacherId];
+            const { error } = await supabase
+                .from('students')
+                .update({ assigned_teachers: assignedTeachers })
+                .eq('user_id', studentId);
+
+            if (error) {
+                console.error('담당강사 변경 오류:', error);
+                toast({
+                    title: "오류",
+                    description: "담당강사 변경에 실패했습니다.",
+                    variant: "destructive",
+                });
+                return;
+            }
+
+            // 로컬 상태 업데이트
+            setStudents(prev => prev.map(student => 
+                student.id === studentId 
+                    ? { 
+                        ...student, 
+                        assignedTeacherId: teacherId === 'none' ? undefined : teacherId,
+                        assignedTeacherName: teacherId === 'none' ? '미지정' : teachers.find(t => t.id === teacherId)?.name || '미지정'
+                    }
+                    : student
+            ));
+
+            toast({
+                title: "성공",
+                description: "담당강사가 변경되었습니다.",
+            });
+        } catch (error) {
+            console.error('담당강사 변경 중 오류:', error);
+            toast({
+                title: "오류",
+                description: "담당강사 변경 중 오류가 발생했습니다.",
+                variant: "destructive",
+            });
+        }
+    };
+
     const handleSaveStudent = async (studentData: any) => {
         try {
             const formData = new FormData();
@@ -301,34 +335,19 @@ export default function AdminStudentsPage() {
         }
     };
 
-    // 모든 학생 데이터 통합 (기존 학생 + 가입요청)
-    const allStudents = [
-        ...(students || []).map(student => ({
-            ...student,
-            type: 'existing',
-            status: student.status || 'active'
-        })),
-        ...(signupRequests || []).map(request => ({
-            id: request.id,
-            name: request.name,
-            email: request.username,
-            phone: '',
-            studentId: request.username,
-            type: 'signup_request',
-            status: request.status,
-            requested_at: request.requested_at,
-            teacher_name: request.teacher_name
-        }))
-    ];
+    // 학생 목록 정렬 (승인대기 학생을 맨 아래로)
+    const sortedStudents = [...(students || [])].sort((a, b) => {
+        // 승인대기 상태인 학생을 맨 아래로
+        if (a.status === '승인대기' && b.status !== '승인대기') return 1;
+        if (a.status !== '승인대기' && b.status === '승인대기') return -1;
+        return 0;
+    });
 
-    const filteredStudents = allStudents.filter(student =>
+    const filteredStudents = sortedStudents.filter(student =>
         student.name?.toLowerCase().includes(search.toLowerCase()) ||
         student.email?.toLowerCase().includes(search.toLowerCase()) ||
         student.studentId?.toLowerCase().includes(search.toLowerCase())
     );
-
-    const pendingRequests = signupRequests.filter(req => req.status === 'pending');
-    const processedRequests = signupRequests.filter(req => req.status !== 'pending');
 
     return (
         <div className="p-6 space-y-6">
@@ -360,119 +379,109 @@ export default function AdminStudentsPage() {
                                 <TableHead className="text-cyan-200">학생</TableHead>
                                 <TableHead className="text-cyan-200">연락처</TableHead>
                                 <TableHead className="text-cyan-200">과목</TableHead>
+                                <TableHead className="text-cyan-200">담당강사</TableHead>
                                 <TableHead className="text-cyan-200">진도</TableHead>
                                 <TableHead className="text-cyan-200">출석률</TableHead>
                                 <TableHead className="text-cyan-200">상태</TableHead>
                                 <TableHead className="text-cyan-200">가입일</TableHead>
-                                <TableHead className="text-cyan-200">액션</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
                             {filteredStudents.map((student) => (
-                                <TableRow key={student.id} className="border-cyan-500/10 hover:bg-cyan-900/10">
+                                <TableRow 
+                                    key={student.id} 
+                                    className="border-cyan-500/10 hover:bg-cyan-900/10 cursor-pointer"
+                                    onClick={() => handleEditStudent(student)}
+                                >
                                     <TableCell className="font-medium text-cyan-100">
-                                        {student.type === 'signup_request' ? (
-                                            <span className="text-cyan-100">{student.name}</span>
-                                        ) : (
-                                            <button 
-                                                onClick={() => handleEditStudent(student)}
-                                                className="text-cyan-100 hover:text-cyan-300 transition-colors cursor-pointer"
+                                        <button className="text-cyan-100 hover:text-cyan-300 transition-colors cursor-pointer">
+                                            {student.name}
+                                        </button>
+                                    </TableCell>
+                                    <TableCell className="text-cyan-300">
+                                        <div className="flex items-center space-x-2">
+                                            <Phone className="w-4 h-4" />
+                                            <span>{student.phone}</span>
+                                        </div>
+                                    </TableCell>
+                                    <TableCell className="text-cyan-300">
+                                        {student.course}
+                                    </TableCell>
+                                    <TableCell className="text-cyan-300">
+                                        <div className="flex items-center space-x-2">
+                                            <Select 
+                                                value={student.assignedTeacherId || 'none'} 
+                                                onValueChange={(value) => handleTeacherChange(student.id, value)}
+                                                onClick={(e) => e.stopPropagation()}
                                             >
-                                                {student.name}
-                                            </button>
-                                        )}
+                                                <SelectTrigger className="w-32 h-8 text-xs bg-cyan-900/30 border-cyan-500/30 text-cyan-200">
+                                                    <SelectValue placeholder="강사 선택">
+                                                        <span className={`${getTeacherColor(student.assignedTeacherName)} font-medium`}>
+                                                            {student.assignedTeacherName}
+                                                        </span>
+                                                    </SelectValue>
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="none">
+                                                        <span className="text-gray-400">미지정</span>
+                                                    </SelectItem>
+                                                    {teachers.map((teacher) => (
+                                                        <SelectItem key={teacher.id} value={teacher.id}>
+                                                            <span className={`${getTeacherColor(teacher.name)} font-medium`}>{teacher.name}</span>
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                    </TableCell>
+                                    <TableCell>
+                                        <div className="flex items-center space-x-2">
+                                            <div className="w-16 bg-cyan-900/30 rounded-full h-2">
+                                                <div 
+                                                    className="bg-cyan-500 h-2 rounded-full" 
+                                                    style={{ width: `${student.progress}%` }}
+                                                ></div>
+                                            </div>
+                                            <span className="text-cyan-300 text-sm">{student.progress}%</span>
+                                        </div>
+                                    </TableCell>
+                                    <TableCell>
+                                        <div className="flex items-center space-x-2">
+                                            <div className="w-16 bg-cyan-900/30 rounded-full h-2">
+                                                <div 
+                                                    className="bg-green-500 h-2 rounded-full" 
+                                                    style={{ width: `${student.attendance}%` }}
+                                                ></div>
+                                            </div>
+                                            <span className="text-cyan-300 text-sm">{student.attendance}%</span>
+                                        </div>
+                                    </TableCell>
+                                    <TableCell>
+                                        <Badge 
+                                            variant="outline"
+                        className={
+                            student.status === '승인대기'
+                                ? "border-yellow-500/50 text-yellow-400"
+                                : student.status === '휴강'
+                                ? "border-orange-500/50 text-orange-400"
+                                : "border-green-500/50 text-green-400"
+                        }
+                                        >
+                                            {student.status === '승인대기' ? (
+                                                <>
+                                                    <Clock className="w-3 h-3 mr-1" />
+                                                    승인대기
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <CheckCircle className="w-3 h-3 mr-1" />
+                                                    {student.status}
+                                                </>
+                                            )}
+                                        </Badge>
                                     </TableCell>
                                     <TableCell className="text-cyan-300">
-                                        {student.type === 'signup_request' ? (
-                                            <span className="text-cyan-400">가입요청 중</span>
-                                        ) : (
-                                            <div className="flex items-center space-x-2">
-                                                <Phone className="w-4 h-4" />
-                                                <span>{student.phone}</span>
-                                            </div>
-                                        )}
-                                    </TableCell>
-                                    <TableCell className="text-cyan-300">
-                                        {student.type === 'signup_request' ? '-' : student.course}
-                                    </TableCell>
-                                    <TableCell>
-                                        {student.type === 'signup_request' ? (
-                                            <span className="text-cyan-400">-</span>
-                                        ) : (
-                                            <div className="flex items-center space-x-2">
-                                                <div className="w-16 bg-cyan-900/30 rounded-full h-2">
-                                                    <div 
-                                                        className="bg-cyan-500 h-2 rounded-full" 
-                                                        style={{ width: `${student.progress}%` }}
-                                                    ></div>
-                                                </div>
-                                                <span className="text-cyan-300 text-sm">{student.progress}%</span>
-                                            </div>
-                                        )}
-                                    </TableCell>
-                                    <TableCell>
-                                        {student.type === 'signup_request' ? (
-                                            <span className="text-cyan-400">-</span>
-                                        ) : (
-                                            <div className="flex items-center space-x-2">
-                                                <div className="w-16 bg-cyan-900/30 rounded-full h-2">
-                                                    <div 
-                                                        className="bg-green-500 h-2 rounded-full" 
-                                                        style={{ width: `${student.attendance}%` }}
-                                                    ></div>
-                                                </div>
-                                                <span className="text-cyan-300 text-sm">{student.attendance}%</span>
-                                            </div>
-                                        )}
-                                    </TableCell>
-                                    <TableCell>
-                                        {student.type === 'signup_request' ? (
-                                            <Badge variant="secondary" className="bg-yellow-600 text-white">
-                                                가입요청
-                                            </Badge>
-                                        ) : (
-                                            <Badge 
-                                                variant={student.status === 'active' ? 'default' : 'secondary'}
-                                                className={
-                                                    student.status === 'active' ? 'bg-green-600 text-white' :
-                                                    student.status === '휴강' ? 'bg-yellow-600 text-white' :
-                                                    'bg-red-600 text-white'
-                                                }
-                                            >
-                                                {student.status === 'active' ? '수강' : student.status}
-                                            </Badge>
-                                        )}
-                                    </TableCell>
-                                    <TableCell className="text-cyan-300">
-                                        {student.type === 'signup_request' ? 
-                                            new Date(student.requested_at).toLocaleDateString() :
-                                            student.joinDate
-                                        }
-                                    </TableCell>
-                                    <TableCell>
-                                        {student.type === 'signup_request' ? (
-                                            <div className="flex space-x-2">
-                                                <Button
-                                                    size="sm"
-                                                    onClick={() => handleApproveRequest(student.id)}
-                                                    className="bg-green-600 hover:bg-green-700 text-white"
-                                                >
-                                                    <CheckCircle className="w-4 h-4 mr-1" />
-                                                    승인
-                                                </Button>
-                                                <Button
-                                                    size="sm"
-                                                    variant="outline"
-                                                    onClick={() => openRejectDialog(student.id)}
-                                                    className="border-red-500 text-red-300 hover:bg-red-900/20"
-                                                >
-                                                    <XCircle className="w-4 h-4 mr-1" />
-                                                    거부
-                                                </Button>
-                                            </div>
-                                        ) : (
-                                            <span className="text-cyan-400">-</span>
-                                        )}
+                                        {student.joinDate}
                                     </TableCell>
                                 </TableRow>
                             ))}
@@ -492,43 +501,6 @@ export default function AdminStudentsPage() {
                 onSave={handleSaveStudent}
             />
 
-            <Dialog open={isRejectDialogOpen} onOpenChange={setIsRejectDialogOpen}>
-                <DialogContent className="bg-cyan-900/20 border-cyan-500/30">
-                    <DialogHeader>
-                        <DialogTitle className="text-cyan-100">가입 요청 거부</DialogTitle>
-                        <DialogDescription className="text-cyan-300">
-                            가입 요청을 거부하는 사유를 입력해주세요.
-                        </DialogDescription>
-                    </DialogHeader>
-                    <div className="space-y-4">
-                        <Textarea
-                            placeholder="거부 사유를 입력하세요..."
-                            value={rejectionReason}
-                            onChange={(e) => setRejectionReason(e.target.value)}
-                            className="bg-background/40 border-cyan-400/40 text-cyan-100 placeholder:text-cyan-400/60"
-                        />
-                    </div>
-                    <DialogFooter>
-                        <Button
-                            variant="outline"
-                            onClick={() => {
-                                setIsRejectDialogOpen(false);
-                                setRejectionReason("");
-                                setSelectedRequestId(null);
-                            }}
-                            className="border-cyan-400/40 text-cyan-300 hover:bg-cyan-900/20"
-                        >
-                            취소
-                        </Button>
-                        <Button
-                            onClick={handleRejectRequest}
-                            className="bg-red-600 hover:bg-red-700 text-white"
-                        >
-                            거부
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
         </div>
     );
 } 

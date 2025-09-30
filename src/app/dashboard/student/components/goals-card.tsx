@@ -38,8 +38,8 @@ export function GoalsCard({ studentId, fixedInput, readOnly }: { studentId: stri
         .single();
 
       if (supabaseError) {
-        console.error('Supabase 에러:', supabaseError);
-        throw new Error(`데이터베이스 조회 실패: ${supabaseError.message}`);
+        console.error('Supabase 에러:', JSON.stringify(supabaseError, null, 2));
+        throw new Error(`데이터베이스 조회 실패: ${supabaseError.message || '알 수 없는 오류'}`);
       }
 
       // todolist 컬럼이 없거나 null인 경우 빈 배열로 초기화
@@ -73,7 +73,8 @@ export function GoalsCard({ studentId, fixedInput, readOnly }: { studentId: stri
         .single();
 
       if (fetchError) {
-        throw new Error(`기존 할 일 조회 실패: ${fetchError.message}`);
+        console.error('기존 할 일 조회 에러:', JSON.stringify(fetchError, null, 2));
+        throw new Error(`기존 할 일 조회 실패: ${fetchError.message || '알 수 없는 오류'}`);
       }
 
       const currentTodolist = currentData?.todolist || [];
@@ -86,7 +87,8 @@ export function GoalsCard({ studentId, fixedInput, readOnly }: { studentId: stri
         .eq('user_id', studentId);
 
       if (updateError) {
-        throw new Error(`할 일 추가 실패: ${updateError.message}`);
+        console.error('할 일 추가 에러:', JSON.stringify(updateError, null, 2));
+        throw new Error(`할 일 추가 실패: ${updateError.message || '알 수 없는 오류'}`);
       }
 
       setNewGoal('');
@@ -112,7 +114,8 @@ export function GoalsCard({ studentId, fixedInput, readOnly }: { studentId: stri
         .single();
 
       if (fetchError) {
-        throw new Error(`기존 할 일 조회 실패: ${fetchError.message}`);
+        console.error('기존 할 일 조회 에러:', JSON.stringify(fetchError, null, 2));
+        throw new Error(`기존 할 일 조회 실패: ${fetchError.message || '알 수 없는 오류'}`);
       }
 
       const currentTodolist = currentData?.todolist || [];
@@ -133,7 +136,8 @@ export function GoalsCard({ studentId, fixedInput, readOnly }: { studentId: stri
         .eq('user_id', studentId);
 
       if (updateError) {
-        throw new Error(`할 일 상태 변경 실패: ${updateError.message}`);
+        console.error('할 일 상태 변경 에러:', JSON.stringify(updateError, null, 2));
+        throw new Error(`할 일 상태 변경 실패: ${updateError.message || '알 수 없는 오류'}`);
       }
 
       await fetchGoals();
@@ -156,7 +160,8 @@ export function GoalsCard({ studentId, fixedInput, readOnly }: { studentId: stri
         .single();
 
       if (fetchError) {
-        throw new Error(`기존 할 일 조회 실패: ${fetchError.message}`);
+        console.error('기존 할 일 조회 에러:', JSON.stringify(fetchError, null, 2));
+        throw new Error(`기존 할 일 조회 실패: ${fetchError.message || '알 수 없는 오류'}`);
       }
 
       const currentTodolist = currentData?.todolist || [];
@@ -169,7 +174,8 @@ export function GoalsCard({ studentId, fixedInput, readOnly }: { studentId: stri
         .eq('user_id', studentId);
 
       if (updateError) {
-        throw new Error(`할 일 삭제 실패: ${updateError.message}`);
+        console.error('할 일 삭제 에러:', JSON.stringify(updateError, null, 2));
+        throw new Error(`할 일 삭제 실패: ${updateError.message || '알 수 없는 오류'}`);
       }
 
       await fetchGoals();
@@ -198,7 +204,8 @@ export function GoalsCard({ studentId, fixedInput, readOnly }: { studentId: stri
         .single();
 
       if (fetchError) {
-        throw new Error(`기존 할 일 조회 실패: ${fetchError.message}`);
+        console.error('기존 할 일 조회 에러:', JSON.stringify(fetchError, null, 2));
+        throw new Error(`기존 할 일 조회 실패: ${fetchError.message || '알 수 없는 오류'}`);
       }
 
       const currentTodolist = currentData?.todolist || [];
@@ -219,7 +226,8 @@ export function GoalsCard({ studentId, fixedInput, readOnly }: { studentId: stri
         .eq('user_id', studentId);
 
       if (updateError) {
-        throw new Error(`할 일 제목 수정 실패: ${updateError.message}`);
+        console.error('할 일 제목 수정 에러:', JSON.stringify(updateError, null, 2));
+        throw new Error(`할 일 제목 수정 실패: ${updateError.message || '알 수 없는 오류'}`);
       }
 
       setEditingGoalIndex(null);

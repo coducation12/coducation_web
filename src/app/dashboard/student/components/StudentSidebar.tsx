@@ -11,7 +11,8 @@ import { useProfileImage } from "@/hooks/use-profile-image";
 
 const navItems = [
   { href: "/dashboard/student", label: "대시보드", icon: <LayoutDashboard className="w-5 h-5" /> },
-  { href: "/dashboard/student/study", label: "학습하기", icon: <BookOpen className="w-5 h-5" /> },
+  // TODO: 학습하기 페이지 완성 후 활성화 예정
+  // { href: "/dashboard/student/study", label: "학습하기", icon: <BookOpen className="w-5 h-5" /> },
   { href: "/dashboard/student/typing", label: "타자연습", icon: <Keyboard className="w-5 h-5" /> },
   { href: "/dashboard/student/community", label: "커뮤니티", icon: <Users className="w-5 h-5" /> },
 ];

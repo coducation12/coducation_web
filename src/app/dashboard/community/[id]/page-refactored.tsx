@@ -203,7 +203,8 @@ export default function PostDetailPage() {
             <div className="flex items-center space-x-3">
               <UserAvatar 
                 src={post.author.avatar} 
-                name={post.author.name} 
+                name={post.author.name}
+                role={post.author.role}
                 size="lg"
               />
               <div>

@@ -12,7 +12,8 @@ const navItems = [
   { href: "/dashboard/teacher", label: "대시보드", icon: <LayoutDashboard className="w-5 h-5" /> },
   { href: "/dashboard/teacher/students", label: "학생관리", icon: <GraduationCap className="w-5 h-5" /> },
   { href: "/dashboard/teacher/timetable", label: "학원시간표", icon: <CalendarDays className="w-5 h-5" /> },
-  { href: "/dashboard/teacher/curriculum", label: "커리큘럼", icon: <BookOpen className="w-5 h-5" /> },
+  // TODO: 커리큘럼 페이지 완성 후 활성화 예정
+  // { href: "/dashboard/teacher/curriculum", label: "커리큘럼", icon: <BookOpen className="w-5 h-5" /> },
   { href: "/dashboard/teacher/consultations", label: "상담문의", icon: <MessageSquare className="w-5 h-5" /> },
   { href: "/dashboard/teacher/community", label: "커뮤니티", icon: <Users className="w-5 h-5" /> },
 ];

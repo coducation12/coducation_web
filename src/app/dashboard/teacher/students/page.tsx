@@ -7,7 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Mail, Phone, CheckCircle, XCircle, Clock } from "lucide-react";
+import { Mail, Phone, CheckCircle, XCircle, Clock, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/lib/supabase";
 import { addStudent, updateStudent, getCurrentUser } from "@/lib/actions";
@@ -46,11 +46,63 @@ export default function TeacherStudentsPage() {
     const [search, setSearch] = useState("");
     const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [sortField, setSortField] = useState<string | null>(null);
+    const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
     const { toast } = useToast();
 
     useEffect(() => {
         fetchStudents();
     }, []);
+
+    // 정렬 함수
+    const handleSort = (field: string) => {
+        if (sortField === field) {
+            setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+        } else {
+            setSortField(field);
+            setSortDirection('asc');
+        }
+    };
+
+    // 정렬 아이콘 렌더링 함수
+    const getSortIcon = (field: string) => {
+        if (sortField !== field) {
+            return <ArrowUpDown className="w-4 h-4" />;
+        }
+        return sortDirection === 'asc' ? 
+            <ArrowUp className="w-4 h-4" /> : 
+            <ArrowDown className="w-4 h-4" />;
+    };
+
+    // 정렬된 학생 목록 생성
+    const getSortedStudents = (students: Student[]) => {
+        if (!sortField) return students;
+        
+        return [...students].sort((a, b) => {
+            let aValue: any = a[sortField as keyof Student];
+            let bValue: any = b[sortField as keyof Student];
+            
+            // 숫자 필드 처리
+            if (sortField === 'progress' || sortField === 'attendance') {
+                aValue = Number(aValue) || 0;
+                bValue = Number(bValue) || 0;
+            }
+            
+            // 문자열 필드 처리
+            if (typeof aValue === 'string') {
+                aValue = aValue.toLowerCase();
+                bValue = bValue.toLowerCase();
+            }
+            
+            if (aValue < bValue) {
+                return sortDirection === 'asc' ? -1 : 1;
+            }
+            if (aValue > bValue) {
+                return sortDirection === 'asc' ? 1 : -1;
+            }
+            return 0;
+        });
+    };
 
     const fetchStudents = async () => {
         // Supabase 인증을 사용하여 현재 사용자 정보 가져오기
@@ -236,19 +288,15 @@ export default function TeacherStudentsPage() {
         uniqueKey: `existing-${student.id}` // 고유 키 생성
     }));
 
-    // 학생 목록 정렬 (승인대기 학생을 맨 아래로)
-    const sortedStudents = [...allStudents].sort((a, b) => {
-        // 승인대기 상태인 학생을 맨 아래로
-        if (a.status === '승인대기' && b.status !== '승인대기') return 1;
-        if (a.status !== '승인대기' && b.status === '승인대기') return -1;
-        return 0;
-    });
-
-    const filteredStudents = sortedStudents.filter(student =>
+    // 학생 목록 필터링
+    const filteredStudents = allStudents.filter(student =>
         student.name?.toLowerCase().includes(search.toLowerCase()) ||
         student.email?.toLowerCase().includes(search.toLowerCase()) ||
         student.studentId?.toLowerCase().includes(search.toLowerCase())
     );
+
+    // 정렬 적용
+    const sortedStudents = getSortedStudents(filteredStudents);
 
     return (
         <div className="p-6 pt-20 lg:pt-6 space-y-6">
@@ -278,18 +326,74 @@ export default function TeacherStudentsPage() {
                     <Table>
                         <TableHeader>
                             <TableRow className="border-cyan-500/20">
-                                <TableHead className="text-cyan-200">학생</TableHead>
-                                <TableHead className="text-cyan-200">연락처</TableHead>
-                                <TableHead className="text-cyan-200">과목</TableHead>
-                                <TableHead className="text-cyan-200">진도</TableHead>
-                                <TableHead className="text-cyan-200">출석률</TableHead>
-                                <TableHead className="text-cyan-200">상태</TableHead>
-                                <TableHead className="text-cyan-200">가입일</TableHead>
+                                <TableHead 
+                                    className="text-cyan-200 cursor-pointer hover:text-cyan-100 transition-colors select-none"
+                                    onClick={() => handleSort('name')}
+                                >
+                                    <div className="flex items-center gap-2">
+                                        학생
+                                        {getSortIcon('name')}
+                                    </div>
+                                </TableHead>
+                                <TableHead 
+                                    className="text-cyan-200 cursor-pointer hover:text-cyan-100 transition-colors select-none"
+                                    onClick={() => handleSort('phone')}
+                                >
+                                    <div className="flex items-center gap-2">
+                                        연락처
+                                        {getSortIcon('phone')}
+                                    </div>
+                                </TableHead>
+                                <TableHead 
+                                    className="text-cyan-200 cursor-pointer hover:text-cyan-100 transition-colors select-none"
+                                    onClick={() => handleSort('course')}
+                                >
+                                    <div className="flex items-center gap-2">
+                                        과목
+                                        {getSortIcon('course')}
+                                    </div>
+                                </TableHead>
+                                <TableHead 
+                                    className="text-cyan-200 cursor-pointer hover:text-cyan-100 transition-colors select-none"
+                                    onClick={() => handleSort('progress')}
+                                >
+                                    <div className="flex items-center gap-2">
+                                        진도
+                                        {getSortIcon('progress')}
+                                    </div>
+                                </TableHead>
+                                <TableHead 
+                                    className="text-cyan-200 cursor-pointer hover:text-cyan-100 transition-colors select-none"
+                                    onClick={() => handleSort('attendance')}
+                                >
+                                    <div className="flex items-center gap-2">
+                                        출석률
+                                        {getSortIcon('attendance')}
+                                    </div>
+                                </TableHead>
+                                <TableHead 
+                                    className="text-cyan-200 cursor-pointer hover:text-cyan-100 transition-colors select-none"
+                                    onClick={() => handleSort('status')}
+                                >
+                                    <div className="flex items-center gap-2">
+                                        상태
+                                        {getSortIcon('status')}
+                                    </div>
+                                </TableHead>
+                                <TableHead 
+                                    className="text-cyan-200 cursor-pointer hover:text-cyan-100 transition-colors select-none"
+                                    onClick={() => handleSort('joinDate')}
+                                >
+                                    <div className="flex items-center gap-2">
+                                        가입일
+                                        {getSortIcon('joinDate')}
+                                    </div>
+                                </TableHead>
                                 <TableHead className="text-cyan-200">액션</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {filteredStudents.map((student) => (
+                            {sortedStudents.map((student) => (
                                 <TableRow key={student.uniqueKey} className="border-cyan-500/10 hover:bg-cyan-900/10">
                                     <TableCell className="font-medium text-cyan-100">
                                         {student.type === 'signup_request' ? (

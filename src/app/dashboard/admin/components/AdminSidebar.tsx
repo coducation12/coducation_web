@@ -51,7 +51,7 @@ export function AdminSidebar() {
         ))}
       </nav>
       <div className="p-4 border-t border-cyan-900/20 text-cyan-200 text-sm flex flex-col gap-4">
-        <Link href="/dashboard/admin/content" className="flex items-center gap-3 hover:underline cursor-pointer">
+        <Link href="/dashboard/admin/profile" className="flex items-center gap-3 hover:underline cursor-pointer">
           <User className="w-5 h-5" />
           <span>관리자</span>
         </Link>

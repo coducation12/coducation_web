@@ -21,6 +21,8 @@ function LoginForm() {
     const errorParam = searchParams.get('error')
     if (errorParam === 'true') {
       setError('로그인에 실패했습니다. 아이디/이메일과 비밀번호를 확인해주세요.')
+    } else if (errorParam === 'password_required') {
+      setError('비밀번호를 입력해주세요.')
     } else if (errorParam === 'pending') {
       setError('계정이 아직 승인되지 않았습니다. 담당교사의 승인을 기다려주세요.')
     } else if (errorParam === 'suspended') {

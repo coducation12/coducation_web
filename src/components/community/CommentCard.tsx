@@ -29,6 +29,7 @@ export const CommentCard = memo(function CommentCard({ comment, currentUserId, o
             <UserAvatar 
               src={comment.author.profile_image_url || comment.author.avatar} 
               name={comment.author.name}
+              role={comment.author.role}
               size="md"
               className="flex-shrink-0"
             />

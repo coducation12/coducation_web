@@ -39,6 +39,7 @@ export const PostCard = memo(function PostCard({ post, currentUserId, currentUse
           <UserAvatar 
             src={post.author.profile_image_url || post.author.avatar} 
             name={post.author.name}
+            role={post.author.role}
             size="md"
           />
         </div>

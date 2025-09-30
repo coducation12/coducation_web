@@ -248,6 +248,7 @@ export default function PostDetailPage() {
                 <UserAvatar 
                   src={post.author.profile_image_url || post.author.avatar} 
                   name={post.author.name}
+                  role={post.author.role}
                   size="lg"
                 />
               <div>
@@ -355,6 +356,7 @@ export default function PostDetailPage() {
                   <UserAvatar 
                     src={comment.author.profile_image_url || comment.author.avatar} 
                     name={comment.author.name}
+                    role={comment.author.role}
                     size="md"
                   />
                   <div className="flex-1">

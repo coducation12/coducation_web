@@ -2,7 +2,7 @@
 
 import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
-import { supabase } from '@/lib/supabase'
+import { supabase, supabaseAdmin } from '@/lib/supabase'
 import bcrypt from 'bcryptjs'
 import { compressImage, validateImageFile, formatFileSize } from '@/lib/image-utils'
 
@@ -22,55 +22,67 @@ interface StudentSignupRequest {
   teacher_name?: string
 }
 
-// TODO: 배포 후 정상화 - 비밀번호 인증으로 복원 필요
-// 현재는 개발 편의를 위해 비밀번호 없이 로그인 허용
-// 배포 후에는 supabase.auth.signInWithPassword 사용하여 보안 강화 필요
+// Supabase Auth를 사용한 로그인 시스템
 
 export async function login(formData: FormData) {
   const userType = formData.get('userType') as string;
   
   if (userType === 'teacher') {
-    // 강사/관리자: 이메일과 비밀번호로 사용자 확인
+    // 강사/관리자: Supabase Auth를 사용한 이메일과 비밀번호 인증
     const email = formData.get('email') as string;
     const password = formData.get('password') as string;
     
-    const { data: user, error } = await supabase
-      .from('users')
-      .select('id, username, role, password, status')
-      .eq('username', email)
-      .in('role', ['teacher', 'admin']) // 강사와 관리자 모두 허용
-      .single();
+    try {
+      // Supabase Auth로 로그인
+      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+        email: email,
+        password: password
+      });
 
-    if (!error && user) {
-      // 강사/관리자: active가 아니면 로그인 거부
+      if (authError) {
+        console.error('Auth 로그인 실패:', authError);
+        redirect('/login?error=true');
+        return;
+      }
+
+      if (!authData.user) {
+        redirect('/login?error=true');
+        return;
+      }
+
+      // users 테이블에서 사용자 정보 조회 (이메일 또는 username으로 조회)
+      const { data: user, error: userError } = await supabase
+        .from('users')
+        .select('id, username, role, status, email')
+        .or(`email.eq.${email},username.eq.${email}`)
+        .in('role', ['teacher', 'admin'])
+        .single();
+
+      if (userError || !user) {
+        console.error('사용자 정보 조회 실패:', userError);
+        redirect('/login?error=true');
+        return;
+      }
+
+      // 사용자 상태 확인
       if (user.status !== 'active') {
-        redirect('/login?error=pending')
+        redirect('/login?error=pending');
         return;
       }
+
+      // 쿠키에 사용자 정보 저장
+      const cookieStore = await cookies();
+      cookieStore.set('user_id', user.id, { httpOnly: true, path: '/' });
+      cookieStore.set('user_role', user.role, { httpOnly: true, path: '/' });
+      cookieStore.set('auth_token', authData.session?.access_token || '', { httpOnly: true, path: '/' });
       
-      // 개발용: 비밀번호가 비어있으면 자동 로그인
-      if (!password || password.trim() === '') {
-        const cookieStore = await cookies();
-        cookieStore.set('user_id', user.id, { httpOnly: true, path: '/' })
-        cookieStore.set('user_role', user.role, { httpOnly: true, path: '/' })
-        redirect('/dashboard')
-        return;
-      }
-      
-      // 비밀번호가 있으면 검증
-      if (user.password && await bcrypt.compare(password, user.password)) {
-        const cookieStore = await cookies();
-        cookieStore.set('user_id', user.id, { httpOnly: true, path: '/' })
-        cookieStore.set('user_role', user.role, { httpOnly: true, path: '/' })
-        redirect('/dashboard')
-      } else {
-        redirect('/login?error=true')
-      }
-    } else {
-      redirect('/login?error=true')
+      redirect('/dashboard');
+    } catch (error) {
+      console.error('로그인 중 오류:', error);
+      redirect('/login?error=true');
     }
   } else {
-    // 학생/학부모: 아이디와 비밀번호로 사용자 확인
+    // 학생/학부모: 기존 방식 유지 (Auth 사용하지 않음)
     const username = formData.get('username') as string;
     const password = formData.get('password') as string;
     
@@ -105,12 +117,9 @@ export async function login(formData: FormData) {
         }
       }
       
-      // 개발용: 비밀번호가 비어있으면 자동 로그인
+      // 배포 환경: 비밀번호 필수 입력
       if (!password || password.trim() === '') {
-        const cookieStore = await cookies();
-        cookieStore.set('user_id', user.id, { httpOnly: true, path: '/' })
-        cookieStore.set('user_role', user.role, { httpOnly: true, path: '/' })
-        redirect('/dashboard')
+        redirect('/login?error=password_required');
         return;
       }
       
@@ -157,12 +166,24 @@ export async function getCurrentUser() {
   }
 }
 
-// TODO: 배포 후 정상화 - Supabase Auth 로그아웃으로 복원 필요
+// Supabase Auth를 사용한 로그아웃
 export async function logout() {
-  const cookieStore = await cookies();
-  cookieStore.delete('user_id')
-  cookieStore.delete('user_role')
-  redirect('/login')
+  try {
+    // Supabase Auth에서 로그아웃
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      console.error('Auth 로그아웃 실패:', error);
+    }
+  } catch (error) {
+    console.error('로그아웃 중 오류:', error);
+  } finally {
+    // 쿠키 삭제
+    const cookieStore = await cookies();
+    cookieStore.delete('user_id');
+    cookieStore.delete('user_role');
+    cookieStore.delete('auth_token');
+    redirect('/login');
+  }
 }
 
 // 학생 추가 서버 액션
@@ -954,6 +975,7 @@ export async function addTeacher(formData: FormData) {
         email: teacherData.email,
         phone: teacherData.phone,
         academy: 'coding-maker',
+        profile_image_url: teacherData.image || null, // 프로필 이미지 추가
         created_at: new Date().toISOString()
       })
       .select()
@@ -971,7 +993,6 @@ export async function addTeacher(formData: FormData) {
         bio: '코딩 전문 강사',
         certs: '코딩 교육 전문가',
         career: '코딩 교육 전문 강사',
-        image: teacherData.image || null, // 업로드된 이미지 또는 null
         subject: teacherData.subject, // 입력된 담당과목
         created_at: new Date().toISOString()
       });
@@ -1063,28 +1084,34 @@ export async function updateTeacher(formData: FormData) {
     // 1. Supabase Auth 업데이트 (비밀번호 변경 시에만)
     if (teacherData.password) {
       try {
-        // Auth 사용자 목록에서 이메일로 조회
-        const { data: authUsers, error: listError } = await supabase.auth.admin.listUsers();
+        // Service Role Key를 사용하여 Auth 사용자 목록 조회
+        const { data: authUsers, error: listError } = await supabaseAdmin.auth.admin.listUsers();
         
         if (!listError && authUsers.users) {
           const authUser = authUsers.users.find(user => user.email === teacherData.email);
           
           if (authUser) {
             // Auth 비밀번호 업데이트
-            const { error: authUpdateError } = await supabase.auth.admin.updateUserById(
+            const { error: authUpdateError } = await supabaseAdmin.auth.admin.updateUserById(
               authUser.id,
               { password: teacherData.password }
             );
             
             if (authUpdateError) {
               console.error('Supabase Auth 비밀번호 업데이트 실패:', authUpdateError);
-              // Auth 업데이트 실패해도 계속 진행 (개발 환경 고려)
+              return { success: false, error: '비밀번호 업데이트에 실패했습니다.' };
             }
+          } else {
+            console.error('Auth에서 강사 계정을 찾을 수 없습니다.');
+            return { success: false, error: '인증 계정을 찾을 수 없습니다.' };
           }
+        } else {
+          console.error('Auth 사용자 목록 조회 실패:', listError);
+          return { success: false, error: '인증 시스템에 연결할 수 없습니다.' };
         }
       } catch (error) {
         console.error('Supabase Auth 업데이트 중 오류:', error);
-        // Auth 업데이트 실패해도 계속 진행
+        return { success: false, error: '비밀번호 업데이트 중 오류가 발생했습니다.' };
       }
     }
 
@@ -1119,7 +1146,6 @@ export async function updateTeacher(formData: FormData) {
         bio: teacherData.bio || null,
         certs: teacherData.certs || null,
         career: teacherData.career || null,
-        image: teacherData.image || null,
         subject: teacherData.subject || '코딩 교육' // subject 컬럼에 직접 저장
       })
       .eq('user_id', teacherData.teacherId);
@@ -1146,23 +1172,176 @@ export async function updateTeacher(formData: FormData) {
 // 강사 상세 정보 조회 서버 액션
 export async function getTeacherDetails(teacherId: string) {
   try {
-    const { data, error } = await supabase
+    // teachers 테이블에서 상세 정보 조회
+    const { data: teacherData, error: teacherError } = await supabase
       .from('teachers')
-      .select('bio, certs, career, image, subject')
+      .select('bio, certs, career, subject')
       .eq('user_id', teacherId)
       .single();
 
-    if (error && error.code !== 'PGRST116') {
-      return { success: false, error: error.message };
+    if (teacherError && teacherError.code !== 'PGRST116') {
+      return { success: false, error: teacherError.message };
+    }
+
+    // users 테이블에서 프로필 이미지 조회
+    const { data: userData, error: userError } = await supabase
+      .from('users')
+      .select('profile_image_url')
+      .eq('id', teacherId)
+      .single();
+
+    if (userError && userError.code !== 'PGRST116') {
+      return { success: false, error: userError.message };
     }
 
     return { 
       success: true, 
-      data: data || { bio: '', certs: '', career: '', image: '', subject: '코딩 교육' }
+      data: {
+        bio: teacherData?.bio || '',
+        certs: teacherData?.certs || '',
+        career: teacherData?.career || '',
+        subject: teacherData?.subject || '코딩 교육',
+        image: userData?.profile_image_url || ''
+      }
     };
   } catch (error) {
     console.error('강사 상세 정보 조회 중 오류:', error);
     return { success: false, error: '강사 상세 정보 조회 중 오류가 발생했습니다.' };
+  }
+}
+
+// ==================== 관리자 프로필 관련 액션 ====================
+
+// 관리자 프로필 업데이트 서버 액션
+export async function updateAdminProfile(formData: FormData) {
+  try {
+    // 현재 로그인한 사용자가 관리자인지 확인
+    const cookieStore = await cookies();
+    const currentUserRole = cookieStore.get('user_role')?.value;
+    
+    if (currentUserRole !== 'admin') {
+      return { success: false, error: '관리자만 프로필을 수정할 수 있습니다.' };
+    }
+
+    const adminData = {
+      adminId: formData.get('adminId') as string,
+      name: formData.get('name') as string,
+      email: formData.get('email') as string,
+      phone: formData.get('phone') as string,
+      newPassword: formData.get('newPassword') as string
+    };
+
+    // 필수 필드 검증
+    if (!adminData.adminId || !adminData.name || !adminData.email || !adminData.phone) {
+      return { success: false, error: '필수 항목을 모두 입력해주세요.' };
+    }
+
+    // 이메일 형식 검증
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(adminData.email)) {
+      return { success: false, error: '올바른 이메일 형식을 입력해주세요.' };
+    }
+
+    // 전화번호 형식 검증
+    const phoneRegex = /^010-\d{4}-\d{4}$/;
+    if (!phoneRegex.test(adminData.phone)) {
+      return { success: false, error: '올바른 전화번호 형식을 입력해주세요. (예: 010-1234-5678)' };
+    }
+
+    // 비밀번호 변경 시 검증
+    if (adminData.newPassword) {
+      if (adminData.newPassword.length < 6) {
+        return { success: false, error: '새 비밀번호는 최소 6자 이상이어야 합니다.' };
+      }
+    }
+
+    // 중복 검사 (현재 관리자를 제외하고 이메일, 전화번호 중복 체크)
+    const { data: existingUser } = await supabase
+      .from('users')
+      .select('username, email, phone, id')
+      .or(`username.eq.${adminData.email},email.eq.${adminData.email},phone.eq.${adminData.phone}`)
+      .neq('id', adminData.adminId)
+      .single();
+
+    if (existingUser) {
+      if (existingUser.username === adminData.email || existingUser.email === adminData.email) {
+        return { success: false, error: '이미 존재하는 이메일입니다.' };
+      }
+      if (existingUser.phone === adminData.phone) {
+        return { success: false, error: '이미 존재하는 전화번호입니다.' };
+      }
+    }
+
+    // 1. Supabase Auth 업데이트 (비밀번호 변경 시에만)
+    if (adminData.newPassword) {
+      try {
+        // Service Role Key를 사용하여 Auth 사용자 목록 조회
+        const { data: authUsers, error: listError } = await supabaseAdmin.auth.admin.listUsers();
+        
+        if (!listError && authUsers.users) {
+          // 관리자 계정의 경우 이메일로 검색
+          const authUser = authUsers.users.find(user => user.email === adminData.email);
+          
+          if (authUser) {
+            // Auth 비밀번호 업데이트
+            const { error: authUpdateError } = await supabaseAdmin.auth.admin.updateUserById(
+              authUser.id,
+              { password: adminData.newPassword }
+            );
+            
+            if (authUpdateError) {
+              console.error('Supabase Auth 비밀번호 업데이트 실패:', authUpdateError);
+              return { success: false, error: '비밀번호 업데이트에 실패했습니다.' };
+            }
+          } else {
+            console.error('Auth에서 관리자 계정을 찾을 수 없습니다.');
+            return { success: false, error: '인증 계정을 찾을 수 없습니다.' };
+          }
+        } else {
+          console.error('Auth 사용자 목록 조회 실패:', listError);
+          return { success: false, error: '인증 시스템에 연결할 수 없습니다.' };
+        }
+      } catch (error) {
+        console.error('Auth 업데이트 실패:', error);
+        return { success: false, error: '비밀번호 업데이트 중 오류가 발생했습니다.' };
+      }
+    }
+
+    // 2. users 테이블 업데이트
+    const updateUserData: any = {
+      username: adminData.email, // 이메일을 username으로 사용
+      name: adminData.name,
+      email: adminData.email, // 이메일 업데이트
+      phone: adminData.phone
+    };
+
+    // 비밀번호가 입력된 경우에만 업데이트
+    if (adminData.newPassword) {
+      const passwordHash = await bcrypt.hash(adminData.newPassword, 10);
+      updateUserData.password = passwordHash;
+    }
+
+    const { error: userError } = await supabase
+      .from('users')
+      .update(updateUserData)
+      .eq('id', adminData.adminId);
+
+    if (userError) {
+      return { success: false, error: `프로필 업데이트 실패: ${userError.message}` };
+    }
+
+    return { 
+      success: true, 
+      data: {
+        id: adminData.adminId,
+        name: adminData.name,
+        email: adminData.email,
+        phone: adminData.phone
+      }
+    };
+  } catch (error) {
+    console.error('관리자 프로필 업데이트 중 오류:', error);
+    return { success: false, error: '프로필 업데이트 중 오류가 발생했습니다.' };
   }
 }
 

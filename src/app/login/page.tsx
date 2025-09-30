@@ -35,10 +35,17 @@ function LoginForm() {
     }
   }, [searchParams])
 
-  // 로고 더블클릭으로 관리자 모드 활성화
+  // 로고 더블클릭으로 탭 전환
   const handleLogoDoubleClick = () => {
-    setIsAdminMode(true)
-    setUserType('teacher')
+    if (!isAdminMode) {
+      // 학생 모드에서 강사 모드로 전환
+      setIsAdminMode(true)
+      setUserType('teacher')
+    } else {
+      // 강사 모드에서 학생 모드로 전환
+      setIsAdminMode(false)
+      setUserType('student')
+    }
   }
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -81,82 +88,31 @@ function LoginForm() {
   return (
     <div className="flex items-center justify-center min-h-[calc(100vh-11rem)] py-12">
       <div className="mx-auto max-w-md w-full">
-        {/* 로고 - 더블클릭으로 관리자 모드 활성화 */}
-        <div className="text-center mb-8">
-          <div 
-            onDoubleClick={handleLogoDoubleClick}
-            className="inline-block cursor-pointer select-none"
-            title="더블클릭하여 관리자 모드 활성화"
-          >
-            <div className="text-4xl font-bold text-sky-400 mb-2 drop-shadow-[0_0_10px_rgba(56,189,248,0.5)]">
-              Coducation
-            </div>
-            <div className="text-sm text-gray-400">
-              코딩으로 세상을 교육하다
-            </div>
-          </div>
-        </div>
-
-        {/* 책갈피 스타일 탭 - 관리자 모드에서만 표시 */}
-        {isAdminMode && (
-          <div className="relative mb-8">
-            <div className="flex bg-gray-800/50 rounded-lg p-1">
-              <button
-                type="button"
-                onClick={() => setUserType('student')}
-                className={`flex-1 py-3 px-4 text-sm font-medium rounded-md transition-all duration-200 ${
-                  userType === 'student'
-                    ? 'bg-sky-500 text-white shadow-lg transform scale-105'
-                    : 'text-gray-400 hover:text-white hover:bg-gray-700/50'
-                }`}
-              >
-                학생/학부모
-              </button>
-              <button
-                type="button"
-                onClick={() => setUserType('teacher')}
-                className={`flex-1 py-3 px-4 text-sm font-medium rounded-md transition-all duration-200 ${
-                  userType === 'teacher'
-                    ? 'bg-sky-500 text-white shadow-lg transform scale-105'
-                    : 'text-gray-400 hover:text-white hover:bg-gray-700/50'
-                }`}
-              >
-                강사/관리자
-              </button>
-            </div>
-          </div>
-        )}
-
         {/* 로그인 폼 */}
         <form onSubmit={handleLogin} className="bg-black/40 rounded-lg shadow-xl p-8" autoComplete="off">
+          {/* 로고 - 더블클릭으로 탭 전환 */}
+          <div className="text-center mb-6">
+            <div 
+              onDoubleClick={handleLogoDoubleClick}
+              className="inline-block cursor-pointer select-none"
+            >
+              <div className="text-2xl font-bold text-sky-400 mb-1 drop-shadow-[0_0_8px_rgba(56,189,248,0.3)]">
+                Coducation
+              </div>
+            </div>
+          </div>
+
           <div className="text-center mb-8">
             <h1 className="text-3xl font-bold text-white mb-2">로그인</h1>
             <p className="text-gray-400">
               {!isAdminMode 
                 ? '학생/학부모 계정으로 로그인하세요' 
-                : userType === 'student' 
-                  ? '학생/학부모 계정으로 로그인하세요' 
-                  : '강사/관리자 계정으로 로그인하세요'
+                : '강사/관리자 계정으로 로그인하세요'
               }
             </p>
           </div>
           
-          {(!isAdminMode || userType === 'teacher') ? (
-            <div className="mb-6">
-              <Label htmlFor="email" className="text-white text-sm font-medium">이메일</Label>
-              <Input 
-                id="email" 
-                type="email" 
-                value={email} 
-                onChange={e => setEmail(e.target.value)} 
-                required 
-                autoComplete="off" 
-                placeholder={isAdminMode ? "강사 이메일을 입력하세요" : "이메일을 입력하세요"}
-                disabled={isLoading}
-                className="mt-2 bg-gray-800/50 border-gray-600 text-white placeholder-gray-400 focus:border-sky-500 focus:ring-sky-500"
-              />
-            </div>
-          ) : (
+          {!isAdminMode ? (
             <div className="mb-6">
               <Label htmlFor="username" className="text-white text-sm font-medium">아이디</Label>
               <Input 
@@ -167,6 +123,21 @@ function LoginForm() {
                 required 
                 autoComplete="off" 
                 placeholder="학생/학부모 아이디를 입력하세요"
+                disabled={isLoading}
+                className="mt-2 bg-gray-800/50 border-gray-600 text-white placeholder-gray-400 focus:border-sky-500 focus:ring-sky-500"
+              />
+            </div>
+          ) : (
+            <div className="mb-6">
+              <Label htmlFor="email" className="text-white text-sm font-medium">이메일</Label>
+              <Input 
+                id="email" 
+                type="email" 
+                value={email} 
+                onChange={e => setEmail(e.target.value)} 
+                required 
+                autoComplete="off" 
+                placeholder="강사/관리자 이메일을 입력하세요"
                 disabled={isLoading}
                 className="mt-2 bg-gray-800/50 border-gray-600 text-white placeholder-gray-400 focus:border-sky-500 focus:ring-sky-500"
               />
@@ -204,7 +175,7 @@ function LoginForm() {
                 type="button"
                 variant="outline"
                 disabled
-                className="w-full border-gray-500 text-gray-500 bg-gray-800/30 cursor-not-allowed py-3 rounded-lg"
+                className="w-full border-red-500 text-red-400 bg-red-900/20 cursor-not-allowed py-3 rounded-lg font-semibold"
               >
                 강사, 관리자 전용
               </Button>

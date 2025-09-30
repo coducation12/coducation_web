@@ -180,8 +180,9 @@ export async function logout() {
     cookieStore.delete('user_id');
     cookieStore.delete('user_role');
     cookieStore.delete('auth_token');
-    redirect('/login');
   }
+  
+  return { success: true, redirect: '/login' };
 }
 
 // 학생 추가 서버 액션

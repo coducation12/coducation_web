@@ -33,8 +33,12 @@ export function ParentSidebar({ user }: ParentSidebarProps) {
 
   const handleLogout = async () => {
     try {
-      // TODO: 배포 후 정상화 - Supabase Auth 로그아웃으로 복원 필요
-      await logout();
+      const result = await logout();
+      if (result.success && result.redirect) {
+        window.location.href = result.redirect;
+      } else {
+        router.push("/");
+      }
     } catch (error) {
       console.error("로그아웃 실패:", error);
       // 에러가 발생해도 메인화면으로 이동

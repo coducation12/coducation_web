@@ -71,81 +71,114 @@ function LoginForm() {
 
   return (
     <div className="flex items-center justify-center min-h-[calc(100vh-11rem)] py-12">
-      <form onSubmit={handleLogin} className="mx-auto max-w-sm w-full bg-black/40 rounded-lg shadow p-8" autoComplete="off">
-        <div className="flex items-center justify-between mb-6">
-          <div className="text-2xl font-headline font-bold text-white">로그인</div>
-          <div className="flex gap-2">
-            <button type="button" className={`px-3 py-1 text-sm rounded-lg border font-semibold transition-colors ${userType === 'student' ? 'text-sky-600 font-bold border-sky-400 bg-transparent' : 'text-gray-500 border-gray-200 bg-transparent hover:bg-sky-100'}`} onClick={() => setUserType('student')}>학생/학부모</button>
-            <button type="button" className={`px-3 py-1 text-sm rounded-lg border font-semibold transition-colors ${userType === 'teacher' ? 'text-sky-600 font-bold border-sky-400 bg-transparent' : 'text-gray-500 border-gray-200 bg-transparent hover:bg-sky-100'}`} onClick={() => setUserType('teacher')}>강사/관리자</button>
-          </div>
-        </div>
-        
-        {userType === 'teacher' ? (
-          <div className="mb-6">
-            <Label htmlFor="email" className="text-white">이메일</Label>
-            <Input 
-              id="email" 
-              type="email" 
-              value={email} 
-              onChange={e => setEmail(e.target.value)} 
-              required 
-              autoComplete="off" 
-              placeholder="강사 이메일을 입력하세요"
-              disabled={isLoading}
-            />
-          </div>
-        ) : (
-          <div className="mb-6">
-            <Label htmlFor="username" className="text-white">아이디</Label>
-            <Input 
-              id="username" 
-              type="text" 
-              value={username} 
-              onChange={e => setUsername(e.target.value)} 
-              required 
-              autoComplete="off" 
-              placeholder="학생/학부모 아이디를 입력하세요"
-              disabled={isLoading}
-            />
-          </div>
-        )}
-        
-        <div className="mb-6">
-          <Label htmlFor="password" className="text-white">비밀번호 (선택사항)</Label>
-          <Input 
-            id="password" 
-            type="password" 
-            value={password} 
-            onChange={e => setPassword(e.target.value)} 
-            autoComplete="new-password" 
-            placeholder="비밀번호를 입력하세요 (개발용: 비워두면 자동 로그인)"
-            disabled={isLoading}
-          />
-          <p className="text-xs text-gray-400 mt-1">개발용: 비밀번호를 비워두면 자동으로 로그인됩니다</p>
-        </div>
-        
-        {error && <div className="text-red-400 text-sm text-center mb-4">{error}</div>}
-        <Button 
-          type="submit" 
-          className="w-full bg-sky-500 hover:bg-sky-600 text-white font-bold"
-          disabled={isLoading}
-        >
-          {isLoading ? '로그인 중...' : '로그인'}
-        </Button>
-        
-        {userType === 'student' && (
-          <div className="mt-4 text-center">
-            <Button
+      <div className="mx-auto max-w-md w-full">
+        {/* 책갈피 스타일 탭 */}
+        <div className="relative mb-8">
+          <div className="flex bg-gray-800/50 rounded-lg p-1">
+            <button
               type="button"
-              variant="outline"
-              onClick={() => router.push('/student-signup')}
-              className="w-full border-sky-400 text-sky-400 hover:bg-sky-50 hover:text-sky-600"
+              onClick={() => setUserType('student')}
+              className={`flex-1 py-3 px-4 text-sm font-medium rounded-md transition-all duration-200 ${
+                userType === 'student'
+                  ? 'bg-sky-500 text-white shadow-lg transform scale-105'
+                  : 'text-gray-400 hover:text-white hover:bg-gray-700/50'
+              }`}
             >
-              회원가입
-            </Button>
+              학생/학부모
+            </button>
+            <button
+              type="button"
+              onClick={() => setUserType('teacher')}
+              className={`flex-1 py-3 px-4 text-sm font-medium rounded-md transition-all duration-200 ${
+                userType === 'teacher'
+                  ? 'bg-sky-500 text-white shadow-lg transform scale-105'
+                  : 'text-gray-400 hover:text-white hover:bg-gray-700/50'
+              }`}
+            >
+              강사/관리자
+            </button>
           </div>
-        )}
-      </form>
+        </div>
+
+        {/* 로그인 폼 */}
+        <form onSubmit={handleLogin} className="bg-black/40 rounded-lg shadow-xl p-8" autoComplete="off">
+          <div className="text-center mb-8">
+            <h1 className="text-3xl font-bold text-white mb-2">로그인</h1>
+            <p className="text-gray-400">
+              {userType === 'student' ? '학생/학부모 계정으로 로그인하세요' : '강사/관리자 계정으로 로그인하세요'}
+            </p>
+          </div>
+          
+          {userType === 'teacher' ? (
+            <div className="mb-6">
+              <Label htmlFor="email" className="text-white text-sm font-medium">이메일</Label>
+              <Input 
+                id="email" 
+                type="email" 
+                value={email} 
+                onChange={e => setEmail(e.target.value)} 
+                required 
+                autoComplete="off" 
+                placeholder="강사 이메일을 입력하세요"
+                disabled={isLoading}
+                className="mt-2 bg-gray-800/50 border-gray-600 text-white placeholder-gray-400 focus:border-sky-500 focus:ring-sky-500"
+              />
+            </div>
+          ) : (
+            <div className="mb-6">
+              <Label htmlFor="username" className="text-white text-sm font-medium">아이디</Label>
+              <Input 
+                id="username" 
+                type="text" 
+                value={username} 
+                onChange={e => setUsername(e.target.value)} 
+                required 
+                autoComplete="off" 
+                placeholder="학생/학부모 아이디를 입력하세요"
+                disabled={isLoading}
+                className="mt-2 bg-gray-800/50 border-gray-600 text-white placeholder-gray-400 focus:border-sky-500 focus:ring-sky-500"
+              />
+            </div>
+          )}
+          
+          <div className="mb-6">
+            <Label htmlFor="password" className="text-white text-sm font-medium">비밀번호</Label>
+            <Input 
+              id="password" 
+              type="password" 
+              value={password} 
+              onChange={e => setPassword(e.target.value)} 
+              autoComplete="new-password" 
+              placeholder="비밀번호를 입력하세요"
+              disabled={isLoading}
+              className="mt-2 bg-gray-800/50 border-gray-600 text-white placeholder-gray-400 focus:border-sky-500 focus:ring-sky-500"
+            />
+          </div>
+          
+          {error && <div className="text-red-400 text-sm text-center mb-4 p-3 bg-red-900/20 rounded-lg border border-red-500/30">{error}</div>}
+          
+          <Button 
+            type="submit" 
+            className="w-full bg-sky-500 hover:bg-sky-600 text-white font-bold py-3 rounded-lg transition-all duration-200 transform hover:scale-105"
+            disabled={isLoading}
+          >
+            {isLoading ? '로그인 중...' : '로그인'}
+          </Button>
+          
+          {userType === 'student' && (
+            <div className="mt-6 text-center">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => router.push('/student-signup')}
+                className="w-full border-sky-400 text-sky-400 hover:bg-sky-50 hover:text-sky-600 py-3 rounded-lg transition-all duration-200"
+              >
+                회원가입
+              </Button>
+            </div>
+          )}
+        </form>
+      </div>
     </div>
   )
 }

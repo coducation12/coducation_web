@@ -8,6 +8,7 @@ import { login } from '@/lib/actions'
 
 function LoginForm() {
   const [userType, setUserType] = useState<'teacher' | 'student'>('student')
+  const [isAdminMode, setIsAdminMode] = useState(false)
   const [email, setEmail] = useState('')
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
@@ -34,6 +35,12 @@ function LoginForm() {
     }
   }, [searchParams])
 
+  // 로고 더블클릭으로 관리자 모드 활성화
+  const handleLogoDoubleClick = () => {
+    setIsAdminMode(true)
+    setUserType('teacher')
+  }
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
@@ -41,10 +48,12 @@ function LoginForm() {
     
     try {
       const formData = new FormData()
-      formData.append('userType', userType)
+      // 관리자 모드가 아닐 때는 항상 학생 로그인으로 처리
+      const actualUserType = isAdminMode ? userType : 'student'
+      formData.append('userType', actualUserType)
       formData.append('password', password)
       
-      if (userType === 'teacher') {
+      if (actualUserType === 'teacher') {
         formData.append('email', email)
       } else {
         formData.append('username', username)
@@ -72,44 +81,67 @@ function LoginForm() {
   return (
     <div className="flex items-center justify-center min-h-[calc(100vh-11rem)] py-12">
       <div className="mx-auto max-w-md w-full">
-        {/* 책갈피 스타일 탭 */}
-        <div className="relative mb-8">
-          <div className="flex bg-gray-800/50 rounded-lg p-1">
-            <button
-              type="button"
-              onClick={() => setUserType('student')}
-              className={`flex-1 py-3 px-4 text-sm font-medium rounded-md transition-all duration-200 ${
-                userType === 'student'
-                  ? 'bg-sky-500 text-white shadow-lg transform scale-105'
-                  : 'text-gray-400 hover:text-white hover:bg-gray-700/50'
-              }`}
-            >
-              학생/학부모
-            </button>
-            <button
-              type="button"
-              onClick={() => setUserType('teacher')}
-              className={`flex-1 py-3 px-4 text-sm font-medium rounded-md transition-all duration-200 ${
-                userType === 'teacher'
-                  ? 'bg-sky-500 text-white shadow-lg transform scale-105'
-                  : 'text-gray-400 hover:text-white hover:bg-gray-700/50'
-              }`}
-            >
-              강사/관리자
-            </button>
+        {/* 로고 - 더블클릭으로 관리자 모드 활성화 */}
+        <div className="text-center mb-8">
+          <div 
+            onDoubleClick={handleLogoDoubleClick}
+            className="inline-block cursor-pointer select-none"
+            title="더블클릭하여 관리자 모드 활성화"
+          >
+            <div className="text-4xl font-bold text-sky-400 mb-2 drop-shadow-[0_0_10px_rgba(56,189,248,0.5)]">
+              Coducation
+            </div>
+            <div className="text-sm text-gray-400">
+              코딩으로 세상을 교육하다
+            </div>
           </div>
         </div>
+
+        {/* 책갈피 스타일 탭 - 관리자 모드에서만 표시 */}
+        {isAdminMode && (
+          <div className="relative mb-8">
+            <div className="flex bg-gray-800/50 rounded-lg p-1">
+              <button
+                type="button"
+                onClick={() => setUserType('student')}
+                className={`flex-1 py-3 px-4 text-sm font-medium rounded-md transition-all duration-200 ${
+                  userType === 'student'
+                    ? 'bg-sky-500 text-white shadow-lg transform scale-105'
+                    : 'text-gray-400 hover:text-white hover:bg-gray-700/50'
+                }`}
+              >
+                학생/학부모
+              </button>
+              <button
+                type="button"
+                onClick={() => setUserType('teacher')}
+                className={`flex-1 py-3 px-4 text-sm font-medium rounded-md transition-all duration-200 ${
+                  userType === 'teacher'
+                    ? 'bg-sky-500 text-white shadow-lg transform scale-105'
+                    : 'text-gray-400 hover:text-white hover:bg-gray-700/50'
+                }`}
+              >
+                강사/관리자
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* 로그인 폼 */}
         <form onSubmit={handleLogin} className="bg-black/40 rounded-lg shadow-xl p-8" autoComplete="off">
           <div className="text-center mb-8">
             <h1 className="text-3xl font-bold text-white mb-2">로그인</h1>
             <p className="text-gray-400">
-              {userType === 'student' ? '학생/학부모 계정으로 로그인하세요' : '강사/관리자 계정으로 로그인하세요'}
+              {!isAdminMode 
+                ? '학생/학부모 계정으로 로그인하세요' 
+                : userType === 'student' 
+                  ? '학생/학부모 계정으로 로그인하세요' 
+                  : '강사/관리자 계정으로 로그인하세요'
+              }
             </p>
           </div>
           
-          {userType === 'teacher' ? (
+          {(!isAdminMode || userType === 'teacher') ? (
             <div className="mb-6">
               <Label htmlFor="email" className="text-white text-sm font-medium">이메일</Label>
               <Input 
@@ -119,7 +151,7 @@ function LoginForm() {
                 onChange={e => setEmail(e.target.value)} 
                 required 
                 autoComplete="off" 
-                placeholder="강사 이메일을 입력하세요"
+                placeholder={isAdminMode ? "강사 이메일을 입력하세요" : "이메일을 입력하세요"}
                 disabled={isLoading}
                 className="mt-2 bg-gray-800/50 border-gray-600 text-white placeholder-gray-400 focus:border-sky-500 focus:ring-sky-500"
               />
@@ -165,8 +197,18 @@ function LoginForm() {
             {isLoading ? '로그인 중...' : '로그인'}
           </Button>
           
-          {userType === 'student' && (
-            <div className="mt-6 text-center">
+          {/* 회원가입 버튼 - 관리자 모드에서는 비활성화 */}
+          <div className="mt-6 text-center">
+            {isAdminMode ? (
+              <Button
+                type="button"
+                variant="outline"
+                disabled
+                className="w-full border-gray-500 text-gray-500 bg-gray-800/30 cursor-not-allowed py-3 rounded-lg"
+              >
+                강사, 관리자 전용
+              </Button>
+            ) : (
               <Button
                 type="button"
                 variant="outline"
@@ -175,8 +217,8 @@ function LoginForm() {
               >
                 회원가입
               </Button>
-            </div>
-          )}
+            )}
+          </div>
         </form>
       </div>
     </div>

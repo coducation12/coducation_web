@@ -41,13 +41,11 @@ export async function login(formData: FormData) {
 
       if (authError) {
         console.error('Auth 로그인 실패:', authError);
-        redirect('/login?error=true');
-        return;
+        return { success: false, error: '로그인에 실패했습니다.' };
       }
 
       if (!authData.user) {
-        redirect('/login?error=true');
-        return;
+        return { success: false, error: '사용자 정보를 찾을 수 없습니다.' };
       }
 
       // users 테이블에서 사용자 정보 조회 (이메일 또는 username으로 조회)
@@ -60,14 +58,12 @@ export async function login(formData: FormData) {
 
       if (userError || !user) {
         console.error('사용자 정보 조회 실패:', userError);
-        redirect('/login?error=true');
-        return;
+        return { success: false, error: '사용자 정보를 찾을 수 없습니다.' };
       }
 
       // 사용자 상태 확인
       if (user.status !== 'active') {
-        redirect('/login?error=pending');
-        return;
+        return { success: false, error: '계정이 아직 승인되지 않았습니다.' };
       }
 
       // 쿠키에 사용자 정보 저장
@@ -76,64 +72,66 @@ export async function login(formData: FormData) {
       cookieStore.set('user_role', user.role, { httpOnly: true, path: '/' });
       cookieStore.set('auth_token', authData.session?.access_token || '', { httpOnly: true, path: '/' });
       
-      redirect('/dashboard');
+      return { success: true, redirect: '/dashboard' };
     } catch (error) {
       console.error('로그인 중 오류:', error);
-      redirect('/login?error=true');
+      return { success: false, error: '로그인 중 오류가 발생했습니다.' };
     }
   } else {
     // 학생/학부모: 기존 방식 유지 (Auth 사용하지 않음)
     const username = formData.get('username') as string;
     const password = formData.get('password') as string;
     
-    const { data: user, error } = await supabase
-      .from('users')
-      .select('id, username, role, password, status')
-      .eq('username', username)
-      .in('role', ['student', 'parent'])
-      .single();
+    try {
+      const { data: user, error } = await supabase
+        .from('users')
+        .select('id, username, role, password, status')
+        .eq('username', username)
+        .in('role', ['student', 'parent'])
+        .single();
 
-    if (!error && user) {
+      if (error || !user) {
+        return { success: false, error: '사용자 정보를 찾을 수 없습니다.' };
+      }
+
       // 사용자 상태 확인 (학생의 경우 수강 상태도 확인)
       if (user.role === 'student') {
         // 학생: active이면서 수강 중이어야 로그인 가능
         if (user.status !== 'active' || user.status === '휴강' || user.status === '종료') {
           if (user.status === 'pending') {
-            redirect('/login?error=pending')
+            return { success: false, error: '계정이 아직 승인되지 않았습니다.' };
           } else if (user.status === '휴강') {
-            redirect('/login?error=suspended')
+            return { success: false, error: '휴강 중인 계정입니다.' };
           } else if (user.status === '종료') {
-            redirect('/login?error=terminated')
+            return { success: false, error: '수강이 종료된 계정입니다.' };
           } else {
-            redirect('/login?error=inactive')
+            return { success: false, error: '비활성화된 계정입니다.' };
           }
-          return;
         }
       } else {
         // 학부모: active가 아니면 로그인 거부
         if (user.status !== 'active') {
-          redirect('/login?error=pending')
-          return;
+          return { success: false, error: '계정이 아직 승인되지 않았습니다.' };
         }
       }
       
       // 배포 환경: 비밀번호 필수 입력
       if (!password || password.trim() === '') {
-        redirect('/login?error=password_required');
-        return;
+        return { success: false, error: '비밀번호를 입력해주세요.' };
       }
       
       // 비밀번호가 있으면 검증
       if (user.password && await bcrypt.compare(password, user.password)) {
         const cookieStore = await cookies();
-        cookieStore.set('user_id', user.id, { httpOnly: true, path: '/' })
-        cookieStore.set('user_role', user.role, { httpOnly: true, path: '/' })
-        redirect('/dashboard')
+        cookieStore.set('user_id', user.id, { httpOnly: true, path: '/' });
+        cookieStore.set('user_role', user.role, { httpOnly: true, path: '/' });
+        return { success: true, redirect: '/dashboard' };
       } else {
-        redirect('/login?error=true')
+        return { success: false, error: '비밀번호가 올바르지 않습니다.' };
       }
-    } else {
-      redirect('/login?error=true')
+    } catch (error) {
+      console.error('로그인 중 오류:', error);
+      return { success: false, error: '로그인 중 오류가 발생했습니다.' };
     }
   }
 }

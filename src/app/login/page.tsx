@@ -50,7 +50,17 @@ function LoginForm() {
         formData.append('username', username)
       }
       
-      await login(formData)
+      const result = await login(formData)
+      
+      if (result.success) {
+        if (result.redirect) {
+          window.location.href = result.redirect
+        } else {
+          window.location.href = '/dashboard'
+        }
+      } else {
+        setError(result.error || '로그인에 실패했습니다.')
+      }
     } catch (error) {
       console.error('Login error:', error)
       setError('로그인 중 오류가 발생했습니다.')

@@ -1694,26 +1694,8 @@ export async function createStudentSignupRequest(studentData: {
       return { success: false, error: studentError.message };
     }
 
-    // 5. student_signup_requests 테이블에 기록 생성
-    const { error: signupRequestError } = await supabase
-      .from('student_signup_requests')
-      .insert({
-        student_id: studentUserData.id,
-        parent_id: parentData.id,
-        academy: studentData.academy,
-        assigned_teacher_id: studentData.assignedTeacherId || null,
-        status: 'pending',
-        requested_at: new Date().toISOString()
-      });
-
-    if (signupRequestError) {
-      console.error('가입 요청 기록 생성 실패:', signupRequestError);
-      // 롤백: users와 students 테이블에서 데이터 삭제
-      await supabase.from('students').delete().eq('user_id', studentUserData.id);
-      await supabase.from('users').delete().eq('id', studentUserData.id);
-      await supabase.from('users').delete().eq('id', parentData.id);
-      return { success: false, error: '가입 요청 기록 생성에 실패했습니다.' };
-    }
+    // 5. 가입 요청 완료 (현재는 student_signup_requests 테이블이 없으므로 생략)
+    // TODO: student_signup_requests 테이블 생성 후 승인 시스템 구현
 
     return { success: true, data: studentUserData };
 

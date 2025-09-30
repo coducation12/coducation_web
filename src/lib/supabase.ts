@@ -4,18 +4,40 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+// 싱글톤 패턴으로 클라이언트 인스턴스 관리
+let supabaseInstance: any = null;
+let supabaseAdminInstance: any = null;
+
+export const supabase = (() => {
+  if (!supabaseInstance) {
+    supabaseInstance = createClient(supabaseUrl, supabaseAnonKey, {
+      auth: {
+        persistSession: true,
+        autoRefreshToken: true,
+        detectSessionInUrl: true
+      }
+    });
+  }
+  return supabaseInstance;
+})();
 
 // Service Role Key를 사용하는 관리자용 클라이언트
 // 환경 변수가 없을 때는 일반 클라이언트를 사용
-export const supabaseAdmin = supabaseServiceKey 
-  ? createClient(supabaseUrl, supabaseServiceKey, {
-      auth: {
-        autoRefreshToken: false,
-        persistSession: false
-      }
-    })
-  : supabase; // Service Role Key가 없으면 일반 클라이언트 사용
+export const supabaseAdmin = (() => {
+  if (!supabaseAdminInstance) {
+    if (supabaseServiceKey) {
+      supabaseAdminInstance = createClient(supabaseUrl, supabaseServiceKey, {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false
+        }
+      });
+    } else {
+      supabaseAdminInstance = supabase; // Service Role Key가 없으면 일반 클라이언트 사용
+    }
+  }
+  return supabaseAdminInstance;
+})();
 
 // Database types
 export interface Database {

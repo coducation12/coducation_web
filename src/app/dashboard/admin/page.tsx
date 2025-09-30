@@ -43,9 +43,11 @@ export default function AdminDashboardPage() {
             // 금일 출석 조회 (오늘 날짜의 출석 기록)
             const today = new Date().toISOString().split('T')[0];
             const { count: attendanceCount } = await supabase
-                .from('attendance')
+                .from('student_activity_logs')
                 .select('*', { count: 'exact', head: true })
-                .gte('created_at', today);
+                .eq('activity_type', 'attendance')
+                .eq('attended', true)
+                .eq('date', today);
 
             // 커리큘럼 수 조회
             const { count: curriculumCount } = await supabase

@@ -1083,35 +1083,40 @@ export async function updateTeacher(formData: FormData) {
 
     // 1. Supabase Auth 업데이트 (비밀번호 변경 시에만)
     if (teacherData.password) {
-      try {
-        // Service Role Key를 사용하여 Auth 사용자 목록 조회
-        const { data: authUsers, error: listError } = await supabaseAdmin.auth.admin.listUsers();
-        
-        if (!listError && authUsers.users) {
-          const authUser = authUsers.users.find(user => user.email === teacherData.email);
+      // Service Role Key가 없으면 Auth 업데이트를 건너뛰고 users 테이블만 업데이트
+      if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+        console.log('Service Role Key가 없어서 Auth 업데이트를 건너뜁니다. users 테이블만 업데이트합니다.');
+      } else {
+        try {
+          // Service Role Key를 사용하여 Auth 사용자 목록 조회
+          const { data: authUsers, error: listError } = await supabaseAdmin.auth.admin.listUsers();
           
-          if (authUser) {
-            // Auth 비밀번호 업데이트
-            const { error: authUpdateError } = await supabaseAdmin.auth.admin.updateUserById(
-              authUser.id,
-              { password: teacherData.password }
-            );
+          if (!listError && authUsers.users) {
+            const authUser = authUsers.users.find(user => user.email === teacherData.email);
             
-            if (authUpdateError) {
-              console.error('Supabase Auth 비밀번호 업데이트 실패:', authUpdateError);
-              return { success: false, error: '비밀번호 업데이트에 실패했습니다.' };
+            if (authUser) {
+              // Auth 비밀번호 업데이트
+              const { error: authUpdateError } = await supabaseAdmin.auth.admin.updateUserById(
+                authUser.id,
+                { password: teacherData.password }
+              );
+              
+              if (authUpdateError) {
+                console.error('Supabase Auth 비밀번호 업데이트 실패:', authUpdateError);
+                return { success: false, error: '비밀번호 업데이트에 실패했습니다.' };
+              }
+            } else {
+              console.error('Auth에서 강사 계정을 찾을 수 없습니다.');
+              return { success: false, error: '인증 계정을 찾을 수 없습니다.' };
             }
           } else {
-            console.error('Auth에서 강사 계정을 찾을 수 없습니다.');
-            return { success: false, error: '인증 계정을 찾을 수 없습니다.' };
+            console.error('Auth 사용자 목록 조회 실패:', listError);
+            return { success: false, error: '인증 시스템에 연결할 수 없습니다.' };
           }
-        } else {
-          console.error('Auth 사용자 목록 조회 실패:', listError);
-          return { success: false, error: '인증 시스템에 연결할 수 없습니다.' };
+        } catch (error) {
+          console.error('Supabase Auth 업데이트 중 오류:', error);
+          return { success: false, error: '비밀번호 업데이트 중 오류가 발생했습니다.' };
         }
-      } catch (error) {
-        console.error('Supabase Auth 업데이트 중 오류:', error);
-        return { success: false, error: '비밀번호 업데이트 중 오류가 발생했습니다.' };
       }
     }
 
@@ -1274,36 +1279,41 @@ export async function updateAdminProfile(formData: FormData) {
 
     // 1. Supabase Auth 업데이트 (비밀번호 변경 시에만)
     if (adminData.newPassword) {
-      try {
-        // Service Role Key를 사용하여 Auth 사용자 목록 조회
-        const { data: authUsers, error: listError } = await supabaseAdmin.auth.admin.listUsers();
-        
-        if (!listError && authUsers.users) {
-          // 관리자 계정의 경우 이메일로 검색
-          const authUser = authUsers.users.find(user => user.email === adminData.email);
+      // Service Role Key가 없으면 Auth 업데이트를 건너뛰고 users 테이블만 업데이트
+      if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+        console.log('Service Role Key가 없어서 Auth 업데이트를 건너뜁니다. users 테이블만 업데이트합니다.');
+      } else {
+        try {
+          // Service Role Key를 사용하여 Auth 사용자 목록 조회
+          const { data: authUsers, error: listError } = await supabaseAdmin.auth.admin.listUsers();
           
-          if (authUser) {
-            // Auth 비밀번호 업데이트
-            const { error: authUpdateError } = await supabaseAdmin.auth.admin.updateUserById(
-              authUser.id,
-              { password: adminData.newPassword }
-            );
+          if (!listError && authUsers.users) {
+            // 관리자 계정의 경우 이메일로 검색
+            const authUser = authUsers.users.find(user => user.email === adminData.email);
             
-            if (authUpdateError) {
-              console.error('Supabase Auth 비밀번호 업데이트 실패:', authUpdateError);
-              return { success: false, error: '비밀번호 업데이트에 실패했습니다.' };
+            if (authUser) {
+              // Auth 비밀번호 업데이트
+              const { error: authUpdateError } = await supabaseAdmin.auth.admin.updateUserById(
+                authUser.id,
+                { password: adminData.newPassword }
+              );
+              
+              if (authUpdateError) {
+                console.error('Supabase Auth 비밀번호 업데이트 실패:', authUpdateError);
+                return { success: false, error: '비밀번호 업데이트에 실패했습니다.' };
+              }
+            } else {
+              console.error('Auth에서 관리자 계정을 찾을 수 없습니다.');
+              return { success: false, error: '인증 계정을 찾을 수 없습니다.' };
             }
           } else {
-            console.error('Auth에서 관리자 계정을 찾을 수 없습니다.');
-            return { success: false, error: '인증 계정을 찾을 수 없습니다.' };
+            console.error('Auth 사용자 목록 조회 실패:', listError);
+            return { success: false, error: '인증 시스템에 연결할 수 없습니다.' };
           }
-        } else {
-          console.error('Auth 사용자 목록 조회 실패:', listError);
-          return { success: false, error: '인증 시스템에 연결할 수 없습니다.' };
+        } catch (error) {
+          console.error('Auth 업데이트 실패:', error);
+          return { success: false, error: '비밀번호 업데이트 중 오류가 발생했습니다.' };
         }
-      } catch (error) {
-        console.error('Auth 업데이트 실패:', error);
-        return { success: false, error: '비밀번호 업데이트 중 오류가 발생했습니다.' };
       }
     }
 

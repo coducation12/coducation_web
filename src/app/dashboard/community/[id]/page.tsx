@@ -147,7 +147,7 @@ export default function PostDetailPage() {
   if (loading) {
     return (
       <div className="container mx-auto p-6 max-w-4xl h-screen overflow-y-auto scrollbar-hide">
-        <div className="mb-6">
+        <div className="mb-6 pt-16 lg:pt-0">
           <Button
             variant="ghost"
             onClick={() => router.back()}
@@ -217,6 +217,16 @@ export default function PostDetailPage() {
   if (!post) {
     return (
       <div className="container mx-auto p-6 max-w-4xl">
+        <div className="mb-6 pt-16 lg:pt-0">
+          <Button
+            variant="ghost"
+            onClick={() => router.back()}
+            className="flex items-center space-x-2 text-cyan-200 hover:text-cyan-100"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            <span>목록으로 돌아가기</span>
+          </Button>
+        </div>
         <div className="text-center py-12">
           <p className="text-cyan-200">게시글을 찾을 수 없습니다.</p>
         </div>
@@ -226,7 +236,7 @@ export default function PostDetailPage() {
 
   return (
     <div className="container mx-auto p-6 max-w-4xl h-screen overflow-y-auto scrollbar-hide">
-      <div className="mb-6">
+      <div className="mb-6 pt-16 lg:pt-0">
         <Button
           variant="ghost"
           onClick={() => router.back()}

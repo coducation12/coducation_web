@@ -5,6 +5,7 @@ import { redirect } from 'next/navigation'
 import { supabase, supabaseAdmin } from '@/lib/supabase'
 import bcrypt from 'bcryptjs'
 import { compressImage, validateImageFile, formatFileSize } from '@/lib/image-utils'
+import { getAuthenticatedUser } from '@/lib/auth'
 
 // 학생 가입 요청 관련 타입
 interface StudentSignupRequest {
@@ -20,6 +21,19 @@ interface StudentSignupRequest {
   processed_by?: string
   rejection_reason?: string
   teacher_name?: string
+}
+
+// 강사 정보 타입
+interface TeacherInfo {
+  id: string
+  name: string
+  bio: string
+  profile_image: string
+  subject: string
+  certs: string
+  career: string
+  email: string
+  phone: string
 }
 
 // Supabase Auth를 사용한 로그인 시스템
@@ -1086,7 +1100,7 @@ export async function updateTeacher(formData: FormData) {
           const { data: authUsers, error: listError } = await supabaseAdmin.auth.admin.listUsers();
           
           if (!listError && authUsers.users) {
-            const authUser = authUsers.users.find(user => user.email === teacherData.email);
+            const authUser = authUsers.users.find((user: any) => user.email === teacherData.email);
             
             if (authUser) {
               // Auth 비밀번호 업데이트
@@ -1283,7 +1297,7 @@ export async function updateAdminProfile(formData: FormData) {
           
           if (!listError && authUsers.users) {
             // 관리자 계정의 경우 이메일로 검색
-            const authUser = authUsers.users.find(user => user.email === adminData.email);
+            const authUser = authUsers.users.find((user: any) => user.email === adminData.email);
             
             if (authUser) {
               // Auth 비밀번호 업데이트
@@ -1416,7 +1430,8 @@ export async function saveConsultation(formData: FormData) {
 export async function getConsultations() {
   try {
     // 관리자 또는 강사 권한 확인
-    const userRole = cookies().get('user_role')?.value;
+    const cookieStore = await cookies();
+    const userRole = cookieStore.get('user_role')?.value;
     if (userRole !== 'admin' && userRole !== 'teacher') {
       return { success: false, error: '관리자 또는 강사만 접근 가능합니다.' };
     }
@@ -1443,7 +1458,8 @@ export async function getConsultations() {
 export async function updateConsultationStatus(formData: FormData) {
   try {
     // 관리자 또는 강사 권한 확인
-    const userRole = cookies().get('user_role')?.value;
+    const cookieStore = await cookies();
+    const userRole = cookieStore.get('user_role')?.value;
     if (userRole !== 'admin' && userRole !== 'teacher') {
       return { success: false, error: '관리자 또는 강사만 접근 가능합니다.' };
     }
@@ -1533,7 +1549,7 @@ export async function getInstructors() {
     }));
 
     // bio 기준으로 정렬: 원장, 부원장을 상단에 배치
-    const sortedInstructors = instructors.sort((a, b) => {
+    const sortedInstructors = instructors.sort((a: TeacherInfo, b: TeacherInfo) => {
       const aIsLeader = a.bio.includes('원장');
       const bIsLeader = b.bio.includes('원장');
       
@@ -1750,8 +1766,8 @@ export async function getNewStudentSignupRequests(teacherId?: string) {
 
     // 데이터 매핑
     const requests = (data || []).map((request: any) => {
-      const student = studentsData?.find(s => s.id === request.student_id);
-      const teacher = teachersData?.find(t => t.id === request.assigned_teacher_id);
+      const student = studentsData?.find((s: any) => s.id === request.student_id);
+      const teacher = teachersData?.find((t: any) => t.id === request.assigned_teacher_id);
       
       return {
         id: request.id,

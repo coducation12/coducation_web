@@ -1568,6 +1568,141 @@ export async function getInstructors() {
   }
 }
 
+// ==================== 학생 삭제 서버 액션 ====================
+
+// 학생 삭제 서버 액션 (관리자만 가능)
+export async function deleteStudent(studentId: string) {
+  try {
+    // 현재 로그인한 사용자가 관리자인지 확인
+    const cookieStore = await cookies();
+    const currentUserRole = cookieStore.get('user_role')?.value;
+    
+    if (currentUserRole !== 'admin') {
+      return { success: false, error: '관리자만 학생을 삭제할 수 있습니다.' };
+    }
+
+    // 1. 학생 정보 조회
+    const { data: studentData, error: studentError } = await supabase
+      .from('users')
+      .select('id, username, name')
+      .eq('id', studentId)
+      .eq('role', 'student')
+      .single();
+
+    if (studentError || !studentData) {
+      return { success: false, error: '학생을 찾을 수 없습니다.' };
+    }
+
+    // 2. 학부모 계정 ID 조회 (학생 ID에 'p'를 붙인 username으로 찾기)
+    const parentUsername = `${studentData.username}p`;
+    const { data: parentData, error: parentError } = await supabase
+      .from('users')
+      .select('id')
+      .eq('username', parentUsername)
+      .eq('role', 'parent')
+      .single();
+
+    if (parentError) {
+      console.warn('학부모 계정을 찾을 수 없습니다:', parentError);
+    }
+
+    // 3. 관련 데이터 삭제 (CASCADE로 자동 삭제되지만 명시적으로 처리)
+    
+    // 3-1. 학생 활동 로그 삭제
+    const { error: activityLogsError } = await supabase
+      .from('student_activity_logs')
+      .delete()
+      .eq('student_id', studentId);
+
+    if (activityLogsError) {
+      console.warn('학생 활동 로그 삭제 실패:', activityLogsError);
+    }
+
+    // 3-2. 학생 학습 로그 삭제
+    const { error: learningLogsError } = await supabase
+      .from('student_learning_logs')
+      .delete()
+      .eq('student_id', studentId);
+
+    if (learningLogsError) {
+      console.warn('학생 학습 로그 삭제 실패:', learningLogsError);
+    }
+
+    // 3-3. 수업료 결제 기록 삭제
+    const { error: tuitionError } = await supabase
+      .from('tuition_payments')
+      .delete()
+      .eq('student_id', studentId);
+
+    if (tuitionError) {
+      console.warn('수업료 결제 기록 삭제 실패:', tuitionError);
+    }
+
+    // 3-4. 커뮤니티 게시글 삭제 (soft delete)
+    const { error: postsError } = await supabase
+      .from('community_posts')
+      .update({ is_deleted: true })
+      .eq('user_id', studentId);
+
+    if (postsError) {
+      console.warn('커뮤니티 게시글 삭제 실패:', postsError);
+    }
+
+    // 3-5. 커뮤니티 댓글 삭제 (soft delete)
+    const { error: commentsError } = await supabase
+      .from('community_comments')
+      .update({ is_deleted: true })
+      .eq('user_id', studentId);
+
+    if (commentsError) {
+      console.warn('커뮤니티 댓글 삭제 실패:', commentsError);
+    }
+
+    // 4. students 테이블에서 학생 상세 정보 삭제
+    const { error: studentDetailError } = await supabase
+      .from('students')
+      .delete()
+      .eq('user_id', studentId);
+
+    if (studentDetailError) {
+      console.error('학생 상세 정보 삭제 실패:', studentDetailError);
+      return { success: false, error: '학생 상세 정보 삭제에 실패했습니다.' };
+    }
+
+    // 5. 학부모 계정 삭제 (있는 경우)
+    if (parentData) {
+      const { error: parentDeleteError } = await supabase
+        .from('users')
+        .delete()
+        .eq('id', parentData.id);
+
+      if (parentDeleteError) {
+        console.warn('학부모 계정 삭제 실패:', parentDeleteError);
+      }
+    }
+
+    // 6. 학생 계정 삭제
+    const { error: studentDeleteError } = await supabase
+      .from('users')
+      .delete()
+      .eq('id', studentId);
+
+    if (studentDeleteError) {
+      console.error('학생 계정 삭제 실패:', studentDeleteError);
+      return { success: false, error: '학생 계정 삭제에 실패했습니다.' };
+    }
+
+    return { 
+      success: true, 
+      message: `${studentData.name} 학생의 계정이 성공적으로 삭제되었습니다.` 
+    };
+
+  } catch (error) {
+    console.error('학생 삭제 중 오류:', error);
+    return { success: false, error: '학생 삭제 중 오류가 발생했습니다.' };
+  }
+}
+
 // ==================== 학생 회원가입 서버 액션 ====================
 
 // 학생 회원가입 서버 액션 (트랜잭션 처리 개선)

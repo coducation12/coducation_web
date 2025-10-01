@@ -8,10 +8,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Mail, Phone, CheckCircle, XCircle, Clock, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
+import { Mail, Phone, CheckCircle, XCircle, Clock, ArrowUpDown, ArrowUp, ArrowDown, Trash2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/lib/supabase";
-import { addStudent, updateStudent, getCurrentUser } from "@/lib/actions";
+import { addStudent, updateStudent, getCurrentUser, deleteStudent } from "@/lib/actions";
 import AddStudentModal, { StudentFormData } from "@/components/common/AddStudentModal";
 import EditStudentModal from "@/components/common/EditStudentModal";
 import { useToast } from "@/hooks/use-toast";
@@ -47,6 +47,9 @@ export default function AdminStudentsPage() {
     const [search, setSearch] = useState("");
     const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+    const [studentToDelete, setStudentToDelete] = useState<Student | null>(null);
+    const [isDeleting, setIsDeleting] = useState(false);
     const [teachers, setTeachers] = useState<{id: string, name: string}[]>([]);
     const [sortField, setSortField] = useState<string | null>(null);
     const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
@@ -293,6 +296,45 @@ export default function AdminStudentsPage() {
         setIsEditModalOpen(true);
     };
 
+    // 학생 삭제 함수
+    const handleDeleteStudent = (student: Student) => {
+        setStudentToDelete(student);
+        setIsDeleteDialogOpen(true);
+    };
+
+    const confirmDeleteStudent = async () => {
+        if (!studentToDelete) return;
+
+        setIsDeleting(true);
+        try {
+            const result = await deleteStudent(studentToDelete.id);
+            if (result.success) {
+                toast({
+                    title: "성공",
+                    description: result.message || "학생이 성공적으로 삭제되었습니다.",
+                });
+                fetchStudents(); // 목록 새로고침
+            } else {
+                toast({
+                    title: "오류",
+                    description: result.error || "학생 삭제에 실패했습니다.",
+                    variant: "destructive",
+                });
+            }
+        } catch (error) {
+            console.error("학생 삭제 중 오류:", error);
+            toast({
+                title: "오류",
+                description: "학생 삭제 중 오류가 발생했습니다.",
+                variant: "destructive",
+            });
+        } finally {
+            setIsDeleting(false);
+            setIsDeleteDialogOpen(false);
+            setStudentToDelete(null);
+        }
+    };
+
     const handleTeacherChange = async (studentId: string, teacherId: string) => {
         try {
             // students 테이블의 assigned_teachers 배열 업데이트
@@ -469,6 +511,9 @@ export default function AdminStudentsPage() {
                                         {getSortIcon('joinDate')}
                                     </div>
                                 </TableHead>
+                                <TableHead className="text-cyan-200 text-center">
+                                    액션
+                                </TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -546,6 +591,20 @@ export default function AdminStudentsPage() {
                                     <TableCell className="text-cyan-300">
                                         {student.joinDate}
                                     </TableCell>
+                                    <TableCell className="text-center">
+                                        <Button
+                                            variant="destructive"
+                                            size="sm"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleDeleteStudent(student);
+                                            }}
+                                            className="h-8 px-3 text-xs bg-red-600 hover:bg-red-700 text-white"
+                                        >
+                                            <Trash2 className="w-3 h-3 mr-1" />
+                                            삭제
+                                        </Button>
+                                    </TableCell>
                                 </TableRow>
                             ))}
                         </TableBody>
@@ -563,6 +622,53 @@ export default function AdminStudentsPage() {
                 }}
                 onSave={handleSaveStudent}
             />
+
+            {/* 삭제 확인 다이얼로그 */}
+            <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+                <DialogContent className="bg-gray-900 border-cyan-500/30">
+                    <DialogHeader>
+                        <DialogTitle className="text-red-400 flex items-center gap-2">
+                            <Trash2 className="w-5 h-5" />
+                            학생 삭제 확인
+                        </DialogTitle>
+                        <DialogDescription className="text-gray-300">
+                            정말로 <span className="font-semibold text-red-400">{studentToDelete?.name}</span> 학생의 계정을 삭제하시겠습니까?
+                            <br />
+                            <span className="text-yellow-400 text-sm mt-2 block">
+                                ⚠️ 이 작업은 되돌릴 수 없으며, 학생과 학부모 계정, 모든 관련 데이터가 영구적으로 삭제됩니다.
+                            </span>
+                        </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter className="gap-2">
+                        <Button
+                            variant="outline"
+                            onClick={() => setIsDeleteDialogOpen(false)}
+                            className="border-gray-600 text-gray-300 hover:bg-gray-800"
+                            disabled={isDeleting}
+                        >
+                            취소
+                        </Button>
+                        <Button
+                            variant="destructive"
+                            onClick={confirmDeleteStudent}
+                            disabled={isDeleting}
+                            className="bg-red-600 hover:bg-red-700"
+                        >
+                            {isDeleting ? (
+                                <>
+                                    <div className="w-4 h-4 mr-2 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                    삭제 중...
+                                </>
+                            ) : (
+                                <>
+                                    <Trash2 className="w-4 h-4 mr-2" />
+                                    삭제
+                                </>
+                            )}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
 
         </div>
     );

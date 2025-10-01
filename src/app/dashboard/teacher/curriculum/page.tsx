@@ -3,7 +3,7 @@
 
 export default function TeacherCurriculumPage() {
     return (
-        <div className="p-6 space-y-6 pt-16 lg:pt-2">
+        <div className="p-6 space-y-6 pt-16 lg:pt-2 h-screen overflow-y-auto scrollbar-hide">
             <div className="flex justify-center items-center min-h-[400px]">
                 <div className="text-center">
                     <h1 className="text-3xl font-bold text-gray-400 mb-4">커리큘럼 관리</h1>

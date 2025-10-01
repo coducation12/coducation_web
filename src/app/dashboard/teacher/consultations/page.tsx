@@ -111,7 +111,7 @@ export default function TeacherConsultationsPage() {
 
   if (loading) {
     return (
-      <div className="container mx-auto p-6 pt-20 lg:pt-6">
+      <div className="container mx-auto p-6 pt-20 lg:pt-6 h-screen overflow-y-auto scrollbar-hide">
         <div className="flex items-center justify-center h-64">
           <div className="text-lg">상담문의를 불러오는 중...</div>
         </div>
@@ -120,7 +120,7 @@ export default function TeacherConsultationsPage() {
   }
 
   return (
-    <div className="container mx-auto p-6 pt-20 lg:pt-6 space-y-6">
+    <div className="container mx-auto p-6 pt-20 lg:pt-6 space-y-6 h-screen overflow-y-auto scrollbar-hide">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold text-sky-600">상담문의 관리</h1>
         <Button onClick={loadConsultations} variant="outline">

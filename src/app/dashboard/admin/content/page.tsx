@@ -234,14 +234,14 @@ export default function ContentManagePage() {
 
   if (isLoading) {
     return (
-      <div className="w-full h-full flex items-center justify-center">
+      <div className="w-full h-full flex items-center justify-center h-screen overflow-y-auto scrollbar-hide">
         <div className="text-cyan-100 text-xl">로딩 중...</div>
       </div>
     );
   }
 
   return (
-    <div className="w-full h-full flex-1 min-h-0 px-4 py-4 lg:px-12 lg:py-10 box-border pt-16 lg:pt-2">
+    <div className="w-full h-full flex-1 min-h-0 px-4 py-4 lg:px-12 lg:py-10 box-border pt-16 lg:pt-2 h-screen overflow-y-auto scrollbar-hide">
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-cyan-100 drop-shadow-[0_0_6px_#00fff7]">메인페이지 컨텐츠 관리</h1>
       </div>

@@ -389,7 +389,7 @@ export default function AdminStudentsPage() {
     const sortedStudents = getSortedStudents(filteredStudents);
 
     return (
-        <div className="p-6 space-y-6">
+        <div className="p-6 space-y-6 pt-16 lg:pt-2 h-screen overflow-y-auto scrollbar-hide">
             <div className="flex items-center justify-between">
                 <div>
                     <h1 className="text-3xl font-bold text-cyan-100 drop-shadow-[0_0_6px_#00fff7]">학생 관리</h1>

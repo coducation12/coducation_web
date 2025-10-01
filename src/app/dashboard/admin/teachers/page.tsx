@@ -163,14 +163,14 @@ export default function AdminTeachersPage() {
 
     if (loading) {
         return (
-            <div className="p-6 space-y-6 pt-16 lg:pt-2">
+            <div className="p-6 space-y-6 pt-16 lg:pt-2 h-screen overflow-y-auto scrollbar-hide">
                 <div className="text-cyan-100">로딩 중...</div>
             </div>
         );
     }
 
     return (
-        <div className="p-6 space-y-6 pt-16 lg:pt-2">
+        <div className="p-6 space-y-6 pt-16 lg:pt-2 h-screen overflow-y-auto scrollbar-hide">
             <div className="flex justify-between items-center">
                 <div>
                     <h1 className="text-3xl font-bold text-cyan-100 drop-shadow-[0_0_6px_#00fff7]">강사 관리</h1>

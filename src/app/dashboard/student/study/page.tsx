@@ -36,7 +36,7 @@ interface ProgressItem {
 export default function TodayLearningPage() {
   // TODO: 학생 학습하기 페이지 완성 후 활성화 예정
   return (
-    <div className="container mx-auto p-6 max-w-4xl pt-16 lg:pt-2">
+    <div className="container mx-auto p-6 max-w-4xl pt-16 lg:pt-2 h-screen overflow-y-auto scrollbar-hide">
       <div className="flex justify-center items-center min-h-[400px]">
         <div className="text-center">
           <StudentHeading size="h1" className="mb-4 text-gray-400">오늘의 학습</StudentHeading>

@@ -136,7 +136,7 @@ export default function AdminProfilePage() {
 
   if (!profile) {
     return (
-      <div className="p-6 space-y-6 pt-16 lg:pt-2">
+      <div className="p-6 space-y-6 pt-16 lg:pt-2 h-screen overflow-y-auto scrollbar-hide">
         <div className="flex justify-center items-center min-h-[400px]">
           <div className="text-center">
             <p className="text-red-400">프로필 정보를 불러올 수 없습니다.</p>
@@ -147,7 +147,7 @@ export default function AdminProfilePage() {
   }
 
   return (
-    <div className="p-6 space-y-6 pt-16 lg:pt-2">
+    <div className="p-6 space-y-6 pt-16 lg:pt-2 h-screen overflow-y-auto scrollbar-hide">
       <div className="flex items-center gap-3">
         <User className="w-8 h-8 text-cyan-400" />
         <h1 className="text-3xl font-bold text-cyan-100 drop-shadow-[0_0_6px_#00fff7]">

@@ -6,7 +6,7 @@ import { LayoutDashboard, BookOpen, Keyboard, Users, Menu, LogOut, GraduationCap
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { logout } from "@/lib/actions";
-import { supabase } from "@/lib/supabase";
+import { getCurrentUserClient } from "@/lib/client-auth";
 
 const navItems = [
   { href: "/dashboard/teacher", label: "대시보드", icon: <LayoutDashboard className="w-5 h-5" /> },
@@ -30,19 +30,14 @@ export function TeacherSidebar() {
 
   const fetchUserInfo = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        const { data, error } = await supabase
-          .from('users')
-          .select('name')
-          .eq('id', user.id)
-          .single();
-        
-        if (data && !error) {
-          setUserName(data.name || '');
-        } else {
-          console.error('사용자 정보 조회 실패:', error);
-        }
+      const user = await getCurrentUserClient();
+      console.log('Current user:', user);
+      
+      if (user && user.name) {
+        setUserName(user.name);
+        console.log('Set userName to:', user.name);
+      } else {
+        console.log('No user name found');
       }
     } catch (error) {
       console.error('사용자 정보 조회 실패:', error);

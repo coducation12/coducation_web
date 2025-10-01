@@ -28,7 +28,6 @@ export function StudentList({ students, onAttendanceChange }: StudentListProps) 
               <th className="px-2 py-1 text-center min-w-[48px] truncate">수강 요일</th>
               <th className="px-2 py-1 text-center min-w-[80px] truncate">과목</th>
               <th className="px-2 py-1 text-center min-w-[160px] truncate hidden sm:table-cell">수업 과정</th>
-              <th className="px-2 py-1 text-center min-w-[60px] truncate">진행률</th>
               <th className="px-2 py-1 text-center min-w-[100px] truncate hidden sm:table-cell">연락처</th>
               <th className="px-2 py-1 text-center min-w-[70px] truncate">출결</th>
             </tr>
@@ -40,18 +39,6 @@ export function StudentList({ students, onAttendanceChange }: StudentListProps) 
                 <td className="px-2 py-1 text-center min-w-[48px] truncate">{student.day}</td>
                 <td className="px-2 py-1 text-center min-w-[80px] truncate">{student.course}</td>
                 <td className="px-2 py-1 text-center min-w-[160px] truncate hidden sm:table-cell">기초 과정</td>
-                <td className="px-2 py-1 text-center min-w-[60px] truncate">
-                  <span className="block md:hidden">{student.progress}%</span>
-                  <span className="hidden md:inline-flex items-center">
-                    <div className="w-24 bg-cyan-800/40 rounded-full overflow-hidden mr-2">
-                      <div 
-                        className="bg-cyan-400 h-2 rounded-full" 
-                        style={{ width: `${student.progress}%` }} 
-                      />
-                    </div>
-                    <span className="text-xs text-cyan-200">{student.progress}%</span>
-                  </span>
-                </td>
                 <td className="px-2 py-1 text-center min-w-[100px] truncate hidden sm:table-cell">{student.phone}</td>
                 <td className="px-2 py-1 text-center min-w-[70px] truncate">
                   <select

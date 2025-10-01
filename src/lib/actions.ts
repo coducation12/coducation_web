@@ -829,11 +829,6 @@ export async function updateContent(formData: FormData) {
     }
 
     const contentData = {
-      about_title: formData.get('about_title') as string,
-      about_subtitle: formData.get('about_subtitle') as string,
-      about_mission: formData.get('about_mission') as string,
-      about_vision: formData.get('about_vision') as string,
-      about_image: formData.get('about_image') as string,
       academy_title: formData.get('academy_title') as string,
       academy_subtitle: formData.get('academy_subtitle') as string,
       academy_features: JSON.parse(formData.get('academy_features') as string),

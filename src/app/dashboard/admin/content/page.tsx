@@ -18,11 +18,6 @@ export default function ContentManagePage() {
   
   // 통합 컨텐츠 상태
   const [content, setContent] = useState({
-    about_title: 'About Coducation',
-    about_subtitle: '우리는 코딩 교육을 통해 아이들이 미래의 창의적인 인재로 성장할 수 있도록 돕습니다.',
-    about_mission: 'Coducation은 단순한 코딩 기술 교육을 넘어, 논리적 사고력, 문제 해결 능력, 창의력을 함양하는 것을 목표로 합니다.',
-    about_vision: '우리는 모든 학생이 코딩을 통해 자신의 아이디어를 현실로 만들 수 있는 세상을 꿈꿉니다.',
-    about_image: 'https://placehold.co/600x400.png',
     academy_title: '코딩메이커 학원 안내',
     academy_subtitle: '창의력과 기술이 만나는 곳, 코딩메이커 학원에 오신 것을 환영합니다.',
     academy_slides: [
@@ -62,7 +57,7 @@ export default function ContentManagePage() {
     loadContent();
   }, []);
 
-  const handleImageUpload = async (section: 'about' | 'academy' | 'featured', slideIndex?: number, cardNumber?: number, imageNumber?: number) => {
+  const handleImageUpload = async (section: 'academy' | 'featured', slideIndex?: number, cardNumber?: number, imageNumber?: number) => {
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = 'image/*';
@@ -123,9 +118,7 @@ export default function ContentManagePage() {
 
           console.log('업로드 성공:', urlData.publicUrl);
 
-          if (section === 'about') {
-            setContent(prev => ({ ...prev, about_image: urlData.publicUrl }));
-          } else if (section === 'academy' && slideIndex !== undefined) {
+          if (section === 'academy' && slideIndex !== undefined) {
             setContent(prev => ({
               ...prev,
               academy_slides: prev.academy_slides.map((slide, idx) => 
@@ -150,11 +143,6 @@ export default function ContentManagePage() {
   const handleSave = async () => {
     const formData = new FormData();
     // 메인 제목은 고정이므로 저장하지 않음
-    formData.append('about_title', content.about_title); // DB 기본값 유지
-    formData.append('about_subtitle', content.about_subtitle);
-    formData.append('about_mission', content.about_mission);
-    formData.append('about_vision', content.about_vision);
-    formData.append('about_image', content.about_image);
     formData.append('academy_title', content.academy_title); // DB 기본값 유지
     formData.append('academy_subtitle', content.academy_subtitle);
     formData.append('academy_slides', JSON.stringify(content.academy_slides));
@@ -259,93 +247,6 @@ export default function ContentManagePage() {
       </div>
       
       <div className="space-y-16 max-w-7xl mx-auto">
-        {/* About 섹션 */}
-        <section className="w-full py-16 border-4 border-cyan-400/50 rounded-lg relative bg-cyan-900/10">
-          <div className="absolute -top-4 left-6 bg-cyan-600 px-4 py-2 rounded text-white font-bold">
-            About 섹션
-          </div>
-          
-          <div className="container px-6 pt-8">
-            <div className="grid gap-12 lg:grid-cols-2 lg:gap-24">
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <label className="text-cyan-300 text-sm font-bold tracking-wider">🏷️ 메인 제목</label>
-                  <Textarea
-                    value={content.about_title}
-                    onChange={(e) => setContent(prev => ({ ...prev, about_title: e.target.value }))}
-                    className="text-4xl font-bold tracking-tighter sm:text-5xl font-headline bg-transparent border-2 border-cyan-400/50 text-white resize-none overflow-hidden min-h-0 p-4"
-                    rows={2}
-                    placeholder="제목을 입력하세요"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-cyan-300 text-sm font-bold tracking-wider">📝 부제목</label>
-                  <Textarea
-                    value={content.about_subtitle}
-                    onChange={(e) => setContent(prev => ({ ...prev, about_subtitle: e.target.value }))}
-                    className="text-lg text-muted-foreground bg-transparent border-2 border-cyan-400/30 resize-none p-3"
-                    rows={2}
-                    placeholder="부제목을 입력하세요"
-                  />
-                </div>
-                <div className="space-y-6 text-foreground/80">
-                  <div className="space-y-2">
-                    <label className="text-cyan-300 text-sm font-bold tracking-wider flex items-center gap-2">
-                      🎯 미션 내용
-                    </label>
-                    <Textarea
-                      value={content.about_mission}
-                      onChange={(e) => setContent(prev => ({ ...prev, about_mission: e.target.value }))}
-                      className="text-base leading-relaxed bg-transparent border-2 border-cyan-400/30 resize-none p-3 text-white"
-                      rows={4}
-                      placeholder="미션을 입력하세요"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-cyan-300 text-sm font-bold tracking-wider flex items-center gap-2">
-                      🚀 비전 내용
-                    </label>
-                    <Textarea
-                      value={content.about_vision}
-                      onChange={(e) => setContent(prev => ({ ...prev, about_vision: e.target.value }))}
-                      className="text-base leading-relaxed bg-transparent border-2 border-cyan-400/30 resize-none p-3 text-white"
-                      rows={4}
-                      placeholder="비전을 입력하세요"
-                    />
-                  </div>
-                </div>
-              </div>
-              <div className="flex items-start justify-center">
-                <div 
-                  className="relative cursor-pointer group"
-                  onClick={() => handleImageUpload('about')}
-                >
-                  <Image
-                    src={content.about_image}
-                    alt="Team working on code"
-                    width={600}
-                    height={400}
-                    className="rounded-xl border-2 border-cyan-400/30"
-                  />
-                  <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-200 rounded-xl flex items-center justify-center">
-                    <div className="text-white text-center">
-                      <Camera className="w-12 h-12 mx-auto mb-2" />
-                      <p className="font-bold text-lg">이미지 변경</p>
-                    </div>
-                  </div>
-                  {isUploading && (
-                    <div className="absolute inset-0 bg-black/80 rounded-xl flex items-center justify-center">
-                      <div className="text-white text-center">
-                        <div className="animate-spin w-8 h-8 border-4 border-white border-t-transparent rounded-full mx-auto mb-2"></div>
-                        <p>업로드 중...</p>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
 
         {/* Academy 섹션 */}
         <section className="w-full py-16 border-4 border-orange-400/50 rounded-lg relative bg-orange-900/10">

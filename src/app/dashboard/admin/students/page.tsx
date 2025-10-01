@@ -26,8 +26,6 @@ interface Student {
     avatar: string;
     course: string;
     curriculum: string;
-    progress: number;
-    attendance: number;
     status: string;
     joinDate: string;
     lastLogin: string;
@@ -82,11 +80,6 @@ export default function AdminStudentsPage() {
             let aValue: any = a[sortField as keyof Student];
             let bValue: any = b[sortField as keyof Student];
             
-            // 숫자 필드 처리
-            if (sortField === 'progress' || sortField === 'attendance') {
-                aValue = Number(aValue) || 0;
-                bValue = Number(bValue) || 0;
-            }
             
             // 문자열 필드 처리
             if (typeof aValue === 'string') {
@@ -226,8 +219,6 @@ export default function AdminStudentsPage() {
                 avatar: '/default-avatar.png',
                 course: '프로그래밍', // 기본값, 나중에 실제 과목 데이터로 교체
                 curriculum: '기초 프로그래밍', // 기본값, 나중에 실제 커리큘럼 데이터로 교체
-                progress: Math.floor(Math.random() * 100), // 기본값, 나중에 실제 진도 데이터로 교체
-                attendance: Math.floor(Math.random() * 100), // 기본값, 나중에 실제 출석률 데이터로 교체
                 status: item.users?.status === 'pending' ? '승인대기' : 
                         item.users?.status === 'suspended' ? '휴강' : '수강',
                 joinDate: item.users?.created_at ? new Date(item.users.created_at).toLocaleDateString() : '-',
@@ -462,24 +453,6 @@ export default function AdminStudentsPage() {
                                 </TableHead>
                                 <TableHead 
                                     className="text-cyan-200 cursor-pointer hover:text-cyan-100 transition-colors select-none"
-                                    onClick={() => handleSort('progress')}
-                                >
-                                    <div className="flex items-center gap-2">
-                                        진도
-                                        {getSortIcon('progress')}
-                                    </div>
-                                </TableHead>
-                                <TableHead 
-                                    className="text-cyan-200 cursor-pointer hover:text-cyan-100 transition-colors select-none"
-                                    onClick={() => handleSort('attendance')}
-                                >
-                                    <div className="flex items-center gap-2">
-                                        출석률
-                                        {getSortIcon('attendance')}
-                                    </div>
-                                </TableHead>
-                                <TableHead 
-                                    className="text-cyan-200 cursor-pointer hover:text-cyan-100 transition-colors select-none"
                                     onClick={() => handleSort('status')}
                                 >
                                     <div className="flex items-center gap-2">
@@ -544,28 +517,6 @@ export default function AdminStudentsPage() {
                                                     ))}
                                                 </SelectContent>
                                             </Select>
-                                        </div>
-                                    </TableCell>
-                                    <TableCell>
-                                        <div className="flex items-center space-x-2">
-                                            <div className="w-16 bg-cyan-900/30 rounded-full h-2">
-                                                <div 
-                                                    className="bg-cyan-500 h-2 rounded-full" 
-                                                    style={{ width: `${student.progress}%` }}
-                                                ></div>
-                                            </div>
-                                            <span className="text-cyan-300 text-sm">{student.progress}%</span>
-                                        </div>
-                                    </TableCell>
-                                    <TableCell>
-                                        <div className="flex items-center space-x-2">
-                                            <div className="w-16 bg-cyan-900/30 rounded-full h-2">
-                                                <div 
-                                                    className="bg-green-500 h-2 rounded-full" 
-                                                    style={{ width: `${student.attendance}%` }}
-                                                ></div>
-                                            </div>
-                                            <span className="text-cyan-300 text-sm">{student.attendance}%</span>
                                         </div>
                                     </TableCell>
                                     <TableCell>

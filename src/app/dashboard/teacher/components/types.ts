@@ -5,7 +5,6 @@ export interface Student {
   day: string;
   course: string;
   curriculum: string;
-  progress: number;
   phone: string;
   attendanceTime: {
     start: string;

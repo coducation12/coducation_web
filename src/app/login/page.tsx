@@ -112,6 +112,15 @@ function LoginForm() {
             </p>
           </div>
           
+          {/* 에러 메시지 고정 공간 */}
+          <div className="mb-6 h-12 flex items-center justify-center">
+            {error && (
+              <div className="text-red-400 text-sm text-center p-3 bg-red-900/20 rounded-lg border border-red-500/30 w-full">
+                {error}
+              </div>
+            )}
+          </div>
+          
           {!isAdminMode ? (
             <div className="mb-6">
               <Label htmlFor="username" className="text-white text-sm font-medium">아이디</Label>
@@ -158,7 +167,6 @@ function LoginForm() {
             />
           </div>
           
-          {error && <div className="text-red-400 text-sm text-center mb-4 p-3 bg-red-900/20 rounded-lg border border-red-500/30">{error}</div>}
           
           <Button 
             type="submit" 

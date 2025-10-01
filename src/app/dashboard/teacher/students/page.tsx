@@ -25,8 +25,6 @@ interface Student {
     avatar: string;
     course: string;
     curriculum: string;
-    progress: number;
-    attendance: number;
     status: string;
     joinDate: string;
     lastLogin: string;
@@ -82,11 +80,6 @@ export default function TeacherStudentsPage() {
             let aValue: any = a[sortField as keyof Student];
             let bValue: any = b[sortField as keyof Student];
             
-            // 숫자 필드 처리
-            if (sortField === 'progress' || sortField === 'attendance') {
-                aValue = Number(aValue) || 0;
-                bValue = Number(bValue) || 0;
-            }
             
             // 문자열 필드 처리
             if (typeof aValue === 'string') {
@@ -163,8 +156,6 @@ export default function TeacherStudentsPage() {
             avatar: '/default-avatar.png',
             course: '프로그래밍', // 기본값, 나중에 실제 과목 데이터로 교체
             curriculum: '기초 프로그래밍', // 기본값, 나중에 실제 커리큘럼 데이터로 교체
-            progress: Math.floor(Math.random() * 100), // 기본값, 나중에 실제 진도 데이터로 교체
-            attendance: Math.floor(Math.random() * 100), // 기본값, 나중에 실제 출석률 데이터로 교체
             status: item.users?.status === 'pending' ? '승인대기' : 
                     item.users?.status === 'suspended' ? '휴강' : '수강',
             joinDate: item.users?.created_at ? new Date(item.users.created_at).toLocaleDateString() : '-',
@@ -355,24 +346,6 @@ export default function TeacherStudentsPage() {
                                 </TableHead>
                                 <TableHead 
                                     className="text-cyan-200 cursor-pointer hover:text-cyan-100 transition-colors select-none"
-                                    onClick={() => handleSort('progress')}
-                                >
-                                    <div className="flex items-center gap-2">
-                                        진도
-                                        {getSortIcon('progress')}
-                                    </div>
-                                </TableHead>
-                                <TableHead 
-                                    className="text-cyan-200 cursor-pointer hover:text-cyan-100 transition-colors select-none"
-                                    onClick={() => handleSort('attendance')}
-                                >
-                                    <div className="flex items-center gap-2">
-                                        출석률
-                                        {getSortIcon('attendance')}
-                                    </div>
-                                </TableHead>
-                                <TableHead 
-                                    className="text-cyan-200 cursor-pointer hover:text-cyan-100 transition-colors select-none"
                                     onClick={() => handleSort('status')}
                                 >
                                     <div className="flex items-center gap-2">
@@ -389,7 +362,6 @@ export default function TeacherStudentsPage() {
                                         {getSortIcon('joinDate')}
                                     </div>
                                 </TableHead>
-                                <TableHead className="text-cyan-200">액션</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -419,36 +391,6 @@ export default function TeacherStudentsPage() {
                                     </TableCell>
                                     <TableCell className="text-cyan-300">
                                         {student.type === 'signup_request' ? '-' : student.course}
-                                    </TableCell>
-                                    <TableCell>
-                                        {student.type === 'signup_request' ? (
-                                            <span className="text-cyan-400">-</span>
-                                        ) : (
-                                            <div className="flex items-center space-x-2">
-                                                <div className="w-16 bg-cyan-900/30 rounded-full h-2">
-                                                    <div 
-                                                        className="bg-cyan-500 h-2 rounded-full" 
-                                                        style={{ width: `${student.progress}%` }}
-                                                    ></div>
-                                                </div>
-                                                <span className="text-cyan-300 text-sm">{student.progress}%</span>
-                                            </div>
-                                        )}
-                                    </TableCell>
-                                    <TableCell>
-                                        {student.type === 'signup_request' ? (
-                                            <span className="text-cyan-400">-</span>
-                                        ) : (
-                                            <div className="flex items-center space-x-2">
-                                                <div className="w-16 bg-cyan-900/30 rounded-full h-2">
-                                                    <div 
-                                                        className="bg-green-500 h-2 rounded-full" 
-                                                        style={{ width: `${student.attendance}%` }}
-                                                    ></div>
-                                                </div>
-                                                <span className="text-cyan-300 text-sm">{student.attendance}%</span>
-                                            </div>
-                                        )}
                                     </TableCell>
                                     <TableCell>
                                         {student.type === 'signup_request' ? (
@@ -489,31 +431,6 @@ export default function TeacherStudentsPage() {
                                             new Date(student.requested_at).toLocaleDateString() :
                                             student.joinDate
                                         }
-                                    </TableCell>
-                                    <TableCell>
-                                        {student.type === 'signup_request' ? (
-                                            <div className="flex space-x-2">
-                                                <Button
-                                                    size="sm"
-                                                    onClick={() => handleApproveRequest(student.id)}
-                                                    className="bg-green-600 hover:bg-green-700 text-white"
-                                                >
-                                                    <CheckCircle className="w-4 h-4 mr-1" />
-                                                    승인
-                                                </Button>
-                                                <Button
-                                                    size="sm"
-                                                    variant="outline"
-                                                    onClick={() => openRejectDialog(student.id)}
-                                                    className="border-red-500 text-red-300 hover:bg-red-900/20"
-                                                >
-                                                    <XCircle className="w-4 h-4 mr-1" />
-                                                    거부
-                                                </Button>
-                                            </div>
-                                        ) : (
-                                            <span className="text-cyan-400">-</span>
-                                        )}
                                     </TableCell>
                                 </TableRow>
                             ))}

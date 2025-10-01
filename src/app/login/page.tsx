@@ -13,6 +13,7 @@ function LoginForm() {
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
+  const [success, setSuccess] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -51,6 +52,7 @@ function LoginForm() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
+    setSuccess('')
     setIsLoading(true)
     
     try {
@@ -69,11 +71,15 @@ function LoginForm() {
       const result = await login(formData)
       
       if (result.success) {
-        if (result.redirect) {
-          window.location.href = result.redirect
-        } else {
-          window.location.href = '/dashboard'
-        }
+        setSuccess('로그인 성공! 잠시 후 이동합니다...')
+        // 성공 메시지를 잠시 보여준 후 리다이렉트
+        setTimeout(() => {
+          if (result.redirect) {
+            window.location.href = result.redirect
+          } else {
+            window.location.href = '/dashboard'
+          }
+        }, 1000)
       } else {
         setError(result.error || '로그인에 실패했습니다.')
       }
@@ -112,11 +118,16 @@ function LoginForm() {
             </p>
           </div>
           
-          {/* 에러 메시지 고정 공간 */}
-          <div className="mb-6 h-12 flex items-center justify-center">
+          {/* 메시지 영역 */}
+          <div className="mb-4 h-6 flex items-center justify-center">
             {error && (
-              <div className="text-red-400 text-sm text-center p-3 bg-red-900/20 rounded-lg border border-red-500/30 w-full">
+              <div className="text-red-400 text-sm text-center">
                 {error}
+              </div>
+            )}
+            {success && (
+              <div className="text-green-400 text-sm text-center">
+                {success}
               </div>
             )}
           </div>

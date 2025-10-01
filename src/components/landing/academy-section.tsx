@@ -15,7 +15,7 @@ import { getContent } from '@/lib/actions';
 // 클라이언트 캐러셀 컴포넌트
 function AcademyCarousel({ slides }: { slides: any[] }) {
   const mainCarouselPlugin = React.useRef(
-    Autoplay({ delay: 5000, stopOnInteraction: true, stopOnMouseEnter: true })
+    Autoplay({ delay: 3000, stopOnInteraction: true, stopOnMouseEnter: true })
   );
 
   return (

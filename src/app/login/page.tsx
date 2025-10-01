@@ -108,32 +108,31 @@ function LoginForm() {
             </div>
           </div>
 
-          <div className="text-center mb-8">
+          <div className="text-center">
             <h1 className="text-3xl font-bold text-white mb-2">로그인</h1>
-            <p className="text-gray-400">
+            <p className="text-gray-400 mb-2">
               {!isAdminMode 
                 ? '학생/학부모 계정으로 로그인하세요' 
                 : '강사/관리자 계정으로 로그인하세요'
               }
             </p>
-          </div>
-          
-          {/* 메시지 영역 */}
-          <div className="mb-4 h-6 flex items-center justify-center">
-            {error && (
-              <div className="text-red-400 text-sm text-center">
-                {error}
-              </div>
-            )}
-            {success && (
-              <div className="text-green-400 text-sm text-center">
-                {success}
-              </div>
-            )}
+            {/* 메시지 영역 */}
+            <div className="h-5 flex items-center justify-center">
+              {error && (
+                <div className="text-red-400 text-sm text-center">
+                  {error}
+                </div>
+              )}
+              {success && (
+                <div className="text-green-400 text-sm text-center">
+                  {success}
+                </div>
+              )}
+            </div>
           </div>
           
           {!isAdminMode ? (
-            <div className="mb-6">
+            <div className="mb-4">
               <Label htmlFor="username" className="text-white text-sm font-medium">아이디</Label>
               <Input 
                 id="username" 
@@ -144,11 +143,11 @@ function LoginForm() {
                 autoComplete="off" 
                 placeholder="학생/학부모 아이디를 입력하세요"
                 disabled={isLoading}
-                className="mt-2 bg-gray-800/50 border-gray-600 text-white placeholder-gray-400 focus:border-sky-500 focus:ring-sky-500"
+                className="mt-1 bg-gray-800/50 border-gray-600 text-white placeholder-gray-400 focus:border-sky-500 focus:ring-sky-500"
               />
             </div>
           ) : (
-            <div className="mb-6">
+            <div className="mb-4">
               <Label htmlFor="email" className="text-white text-sm font-medium">이메일</Label>
               <Input 
                 id="email" 
@@ -159,12 +158,12 @@ function LoginForm() {
                 autoComplete="off" 
                 placeholder="강사/관리자 이메일을 입력하세요"
                 disabled={isLoading}
-                className="mt-2 bg-gray-800/50 border-gray-600 text-white placeholder-gray-400 focus:border-sky-500 focus:ring-sky-500"
+                className="mt-1 bg-gray-800/50 border-gray-600 text-white placeholder-gray-400 focus:border-sky-500 focus:ring-sky-500"
               />
             </div>
           )}
           
-          <div className="mb-6">
+          <div className="mb-4">
             <Label htmlFor="password" className="text-white text-sm font-medium">비밀번호</Label>
             <Input 
               id="password" 
@@ -174,7 +173,7 @@ function LoginForm() {
               autoComplete="new-password" 
               placeholder="비밀번호를 입력하세요"
               disabled={isLoading}
-              className="mt-2 bg-gray-800/50 border-gray-600 text-white placeholder-gray-400 focus:border-sky-500 focus:ring-sky-500"
+              className="mt-1 bg-gray-800/50 border-gray-600 text-white placeholder-gray-400 focus:border-sky-500 focus:ring-sky-500"
             />
           </div>
           
@@ -188,7 +187,7 @@ function LoginForm() {
           </Button>
           
           {/* 회원가입 버튼 - 관리자 모드에서는 비활성화 */}
-          <div className="mt-6 text-center">
+          <div className="mt-4 text-center">
             {isAdminMode ? (
               <Button
                 type="button"

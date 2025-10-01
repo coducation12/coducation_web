@@ -39,7 +39,9 @@ export function TeacherSidebar() {
           .single();
         
         if (data && !error) {
-          setUserName(data.name);
+          setUserName(data.name || '');
+        } else {
+          console.error('사용자 정보 조회 실패:', error);
         }
       }
     } catch (error) {

@@ -105,6 +105,7 @@ export default function EditTeacherModal({ teacher, isOpen, onClose, onUpdate }:
     };
 
     const handleInputChange = (field: keyof EditTeacherFormData, value: string) => {
+        console.log('handleInputChange 호출:', { field, value });
         setFormData(prev => ({
             ...prev,
             [field]: value
@@ -143,6 +144,8 @@ export default function EditTeacherModal({ teacher, isOpen, onClose, onUpdate }:
         setLoading(true);
 
         try {
+            console.log('제출할 formData:', formData);
+            
             // FormData 생성
             const submitFormData = new FormData();
             submitFormData.append('teacherId', teacher.id);
@@ -157,6 +160,8 @@ export default function EditTeacherModal({ teacher, isOpen, onClose, onUpdate }:
             submitFormData.append('career', formData.career);
             submitFormData.append('image', formData.image);
             submitFormData.append('subject', formData.subject);
+            
+            console.log('제출할 이미지 URL:', formData.image);
 
             // 서버 액션 호출
             const result = await updateTeacher(submitFormData);

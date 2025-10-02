@@ -73,8 +73,10 @@ export default function ImageUpload({ value, onChange, label = "이미지", clas
                 .getPublicUrl(fileName);
 
             if (urlData.publicUrl) {
+                console.log('이미지 업로드 성공, URL:', urlData.publicUrl);
                 setPreview(urlData.publicUrl);
                 onChange(urlData.publicUrl);
+                console.log('onChange 콜백 호출됨');
             }
             
             setUploading(false);

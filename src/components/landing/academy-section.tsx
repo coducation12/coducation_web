@@ -99,7 +99,9 @@ export function AcademySection() {
 
   React.useEffect(() => {
     const loadContent = async () => {
+      console.log('academy-section: getContent 호출');
       const contentResult = await getContent();
+      console.log('academy-section: getContent 결과:', contentResult);
       setContent(contentResult.success ? contentResult.data : null);
       setLoading(false);
     };

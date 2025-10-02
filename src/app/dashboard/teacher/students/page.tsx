@@ -30,6 +30,7 @@ interface Student {
     lastLogin: string;
     studentId?: string;
     classSchedules?: ClassSchedule[];
+    assignedTeachers?: Array<{id: string, name: string}>;
 }
 
 interface ClassSchedule {
@@ -143,27 +144,37 @@ export default function TeacherStudentsPage() {
         }
         
         // Student 타입에 맞게 매핑
-        let mapped = (data || []).map((item: any) => ({
-            id: item.user_id,
-            name: item.users?.name || '-',
-            email: item.users?.email || '-',
-            phone: item.users?.phone || '-',
-            parentPhone: item.parent?.phone || '-',
-            birthDate: item.users?.birth_year ? String(item.users.birth_year) : '-',
-            avatar: '/default-avatar.png',
-            course: '프로그래밍', // 기본값, 나중에 실제 과목 데이터로 교체
-            curriculum: '기초 프로그래밍', // 기본값, 나중에 실제 커리큘럼 데이터로 교체
-            status: item.users?.status === 'pending' ? '승인대기' : 
-                    item.users?.status === 'suspended' ? '휴강' : '수강',
-            joinDate: item.users?.created_at ? new Date(item.users.created_at).toLocaleDateString() : '-',
-            lastLogin: '2024-01-15', // 기본값, 나중에 실제 마지막 로그인 데이터로 교체
-            studentId: item.users?.username || '-',
-            classSchedules: item.attendance_schedule ? Object.entries(item.attendance_schedule).map(([day, schedule]: [string, any]) => ({
-                day: day,
-                startTime: schedule.startTime || '',
-                endTime: schedule.endTime || ''
-            })) : []
-        }));
+        let mapped = (data || []).map((item: any) => {
+            // 담당강사 정보 찾기 (students 테이블의 assigned_teachers 배열에서 최대 2명)
+            const assignedTeacherIds = item.assigned_teachers || [];
+            const assignedTeachers = assignedTeacherIds.map((teacherId: string) => {
+                // 강사 이름을 찾기 위해 임시로 생성 (실제로는 teachers 배열에서 찾아야 함)
+                return { id: teacherId, name: `강사 ${teacherId.slice(-4)}` };
+            });
+            
+            return {
+                id: item.user_id,
+                name: item.users?.name || '-',
+                email: item.users?.email || '-',
+                phone: item.users?.phone || '-',
+                parentPhone: item.parent?.phone || '-',
+                birthDate: item.users?.birth_year ? String(item.users.birth_year) : '-',
+                avatar: '/default-avatar.png',
+                course: '프로그래밍', // 기본값, 나중에 실제 과목 데이터로 교체
+                curriculum: '기초 프로그래밍', // 기본값, 나중에 실제 커리큘럼 데이터로 교체
+                status: item.users?.status === 'pending' ? '승인대기' : 
+                        item.users?.status === 'suspended' ? '휴강' : '수강',
+                joinDate: item.users?.created_at ? new Date(item.users.created_at).toLocaleDateString() : '-',
+                lastLogin: '2024-01-15', // 기본값, 나중에 실제 마지막 로그인 데이터로 교체
+                studentId: item.users?.username || '-',
+                assignedTeachers: assignedTeachers,
+                classSchedules: item.attendance_schedule ? Object.entries(item.attendance_schedule).map(([day, schedule]: [string, any]) => ({
+                    day: day,
+                    startTime: schedule.startTime || '',
+                    endTime: schedule.endTime || ''
+                })) : []
+            };
+        });
         
         // 강사인 경우 담당 학생만 필터링
         const assignedStudents = mapped.filter(student => {

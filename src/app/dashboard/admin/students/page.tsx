@@ -33,6 +33,7 @@ interface Student {
     classSchedules?: ClassSchedule[];
     assignedTeacherId?: string;
     assignedTeacherName?: string;
+    assignedTeachers?: Array<{id: string, name: string}>;
 }
 
 interface ClassSchedule {
@@ -199,18 +200,18 @@ export default function AdminStudentsPage() {
         
         // Student 타입에 맞게 매핑
         const mapped = (data || []).map((item: any) => {
-            // 담당강사 정보 찾기 (students 테이블의 assigned_teachers 배열에서 첫 번째 강사)
-            const assignedTeacherId = item.assigned_teachers && item.assigned_teachers.length > 0 ? item.assigned_teachers[0] : null;
+            // 담당강사 정보 찾기 (students 테이블의 assigned_teachers 배열에서 최대 2명)
+            const assignedTeacherIds = item.assigned_teachers || [];
+            const assignedTeachers = assignedTeacherIds.map((teacherId: string) => {
+                const teacher = currentTeachers.find(t => t.id === teacherId);
+                return teacher || { id: teacherId, name: `강사 ${teacherId.slice(-4)}` };
+            });
             
-            // currentTeachers 배열에서 찾기 시도
-            let assignedTeacher = currentTeachers.find(teacher => teacher.id === assignedTeacherId);
+            // 기존 호환성을 위한 첫 번째 강사 정보
+            const assignedTeacherId = assignedTeacherIds.length > 0 ? assignedTeacherIds[0] : null;
+            const assignedTeacherName = assignedTeachers.length > 0 ? assignedTeachers[0].name : '미지정';
             
-            // currentTeachers 배열에서 찾지 못한 경우, 임시로 assignedTeacherId를 사용해서 이름 생성
-            if (!assignedTeacher && assignedTeacherId) {
-                assignedTeacher = { id: assignedTeacherId, name: `강사 ${assignedTeacherId.slice(-4)}` };
-            }
-            
-            console.log('학생:', item.users?.name, 'assigned_teachers:', item.assigned_teachers, 'assignedTeacherId:', assignedTeacherId, 'assignedTeacher:', assignedTeacher);
+            console.log('학생:', item.users?.name, 'assigned_teachers:', item.assigned_teachers, 'assignedTeachers:', assignedTeachers);
             
             return {
                 id: item.user_id,
@@ -228,7 +229,8 @@ export default function AdminStudentsPage() {
                 lastLogin: '2024-01-15', // 기본값, 나중에 실제 마지막 로그인 데이터로 교체
                 studentId: item.users?.username || '-',
                 assignedTeacherId: assignedTeacherId,
-                assignedTeacherName: assignedTeacher?.name || '미지정',
+                assignedTeacherName: assignedTeacherName,
+                assignedTeachers: assignedTeachers,
                 classSchedules: item.attendance_schedule ? Object.entries(item.attendance_schedule).map(([day, schedule]: [string, any]) => ({
                     day: day,
                     startTime: schedule.startTime || '',
@@ -335,13 +337,39 @@ export default function AdminStudentsPage() {
         }
     };
 
-    const handleTeacherChange = async (studentId: string, teacherId: string) => {
+    const handleTeacherChange = async (studentId: string, teacherId: string, teacherIndex: number) => {
         try {
+            const student = students.find(s => s.id === studentId);
+            if (!student) return;
+
+            // 현재 담당강사 목록 복사
+            const currentTeachers = student.assignedTeachers || [];
+            let newTeachers = [...currentTeachers];
+
+            if (teacherId === 'none') {
+                // 해당 인덱스의 강사 제거
+                newTeachers.splice(teacherIndex, 1);
+            } else {
+                // 해당 인덱스에 강사 설정 (최대 2명)
+                const teacher = teachers.find(t => t.id === teacherId);
+                if (teacher) {
+                    if (teacherIndex >= newTeachers.length) {
+                        // 새로 추가
+                        if (newTeachers.length < 2) {
+                            newTeachers.push({ id: teacherId, name: teacher.name });
+                        }
+                    } else {
+                        // 기존 강사 교체
+                        newTeachers[teacherIndex] = { id: teacherId, name: teacher.name };
+                    }
+                }
+            }
+
             // students 테이블의 assigned_teachers 배열 업데이트
-            const assignedTeachers = teacherId === 'none' ? [] : [teacherId];
+            const assignedTeacherIds = newTeachers.map(t => t.id);
             const { error } = await supabase
                 .from('students')
-                .update({ assigned_teachers: assignedTeachers })
+                .update({ assigned_teachers: assignedTeacherIds })
                 .eq('user_id', studentId);
 
             if (error) {
@@ -359,8 +387,9 @@ export default function AdminStudentsPage() {
                 student.id === studentId 
                     ? { 
                         ...student, 
-                        assignedTeacherId: teacherId === 'none' ? undefined : teacherId,
-                        assignedTeacherName: teacherId === 'none' ? '미지정' : teachers.find(t => t.id === teacherId)?.name || '미지정'
+                        assignedTeachers: newTeachers,
+                        assignedTeacherId: newTeachers.length > 0 ? newTeachers[0].id : undefined,
+                        assignedTeacherName: newTeachers.length > 0 ? newTeachers[0].name : '미지정'
                     }
                     : student
             ));
@@ -539,15 +568,41 @@ export default function AdminStudentsPage() {
                                     </TableCell>
                                     <TableCell className="text-cyan-300">
                                         <div className="flex items-center space-x-2">
+                                            {/* 첫 번째 담당강사 */}
                                             <Select 
-                                                value={student.assignedTeacherId || 'none'} 
-                                                onValueChange={(value) => handleTeacherChange(student.id, value)}
+                                                value={student.assignedTeachers?.[0]?.id || 'none'} 
+                                                onValueChange={(value) => handleTeacherChange(student.id, value, 0)}
                                                 onClick={(e) => e.stopPropagation()}
                                             >
-                                                <SelectTrigger className="w-32 h-8 text-xs bg-cyan-900/30 border-cyan-500/30 text-cyan-200">
-                                                    <SelectValue placeholder="강사 선택">
-                                                        <span className={`${getTeacherColor(student.assignedTeacherName)} font-medium`}>
-                                                            {student.assignedTeacherName}
+                                                <SelectTrigger className="w-28 h-8 text-xs bg-cyan-900/30 border-cyan-500/30 text-cyan-200">
+                                                    <SelectValue placeholder="강사1">
+                                                        <span className={`${getTeacherColor(student.assignedTeachers?.[0]?.name || '미지정')} font-medium`}>
+                                                            {student.assignedTeachers?.[0]?.name || '미지정'}
+                                                        </span>
+                                                    </SelectValue>
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="none">
+                                                        <span className="text-gray-400">미지정</span>
+                                                    </SelectItem>
+                                                    {teachers.map((teacher) => (
+                                                        <SelectItem key={teacher.id} value={teacher.id}>
+                                                            <span className={`${getTeacherColor(teacher.name)} font-medium`}>{teacher.name}</span>
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                            
+                                            {/* 두 번째 담당강사 */}
+                                            <Select 
+                                                value={student.assignedTeachers?.[1]?.id || 'none'} 
+                                                onValueChange={(value) => handleTeacherChange(student.id, value, 1)}
+                                                onClick={(e) => e.stopPropagation()}
+                                            >
+                                                <SelectTrigger className="w-28 h-8 text-xs bg-cyan-900/30 border-cyan-500/30 text-cyan-200">
+                                                    <SelectValue placeholder="강사2">
+                                                        <span className={`${getTeacherColor(student.assignedTeachers?.[1]?.name || '미지정')} font-medium`}>
+                                                            {student.assignedTeachers?.[1]?.name || '미지정'}
                                                         </span>
                                                     </SelectValue>
                                                 </SelectTrigger>

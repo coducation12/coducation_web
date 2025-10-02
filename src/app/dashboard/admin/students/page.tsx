@@ -231,11 +231,23 @@ export default function AdminStudentsPage() {
                 assignedTeacherId: assignedTeacherId,
                 assignedTeacherName: assignedTeacherName,
                 assignedTeachers: assignedTeachers,
-                classSchedules: item.attendance_schedule ? Object.entries(item.attendance_schedule).map(([day, schedule]: [string, any]) => ({
-                    day: day,
-                    startTime: schedule.startTime || '',
-                    endTime: schedule.endTime || ''
-                })) : []
+                classSchedules: item.attendance_schedule ? Object.entries(item.attendance_schedule).map(([day, schedule]: [string, any]) => {
+                    // 숫자를 요일로 변환 (0=일요일, 1=월요일, ..., 6=토요일)
+                    const dayMap: { [key: string]: string } = {
+                        '0': 'sunday',
+                        '1': 'monday', 
+                        '2': 'tuesday',
+                        '3': 'wednesday',
+                        '4': 'thursday',
+                        '5': 'friday',
+                        '6': 'saturday'
+                    };
+                    return {
+                        day: dayMap[day] || day,
+                        startTime: schedule.startTime || '',
+                        endTime: schedule.endTime || ''
+                    };
+                }) : []
             };
         });
         

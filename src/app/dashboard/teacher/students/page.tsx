@@ -168,11 +168,23 @@ export default function TeacherStudentsPage() {
                 lastLogin: '2024-01-15', // 기본값, 나중에 실제 마지막 로그인 데이터로 교체
                 studentId: item.users?.username || '-',
                 assignedTeachers: assignedTeachers,
-                classSchedules: item.attendance_schedule ? Object.entries(item.attendance_schedule).map(([day, schedule]: [string, any]) => ({
-                    day: day,
-                    startTime: schedule.startTime || '',
-                    endTime: schedule.endTime || ''
-                })) : []
+                classSchedules: item.attendance_schedule ? Object.entries(item.attendance_schedule).map(([day, schedule]: [string, any]) => {
+                    // 숫자를 요일로 변환 (0=일요일, 1=월요일, ..., 6=토요일)
+                    const dayMap: { [key: string]: string } = {
+                        '0': 'sunday',
+                        '1': 'monday', 
+                        '2': 'tuesday',
+                        '3': 'wednesday',
+                        '4': 'thursday',
+                        '5': 'friday',
+                        '6': 'saturday'
+                    };
+                    return {
+                        day: dayMap[day] || day,
+                        startTime: schedule.startTime || '',
+                        endTime: schedule.endTime || ''
+                    };
+                }) : []
             };
         });
         

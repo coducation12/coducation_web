@@ -5,7 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Plus, Edit, Trash2, User, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
+import { Plus, Trash2, User, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import Image from "next/image";
 import { supabase } from "@/lib/supabase";
 import AddTeacherModal from "./components/AddTeacherModal";
@@ -238,7 +238,7 @@ export default function AdminTeachersPage() {
                                         {getSortIcon('createdAt')}
                                     </div>
                                 </TableHead>
-                                <TableHead className="text-cyan-200 text-center">관리</TableHead>
+                                <TableHead className="text-cyan-200 text-center">삭제</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -275,7 +275,12 @@ export default function AdminTeachersPage() {
                                             </div>
                                         </TableCell>
                                         <TableCell className="text-cyan-100 font-medium">
-                                            {teacher.name}
+                                            <button 
+                                                onClick={() => handleEditTeacher(teacher)}
+                                                className="text-cyan-100 hover:text-cyan-300 transition-colors cursor-pointer"
+                                            >
+                                                {teacher.name}
+                                            </button>
                                         </TableCell>
                                         <TableCell className="text-cyan-200">
                                             {teacher.email}
@@ -299,15 +304,7 @@ export default function AdminTeachersPage() {
                                             {new Date(teacher.createdAt).toLocaleDateString('ko-KR')}
                                         </TableCell>
                                         <TableCell className="text-center">
-                                            <div className="flex justify-center gap-2">
-                                                <Button
-                                                    variant="ghost"
-                                                    size="sm"
-                                                    onClick={() => handleEditTeacher(teacher)}
-                                                    className="text-cyan-300 hover:text-cyan-100 hover:bg-cyan-900/20"
-                                                >
-                                                    <Edit className="w-4 h-4" />
-                                                </Button>
+                                            <div className="flex justify-center">
                                                 <Button
                                                     variant="ghost"
                                                     size="sm"

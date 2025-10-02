@@ -1,7 +1,8 @@
 -- =============================================
--- 🚀 Coducation Web 배포용 DB 설정 스크립트
+-- 🚀 Coducation Web 배포용 DB 설정 스크립트 (수정됨)
 -- =============================================
 -- 이 스크립트는 배포 환경에서 한번에 실행하여 모든 DB 설정을 완료합니다.
+-- 기존 정책이 있어도 오류 없이 실행됩니다.
 
 -- =============================================
 -- 1. RLS (Row Level Security) 활성화
@@ -94,7 +95,19 @@ ADD CONSTRAINT approval_logs_processed_by_fkey
 FOREIGN KEY (processed_by) REFERENCES users(id) ON DELETE SET NULL;
 
 -- =============================================
--- 3. RLS 정책 설정
+-- 3. 기존 정책 정리 (중복 제거)
+-- =============================================
+-- 기존에 있던 정책들을 정리합니다.
+DROP POLICY IF EXISTS "Users: Only self can select" ON public.users;
+DROP POLICY IF EXISTS "Users: Only self can update" ON public.users;
+DROP POLICY IF EXISTS "Users: Only self can insert" ON public.users;
+DROP POLICY IF EXISTS "Users: Teacher/Admin can select all" ON public.users;
+DROP POLICY IF EXISTS "Users: Teacher/Admin can update all" ON public.users;
+DROP POLICY IF EXISTS "Users: Teacher/Admin can insert all" ON public.users;
+DROP POLICY IF EXISTS "Admin can delete users" ON public.users;
+
+-- =============================================
+-- 4. RLS 정책 설정
 -- =============================================
 
 -- users 테이블 정책
@@ -110,38 +123,44 @@ DROP POLICY IF EXISTS "Users: Only self can insert" ON public.users;
 CREATE POLICY "Users: Only self can insert" ON public.users
     FOR INSERT WITH CHECK (auth.uid() = id);
 
-DROP POLICY IF EXISTS "Users: Teacher/Admin can select all" ON public.users;
-CREATE POLICY "Users: Teacher/Admin can select all" ON public.users
+-- 강사진 공개 조회를 위한 정책
+DROP POLICY IF EXISTS "모든 사용자는 강사 정보 조회 가능" ON public.users;
+CREATE POLICY "모든 사용자는 강사 정보 조회 가능" ON public.users
+    FOR SELECT USING (role IN ('teacher', 'admin'));
+
+-- 관리자 권한 정책
+DROP POLICY IF EXISTS "관리자는 모든 사용자 조회 가능" ON public.users;
+CREATE POLICY "관리자는 모든 사용자 조회 가능" ON public.users
     FOR SELECT USING (
         EXISTS (
             SELECT 1 FROM public.users 
             WHERE users.id = auth.uid() 
-            AND users.role IN ('teacher', 'admin')
+            AND users.role = 'admin'
         )
     );
 
-DROP POLICY IF EXISTS "Users: Teacher/Admin can update all" ON public.users;
-CREATE POLICY "Users: Teacher/Admin can update all" ON public.users
+DROP POLICY IF EXISTS "관리자는 모든 사용자 수정 가능" ON public.users;
+CREATE POLICY "관리자는 모든 사용자 수정 가능" ON public.users
     FOR UPDATE USING (
         EXISTS (
             SELECT 1 FROM public.users 
             WHERE users.id = auth.uid() 
-            AND users.role IN ('teacher', 'admin')
+            AND users.role = 'admin'
         )
     );
 
-DROP POLICY IF EXISTS "Users: Teacher/Admin can insert all" ON public.users;
-CREATE POLICY "Users: Teacher/Admin can insert all" ON public.users
+DROP POLICY IF EXISTS "관리자는 모든 사용자 삽입 가능" ON public.users;
+CREATE POLICY "관리자는 모든 사용자 삽입 가능" ON public.users
     FOR INSERT WITH CHECK (
         EXISTS (
             SELECT 1 FROM public.users 
             WHERE users.id = auth.uid() 
-            AND users.role IN ('teacher', 'admin')
+            AND users.role = 'admin'
         )
     );
 
-DROP POLICY IF EXISTS "Admin can delete users" ON public.users;
-CREATE POLICY "Admin can delete users" ON public.users
+DROP POLICY IF EXISTS "관리자는 모든 사용자 삭제 가능" ON public.users;
+CREATE POLICY "관리자는 모든 사용자 삭제 가능" ON public.users
     FOR DELETE USING (
         EXISTS (
             SELECT 1 FROM public.users 
@@ -207,6 +226,16 @@ CREATE POLICY "관리자는 학생 정보 삽입 가능" ON public.students
         )
     );
 
+DROP POLICY IF EXISTS "관리자는 모든 학생 삭제 가능" ON public.students;
+CREATE POLICY "관리자는 모든 학생 삭제 가능" ON public.students
+    FOR DELETE USING (
+        EXISTS (
+            SELECT 1 FROM public.users 
+            WHERE users.id = auth.uid() 
+            AND users.role = 'admin'
+        )
+    );
+
 -- teachers 테이블 정책
 DROP POLICY IF EXISTS "관리자는 모든 강사 조회 가능" ON public.teachers;
 CREATE POLICY "관리자는 모든 강사 조회 가능" ON public.teachers
@@ -222,6 +251,11 @@ DROP POLICY IF EXISTS "강사는 자신의 정보만 조회 가능" ON public.te
 CREATE POLICY "강사는 자신의 정보만 조회 가능" ON public.teachers
     FOR SELECT USING (user_id = auth.uid());
 
+-- 강사 상세 정보 공개 조회
+DROP POLICY IF EXISTS "모든 사용자는 강사 상세 정보 조회 가능" ON public.teachers;
+CREATE POLICY "모든 사용자는 강사 상세 정보 조회 가능" ON public.teachers
+    FOR SELECT USING (true);
+
 DROP POLICY IF EXISTS "관리자는 강사 정보 수정 가능" ON public.teachers;
 CREATE POLICY "관리자는 강사 정보 수정 가능" ON public.teachers
     FOR UPDATE USING (
@@ -235,6 +269,16 @@ CREATE POLICY "관리자는 강사 정보 수정 가능" ON public.teachers
 DROP POLICY IF EXISTS "관리자는 강사 정보 삽입 가능" ON public.teachers;
 CREATE POLICY "관리자는 강사 정보 삽입 가능" ON public.teachers
     FOR INSERT WITH CHECK (
+        EXISTS (
+            SELECT 1 FROM public.users 
+            WHERE users.id = auth.uid() 
+            AND users.role = 'admin'
+        )
+    );
+
+DROP POLICY IF EXISTS "관리자는 모든 강사 삭제 가능" ON public.teachers;
+CREATE POLICY "관리자는 모든 강사 삭제 가능" ON public.teachers
+    FOR DELETE USING (
         EXISTS (
             SELECT 1 FROM public.users 
             WHERE users.id = auth.uid() 
@@ -259,6 +303,27 @@ DROP POLICY IF EXISTS "작성자는 자신의 게시글 삭제 가능" ON public
 CREATE POLICY "작성자는 자신의 게시글 삭제 가능" ON public.community_posts
     FOR DELETE USING (user_id = auth.uid());
 
+-- 관리자 게시글 관리 권한
+DROP POLICY IF EXISTS "관리자는 모든 게시글 수정 가능" ON public.community_posts;
+CREATE POLICY "관리자는 모든 게시글 수정 가능" ON public.community_posts
+    FOR UPDATE USING (
+        EXISTS (
+            SELECT 1 FROM public.users 
+            WHERE users.id = auth.uid() 
+            AND users.role = 'admin'
+        )
+    );
+
+DROP POLICY IF EXISTS "관리자는 모든 게시글 삭제 가능" ON public.community_posts;
+CREATE POLICY "관리자는 모든 게시글 삭제 가능" ON public.community_posts
+    FOR DELETE USING (
+        EXISTS (
+            SELECT 1 FROM public.users 
+            WHERE users.id = auth.uid() 
+            AND users.role = 'admin'
+        )
+    );
+
 -- community_comments 테이블 정책
 DROP POLICY IF EXISTS "모든 사용자는 댓글 조회 가능" ON public.community_comments;
 CREATE POLICY "모든 사용자는 댓글 조회 가능" ON public.community_comments
@@ -275,6 +340,27 @@ CREATE POLICY "작성자는 자신의 댓글 수정 가능" ON public.community_
 DROP POLICY IF EXISTS "작성자는 자신의 댓글 삭제 가능" ON public.community_comments;
 CREATE POLICY "작성자는 자신의 댓글 삭제 가능" ON public.community_comments
     FOR DELETE USING (user_id = auth.uid());
+
+-- 관리자 댓글 관리 권한
+DROP POLICY IF EXISTS "관리자는 모든 댓글 수정 가능" ON public.community_comments;
+CREATE POLICY "관리자는 모든 댓글 수정 가능" ON public.community_comments
+    FOR UPDATE USING (
+        EXISTS (
+            SELECT 1 FROM public.users 
+            WHERE users.id = auth.uid() 
+            AND users.role = 'admin'
+        )
+    );
+
+DROP POLICY IF EXISTS "관리자는 모든 댓글 삭제 가능" ON public.community_comments;
+CREATE POLICY "관리자는 모든 댓글 삭제 가능" ON public.community_comments
+    FOR DELETE USING (
+        EXISTS (
+            SELECT 1 FROM public.users 
+            WHERE users.id = auth.uid() 
+            AND users.role = 'admin'
+        )
+    );
 
 -- curriculums 테이블 정책
 DROP POLICY IF EXISTS "모든 사용자는 커리큘럼 조회 가능" ON public.curriculums;
@@ -338,6 +424,16 @@ CREATE POLICY "관리자와 강사는 상담문의 수정 가능" ON public.cons
         )
     );
 
+DROP POLICY IF EXISTS "관리자는 모든 상담문의 삭제 가능" ON public.consultations;
+CREATE POLICY "관리자는 모든 상담문의 삭제 가능" ON public.consultations
+    FOR DELETE USING (
+        EXISTS (
+            SELECT 1 FROM public.users 
+            WHERE users.id = auth.uid() 
+            AND users.role = 'admin'
+        )
+    );
+
 -- student_activity_logs 테이블 정책
 DROP POLICY IF EXISTS "관리자는 모든 활동 로그 조회 가능" ON public.student_activity_logs;
 CREATE POLICY "관리자는 모든 활동 로그 조회 가능" ON public.student_activity_logs
@@ -383,6 +479,37 @@ CREATE POLICY "학부모는 자녀 활동 로그 조회 가능" ON public.studen
         )
     );
 
+-- 관리자 활동 로그 관리 권한
+DROP POLICY IF EXISTS "관리자는 모든 활동 로그 수정 가능" ON public.student_activity_logs;
+CREATE POLICY "관리자는 모든 활동 로그 수정 가능" ON public.student_activity_logs
+    FOR UPDATE USING (
+        EXISTS (
+            SELECT 1 FROM public.users 
+            WHERE users.id = auth.uid() 
+            AND users.role = 'admin'
+        )
+    );
+
+DROP POLICY IF EXISTS "관리자는 모든 활동 로그 삽입 가능" ON public.student_activity_logs;
+CREATE POLICY "관리자는 모든 활동 로그 삽입 가능" ON public.student_activity_logs
+    FOR INSERT WITH CHECK (
+        EXISTS (
+            SELECT 1 FROM public.users 
+            WHERE users.id = auth.uid() 
+            AND users.role = 'admin'
+        )
+    );
+
+DROP POLICY IF EXISTS "관리자는 모든 활동 로그 삭제 가능" ON public.student_activity_logs;
+CREATE POLICY "관리자는 모든 활동 로그 삭제 가능" ON public.student_activity_logs
+    FOR DELETE USING (
+        EXISTS (
+            SELECT 1 FROM public.users 
+            WHERE users.id = auth.uid() 
+            AND users.role = 'admin'
+        )
+    );
+
 -- student_learning_logs 테이블 정책
 DROP POLICY IF EXISTS "관리자는 모든 학습 로그 조회 가능" ON public.student_learning_logs;
 CREATE POLICY "관리자는 모든 학습 로그 조회 가능" ON public.student_learning_logs
@@ -413,6 +540,37 @@ DROP POLICY IF EXISTS "학생은 자신의 학습 로그 조회 가능" ON publi
 CREATE POLICY "학생은 자신의 학습 로그 조회 가능" ON public.student_learning_logs
     FOR SELECT USING (student_id = auth.uid());
 
+-- 관리자 학습 로그 관리 권한
+DROP POLICY IF EXISTS "관리자는 모든 학습 로그 수정 가능" ON public.student_learning_logs;
+CREATE POLICY "관리자는 모든 학습 로그 수정 가능" ON public.student_learning_logs
+    FOR UPDATE USING (
+        EXISTS (
+            SELECT 1 FROM public.users 
+            WHERE users.id = auth.uid() 
+            AND users.role = 'admin'
+        )
+    );
+
+DROP POLICY IF EXISTS "관리자는 모든 학습 로그 삽입 가능" ON public.student_learning_logs;
+CREATE POLICY "관리자는 모든 학습 로그 삽입 가능" ON public.student_learning_logs
+    FOR INSERT WITH CHECK (
+        EXISTS (
+            SELECT 1 FROM public.users 
+            WHERE users.id = auth.uid() 
+            AND users.role = 'admin'
+        )
+    );
+
+DROP POLICY IF EXISTS "관리자는 모든 학습 로그 삭제 가능" ON public.student_learning_logs;
+CREATE POLICY "관리자는 모든 학습 로그 삭제 가능" ON public.student_learning_logs
+    FOR DELETE USING (
+        EXISTS (
+            SELECT 1 FROM public.users 
+            WHERE users.id = auth.uid() 
+            AND users.role = 'admin'
+        )
+    );
+
 -- tuition_payments 테이블 정책
 DROP POLICY IF EXISTS "관리자는 모든 수강료 조회 가능" ON public.tuition_payments;
 CREATE POLICY "관리자는 모든 수강료 조회 가능" ON public.tuition_payments
@@ -439,6 +597,37 @@ CREATE POLICY "학부모는 자녀 수강료 조회 가능" ON public.tuition_pa
         )
     );
 
+-- 관리자 수강료 관리 권한
+DROP POLICY IF EXISTS "관리자는 모든 수강료 수정 가능" ON public.tuition_payments;
+CREATE POLICY "관리자는 모든 수강료 수정 가능" ON public.tuition_payments
+    FOR UPDATE USING (
+        EXISTS (
+            SELECT 1 FROM public.users 
+            WHERE users.id = auth.uid() 
+            AND users.role = 'admin'
+        )
+    );
+
+DROP POLICY IF EXISTS "관리자는 모든 수강료 삽입 가능" ON public.tuition_payments;
+CREATE POLICY "관리자는 모든 수강료 삽입 가능" ON public.tuition_payments
+    FOR INSERT WITH CHECK (
+        EXISTS (
+            SELECT 1 FROM public.users 
+            WHERE users.id = auth.uid() 
+            AND users.role = 'admin'
+        )
+    );
+
+DROP POLICY IF EXISTS "관리자는 모든 수강료 삭제 가능" ON public.tuition_payments;
+CREATE POLICY "관리자는 모든 수강료 삭제 가능" ON public.tuition_payments
+    FOR DELETE USING (
+        EXISTS (
+            SELECT 1 FROM public.users 
+            WHERE users.id = auth.uid() 
+            AND users.role = 'admin'
+        )
+    );
+
 -- content_management 테이블 정책
 DROP POLICY IF EXISTS "관리자는 콘텐츠 관리 가능" ON public.content_management;
 CREATE POLICY "관리자는 콘텐츠 관리 가능" ON public.content_management
@@ -451,248 +640,7 @@ CREATE POLICY "관리자는 콘텐츠 관리 가능" ON public.content_managemen
     );
 
 -- =============================================
--- 4. 기존 정책 정리 (중복 제거)
--- =============================================
--- 기존에 있던 정책들을 정리합니다.
-DROP POLICY IF EXISTS "Users: Only self can select" ON public.users;
-DROP POLICY IF EXISTS "Users: Only self can update" ON public.users;
-DROP POLICY IF EXISTS "Users: Only self can insert" ON public.users;
-DROP POLICY IF EXISTS "Users: Teacher/Admin can select all" ON public.users;
-DROP POLICY IF EXISTS "Users: Teacher/Admin can update all" ON public.users;
-DROP POLICY IF EXISTS "Users: Teacher/Admin can insert all" ON public.users;
-DROP POLICY IF EXISTS "Admin can delete users" ON public.users;
-
--- =============================================
--- 5. 공개 조회 정책 추가 (메인화면 강사진 표시용)
--- =============================================
-
--- 강사진 공개 조회를 위한 정책 추가 (기존 정책 삭제 후 생성)
-DROP POLICY IF EXISTS "모든 사용자는 강사 정보 조회 가능" ON public.users;
-CREATE POLICY "모든 사용자는 강사 정보 조회 가능" ON public.users
-    FOR SELECT USING (role IN ('teacher', 'admin'));
-
-DROP POLICY IF EXISTS "모든 사용자는 강사 상세 정보 조회 가능" ON public.teachers;
-CREATE POLICY "모든 사용자는 강사 상세 정보 조회 가능" ON public.teachers
-    FOR SELECT USING (true);
-
--- =============================================
--- 6. 관리자 계정 전체 권한 부여
--- =============================================
-
--- users 테이블 관리자 권한 강화 (기존 정책 삭제 후 생성)
-DROP POLICY IF EXISTS "관리자는 모든 사용자 조회 가능" ON public.users;
-CREATE POLICY "관리자는 모든 사용자 조회 가능" ON public.users
-    FOR SELECT USING (
-        EXISTS (
-            SELECT 1 FROM public.users 
-            WHERE users.id = auth.uid() 
-            AND users.role = 'admin'
-        )
-    );
-
-DROP POLICY IF EXISTS "관리자는 모든 사용자 수정 가능" ON public.users;
-CREATE POLICY "관리자는 모든 사용자 수정 가능" ON public.users
-    FOR UPDATE USING (
-        EXISTS (
-            SELECT 1 FROM public.users 
-            WHERE users.id = auth.uid() 
-            AND users.role = 'admin'
-        )
-    );
-
-DROP POLICY IF EXISTS "관리자는 모든 사용자 삽입 가능" ON public.users;
-CREATE POLICY "관리자는 모든 사용자 삽입 가능" ON public.users
-    FOR INSERT WITH CHECK (
-        EXISTS (
-            SELECT 1 FROM public.users 
-            WHERE users.id = auth.uid() 
-            AND users.role = 'admin'
-        )
-    );
-
-DROP POLICY IF EXISTS "관리자는 모든 사용자 삭제 가능" ON public.users;
-CREATE POLICY "관리자는 모든 사용자 삭제 가능" ON public.users
-    FOR DELETE USING (
-        EXISTS (
-            SELECT 1 FROM public.users 
-            WHERE users.id = auth.uid() 
-            AND users.role = 'admin'
-        )
-    );
-
--- students 테이블 관리자 권한 강화
-CREATE POLICY "관리자는 모든 학생 삽입 가능" ON public.students
-    FOR INSERT WITH CHECK (
-        EXISTS (
-            SELECT 1 FROM public.users 
-            WHERE users.id = auth.uid() 
-            AND users.role = 'admin'
-        )
-    );
-
-CREATE POLICY "관리자는 모든 학생 삭제 가능" ON public.students
-    FOR DELETE USING (
-        EXISTS (
-            SELECT 1 FROM public.users 
-            WHERE users.id = auth.uid() 
-            AND users.role = 'admin'
-        )
-    );
-
--- teachers 테이블 관리자 권한 강화
-CREATE POLICY "관리자는 모든 강사 삭제 가능" ON public.teachers
-    FOR DELETE USING (
-        EXISTS (
-            SELECT 1 FROM public.users 
-            WHERE users.id = auth.uid() 
-            AND users.role = 'admin'
-        )
-    );
-
--- community_posts 테이블 관리자 권한 강화
-CREATE POLICY "관리자는 모든 게시글 수정 가능" ON public.community_posts
-    FOR UPDATE USING (
-        EXISTS (
-            SELECT 1 FROM public.users 
-            WHERE users.id = auth.uid() 
-            AND users.role = 'admin'
-        )
-    );
-
-CREATE POLICY "관리자는 모든 게시글 삭제 가능" ON public.community_posts
-    FOR DELETE USING (
-        EXISTS (
-            SELECT 1 FROM public.users 
-            WHERE users.id = auth.uid() 
-            AND users.role = 'admin'
-        )
-    );
-
--- community_comments 테이블 관리자 권한 강화
-CREATE POLICY "관리자는 모든 댓글 수정 가능" ON public.community_comments
-    FOR UPDATE USING (
-        EXISTS (
-            SELECT 1 FROM public.users 
-            WHERE users.id = auth.uid() 
-            AND users.role = 'admin'
-        )
-    );
-
-CREATE POLICY "관리자는 모든 댓글 삭제 가능" ON public.community_comments
-    FOR DELETE USING (
-        EXISTS (
-            SELECT 1 FROM public.users 
-            WHERE users.id = auth.uid() 
-            AND users.role = 'admin'
-        )
-    );
-
--- curriculums 테이블 관리자 권한 강화
-CREATE POLICY "관리자는 모든 커리큘럼 삭제 가능" ON public.curriculums
-    FOR DELETE USING (
-        EXISTS (
-            SELECT 1 FROM public.users 
-            WHERE users.id = auth.uid() 
-            AND users.role = 'admin'
-        )
-    );
-
--- consultations 테이블 관리자 권한 강화
-CREATE POLICY "관리자는 모든 상담문의 삭제 가능" ON public.consultations
-    FOR DELETE USING (
-        EXISTS (
-            SELECT 1 FROM public.users 
-            WHERE users.id = auth.uid() 
-            AND users.role = 'admin'
-        )
-    );
-
--- student_activity_logs 테이블 관리자 권한 강화
-CREATE POLICY "관리자는 모든 활동 로그 수정 가능" ON public.student_activity_logs
-    FOR UPDATE USING (
-        EXISTS (
-            SELECT 1 FROM public.users 
-            WHERE users.id = auth.uid() 
-            AND users.role = 'admin'
-        )
-    );
-
-CREATE POLICY "관리자는 모든 활동 로그 삽입 가능" ON public.student_activity_logs
-    FOR INSERT WITH CHECK (
-        EXISTS (
-            SELECT 1 FROM public.users 
-            WHERE users.id = auth.uid() 
-            AND users.role = 'admin'
-        )
-    );
-
-CREATE POLICY "관리자는 모든 활동 로그 삭제 가능" ON public.student_activity_logs
-    FOR DELETE USING (
-        EXISTS (
-            SELECT 1 FROM public.users 
-            WHERE users.id = auth.uid() 
-            AND users.role = 'admin'
-        )
-    );
-
--- student_learning_logs 테이블 관리자 권한 강화
-CREATE POLICY "관리자는 모든 학습 로그 수정 가능" ON public.student_learning_logs
-    FOR UPDATE USING (
-        EXISTS (
-            SELECT 1 FROM public.users 
-            WHERE users.id = auth.uid() 
-            AND users.role = 'admin'
-        )
-    );
-
-CREATE POLICY "관리자는 모든 학습 로그 삽입 가능" ON public.student_learning_logs
-    FOR INSERT WITH CHECK (
-        EXISTS (
-            SELECT 1 FROM public.users 
-            WHERE users.id = auth.uid() 
-            AND users.role = 'admin'
-        )
-    );
-
-CREATE POLICY "관리자는 모든 학습 로그 삭제 가능" ON public.student_learning_logs
-    FOR DELETE USING (
-        EXISTS (
-            SELECT 1 FROM public.users 
-            WHERE users.id = auth.uid() 
-            AND users.role = 'admin'
-        )
-    );
-
--- tuition_payments 테이블 관리자 권한 강화
-CREATE POLICY "관리자는 모든 수강료 수정 가능" ON public.tuition_payments
-    FOR UPDATE USING (
-        EXISTS (
-            SELECT 1 FROM public.users 
-            WHERE users.id = auth.uid() 
-            AND users.role = 'admin'
-        )
-    );
-
-CREATE POLICY "관리자는 모든 수강료 삽입 가능" ON public.tuition_payments
-    FOR INSERT WITH CHECK (
-        EXISTS (
-            SELECT 1 FROM public.users 
-            WHERE users.id = auth.uid() 
-            AND users.role = 'admin'
-        )
-    );
-
-CREATE POLICY "관리자는 모든 수강료 삭제 가능" ON public.tuition_payments
-    FOR DELETE USING (
-        EXISTS (
-            SELECT 1 FROM public.users 
-            WHERE users.id = auth.uid() 
-            AND users.role = 'admin'
-        )
-    );
-
--- =============================================
--- 7. 완료 메시지
+-- 5. 완료 메시지
 -- =============================================
 -- 이 스크립트가 성공적으로 실행되면 다음이 완료됩니다:
 -- ✅ 모든 테이블에 RLS 활성화
@@ -703,4 +651,3 @@ CREATE POLICY "관리자는 모든 수강료 삭제 가능" ON public.tuition_pa
 -- ✅ 관리자 계정 전체 권한 부여
 
 SELECT '🚀 Coducation Web DB 설정이 완료되었습니다!' as message;
-

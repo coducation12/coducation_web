@@ -143,6 +143,8 @@ export default function ContentManagePage() {
   };
 
   const handleSave = async () => {
+    console.log('저장할 콘텐츠 데이터:', content);
+    
     const formData = new FormData();
     // 메인 제목은 고정이므로 저장하지 않음
     formData.append('academy_title', content.academy_title); // DB 기본값 유지
@@ -172,9 +174,21 @@ export default function ContentManagePage() {
     formData.append('featured_card_2_image_2', content.featured_card_2_image_2);
     formData.append('featured_card_2_link', content.featured_card_2_link || '');
 
+    console.log('FormData 내용:');
+    for (let [key, value] of formData.entries()) {
+      console.log(`${key}:`, value);
+    }
+
     const result = await updateContent(formData);
+    console.log('저장 결과:', result);
+    
     if (result.success) {
       alert('모든 컨텐츠가 저장되었습니다.');
+      // 저장 후 데이터 다시 로드
+      const loadResult = await getContent();
+      if (loadResult.success && loadResult.data) {
+        setContent(loadResult.data);
+      }
     } else {
       alert(result.error || '저장에 실패했습니다.');
     }

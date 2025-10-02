@@ -858,17 +858,41 @@ export async function updateContent(formData: FormData) {
       updated_at: new Date().toISOString()
     };
 
-    // 기존 레코드 업데이트 (항상 첫 번째 레코드)
-    const { error } = await supabase
+    // 기존 레코드가 있는지 확인
+    const { data: existingRecord, error: selectError } = await supabase
       .from('content_management')
-      .update(contentData)
-      .eq('id', (await supabase.from('content_management').select('id').limit(1).single()).data?.id);
+      .select('id')
+      .limit(1)
+      .single();
+
+    if (selectError && selectError.code !== 'PGRST116') {
+      console.error('기존 레코드 조회 오류:', selectError);
+      return { success: false, error: '기존 데이터를 조회할 수 없습니다.' };
+    }
+
+    let result;
+    if (existingRecord) {
+      // 기존 레코드 업데이트
+      result = await supabase
+        .from('content_management')
+        .update(contentData)
+        .eq('id', existingRecord.id);
+    } else {
+      // 새 레코드 생성
+      result = await supabase
+        .from('content_management')
+        .insert(contentData);
+    }
+
+    const { error, data } = result;
 
     if (error) {
+      console.error('컨텐츠 저장 오류:', error);
       return { success: false, error: error.message };
     }
 
-    return { success: true };
+    console.log('컨텐츠 저장 성공:', data);
+    return { success: true, data: data };
   } catch (error) {
     console.error('컨텐츠 업데이트 오류:', error);
     return { success: false, error: '저장 중 오류가 발생했습니다.' };

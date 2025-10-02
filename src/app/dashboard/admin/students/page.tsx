@@ -599,10 +599,9 @@ export default function AdminStudentsPage() {
                                                 e.stopPropagation();
                                                 handleDeleteStudent(student);
                                             }}
-                                            className="h-8 px-3 text-xs bg-red-600 hover:bg-red-700 text-white"
+                                            className="h-6 w-6 p-0 bg-red-600 hover:bg-red-700 text-white"
                                         >
-                                            <Trash2 className="w-3 h-3 mr-1" />
-                                            삭제
+                                            <Trash2 className="w-3 h-3" />
                                         </Button>
                                     </TableCell>
                                 </TableRow>

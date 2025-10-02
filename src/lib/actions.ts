@@ -891,7 +891,6 @@ export async function updateContent(formData: FormData) {
       return { success: false, error: error.message };
     }
 
-    console.log('컨텐츠 저장 성공:', data);
     return { success: true, data: data };
   } catch (error) {
     console.error('컨텐츠 업데이트 오류:', error);
@@ -902,22 +901,16 @@ export async function updateContent(formData: FormData) {
 // 컨텐츠 조회 서버 액션
 export async function getContent() {
   try {
-    console.log('getContent 함수 호출됨');
-    
     const { data, error } = await supabase
       .from('content_management')
       .select('*')
       .limit(1)
       .single();
 
-    console.log('getContent 조회 결과:', { data, error });
-
     if (error && error.code !== 'PGRST116') {
-      console.error('getContent 오류:', error);
       return { success: false, error: error.message };
     }
 
-    console.log('getContent 성공, 반환할 데이터:', data);
     return { success: true, data };
   } catch (error) {
     console.error('컨텐츠 조회 오류:', error);

@@ -35,7 +35,7 @@ export function GoalsCard({ studentId, fixedInput, readOnly }: { studentId: stri
         .from('students')
         .select('todolist')
         .eq('user_id', studentId)
-        .single();
+        .maybeSingle();
 
       if (supabaseError) {
         console.error('Supabase 에러:', JSON.stringify(supabaseError, null, 2));
@@ -70,7 +70,7 @@ export function GoalsCard({ studentId, fixedInput, readOnly }: { studentId: stri
         .from('students')
         .select('todolist')
         .eq('user_id', studentId)
-        .single();
+        .maybeSingle();
 
       if (fetchError) {
         console.error('기존 할 일 조회 에러:', JSON.stringify(fetchError, null, 2));
@@ -111,7 +111,7 @@ export function GoalsCard({ studentId, fixedInput, readOnly }: { studentId: stri
         .from('students')
         .select('todolist')
         .eq('user_id', studentId)
-        .single();
+        .maybeSingle();
 
       if (fetchError) {
         console.error('기존 할 일 조회 에러:', JSON.stringify(fetchError, null, 2));
@@ -157,7 +157,7 @@ export function GoalsCard({ studentId, fixedInput, readOnly }: { studentId: stri
         .from('students')
         .select('todolist')
         .eq('user_id', studentId)
-        .single();
+        .maybeSingle();
 
       if (fetchError) {
         console.error('기존 할 일 조회 에러:', JSON.stringify(fetchError, null, 2));
@@ -201,7 +201,7 @@ export function GoalsCard({ studentId, fixedInput, readOnly }: { studentId: stri
         .from('students')
         .select('todolist')
         .eq('user_id', studentId)
-        .single();
+        .maybeSingle();
 
       if (fetchError) {
         console.error('기존 할 일 조회 에러:', JSON.stringify(fetchError, null, 2));

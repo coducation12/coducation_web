@@ -143,7 +143,15 @@ export function AcademySection() {
       <div className="mt-8">
         <div className="grid gap-8 md:grid-cols-2">
           {/* 첫 번째 카드 - 코딩메이커(중마) */}
-          <Card className="cyber-card overflow-hidden">
+          <Card 
+            className="cyber-card overflow-hidden cursor-pointer hover:scale-105 transition-transform duration-300"
+            onClick={() => {
+              const link = content?.featured_card_1_link;
+              if (link) {
+                window.open(link, '_blank', 'noopener,noreferrer');
+              }
+            }}
+          >
             <CardHeader className="text-center pb-4">
               <CardTitle className="text-2xl font-headline">
                 {content?.featured_card_1_title || '코딩메이커(중마)'}
@@ -168,11 +176,26 @@ export function AcademySection() {
                   />
                 </div>
               </div>
+              {content?.featured_card_1_link && (
+                <div className="p-4 pt-2 text-center">
+                  <span className="text-sm text-muted-foreground hover:text-primary transition-colors">
+                    클릭하여 위치 보기 →
+                  </span>
+                </div>
+              )}
             </CardContent>
           </Card>
 
           {/* 두 번째 카드 - 광양코딩(창덕) */}
-          <Card className="cyber-card overflow-hidden">
+          <Card 
+            className="cyber-card overflow-hidden cursor-pointer hover:scale-105 transition-transform duration-300"
+            onClick={() => {
+              const link = content?.featured_card_2_link;
+              if (link) {
+                window.open(link, '_blank', 'noopener,noreferrer');
+              }
+            }}
+          >
             <CardHeader className="text-center pb-4">
               <CardTitle className="text-2xl font-headline">
                 {content?.featured_card_2_title || '광양코딩(창덕)'}
@@ -197,6 +220,13 @@ export function AcademySection() {
                   />
                 </div>
               </div>
+              {content?.featured_card_2_link && (
+                <div className="p-4 pt-2 text-center">
+                  <span className="text-sm text-muted-foreground hover:text-primary transition-colors">
+                    클릭하여 위치 보기 →
+                  </span>
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>

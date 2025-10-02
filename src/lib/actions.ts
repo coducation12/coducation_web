@@ -850,9 +850,11 @@ export async function updateContent(formData: FormData) {
       featured_card_1_title: formData.get('featured_card_1_title') as string,
       featured_card_1_image_1: formData.get('featured_card_1_image_1') as string,
       featured_card_1_image_2: formData.get('featured_card_1_image_2') as string,
+      featured_card_1_link: formData.get('featured_card_1_link') as string,
       featured_card_2_title: formData.get('featured_card_2_title') as string,
       featured_card_2_image_1: formData.get('featured_card_2_image_1') as string,
       featured_card_2_image_2: formData.get('featured_card_2_image_2') as string,
+      featured_card_2_link: formData.get('featured_card_2_link') as string,
       updated_at: new Date().toISOString()
     };
 

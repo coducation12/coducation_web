@@ -40,9 +40,11 @@ export default function ContentManagePage() {
     featured_card_1_title: '코딩메이커(중마)',
     featured_card_1_image_1: 'https://placehold.co/400x300.png',
     featured_card_1_image_2: 'https://placehold.co/400x300.png',
+    featured_card_1_link: 'https://maps.google.com/?q=전남+광양시+중마동',
     featured_card_2_title: '광양코딩(창덕)',
     featured_card_2_image_1: 'https://placehold.co/400x300.png',
-    featured_card_2_image_2: 'https://placehold.co/400x300.png'
+    featured_card_2_image_2: 'https://placehold.co/400x300.png',
+    featured_card_2_link: 'https://maps.google.com/?q=전남+광양시+창덕동'
   });
 
   // 컨텐츠 로드
@@ -164,9 +166,11 @@ export default function ContentManagePage() {
     formData.append('featured_card_1_title', content.featured_card_1_title);
     formData.append('featured_card_1_image_1', content.featured_card_1_image_1);
     formData.append('featured_card_1_image_2', content.featured_card_1_image_2);
+    formData.append('featured_card_1_link', content.featured_card_1_link || '');
     formData.append('featured_card_2_title', content.featured_card_2_title);
     formData.append('featured_card_2_image_1', content.featured_card_2_image_1);
     formData.append('featured_card_2_image_2', content.featured_card_2_image_2);
+    formData.append('featured_card_2_link', content.featured_card_2_link || '');
 
     const result = await updateContent(formData);
     if (result.success) {
@@ -431,6 +435,15 @@ export default function ContentManagePage() {
                         className="text-2xl font-headline text-center bg-transparent border-2 border-primary/50 text-white p-3"
                         placeholder="코딩메이커(중마)"
                       />
+                      <div className="mt-2">
+                        <label className="text-orange-300 text-sm font-bold tracking-wider">🔗 링크 URL</label>
+                        <Input
+                          value={content.featured_card_1_link || ''}
+                          onChange={(e) => setContent(prev => ({ ...prev, featured_card_1_link: e.target.value }))}
+                          className="text-sm bg-transparent border-2 border-primary/50 text-white p-2"
+                          placeholder="https://maps.google.com/?q=전남+광양시+중마동"
+                        />
+                      </div>
                     </div>
                   </CardHeader>
                   <CardContent className="p-0">
@@ -500,6 +513,15 @@ export default function ContentManagePage() {
                         className="text-2xl font-headline text-center bg-transparent border-2 border-primary/50 text-white p-3"
                         placeholder="광양코딩(창덕)"
                       />
+                      <div className="mt-2">
+                        <label className="text-orange-300 text-sm font-bold tracking-wider">🔗 링크 URL</label>
+                        <Input
+                          value={content.featured_card_2_link || ''}
+                          onChange={(e) => setContent(prev => ({ ...prev, featured_card_2_link: e.target.value }))}
+                          className="text-sm bg-transparent border-2 border-primary/50 text-white p-2"
+                          placeholder="https://maps.google.com/?q=전남+광양시+창덕동"
+                        />
+                      </div>
                     </div>
                   </CardHeader>
                   <CardContent className="p-0">

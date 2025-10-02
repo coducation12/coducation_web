@@ -11,19 +11,24 @@ import AddCurriculumModal, { CurriculumFormData } from "@/app/dashboard/teacher/
 import EditCurriculumModal, { CurriculumData } from "@/app/dashboard/teacher/curriculum/components/EditCurriculumModal";
 import { supabase } from "@/lib/supabase";
 
-// 현재 사용자 ID를 가져오는 함수
-const getCurrentUserId = (): string | null => {
-    if (typeof window === 'undefined') return null;
-    
-    // 쿠키에서 user_id 가져오기
-    const cookies = document.cookie.split(';');
-    const userIdCookie = cookies.find(cookie => cookie.trim().startsWith('user_id='));
-    
-    if (userIdCookie) {
-        return userIdCookie.split('=')[1];
+// 현재 사용자 ID를 가져오는 함수 (서버 액션 사용)
+const getCurrentUserId = async (): Promise<string | null> => {
+    try {
+        const response = await fetch('/api/auth/current-user', {
+            method: 'GET',
+            credentials: 'include'
+        });
+        
+        if (!response.ok) {
+            return null;
+        }
+        
+        const user = await response.json();
+        return user?.id || null;
+    } catch (error) {
+        console.error('사용자 ID 가져오기 실패:', error);
+        return null;
     }
-    
-    return null;
 };
 
 interface CurriculumManagerProps {
@@ -62,7 +67,7 @@ export default function CurriculumManager({ userRole = 'teacher' }: CurriculumMa
             
             // 강사인 경우 본인이 작성한 커리큘럼만 필터링
             if (userRole === 'teacher') {
-                const currentUserId = getCurrentUserId();
+                const currentUserId = await getCurrentUserId();
                 if (currentUserId) {
                     query = query.eq('created_by', currentUserId);
                 }
@@ -108,29 +113,28 @@ export default function CurriculumManager({ userRole = 'teacher' }: CurriculumMa
             console.log('새 커리큘럼 추가:', data);
             
             // 현재 사용자 ID 가져오기
-            const currentUserId = getCurrentUserId();
+            const currentUserId = await getCurrentUserId();
             if (!currentUserId) {
                 alert('사용자 정보를 찾을 수 없습니다. 다시 로그인해주세요.');
                 return;
             }
             
-            // Supabase에 새 커리큘럼 추가
-            const { error } = await supabase
-                .from('curriculums')
-                .insert([{
-                    title: data.title,
-                    category: data.category,
-                    level: data.level,
-                    description: data.description,
-                    checklist: data.courses || [],
-                    status: '진행중', // 기본 상태 설정
-                    image: data.image || null, // 이미지 필드 추가
-                    created_by: currentUserId
-                }]);
+            // FormData 생성하여 서버 액션 호출
+            const formData = new FormData();
+            formData.append('title', data.title);
+            formData.append('category', data.category);
+            formData.append('level', data.level);
+            formData.append('status', '진행중');
+            formData.append('courses', JSON.stringify(data.courses || []));
+            formData.append('description', data.description || '');
+            formData.append('image', data.image || '');
             
-            if (error) {
-                console.error('커리큘럼 추가 실패:', error);
-                alert('커리큘럼 추가에 실패했습니다.');
+            // 서버 액션 호출
+            const { addCurriculum } = await import('@/lib/actions');
+            const result = await addCurriculum(formData);
+            
+            if (!result.success) {
+                alert(result.error || '커리큘럼 추가에 실패했습니다.');
                 return;
             }
             
@@ -153,33 +157,29 @@ export default function CurriculumManager({ userRole = 'teacher' }: CurriculumMa
         try {
             console.log('커리큘럼 수정:', updatedData);
             
-            // Supabase에 업데이트 저장
-            const { error } = await supabase
-                .from('curriculums')
-                .update({
-                    title: updatedData.title,
-                    category: updatedData.category,
-                    level: updatedData.level,
-                    description: updatedData.description,
-                    checklist: updatedData.courses || [],
-                    status: updatedData.status,
-                    image: updatedData.image
-                })
-                .eq('id', updatedData.id);
+            // FormData 생성하여 서버 액션 호출
+            const formData = new FormData();
+            formData.append('id', updatedData.id);
+            formData.append('title', updatedData.title);
+            formData.append('category', updatedData.category);
+            formData.append('level', updatedData.level);
+            formData.append('courses', JSON.stringify(updatedData.courses || []));
+            formData.append('description', updatedData.description || '');
+            formData.append('image', updatedData.image || '');
+            formData.append('status', updatedData.status || '진행중');
             
-            if (error) {
-                console.error('커리큘럼 수정 실패:', error);
-                alert('커리큘럼 수정에 실패했습니다.');
+            // 서버 액션 호출
+            const { updateCurriculum } = await import('@/lib/actions');
+            const result = await updateCurriculum(formData);
+            
+            if (!result.success) {
+                alert(result.error || '커리큘럼 수정에 실패했습니다.');
                 return;
             }
             
-            // 로컬 상태 업데이트
-            setCurriculums(prev => 
-                prev.map(curriculum => 
-                    curriculum.id === updatedData.id ? updatedData : curriculum
-                )
-            );
-            
+            // 성공 시 모달 닫기 및 목록 새로고침
+            setIsEditModalOpen(false);
+            await fetchCurriculums();
             alert('커리큘럼이 성공적으로 수정되었습니다.');
         } catch (err) {
             console.error('커리큘럼 수정 중 오류:', err);

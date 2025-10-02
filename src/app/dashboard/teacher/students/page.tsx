@@ -98,17 +98,22 @@ export default function TeacherStudentsPage() {
     };
 
     const fetchStudents = async () => {
-        // Supabase 인증을 사용하여 현재 사용자 정보 가져오기
-        const { data: { user }, error: authError } = await supabase.auth.getUser();
-        
-        const currentUserId = user?.id || (() => {
+        // 현재 사용자 정보 가져오기 (쿠키에서)
+        const currentUserId = (() => {
             if (typeof document === 'undefined') return null;
             const cookies = document.cookie.split(';');
             const userCookie = cookies.find(cookie => cookie.trim().startsWith('user_id='));
             return userCookie ? userCookie.split('=')[1] : null;
         })();
         
-        let query = supabase
+        if (!currentUserId) {
+            console.error('사용자 ID를 찾을 수 없습니다.');
+            setStudents([]);
+            return;
+        }
+        
+        // 모든 학생 데이터 조회
+        const { data, error } = await supabase
             .from('students')
             .select(`
                 user_id, 
@@ -129,15 +134,7 @@ export default function TeacherStudentsPage() {
                     status 
                 ), 
                 parent:users!students_parent_id_fkey ( phone )
-            `)
-            // 모든 상태의 학생 포함 (active, pending)
-        
-        // 강사인 경우 담당 학생만 조회
-        if (currentUserId) {
-            query = query.contains('assigned_teachers', [currentUserId]);
-        }
-        
-        const { data, error } = await query;
+            `);
         
         if (error) {
             console.error('학생 목록 조회 오류:', error);
@@ -168,16 +165,14 @@ export default function TeacherStudentsPage() {
             })) : []
         }));
         
-        // 강사인 경우 클라이언트 사이드에서 추가 필터링
-        if (currentUserId) {
-            mapped = mapped.filter(student => {
-                const studentData = data?.find(item => item.user_id === student.id);
-                const isAssigned = studentData?.assigned_teachers?.includes(currentUserId);
-                return isAssigned;
-            });
-        }
+        // 강사인 경우 담당 학생만 필터링
+        const assignedStudents = mapped.filter(student => {
+            const studentData = data?.find(item => item.user_id === student.id);
+            const isAssigned = studentData?.assigned_teachers?.includes(currentUserId);
+            return isAssigned;
+        });
         
-        setStudents(mapped);
+        setStudents(assignedStudents);
     };
 
 

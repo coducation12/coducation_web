@@ -474,7 +474,219 @@ CREATE POLICY "모든 사용자는 강사 상세 정보 조회 가능" ON public
     FOR SELECT USING (true);
 
 -- =============================================
--- 6. 완료 메시지
+-- 6. 관리자 계정 전체 권한 부여
+-- =============================================
+
+-- users 테이블 관리자 권한 강화
+CREATE POLICY "관리자는 모든 사용자 조회 가능" ON public.users
+    FOR SELECT USING (
+        EXISTS (
+            SELECT 1 FROM public.users 
+            WHERE users.id = auth.uid() 
+            AND users.role = 'admin'
+        )
+    );
+
+CREATE POLICY "관리자는 모든 사용자 수정 가능" ON public.users
+    FOR UPDATE USING (
+        EXISTS (
+            SELECT 1 FROM public.users 
+            WHERE users.id = auth.uid() 
+            AND users.role = 'admin'
+        )
+    );
+
+CREATE POLICY "관리자는 모든 사용자 삽입 가능" ON public.users
+    FOR INSERT WITH CHECK (
+        EXISTS (
+            SELECT 1 FROM public.users 
+            WHERE users.id = auth.uid() 
+            AND users.role = 'admin'
+        )
+    );
+
+CREATE POLICY "관리자는 모든 사용자 삭제 가능" ON public.users
+    FOR DELETE USING (
+        EXISTS (
+            SELECT 1 FROM public.users 
+            WHERE users.id = auth.uid() 
+            AND users.role = 'admin'
+        )
+    );
+
+-- students 테이블 관리자 권한 강화
+CREATE POLICY "관리자는 모든 학생 삽입 가능" ON public.students
+    FOR INSERT WITH CHECK (
+        EXISTS (
+            SELECT 1 FROM public.users 
+            WHERE users.id = auth.uid() 
+            AND users.role = 'admin'
+        )
+    );
+
+CREATE POLICY "관리자는 모든 학생 삭제 가능" ON public.students
+    FOR DELETE USING (
+        EXISTS (
+            SELECT 1 FROM public.users 
+            WHERE users.id = auth.uid() 
+            AND users.role = 'admin'
+        )
+    );
+
+-- teachers 테이블 관리자 권한 강화
+CREATE POLICY "관리자는 모든 강사 삭제 가능" ON public.teachers
+    FOR DELETE USING (
+        EXISTS (
+            SELECT 1 FROM public.users 
+            WHERE users.id = auth.uid() 
+            AND users.role = 'admin'
+        )
+    );
+
+-- community_posts 테이블 관리자 권한 강화
+CREATE POLICY "관리자는 모든 게시글 수정 가능" ON public.community_posts
+    FOR UPDATE USING (
+        EXISTS (
+            SELECT 1 FROM public.users 
+            WHERE users.id = auth.uid() 
+            AND users.role = 'admin'
+        )
+    );
+
+CREATE POLICY "관리자는 모든 게시글 삭제 가능" ON public.community_posts
+    FOR DELETE USING (
+        EXISTS (
+            SELECT 1 FROM public.users 
+            WHERE users.id = auth.uid() 
+            AND users.role = 'admin'
+        )
+    );
+
+-- community_comments 테이블 관리자 권한 강화
+CREATE POLICY "관리자는 모든 댓글 수정 가능" ON public.community_comments
+    FOR UPDATE USING (
+        EXISTS (
+            SELECT 1 FROM public.users 
+            WHERE users.id = auth.uid() 
+            AND users.role = 'admin'
+        )
+    );
+
+CREATE POLICY "관리자는 모든 댓글 삭제 가능" ON public.community_comments
+    FOR DELETE USING (
+        EXISTS (
+            SELECT 1 FROM public.users 
+            WHERE users.id = auth.uid() 
+            AND users.role = 'admin'
+        )
+    );
+
+-- curriculums 테이블 관리자 권한 강화
+CREATE POLICY "관리자는 모든 커리큘럼 삭제 가능" ON public.curriculums
+    FOR DELETE USING (
+        EXISTS (
+            SELECT 1 FROM public.users 
+            WHERE users.id = auth.uid() 
+            AND users.role = 'admin'
+        )
+    );
+
+-- consultations 테이블 관리자 권한 강화
+CREATE POLICY "관리자는 모든 상담문의 삭제 가능" ON public.consultations
+    FOR DELETE USING (
+        EXISTS (
+            SELECT 1 FROM public.users 
+            WHERE users.id = auth.uid() 
+            AND users.role = 'admin'
+        )
+    );
+
+-- student_activity_logs 테이블 관리자 권한 강화
+CREATE POLICY "관리자는 모든 활동 로그 수정 가능" ON public.student_activity_logs
+    FOR UPDATE USING (
+        EXISTS (
+            SELECT 1 FROM public.users 
+            WHERE users.id = auth.uid() 
+            AND users.role = 'admin'
+        )
+    );
+
+CREATE POLICY "관리자는 모든 활동 로그 삽입 가능" ON public.student_activity_logs
+    FOR INSERT WITH CHECK (
+        EXISTS (
+            SELECT 1 FROM public.users 
+            WHERE users.id = auth.uid() 
+            AND users.role = 'admin'
+        )
+    );
+
+CREATE POLICY "관리자는 모든 활동 로그 삭제 가능" ON public.student_activity_logs
+    FOR DELETE USING (
+        EXISTS (
+            SELECT 1 FROM public.users 
+            WHERE users.id = auth.uid() 
+            AND users.role = 'admin'
+        )
+    );
+
+-- student_learning_logs 테이블 관리자 권한 강화
+CREATE POLICY "관리자는 모든 학습 로그 수정 가능" ON public.student_learning_logs
+    FOR UPDATE USING (
+        EXISTS (
+            SELECT 1 FROM public.users 
+            WHERE users.id = auth.uid() 
+            AND users.role = 'admin'
+        )
+    );
+
+CREATE POLICY "관리자는 모든 학습 로그 삽입 가능" ON public.student_learning_logs
+    FOR INSERT WITH CHECK (
+        EXISTS (
+            SELECT 1 FROM public.users 
+            WHERE users.id = auth.uid() 
+            AND users.role = 'admin'
+        )
+    );
+
+CREATE POLICY "관리자는 모든 학습 로그 삭제 가능" ON public.student_learning_logs
+    FOR DELETE USING (
+        EXISTS (
+            SELECT 1 FROM public.users 
+            WHERE users.id = auth.uid() 
+            AND users.role = 'admin'
+        )
+    );
+
+-- tuition_payments 테이블 관리자 권한 강화
+CREATE POLICY "관리자는 모든 수강료 수정 가능" ON public.tuition_payments
+    FOR UPDATE USING (
+        EXISTS (
+            SELECT 1 FROM public.users 
+            WHERE users.id = auth.uid() 
+            AND users.role = 'admin'
+        )
+    );
+
+CREATE POLICY "관리자는 모든 수강료 삽입 가능" ON public.tuition_payments
+    FOR INSERT WITH CHECK (
+        EXISTS (
+            SELECT 1 FROM public.users 
+            WHERE users.id = auth.uid() 
+            AND users.role = 'admin'
+        )
+    );
+
+CREATE POLICY "관리자는 모든 수강료 삭제 가능" ON public.tuition_payments
+    FOR DELETE USING (
+        EXISTS (
+            SELECT 1 FROM public.users 
+            WHERE users.id = auth.uid() 
+            AND users.role = 'admin'
+        )
+    );
+
+-- =============================================
+-- 7. 완료 메시지
 -- =============================================
 -- 이 스크립트가 성공적으로 실행되면 다음이 완료됩니다:
 -- ✅ 모든 테이블에 RLS 활성화
@@ -482,6 +694,7 @@ CREATE POLICY "모든 사용자는 강사 상세 정보 조회 가능" ON public
 -- ✅ 각 테이블별 적절한 RLS 정책 설정
 -- ✅ 보안 취약점 해결
 -- ✅ 메인화면 강사진 표시 문제 해결
+-- ✅ 관리자 계정 전체 권한 부여
 
 SELECT '🚀 Coducation Web DB 설정이 완료되었습니다!' as message;
 

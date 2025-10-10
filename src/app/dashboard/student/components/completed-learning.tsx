@@ -27,13 +27,13 @@ export function CompletedLearning({ studentId }: CompletedLearningProps) {
   async function fetchCompleted() {
     setIsLoading(true);
     try {
-      // 완료된 커리큘럼 로그 조회 (예시: memo에 COMPLETED 포함)
+      // 완료된 커리큘럼 로그 조회
       const { data, error } = await supabase
-        .from('student_activity_logs')
-        .select('curriculum_id, memo, created_at')
+        .from('student_learning_logs')
+        .select('curriculum_id, step_title, completed_at')
         .eq('student_id', studentId)
-        .like('memo', '%COMPLETED%')
-        .order('created_at', { ascending: false })
+        .not('completed_at', 'is', null)
+        .order('completed_at', { ascending: false })
         .limit(5);
       if (error) throw error;
       // 커리큘럼 정보 join (간단화: title만 표시)

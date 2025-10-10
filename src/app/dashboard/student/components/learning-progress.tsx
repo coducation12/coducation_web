@@ -58,11 +58,11 @@ export function LearningProgress({ studentId, vertical }: { studentId: string, v
 
       // 완료된 학습 단계 조회
       const { data: completedLogs } = await supabase
-        .from('student_activity_logs')
-        .select('curriculum_id, memo')
+        .from('student_learning_logs')
+        .select('curriculum_id, step_title, completed_at')
         .eq('student_id', studentId)
         .eq('curriculum_id', studentData.current_curriculum_id)
-        .not('memo', 'is', null);
+        .not('completed_at', 'is', null);
 
       const totalSteps = curriculumData.checklist?.length || 0;
       const completedSteps = completedLogs?.length || 0;

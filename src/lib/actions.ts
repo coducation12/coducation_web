@@ -744,7 +744,7 @@ export async function getTypingRecords(studentId: string, daysBack: number = 90)
     fromDate.setDate(fromDate.getDate() - daysBack);
     const fromDateString = fromDate.toISOString().split('T')[0];
     
-    const { data, error } = await supabase
+    const { data, error } = await supabaseAdmin
       .from('student_activity_logs')
       .select('date, typing_score, typing_speed, typing_language, created_at')
       .eq('student_id', studentId)
@@ -785,7 +785,7 @@ export async function getAttendanceRecords(studentId: string, year: number, mont
     const startOfMonth = new Date(year, month - 1, 1);
     const endOfMonth = new Date(year, month, 0);
     
-    const { data, error } = await supabase
+    const { data, error } = await supabaseAdmin
       .from('student_activity_logs')
       .select('date, attended, activity_type')
       .eq('student_id', studentId)

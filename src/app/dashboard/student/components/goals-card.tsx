@@ -300,9 +300,9 @@ export function GoalsCard({ studentId, fixedInput, readOnly }: { studentId: stri
             <StudentText variant="muted">아직 등록된 할 일이 없습니다.</StudentText>
           </div>
         ) : (
-          <div className="space-y-4 flex-1">
+          <div className="space-y-4 flex-1 flex flex-col">
             {/* 할 일 목록 */}
-            <div className="space-y-2">
+            <div className="space-y-2 max-h-64 overflow-y-auto scrollbar-hide flex-1">
               {allGoals.map((goal, index) => (
                 <div key={index} className="flex items-center gap-3 p-3 rounded-lg bg-cyan-400/5 border border-cyan-400/20 hover:bg-cyan-400/10 transition-colors">
                   {!readOnly && (

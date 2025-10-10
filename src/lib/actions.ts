@@ -731,18 +731,24 @@ export async function getTypingRecords(studentId: string, daysBack: number = 90)
     const currentUserId = cookieStore.get('user_id')?.value;
     const userRole = cookieStore.get('user_role')?.value;
     
+    console.log('getTypingRecords - 인증 정보:', { currentUserId, userRole, studentId });
+    
     if (!currentUserId || !userRole) {
+      console.log('getTypingRecords - 인증 실패: 쿠키 정보 없음');
       return { success: false, error: '인증이 필요합니다.' };
     }
 
     // 학생은 자신의 데이터만 조회 가능
     if (userRole === 'student' && currentUserId !== studentId) {
+      console.log('getTypingRecords - 권한 없음: 다른 학생 데이터 조회 시도');
       return { success: false, error: '자신의 데이터만 조회할 수 있습니다.' };
     }
 
     const fromDate = new Date();
     fromDate.setDate(fromDate.getDate() - daysBack);
     const fromDateString = fromDate.toISOString().split('T')[0];
+    
+    console.log('getTypingRecords - 쿼리 실행:', { studentId, fromDateString });
     
     const { data, error } = await supabaseAdmin
       .from('student_activity_logs')
@@ -752,6 +758,8 @@ export async function getTypingRecords(studentId: string, daysBack: number = 90)
       .not('typing_score', 'is', null)
       .gte('date', fromDateString)
       .order('date', { ascending: true });
+
+    console.log('getTypingRecords - 쿼리 결과:', { data: data?.length || 0, error: error?.message });
 
     if (error) {
       console.error('타자연습 기록 조회 실패:', error);
@@ -773,17 +781,27 @@ export async function getAttendanceRecords(studentId: string, year: number, mont
     const currentUserId = cookieStore.get('user_id')?.value;
     const userRole = cookieStore.get('user_role')?.value;
     
+    console.log('getAttendanceRecords - 인증 정보:', { currentUserId, userRole, studentId, year, month });
+    
     if (!currentUserId || !userRole) {
+      console.log('getAttendanceRecords - 인증 실패: 쿠키 정보 없음');
       return { success: false, error: '인증이 필요합니다.' };
     }
 
     // 학생은 자신의 데이터만 조회 가능
     if (userRole === 'student' && currentUserId !== studentId) {
+      console.log('getAttendanceRecords - 권한 없음: 다른 학생 데이터 조회 시도');
       return { success: false, error: '자신의 데이터만 조회할 수 있습니다.' };
     }
 
     const startOfMonth = new Date(year, month - 1, 1);
     const endOfMonth = new Date(year, month, 0);
+    
+    console.log('getAttendanceRecords - 쿼리 실행:', { 
+      studentId, 
+      startDate: startOfMonth.toISOString().split('T')[0], 
+      endDate: endOfMonth.toISOString().split('T')[0] 
+    });
     
     const { data, error } = await supabaseAdmin
       .from('student_activity_logs')
@@ -792,6 +810,8 @@ export async function getAttendanceRecords(studentId: string, year: number, mont
       .gte('date', startOfMonth.toISOString().split('T')[0])
       .lte('date', endOfMonth.toISOString().split('T')[0])
       .eq('attended', true);
+
+    console.log('getAttendanceRecords - 쿼리 결과:', { data: data?.length || 0, error: error?.message });
 
     if (error) {
       console.error('출석 기록 조회 실패:', error);

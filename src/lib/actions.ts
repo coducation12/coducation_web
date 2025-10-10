@@ -659,7 +659,7 @@ export async function saveTypingResult(data: {
     const today = new Date().toISOString().split('T')[0];
 
     // 같은 날짜, 같은 언어의 기존 기록 확인
-    const { data: existingRecord, error: selectError } = await supabase
+    const { data: existingRecord, error: selectError } = await supabaseAdmin
       .from('student_activity_logs')
       .select('id, typing_score, typing_speed')
       .eq('student_id', userId)
@@ -680,7 +680,7 @@ export async function saveTypingResult(data: {
                           (data.accuracy === existingRecord.typing_score && data.speed > existingRecord.typing_speed);
       
       if (shouldUpdate) {
-        const { error } = await supabase
+        const { error } = await supabaseAdmin
           .from('student_activity_logs')
           .update({
             typing_score: data.accuracy,
@@ -698,7 +698,7 @@ export async function saveTypingResult(data: {
       // 기존 기록이 더 좋으면 업데이트하지 않음
     } else {
       // 새로운 기록 생성
-      const { error } = await supabase
+      const { error } = await supabaseAdmin
         .from('student_activity_logs')
         .insert({
           student_id: userId,

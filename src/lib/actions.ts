@@ -726,6 +726,20 @@ export async function saveTypingResult(data: {
 // 타자연습 기록 조회 서버 액션
 export async function getTypingRecords(studentId: string, daysBack: number = 90) {
   try {
+    // 현재 사용자 인증 확인
+    const cookieStore = await cookies();
+    const currentUserId = cookieStore.get('user_id')?.value;
+    const userRole = cookieStore.get('user_role')?.value;
+    
+    if (!currentUserId || !userRole) {
+      return { success: false, error: '인증이 필요합니다.' };
+    }
+
+    // 학생은 자신의 데이터만 조회 가능
+    if (userRole === 'student' && currentUserId !== studentId) {
+      return { success: false, error: '자신의 데이터만 조회할 수 있습니다.' };
+    }
+
     const fromDate = new Date();
     fromDate.setDate(fromDate.getDate() - daysBack);
     const fromDateString = fromDate.toISOString().split('T')[0];
@@ -748,6 +762,46 @@ export async function getTypingRecords(studentId: string, daysBack: number = 90)
   } catch (error) {
     console.error('타자연습 기록 조회 중 오류:', error);
     return { success: false, error: '타자연습 기록 조회 중 오류가 발생했습니다.' };
+  }
+}
+
+// 출석 기록 조회 서버 액션
+export async function getAttendanceRecords(studentId: string, year: number, month: number) {
+  try {
+    // 현재 사용자 인증 확인
+    const cookieStore = await cookies();
+    const currentUserId = cookieStore.get('user_id')?.value;
+    const userRole = cookieStore.get('user_role')?.value;
+    
+    if (!currentUserId || !userRole) {
+      return { success: false, error: '인증이 필요합니다.' };
+    }
+
+    // 학생은 자신의 데이터만 조회 가능
+    if (userRole === 'student' && currentUserId !== studentId) {
+      return { success: false, error: '자신의 데이터만 조회할 수 있습니다.' };
+    }
+
+    const startOfMonth = new Date(year, month - 1, 1);
+    const endOfMonth = new Date(year, month, 0);
+    
+    const { data, error } = await supabase
+      .from('student_activity_logs')
+      .select('date, attended, activity_type')
+      .eq('student_id', studentId)
+      .gte('date', startOfMonth.toISOString().split('T')[0])
+      .lte('date', endOfMonth.toISOString().split('T')[0])
+      .eq('attended', true);
+
+    if (error) {
+      console.error('출석 기록 조회 실패:', error);
+      return { success: false, error: error.message };
+    }
+
+    return { success: true, data: data || [] };
+  } catch (error) {
+    console.error('출석 기록 조회 중 오류:', error);
+    return { success: false, error: '출석 기록 조회 중 오류가 발생했습니다.' };
   }
 }
 

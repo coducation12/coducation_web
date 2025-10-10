@@ -1,9 +1,9 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { supabase } from '@/lib/supabase';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { StudentText, studentButtonStyles } from '../../app/dashboard/student/components/StudentThemeProvider';
 import { cn } from '@/lib/utils';
+import { getAttendanceRecords } from '@/lib/actions';
 
 interface AttendanceData {
   date: string;
@@ -26,30 +26,28 @@ export function AttendanceCalendar({ studentId }: AttendanceCalendarProps) {
   const fetchAttendanceData = async () => {
     setIsLoading(true);
     try {
-      const startOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
-      const endOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
+      const year = currentDate.getFullYear();
+      const month = currentDate.getMonth() + 1;
       
-      const { data, error } = await supabase
-        .from('student_activity_logs')
-        .select('date, attended, activity_type')
-        .eq('student_id', studentId)  // 특정 학생의 출석 데이터만 조회
-        .gte('date', startOfMonth.toISOString().split('T')[0])
-        .lte('date', endOfMonth.toISOString().split('T')[0])
-        .eq('attended', true);
+      const result = await getAttendanceRecords(studentId, year, month);
+      
+      if (result.success && result.data) {
+        const attendanceMap = new Map();
+        result.data.forEach((item: any) => {
+          attendanceMap.set(item.date, true);
+        });
 
-      if (error) throw error;
-
-      const attendanceMap = new Map();
-      (data || []).forEach(item => {
-        attendanceMap.set(item.date, true);
-      });
-
-      setAttendanceData(Array.from(attendanceMap.entries()).map(([date, attended]) => ({
-        date,
-        attended: !!attended
-      })));
+        setAttendanceData(Array.from(attendanceMap.entries()).map(([date, attended]) => ({
+          date,
+          attended: !!attended
+        })));
+      } else {
+        console.error('출석 데이터 조회 실패:', result.error);
+        setAttendanceData([]);
+      }
     } catch (error) {
       console.error('출석 데이터 조회 실패:', error);
+      setAttendanceData([]);
     } finally {
       setIsLoading(false);
     }

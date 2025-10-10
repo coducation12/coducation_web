@@ -151,6 +151,7 @@ export function TypingChart({ studentId }: { studentId: string }) {
         const aggregatedData = aggregateTypingData(result.data, 365);
         setData(aggregatedData);
       } else {
+        console.error('타자연습 기록 조회 실패:', result.error);
         setData([]);
       }
     } catch (e) {

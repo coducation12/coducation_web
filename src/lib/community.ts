@@ -1,6 +1,6 @@
 'use server'
 
-import { supabase } from '@/lib/supabase'
+import { supabase, supabaseAdmin } from '@/lib/supabase'
 import { cookies } from 'next/headers'
 
 export interface CommunityPost {
@@ -201,7 +201,7 @@ export async function createCommunityPost(title: string, content: string, images
   const now = new Date();
   const kstTime = new Date(now.getTime() + (9 * 60 * 60 * 1000)).toISOString();
 
-  const { data, error } = await supabase
+  const { data, error } = await supabaseAdmin
     .from('community_posts')
     .insert({
       title,
@@ -273,7 +273,7 @@ export async function createCommunityComment(postId: string, content: string) {
   const now = new Date();
   const kstTime = new Date(now.getTime() + (9 * 60 * 60 * 1000)).toISOString();
 
-  const { data, error } = await supabase
+  const { data, error } = await supabaseAdmin
     .from('community_comments')
     .insert({
       post_id: postId,
@@ -301,7 +301,7 @@ export async function deleteCommunityPost(postId: string) {
   }
 
   // 게시글 소유자 확인
-  const { data: post } = await supabase
+  const { data: post } = await supabaseAdmin
     .from('community_posts')
     .select('user_id')
     .eq('id', postId)
@@ -311,7 +311,7 @@ export async function deleteCommunityPost(postId: string) {
     throw new Error('게시글을 삭제할 권한이 없습니다.');
   }
 
-  const { error } = await supabase
+  const { error } = await supabaseAdmin
     .from('community_posts')
     .update({ is_deleted: true })
     .eq('id', postId);
@@ -331,7 +331,7 @@ export async function deleteCommunityComment(commentId: string) {
   }
 
   // 댓글 소유자 확인
-  const { data: comment } = await supabase
+  const { data: comment } = await supabaseAdmin
     .from('community_comments')
     .select('user_id')
     .eq('id', commentId)
@@ -341,7 +341,7 @@ export async function deleteCommunityComment(commentId: string) {
     throw new Error('댓글을 삭제할 권한이 없습니다.');
   }
 
-  const { error } = await supabase
+  const { error } = await supabaseAdmin
     .from('community_comments')
     .update({ is_deleted: true })
     .eq('id', commentId);

@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Mail, Phone, CheckCircle, XCircle, Clock, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/lib/supabase";
-import { addStudent, updateStudent, getCurrentUser } from "@/lib/actions";
+import { addStudent, updateStudent } from "@/lib/actions";
 import AddStudentModal, { StudentFormData } from "@/components/common/AddStudentModal";
 import EditStudentModal from "@/components/common/EditStudentModal";
 import { useToast } from "@/hooks/use-toast";
@@ -104,16 +104,31 @@ export default function TeacherStudentsPage() {
     };
 
     const fetchStudents = async () => {
-        // 현재 사용자 정보 가져오기 (서버 액션 사용)
-        const currentUser = await getCurrentUser();
+        // 현재 사용자 정보 가져오기 (쿠키에서 직접 읽기)
+        const getCurrentUserId = () => {
+            if (typeof document === 'undefined') return null;
+            const cookies = document.cookie.split(';');
+            const userCookie = cookies.find(cookie => cookie.trim().startsWith('user_id='));
+            return userCookie ? userCookie.split('=')[1] : null;
+        };
         
-        if (!currentUser || currentUser.role !== 'teacher') {
+        const getCurrentUserRole = () => {
+            if (typeof document === 'undefined') return null;
+            const cookies = document.cookie.split(';');
+            const roleCookie = cookies.find(cookie => cookie.trim().startsWith('user_role='));
+            return roleCookie ? roleCookie.split('=')[1] : null;
+        };
+        
+        const currentUserId = getCurrentUserId();
+        const currentUserRole = getCurrentUserRole();
+        
+        console.log('Current user:', { id: currentUserId, role: currentUserRole });
+        
+        if (!currentUserId || currentUserRole !== 'teacher') {
             console.error('강사 권한이 없습니다.');
             setStudents([]);
             return;
         }
-        
-        const currentUserId = currentUser.id;
         
         // 모든 학생 데이터 조회
         const { data, error } = await supabase

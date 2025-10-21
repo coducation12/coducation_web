@@ -70,6 +70,12 @@ function LoginForm() {
       
       const result = await login(formData)
       
+      // result가 undefined인 경우 처리
+      if (!result) {
+        setError('서버와의 통신에 실패했습니다. 다시 시도해주세요.')
+        return
+      }
+      
       if (result.success) {
         setSuccess('로그인 성공! 잠시 후 이동합니다...')
         // 성공 메시지를 잠시 보여준 후 리다이렉트

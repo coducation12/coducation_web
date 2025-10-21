@@ -39,114 +39,123 @@ interface TeacherInfo {
 // Supabase Auth를 사용한 로그인 시스템
 
 export async function login(formData: FormData) {
-  const userType = formData.get('userType') as string;
-  
-  if (userType === 'teacher') {
-    // 강사/관리자: Supabase Auth를 사용한 이메일과 비밀번호 인증
-    const email = formData.get('email') as string;
-    const password = formData.get('password') as string;
+  try {
+    const userType = formData.get('userType') as string;
     
-    try {
-      // Supabase Auth로 로그인
-      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
-        email: email,
-        password: password
-      });
-
-      if (authError) {
-        console.error('Auth 로그인 실패:', authError);
-        return { success: false, error: '로그인에 실패했습니다.' };
-      }
-
-      if (!authData.user) {
-        return { success: false, error: '사용자 정보를 찾을 수 없습니다.' };
-      }
-
-      // users 테이블에서 사용자 정보 조회 (이메일 또는 username으로 조회)
-      const { data: user, error: userError } = await supabase
-        .from('users')
-        .select('id, username, role, status, email')
-        .or(`email.eq.${email},username.eq.${email}`)
-        .in('role', ['teacher', 'admin'])
-        .single();
-
-      if (userError || !user) {
-        console.error('사용자 정보 조회 실패:', userError);
-        return { success: false, error: '사용자 정보를 찾을 수 없습니다.' };
-      }
-
-      // 사용자 상태 확인
-      if (user.status !== 'active') {
-        return { success: false, error: '계정이 아직 승인되지 않았습니다.' };
-      }
-
-      // 쿠키에 사용자 정보 저장
-      const cookieStore = await cookies();
-      cookieStore.set('user_id', user.id, { httpOnly: true, path: '/' });
-      cookieStore.set('user_role', user.role, { httpOnly: true, path: '/' });
-      cookieStore.set('auth_token', authData.session?.access_token || '', { httpOnly: true, path: '/' });
-      
-      return { success: true, redirect: '/dashboard' };
-    } catch (error) {
-      console.error('로그인 중 오류:', error);
-      return { success: false, error: '로그인 중 오류가 발생했습니다.' };
+    if (!userType) {
+      return { success: false, error: '사용자 타입이 지정되지 않았습니다.' };
     }
-  } else {
-    // 학생/학부모: 기존 방식 유지 (Auth 사용하지 않음)
-    const username = formData.get('username') as string;
-    const password = formData.get('password') as string;
     
-    try {
-      const { data: user, error } = await supabase
-        .from('users')
-        .select('id, username, role, password, status')
-        .eq('username', username)
-        .in('role', ['student', 'parent'])
-        .single();
+    if (userType === 'teacher') {
+      // 강사/관리자: Supabase Auth를 사용한 이메일과 비밀번호 인증
+      const email = formData.get('email') as string;
+      const password = formData.get('password') as string;
+      
+      try {
+        // Supabase Auth로 로그인
+        const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+          email: email,
+          password: password
+        });
 
-      if (error || !user) {
-        return { success: false, error: '사용자 정보를 찾을 수 없습니다.' };
-      }
-
-      // 사용자 상태 확인 (학생의 경우 수강 상태도 확인)
-      if (user.role === 'student') {
-        // 학생: active이면서 수강 중이어야 로그인 가능
-        if (user.status !== 'active' || user.status === '휴강' || user.status === '종료') {
-          if (user.status === 'pending') {
-            return { success: false, error: '계정이 아직 승인되지 않았습니다.' };
-          } else if (user.status === '휴강') {
-            return { success: false, error: '휴강 중인 계정입니다.' };
-          } else if (user.status === '종료') {
-            return { success: false, error: '수강이 종료된 계정입니다.' };
-          } else {
-            return { success: false, error: '비활성화된 계정입니다.' };
-          }
+        if (authError) {
+          console.error('Auth 로그인 실패:', authError);
+          return { success: false, error: '로그인에 실패했습니다.' };
         }
-      } else {
-        // 학부모: active가 아니면 로그인 거부
+
+        if (!authData.user) {
+          return { success: false, error: '사용자 정보를 찾을 수 없습니다.' };
+        }
+
+        // users 테이블에서 사용자 정보 조회 (이메일 또는 username으로 조회)
+        const { data: user, error: userError } = await supabase
+          .from('users')
+          .select('id, username, role, status, email')
+          .or(`email.eq.${email},username.eq.${email}`)
+          .in('role', ['teacher', 'admin'])
+          .single();
+
+        if (userError || !user) {
+          console.error('사용자 정보 조회 실패:', userError);
+          return { success: false, error: '사용자 정보를 찾을 수 없습니다.' };
+        }
+
+        // 사용자 상태 확인
         if (user.status !== 'active') {
           return { success: false, error: '계정이 아직 승인되지 않았습니다.' };
         }
-      }
-      
-      // 배포 환경: 비밀번호 필수 입력
-      if (!password || password.trim() === '') {
-        return { success: false, error: '비밀번호를 입력해주세요.' };
-      }
-      
-      // 비밀번호가 있으면 검증
-      if (user.password && await bcrypt.compare(password, user.password)) {
+
+        // 쿠키에 사용자 정보 저장
         const cookieStore = await cookies();
         cookieStore.set('user_id', user.id, { httpOnly: true, path: '/' });
         cookieStore.set('user_role', user.role, { httpOnly: true, path: '/' });
+        cookieStore.set('auth_token', authData.session?.access_token || '', { httpOnly: true, path: '/' });
+        
         return { success: true, redirect: '/dashboard' };
-      } else {
-        return { success: false, error: '비밀번호가 올바르지 않습니다.' };
+      } catch (error) {
+        console.error('로그인 중 오류:', error);
+        return { success: false, error: '로그인 중 오류가 발생했습니다.' };
       }
-    } catch (error) {
-      console.error('로그인 중 오류:', error);
-      return { success: false, error: '로그인 중 오류가 발생했습니다.' };
+    } else {
+      // 학생/학부모: 기존 방식 유지 (Auth 사용하지 않음)
+      const username = formData.get('username') as string;
+      const password = formData.get('password') as string;
+      
+      try {
+        const { data: user, error } = await supabase
+          .from('users')
+          .select('id, username, role, password, status')
+          .eq('username', username)
+          .in('role', ['student', 'parent'])
+          .single();
+
+        if (error || !user) {
+          return { success: false, error: '사용자 정보를 찾을 수 없습니다.' };
+        }
+
+        // 사용자 상태 확인 (학생의 경우 수강 상태도 확인)
+        if (user.role === 'student') {
+          // 학생: active이면서 수강 중이어야 로그인 가능
+          if (user.status !== 'active' || user.status === '휴강' || user.status === '종료') {
+            if (user.status === 'pending') {
+              return { success: false, error: '계정이 아직 승인되지 않았습니다.' };
+            } else if (user.status === '휴강') {
+              return { success: false, error: '휴강 중인 계정입니다.' };
+            } else if (user.status === '종료') {
+              return { success: false, error: '수강이 종료된 계정입니다.' };
+            } else {
+              return { success: false, error: '비활성화된 계정입니다.' };
+            }
+          }
+        } else {
+          // 학부모: active가 아니면 로그인 거부
+          if (user.status !== 'active') {
+            return { success: false, error: '계정이 아직 승인되지 않았습니다.' };
+          }
+        }
+        
+        // 배포 환경: 비밀번호 필수 입력
+        if (!password || password.trim() === '') {
+          return { success: false, error: '비밀번호를 입력해주세요.' };
+        }
+        
+        // 비밀번호가 있으면 검증
+        if (user.password && await bcrypt.compare(password, user.password)) {
+          const cookieStore = await cookies();
+          cookieStore.set('user_id', user.id, { httpOnly: true, path: '/' });
+          cookieStore.set('user_role', user.role, { httpOnly: true, path: '/' });
+          return { success: true, redirect: '/dashboard' };
+        } else {
+          return { success: false, error: '비밀번호가 올바르지 않습니다.' };
+        }
+      } catch (error) {
+        console.error('로그인 중 오류:', error);
+        return { success: false, error: '로그인 중 오류가 발생했습니다.' };
+      }
     }
+  } catch (error) {
+    console.error('로그인 함수 전체 오류:', error);
+    return { success: false, error: '로그인 처리 중 오류가 발생했습니다.' };
   }
 }
 

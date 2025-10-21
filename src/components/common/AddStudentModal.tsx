@@ -23,6 +23,7 @@ export interface StudentFormData {
     parentPhone: string;
     email: string;
     classSchedules: ClassSchedule[];
+    status?: string;
 }
 
 interface ClassSchedule {

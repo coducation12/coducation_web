@@ -23,13 +23,16 @@ interface Student {
     avatar: string;
     course: string;
     curriculum: string;
-    progress: number;
-    attendance: number;
+    progress?: number;
+    attendance?: number;
     status: string;
     joinDate: string;
     lastLogin: string;
     studentId?: string;
     classSchedules?: ClassSchedule[];
+    type?: string;
+    uniqueKey?: string;
+    requested_at?: string;
 }
 
 interface ClassSchedule {

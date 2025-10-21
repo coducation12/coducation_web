@@ -31,6 +31,11 @@ interface Student {
     studentId?: string;
     classSchedules?: ClassSchedule[];
     assignedTeachers?: Array<{id: string, name: string}>;
+    type?: string;
+    uniqueKey?: string;
+    requested_at?: string;
+    progress?: any;
+    attendance?: any;
 }
 
 interface ClassSchedule {
@@ -99,19 +104,16 @@ export default function TeacherStudentsPage() {
     };
 
     const fetchStudents = async () => {
-        // 현재 사용자 정보 가져오기 (쿠키에서)
-        const currentUserId = (() => {
-            if (typeof document === 'undefined') return null;
-            const cookies = document.cookie.split(';');
-            const userCookie = cookies.find(cookie => cookie.trim().startsWith('user_id='));
-            return userCookie ? userCookie.split('=')[1] : null;
-        })();
+        // 현재 사용자 정보 가져오기 (서버 액션 사용)
+        const currentUser = await getCurrentUser();
         
-        if (!currentUserId) {
-            console.error('사용자 ID를 찾을 수 없습니다.');
+        if (!currentUser || currentUser.role !== 'teacher') {
+            console.error('강사 권한이 없습니다.');
             setStudents([]);
             return;
         }
+        
+        const currentUserId = currentUser.id;
         
         // 모든 학생 데이터 조회
         const { data, error } = await supabase
@@ -189,11 +191,32 @@ export default function TeacherStudentsPage() {
         });
         
         // 강사인 경우 담당 학생만 필터링
-        const assignedStudents = mapped.filter(student => {
-            const studentData = data?.find(item => item.user_id === student.id);
-            const isAssigned = studentData?.assigned_teachers?.includes(currentUserId);
+        const assignedStudents = mapped.filter((student: any) => {
+            const studentData = data?.find((item: any) => item.user_id === student.id);
+            const assignedTeachers = studentData?.assigned_teachers || [];
+            
+            // UUID 비교를 위해 문자열로 변환하여 비교
+            const isAssigned = assignedTeachers.some((teacherId: string) => 
+                teacherId.toString() === currentUserId.toString()
+            );
+            
+            // 디버깅을 위한 로그
+            console.log('학생 필터링:', {
+                studentName: student.name,
+                studentId: student.id,
+                assignedTeachers: assignedTeachers,
+                currentUserId,
+                isAssigned,
+                teacherIdTypes: assignedTeachers.map((id: string) => typeof id),
+                currentUserIdType: typeof currentUserId
+            });
+            
             return isAssigned;
         });
+        
+        console.log('담당 학생 수:', assignedStudents.length);
+        console.log('전체 학생 수:', mapped.length);
+        console.log('현재 강사 ID:', currentUserId);
         
         setStudents(assignedStudents);
     };
@@ -259,7 +282,7 @@ export default function TeacherStudentsPage() {
             formData.append('phone', studentData.phone);
             formData.append('parentPhone', studentData.parentPhone);
             formData.append('email', studentData.email);
-            formData.append('status', studentData.status);
+            formData.append('status', studentData.status || 'active');
             formData.append('classSchedules', JSON.stringify(studentData.classSchedules));
 
             const result = await updateStudent(formData);
@@ -446,7 +469,7 @@ export default function TeacherStudentsPage() {
                                     </TableCell>
                                     <TableCell className="text-cyan-300">
                                         {student.type === 'signup_request' ? 
-                                            new Date(student.requested_at).toLocaleDateString() :
+                                            (student.requested_at ? new Date(student.requested_at).toLocaleDateString() : '-') :
                                             student.joinDate
                                         }
                                     </TableCell>

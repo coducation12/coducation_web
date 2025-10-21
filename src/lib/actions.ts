@@ -188,10 +188,8 @@ export async function logout() {
     // Supabase Auth에서 로그아웃
     const { error } = await supabase.auth.signOut();
     if (error) {
-      console.error('Auth 로그아웃 실패:', error);
     }
   } catch (error) {
-    console.error('로그아웃 중 오류:', error);
   } finally {
     // 쿠키 삭제
     const cookieStore = await cookies();
@@ -279,7 +277,6 @@ export async function addStudent(formData: FormData, isSignup: boolean = false) 
       .single();
 
     if (parentError) {
-      console.error('학부모 계정 생성 실패:', parentError);
       return { success: false, error: '학부모 계정 생성에 실패했습니다.' };
     }
 
@@ -380,7 +377,6 @@ export async function addStudent(formData: FormData, isSignup: boolean = false) 
 
     return { success: true, data: userData };
   } catch (error) {
-    console.error('학생 추가 중 오류:', error);
     return { success: false, error: '학생 추가 중 오류가 발생했습니다.' };
   }
 }
@@ -401,7 +397,6 @@ export async function updateStudent(formData: FormData) {
       classSchedules: formData.get('classSchedules') ? JSON.parse(formData.get('classSchedules') as string) : []
     };
 
-    console.log('받은 학생 데이터:', studentData);
 
     // 1. 학생 계정 정보 업데이트
     const updateData: any = {
@@ -411,7 +406,6 @@ export async function updateStudent(formData: FormData) {
       status: studentData.status === '휴강' ? 'suspended' : 'active' // 상태 업데이트 (suspended 또는 active만 허용)
     };
 
-    console.log('업데이트할 데이터:', updateData);
 
     // 비밀번호가 입력된 경우에만 업데이트
     if (studentData.password) {

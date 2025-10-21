@@ -141,14 +141,11 @@ export default function AdminStudentsPage() {
                 .eq('status', 'active');
 
             if (error) {
-                console.error('강사 목록 조회 오류:', error);
                 return;
             }
 
             setTeachers(data || []);
-            console.log('로드된 강사 목록:', data);
         } catch (error) {
-            console.error('강사 목록 조회 중 오류:', error);
         }
     };
 
@@ -161,11 +158,9 @@ export default function AdminStudentsPage() {
             .eq('status', 'active');
 
         if (teachersError) {
-            console.error('강사 목록 조회 오류:', teachersError);
         }
 
         const currentTeachers = teachersData || [];
-        console.log('fetchStudents에서 조회한 강사 목록:', currentTeachers);
 
         const { data, error } = await supabase
             .from('students')
@@ -193,7 +188,6 @@ export default function AdminStudentsPage() {
             // 모든 상태의 학생 포함 (active, pending)
         
         if (error) {
-            console.error('학생 목록 조회 오류:', error);
             setStudents([]);
             return;
         }
@@ -211,7 +205,6 @@ export default function AdminStudentsPage() {
             const assignedTeacherId = assignedTeacherIds.length > 0 ? assignedTeacherIds[0] : null;
             const assignedTeacherName = assignedTeachers.length > 0 ? assignedTeachers[0].name : '미지정';
             
-            console.log('학생:', item.users?.name, 'assigned_teachers:', item.assigned_teachers, 'assignedTeachers:', assignedTeachers);
             
             return {
                 id: item.user_id,
@@ -336,7 +329,6 @@ export default function AdminStudentsPage() {
                 });
             }
         } catch (error) {
-            console.error("학생 삭제 중 오류:", error);
             toast({
                 title: "오류",
                 description: "학생 삭제 중 오류가 발생했습니다.",
@@ -385,7 +377,6 @@ export default function AdminStudentsPage() {
                 .eq('user_id', studentId);
 
             if (error) {
-                console.error('담당강사 변경 오류:', error);
                 toast({
                     title: "오류",
                     description: "담당강사 변경에 실패했습니다.",
@@ -411,7 +402,6 @@ export default function AdminStudentsPage() {
                 description: "담당강사가 변경되었습니다.",
             });
         } catch (error) {
-            console.error('담당강사 변경 중 오류:', error);
             toast({
                 title: "오류",
                 description: "담당강사 변경 중 오류가 발생했습니다.",

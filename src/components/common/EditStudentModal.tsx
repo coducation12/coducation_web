@@ -207,7 +207,6 @@ export default function EditStudentModal({ student, isOpen, onClose, onSave }: E
             await onSave(formData);
             onClose();
         } catch (error) {
-            console.error('학생 정보 수정 오류:', error);
         } finally {
             setIsLoading(false);
         }

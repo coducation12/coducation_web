@@ -92,7 +92,6 @@ export default function AdminTeachersPage() {
                 .eq('role', 'teacher');
 
             if (error) {
-                console.error('강사 목록 조회 실패:', error);
                 setTeachers([]);
                 return;
             }
@@ -110,7 +109,6 @@ export default function AdminTeachersPage() {
 
             setTeachers(mappedTeachers);
         } catch (error) {
-            console.error('강사 목록 조회 중 오류:', error);
             setTeachers([]);
         } finally {
             setLoading(false);
@@ -148,7 +146,6 @@ export default function AdminTeachersPage() {
                 .eq('id', teacherId);
 
             if (error) {
-                console.error('강사 삭제 실패:', error);
                 alert('강사 삭제에 실패했습니다.');
                 return;
             }
@@ -156,7 +153,6 @@ export default function AdminTeachersPage() {
             setTeachers(prev => prev.filter(teacher => teacher.id !== teacherId));
             alert('강사가 삭제되었습니다.');
         } catch (error) {
-            console.error('강사 삭제 중 오류:', error);
             alert('강사 삭제 중 오류가 발생했습니다.');
         }
     };

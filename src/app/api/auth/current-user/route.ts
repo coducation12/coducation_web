@@ -1,17 +1,31 @@
-import { NextResponse } from 'next/server';
-import { getAuthenticatedUser } from '@/lib/auth';
+import { NextRequest, NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
+import { supabase } from '@/lib/supabase';
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const user = await getAuthenticatedUser();
+    const cookieStore = await cookies();
+    const userId = cookieStore.get('user_id')?.value;
+    const userRole = cookieStore.get('user_role')?.value;
     
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!userId || !userRole) {
+      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
     }
-    
+
+    // 사용자 정보 조회
+    const { data: user, error } = await supabase
+      .from('users')
+      .select('id, username, name, role, email, phone')
+      .eq('id', userId)
+      .single();
+
+    if (error || !user) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    }
+
     return NextResponse.json(user);
   } catch (error) {
-    console.error('API route error:', error);
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    console.error('Current user API error:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

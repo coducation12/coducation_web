@@ -104,33 +104,22 @@ export default function TeacherStudentsPage() {
     };
 
     const fetchStudents = async () => {
-        // 현재 사용자 정보 가져오기 (쿠키에서 직접 읽기)
-        const getCurrentUserId = () => {
-            if (typeof document === 'undefined') return null;
-            const cookies = document.cookie.split(';');
-            const userCookie = cookies.find(cookie => cookie.trim().startsWith('user_id='));
-            return userCookie ? userCookie.split('=')[1] : null;
-        };
-        
-        const getCurrentUserRole = () => {
-            if (typeof document === 'undefined') return null;
-            const cookies = document.cookie.split(';');
-            const roleCookie = cookies.find(cookie => cookie.trim().startsWith('user_role='));
-            return roleCookie ? roleCookie.split('=')[1] : null;
-        };
-        
-        const currentUserId = getCurrentUserId();
-        const currentUserRole = getCurrentUserRole();
-        
-        console.log('Current user:', { id: currentUserId, role: currentUserRole });
-        
-        if (!currentUserId || currentUserRole !== 'teacher') {
-            console.error('강사 권한이 없습니다.');
-            setStudents([]);
-            return;
-        }
-        
-        // 모든 학생 데이터 조회
+        // 현재 사용자 정보 가져오기 (API 엔드포인트 사용)
+        try {
+            const response = await fetch('/api/auth/current-user');
+            const userData = await response.json();
+            
+            console.log('Current user:', userData);
+            
+            if (!userData || userData.role !== 'teacher') {
+                console.error('강사 권한이 없습니다.');
+                setStudents([]);
+                return;
+            }
+            
+            const currentUserId = userData.id;
+            
+            // 모든 학생 데이터 조회
         const { data, error } = await supabase
             .from('students')
             .select(`
@@ -234,6 +223,10 @@ export default function TeacherStudentsPage() {
         console.log('현재 강사 ID:', currentUserId);
         
         setStudents(assignedStudents);
+        } catch (error) {
+            console.error('학생 데이터 조회 오류:', error);
+            setStudents([]);
+        }
     };
 
 

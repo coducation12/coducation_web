@@ -109,10 +109,7 @@ export default function TeacherStudentsPage() {
             const response = await fetch('/api/auth/current-user');
             const userData = await response.json();
             
-            console.log('Current user:', userData);
-            
             if (!userData || userData.role !== 'teacher') {
-                console.error('강사 권한이 없습니다.');
                 setStudents([]);
                 return;
             }
@@ -144,7 +141,6 @@ export default function TeacherStudentsPage() {
             `);
         
         if (error) {
-            console.error('학생 목록 조회 오류:', error);
             setStudents([]);
             return;
         }
@@ -204,27 +200,13 @@ export default function TeacherStudentsPage() {
                 teacherId.toString() === currentUserId.toString()
             );
             
-            // 디버깅을 위한 로그
-            console.log('학생 필터링:', {
-                studentName: student.name,
-                studentId: student.id,
-                assignedTeachers: assignedTeachers,
-                currentUserId,
-                isAssigned,
-                teacherIdTypes: assignedTeachers.map((id: string) => typeof id),
-                currentUserIdType: typeof currentUserId
-            });
             
             return isAssigned;
         });
         
-        console.log('담당 학생 수:', assignedStudents.length);
-        console.log('전체 학생 수:', mapped.length);
-        console.log('현재 강사 ID:', currentUserId);
         
         setStudents(assignedStudents);
         } catch (error) {
-            console.error('학생 데이터 조회 오류:', error);
             setStudents([]);
         }
     };

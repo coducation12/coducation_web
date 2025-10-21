@@ -58,10 +58,9 @@ export async function login(formData: FormData) {
           password: password
         });
 
-        if (authError) {
-          console.error('Auth 로그인 실패:', authError);
-          return { success: false, error: '로그인에 실패했습니다.' };
-        }
+      if (authError) {
+        return { success: false, error: '로그인에 실패했습니다.' };
+      }
 
         if (!authData.user) {
           return { success: false, error: '사용자 정보를 찾을 수 없습니다.' };
@@ -76,7 +75,6 @@ export async function login(formData: FormData) {
           .single();
 
         if (userError || !user) {
-          console.error('사용자 정보 조회 실패:', userError);
           return { success: false, error: '사용자 정보를 찾을 수 없습니다.' };
         }
 
@@ -93,7 +91,6 @@ export async function login(formData: FormData) {
         
         return { success: true, redirect: '/dashboard' };
       } catch (error) {
-        console.error('로그인 중 오류:', error);
         return { success: false, error: '로그인 중 오류가 발생했습니다.' };
       }
     } else {
@@ -144,17 +141,15 @@ export async function login(formData: FormData) {
           const cookieStore = await cookies();
           cookieStore.set('user_id', user.id, { httpOnly: true, path: '/' });
           cookieStore.set('user_role', user.role, { httpOnly: true, path: '/' });
-          return { success: true, redirect: '/dashboard' };
-        } else {
-          return { success: false, error: '비밀번호가 올바르지 않습니다.' };
-        }
-      } catch (error) {
-        console.error('로그인 중 오류:', error);
-        return { success: false, error: '로그인 중 오류가 발생했습니다.' };
+        return { success: true, redirect: '/dashboard' };
+      } else {
+        return { success: false, error: '비밀번호가 올바르지 않습니다.' };
       }
+    } catch (error) {
+      return { success: false, error: '로그인 중 오류가 발생했습니다.' };
+    }
     }
   } catch (error) {
-    console.error('로그인 함수 전체 오류:', error);
     return { success: false, error: '로그인 처리 중 오류가 발생했습니다.' };
   }
 }

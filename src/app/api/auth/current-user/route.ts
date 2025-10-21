@@ -25,7 +25,6 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(user);
   } catch (error) {
-    console.error('Current user API error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

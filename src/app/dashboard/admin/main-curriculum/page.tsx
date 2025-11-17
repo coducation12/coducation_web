@@ -9,26 +9,20 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { addCurriculum, updateCurriculum } from '@/lib/actions';
 import Image from 'next/image';
-import { getMainCurriculums, updateMainCurriculums } from '@/lib/actions';
+import { getMainCurriculums, updateMainCurriculums, addMainCurriculum, updateMainCurriculum, deleteMainCurriculum } from '@/lib/actions';
 import { supabase } from '@/lib/supabase';
 import { compressImage, validateImageFile, formatFileSize } from '@/lib/image-utils';
-import type { Curriculum } from '@/types';
-
-interface CurriculumWithSelection extends Curriculum {
-  show_on_main?: boolean;
-  main_display_order?: number;
-}
+import type { MainCurriculum } from '@/types';
 
 export default function MainCurriculumPage() {
   const [isLoading, setIsLoading] = useState(true);
-  const [curriculums, setCurriculums] = useState<CurriculumWithSelection[]>([]);
-  const [groupedCurriculums, setGroupedCurriculums] = useState<Record<string, CurriculumWithSelection[]>>({});
+  const [curriculums, setCurriculums] = useState<MainCurriculum[]>([]);
+  const [groupedCurriculums, setGroupedCurriculums] = useState<Record<string, MainCurriculum[]>>({});
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [selectedLevel, setSelectedLevel] = useState<'기초' | '중급' | '고급' | null>(null);
-  const [selectedCurriculum, setSelectedCurriculum] = useState<CurriculumWithSelection | null>(null);
+  const [selectedCurriculum, setSelectedCurriculum] = useState<MainCurriculum | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [formData, setFormData] = useState({
     title: '',
@@ -39,7 +33,7 @@ export default function MainCurriculumPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const editFileInputRef = useRef<HTMLInputElement>(null);
 
-  const levelOrder: Curriculum['level'][] = ['기초', '중급', '고급'];
+  const levelOrder: MainCurriculum['level'][] = ['기초', '중급', '고급'];
   const levelColors = {
     '기초': 'bg-green-500',
     '중급': 'bg-yellow-500',
@@ -61,13 +55,12 @@ export default function MainCurriculumPage() {
           }
           acc[level].push(curr);
           return acc;
-        }, {} as Record<string, CurriculumWithSelection[]>);
+        }, {} as Record<string, MainCurriculum[]>);
         
-        // 각 레벨별로 정렬 (show_on_main이 true인 것만 표시하고, main_display_order로 정렬)
+        // 각 레벨별로 정렬 (display_order로 정렬)
         Object.keys(grouped).forEach(level => {
           grouped[level] = grouped[level]
-            .filter(curr => curr.show_on_main === true) // show_on_main이 true인 것만 표시
-            .sort((a, b) => (a.main_display_order || 0) - (b.main_display_order || 0));
+            .sort((a, b) => (a.display_order || 0) - (b.display_order || 0));
         });
         
         setGroupedCurriculums(grouped);
@@ -86,59 +79,19 @@ export default function MainCurriculumPage() {
       }
       acc[level].push(curr);
       return acc;
-    }, {} as Record<string, CurriculumWithSelection[]>);
+    }, {} as Record<string, MainCurriculum[]>);
     
     Object.keys(grouped).forEach(level => {
-      grouped[level].sort((a, b) => {
-        if (a.show_on_main && !b.show_on_main) return -1;
-        if (!a.show_on_main && b.show_on_main) return 1;
-        return (a.main_display_order || 0) - (b.main_display_order || 0);
-      });
+      grouped[level].sort((a, b) => (a.display_order || 0) - (b.display_order || 0));
     });
     
     setGroupedCurriculums(grouped);
   };
 
-  // 메인화면 표시 토글
-  const toggleShowOnMain = (curriculumId: string) => {
-    setCurriculums(prev => {
-      const updated = prev.map(curr => {
-        if (curr.id === curriculumId) {
-          const newShowOnMain = !curr.show_on_main;
-          return {
-            ...curr,
-            show_on_main: newShowOnMain,
-            main_display_order: newShowOnMain ? (curr.main_display_order || 0) : 0,
-          };
-        }
-        return curr;
-      });
-      
-      // 그룹화 업데이트
-      const grouped = updated.reduce((acc, curr) => {
-        const level = curr.level;
-        if (!acc[level]) {
-          acc[level] = [];
-        }
-        acc[level].push(curr);
-        return acc;
-      }, {} as Record<string, CurriculumWithSelection[]>);
-      
-      Object.keys(grouped).forEach(level => {
-        grouped[level] = grouped[level]
-          .filter(curr => curr.show_on_main === true) // show_on_main이 true인 것만 표시
-          .sort((a, b) => (a.main_display_order || 0) - (b.main_display_order || 0));
-      });
-      
-      setGroupedCurriculums(grouped);
-      return updated;
-    });
-  };
-
   // 순서 변경
   const moveCurriculum = (curriculumId: string, direction: 'up' | 'down') => {
     const curriculum = curriculums.find(c => c.id === curriculumId);
-    if (!curriculum || !curriculum.show_on_main) return;
+    if (!curriculum) return;
 
     const level = curriculum.level;
     const levelCurriculums = groupedCurriculums[level] || [];
@@ -149,21 +102,18 @@ export default function MainCurriculumPage() {
     const newIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
     if (newIndex < 0 || newIndex >= levelCurriculums.length) return;
 
-    // show_on_main이 true인 항목들만 필터링
-    const visibleCurriculums = levelCurriculums.filter(c => c.show_on_main === true);
-
     // 같은 레벨 내에서만 순서 변경
     const reordered = [...levelCurriculums];
     [reordered[currentIndex], reordered[newIndex]] = [reordered[newIndex], reordered[currentIndex]];
     
-    // main_display_order 업데이트
+    // display_order 업데이트
     const updatedCurriculums = curriculums.map(curr => {
       const reorderedItem = reordered.find(r => r.id === curr.id);
-      if (reorderedItem && curr.show_on_main) {
+      if (reorderedItem && curr.level === level) {
         const newIndex = reordered.findIndex(r => r.id === curr.id);
         return {
           ...curr,
-          main_display_order: newIndex,
+          display_order: newIndex,
         };
       }
       return curr;
@@ -179,24 +129,27 @@ export default function MainCurriculumPage() {
       }
       acc[level].push(curr);
       return acc;
-    }, {} as Record<string, CurriculumWithSelection[]>);
+    }, {} as Record<string, MainCurriculum[]>);
     
     Object.keys(grouped).forEach(level => {
       grouped[level] = grouped[level]
-        .filter(curr => curr.show_on_main === true)
-        .sort((a, b) => (a.main_display_order || 0) - (b.main_display_order || 0));
+        .sort((a, b) => (a.display_order || 0) - (b.display_order || 0));
     });
     
     setGroupedCurriculums(grouped);
     
     // 순서 변경 시 자동 저장
-    saveCurriculums(updatedCurriculums);
+    saveCurriculums(updatedCurriculums.filter(c => c.level === level));
   };
 
   // 자동 저장 함수
-  const saveCurriculums = async (curriculumsToSave: CurriculumWithSelection[]) => {
+  const saveCurriculums = async (curriculumsToSave: MainCurriculum[]) => {
     try {
-      const result = await updateMainCurriculums(curriculumsToSave);
+      const updates = curriculumsToSave.map(curr => ({
+        id: curr.id,
+        display_order: curr.display_order || 0,
+      }));
+      const result = await updateMainCurriculums(updates);
       if (!result.success) {
         console.error('자동 저장 실패:', result.error);
       }
@@ -219,7 +172,7 @@ export default function MainCurriculumPage() {
   };
 
   // 수정 모달 열기
-  const openEditModal = (curriculum: CurriculumWithSelection) => {
+  const openEditModal = (curriculum: MainCurriculum) => {
     setSelectedCurriculum(curriculum);
     setSelectedLevel(curriculum.level as '기초' | '중급' | '고급');
     setFormData({
@@ -363,51 +316,13 @@ export default function MainCurriculumPage() {
       formDataToSend.append('title', formData.title);
       formDataToSend.append('category', formData.category);
       formDataToSend.append('level', selectedLevel);
-      formDataToSend.append('status', 'preparing');
-      formDataToSend.append('courses', JSON.stringify(['']));
       formDataToSend.append('description', formData.description || '');
       formDataToSend.append('image', formData.image || '');
 
-      const result = await addCurriculum(formDataToSend);
+      const result = await addMainCurriculum(formDataToSend);
 
-      if (result.success && result.data) {
-        // 추가된 커리큘럼을 show_on_main=true로 설정하고 DB에 저장
-        const newCurriculum = result.data;
-        const currentOrder = groupedCurriculums[selectedLevel]?.length || 0;
-        const updatedCurriculums = [...curriculums, {
-          ...newCurriculum,
-          show_on_main: true,
-          main_display_order: currentOrder,
-        }];
-        
-        setCurriculums(updatedCurriculums);
-        
-        // 그룹화 업데이트
-        const grouped = updatedCurriculums.reduce((acc, curr) => {
-          const level = curr.level;
-          if (!acc[level]) {
-            acc[level] = [];
-          }
-          acc[level].push(curr);
-          return acc;
-        }, {} as Record<string, CurriculumWithSelection[]>);
-        
-        Object.keys(grouped).forEach(level => {
-          grouped[level] = grouped[level]
-            .filter(curr => curr.show_on_main === true)
-            .sort((a, b) => (a.main_display_order || 0) - (b.main_display_order || 0));
-        });
-        
-        setGroupedCurriculums(grouped);
-        
-        // DB에 즉시 저장
-        const saveResult = await updateMainCurriculums(updatedCurriculums);
-        if (saveResult.success) {
-          alert('커리큘럼이 성공적으로 추가되었습니다.');
-        } else {
-          alert('커리큘럼은 추가되었지만 저장에 실패했습니다. 다시 시도해주세요.');
-        }
-        
+      if (result.success) {
+        alert('커리큘럼이 성공적으로 추가되었습니다.');
         closeModal();
         
         // 목록 다시 로드
@@ -445,12 +360,10 @@ export default function MainCurriculumPage() {
       formDataToSend.append('title', formData.title);
       formDataToSend.append('category', formData.category);
       formDataToSend.append('level', selectedCurriculum.level);
-      formDataToSend.append('status', 'preparing');
-      formDataToSend.append('courses', JSON.stringify(selectedCurriculum.checklist || ['']));
       formDataToSend.append('description', formData.description || '');
       formDataToSend.append('image', formData.image || '');
 
-      const result = await updateCurriculum(formDataToSend);
+      const result = await updateMainCurriculum(formDataToSend);
 
       if (result.success) {
         alert('커리큘럼이 성공적으로 수정되었습니다.');
@@ -480,22 +393,10 @@ export default function MainCurriculumPage() {
     }
 
     try {
-      // show_on_main을 false로 설정하여 메인화면에서 제거
-      const updatedCurriculums = curriculums.map(curr => 
-        curr.id === selectedCurriculum.id 
-          ? { ...curr, show_on_main: false, main_display_order: 0 }
-          : curr
-      );
-
-      // DB에서 실제로 삭제
-      const { error } = await supabase
-        .from('curriculums')
-        .delete()
-        .eq('id', selectedCurriculum.id);
-
-      if (error) {
-        console.error('커리큘럼 삭제 오류:', error);
-        alert('커리큘럼 삭제에 실패했습니다.');
+      const deleteResult = await deleteMainCurriculum(selectedCurriculum.id);
+      
+      if (!deleteResult.success) {
+        alert(deleteResult.error || '커리큘럼 삭제에 실패했습니다.');
         return;
       }
 
@@ -532,7 +433,7 @@ export default function MainCurriculumPage() {
       <div className="space-y-12 max-w-7xl mx-auto">
         {levelOrder.map((level) => {
           const levelCurriculums = groupedCurriculums[level] || [];
-          const selectedCount = levelCurriculums.filter(c => c.show_on_main).length;
+          const selectedCount = levelCurriculums.length;
 
           return (
             <Card key={level} className="bg-gradient-to-br from-cyan-900/20 to-blue-900/20 border-cyan-500/30">

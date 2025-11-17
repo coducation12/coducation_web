@@ -160,6 +160,41 @@ export interface Database {
           created_at?: string;
         };
       };
+      main_curriculums: {
+        Row: {
+          id: string;
+          title: string;
+          description?: string;
+          category?: string;
+          level: '기초' | '중급' | '고급';
+          image?: string;
+          display_order: number;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          title: string;
+          description?: string;
+          category?: string;
+          level: '기초' | '중급' | '고급';
+          image?: string;
+          display_order?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          title?: string;
+          description?: string;
+          category?: string;
+          level?: '기초' | '중급' | '고급';
+          image?: string;
+          display_order?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
       typing_exercises: {
         Row: {
           id: string;

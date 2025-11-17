@@ -49,6 +49,18 @@ export interface Curriculum {
   created_at: string;
 }
 
+export interface MainCurriculum {
+  id: string;
+  title: string;
+  description?: string;
+  category?: string;
+  level: '기초' | '중급' | '고급';
+  image?: string;
+  display_order: number;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface TypingExercise {
   id: string;
   title: string;

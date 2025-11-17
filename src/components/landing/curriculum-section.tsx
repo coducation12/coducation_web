@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { useState, useEffect } from 'react';
-import type { Curriculum } from '@/types';
+import type { MainCurriculum, Curriculum } from '@/types';
 import { CurriculumCard } from '@/components/curriculum/curriculum-card';
 import {
   Carousel,
@@ -15,7 +15,7 @@ import Autoplay from 'embla-carousel-autoplay';
 import { supabase } from '@/lib/supabase';
 
 export function CurriculumSection() {
-    const [curriculums, setCurriculums] = useState<Curriculum[]>([]);
+    const [curriculums, setCurriculums] = useState<MainCurriculum[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
     // DB에서 메인화면에 표시할 커리큘럼 조회
@@ -23,28 +23,26 @@ export function CurriculumSection() {
         const fetchCurriculums = async () => {
             try {
                 const { data, error } = await supabase
-                    .from('curriculums')
-                    .select('id, title, description, category, level, image, checklist, created_by, created_at, public')
-                    .eq('show_on_main', true)
+                    .from('main_curriculums')
+                    .select('id, title, description, category, level, image, display_order, created_at, updated_at')
                     .order('level', { ascending: true })
-                    .order('main_display_order', { ascending: true });
+                    .order('display_order', { ascending: true });
 
                 if (error) {
                     console.error('커리큘럼 조회 오류:', error);
                     setCurriculums([]);
                 } else {
-                    // Curriculum 타입에 맞게 변환
-                    const formattedCurriculums: Curriculum[] = (data || []).map((curr: any) => ({
+                    // MainCurriculum 타입에 맞게 변환
+                    const formattedCurriculums: MainCurriculum[] = (data || []).map((curr: any) => ({
                         id: curr.id,
                         title: curr.title,
                         description: curr.description || '',
                         category: curr.category,
                         level: curr.level as '기초' | '중급' | '고급',
                         image: curr.image || 'https://placehold.co/600x400.png',
-                        checklist: curr.checklist || [],
-                        created_by: curr.created_by,
-                        public: curr.public ?? true,
+                        display_order: curr.display_order || 0,
                         created_at: curr.created_at,
+                        updated_at: curr.updated_at,
                     }));
                     setCurriculums(formattedCurriculums);
                 }
@@ -59,16 +57,30 @@ export function CurriculumSection() {
         fetchCurriculums();
     }, []);
 
-    const groupedCurriculums = curriculums.reduce((acc, curriculum) => {
+    // MainCurriculum을 Curriculum 타입으로 변환 (CurriculumCard 호환성)
+    const curriculumForDisplay = curriculums.map(curr => ({
+        id: curr.id,
+        title: curr.title,
+        description: curr.description || '',
+        category: curr.category,
+        level: curr.level,
+        image: curr.image || 'https://placehold.co/600x400.png',
+        checklist: [], // MainCurriculum에는 checklist가 없으므로 빈 배열
+        created_by: undefined,
+        public: true,
+        created_at: curr.created_at,
+    }));
+
+    const groupedCurriculums = curriculumForDisplay.reduce((acc, curriculum) => {
         const level = curriculum.level;
         if (!acc[level]) {
         acc[level] = [];
         }
         acc[level].push(curriculum);
         return acc;
-    }, {} as Record<Curriculum['level'], Curriculum[]>);
+    }, {} as Record<'기초' | '중급' | '고급', typeof curriculumForDisplay>);
 
-    const levelOrder: Curriculum['level'][] = ['기초', '중급', '고급'];
+    const levelOrder: ('기초' | '중급' | '고급')[] = ['기초', '중급', '고급'];
 
     // 로딩 중이거나 커리큘럼이 없을 때
     if (isLoading) {

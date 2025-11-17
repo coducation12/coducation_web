@@ -556,8 +556,8 @@ export async function addCurriculum(formData: FormData) {
       created_at: new Date().toISOString()
     };
 
-    // Supabase에 커리큘럼 추가
-    const { data, error } = await supabase
+    // Supabase에 커리큘럼 추가 (supabaseAdmin 사용하여 RLS 우회)
+    const { data, error } = await supabaseAdmin
       .from('curriculums')
       .insert([curriculumData])
       .select()
@@ -617,8 +617,8 @@ export async function updateCurriculum(formData: FormData) {
       status: formData.get('status') as string || 'preparing' // 상태 업데이트 지원
     };
 
-    // Supabase에서 커리큘럼 수정
-    const { data, error } = await supabase
+    // Supabase에서 커리큘럼 수정 (supabaseAdmin 사용하여 RLS 우회)
+    const { data, error } = await supabaseAdmin
       .from('curriculums')
       .update(curriculumData)
       .eq('id', id)
@@ -975,34 +975,27 @@ export async function getMainCurriculums() {
       return { success: false, error: '관리자만 접근할 수 있습니다.' };
     }
 
-    // 모든 커리큘럼 조회 (show_on_main, main_display_order 포함)
-    const { data, error } = await supabase
-      .from('curriculums')
-      .select('id, title, description, category, level, image, checklist, created_by, created_at, show_on_main, main_display_order')
+    // main_curriculums 테이블에서 모든 커리큘럼 조회 - supabaseAdmin 사용하여 RLS 우회
+    const { data, error } = await supabaseAdmin
+      .from('main_curriculums')
+      .select('id, title, description, category, level, image, display_order, created_at, updated_at')
       .order('level', { ascending: true })
-      .order('main_display_order', { ascending: true });
+      .order('display_order', { ascending: true });
 
     if (error) {
       console.error('메인화면 커리큘럼 조회 오류:', error);
       return { success: false, error: error.message };
     }
 
-    // show_on_main이 null인 경우 false로 처리
-    const curriculums = (data || []).map((curr: any) => ({
-      ...curr,
-      show_on_main: curr.show_on_main ?? false,
-      main_display_order: curr.main_display_order ?? 0,
-    }));
-
-    return { success: true, data: curriculums };
+    return { success: true, data: data || [] };
   } catch (error) {
     console.error('메인화면 커리큘럼 조회 중 오류:', error);
     return { success: false, error: '메인화면 커리큘럼 조회 중 오류가 발생했습니다.' };
   }
 }
 
-// 메인화면 커리큘럼 업데이트 서버 액션
-export async function updateMainCurriculums(curriculums: Array<{ id: string; show_on_main?: boolean; main_display_order?: number }>) {
+// 메인화면 커리큘럼 업데이트 서버 액션 (순서 변경용)
+export async function updateMainCurriculums(curriculums: Array<{ id: string; display_order?: number }>) {
   try {
     // 현재 로그인한 사용자가 관리자인지 확인
     const cookieStore = await cookies();
@@ -1012,47 +1005,198 @@ export async function updateMainCurriculums(curriculums: Array<{ id: string; sho
       return { success: false, error: '관리자만 접근할 수 있습니다.' };
     }
 
-    // 모든 커리큘럼의 show_on_main을 false로 초기화
-    await supabase
-      .from('curriculums')
-      .update({ show_on_main: false, main_display_order: 0 });
+    if (curriculums.length === 0) {
+      return { success: true };
+    }
 
-    // 선택된 커리큘럼만 업데이트
-    const updates = curriculums
-      .filter(curr => curr.show_on_main === true)
-      .map(curr => ({
-        id: curr.id,
-        show_on_main: true,
-        main_display_order: curr.main_display_order || 0,
-      }));
+    // 배치 업데이트 (supabaseAdmin 사용하여 RLS 우회)
+    const updatePromises = curriculums.map(curr =>
+      supabaseAdmin
+        .from('main_curriculums')
+        .update({
+          display_order: curr.display_order || 0,
+        })
+        .eq('id', curr.id)
+    );
 
-    if (updates.length > 0) {
-      // 배치 업데이트
-      const updatePromises = updates.map(update =>
-        supabase
-          .from('curriculums')
-          .update({
-            show_on_main: update.show_on_main,
-            main_display_order: update.main_display_order,
-          })
-          .eq('id', update.id)
-      );
-
-      const results = await Promise.all(updatePromises);
-      
-      // 에러 확인
-      const hasError = results.some(result => result.error);
-      if (hasError) {
-        const errorResult = results.find(result => result.error);
-        console.error('메인화면 커리큘럼 업데이트 오류:', errorResult?.error);
-        return { success: false, error: errorResult?.error?.message || '업데이트 중 오류가 발생했습니다.' };
-      }
+    const results = await Promise.all(updatePromises);
+    
+    // 에러 확인
+    const hasError = results.some(result => result.error);
+    if (hasError) {
+      const errorResult = results.find(result => result.error);
+      console.error('메인화면 커리큘럼 업데이트 오류:', errorResult?.error);
+      return { success: false, error: errorResult?.error?.message || '업데이트 중 오류가 발생했습니다.' };
     }
 
     return { success: true };
   } catch (error) {
     console.error('메인화면 커리큘럼 업데이트 중 오류:', error);
     return { success: false, error: '메인화면 커리큘럼 업데이트 중 오류가 발생했습니다.' };
+  }
+}
+
+// 메인 커리큘럼 추가 서버 액션
+export async function addMainCurriculum(formData: FormData) {
+  try {
+    // 현재 로그인한 사용자 정보 가져오기
+    const cookieStore = await cookies();
+    const currentUserId = cookieStore.get('user_id')?.value;
+    const currentUserRole = cookieStore.get('user_role')?.value;
+
+    if (!currentUserId) {
+      return { success: false, error: '로그인이 필요합니다.' };
+    }
+
+    // 관리자만 메인 커리큘럼 추가 가능
+    if (currentUserRole !== 'admin') {
+      return { success: false, error: '관리자만 접근할 수 있습니다.' };
+    }
+
+    // FormData에서 데이터 추출
+    const title = formData.get('title') as string;
+    const category = formData.get('category') as string;
+    const level = formData.get('level') as string;
+    const description = formData.get('description') as string || '';
+    const image = formData.get('image') as string || '';
+
+    // 필수 필드 검증
+    if (!title || !category || !level) {
+      return { success: false, error: '모든 필수 항목을 입력해주세요.' };
+    }
+
+    // 같은 레벨의 최대 display_order 조회
+    const { data: existingCurriculums } = await supabaseAdmin
+      .from('main_curriculums')
+      .select('display_order')
+      .eq('level', level)
+      .order('display_order', { ascending: false })
+      .limit(1);
+
+    const maxOrder = existingCurriculums && existingCurriculums.length > 0 
+      ? (existingCurriculums[0].display_order || 0) + 1 
+      : 0;
+
+    // 메인 커리큘럼 데이터 준비
+    const curriculumData = {
+      title: title.trim(),
+      category: category.trim(),
+      level: level.trim(),
+      description: description.trim(),
+      image: image.trim(),
+      display_order: maxOrder,
+    };
+
+    // Supabase에 메인 커리큘럼 추가 (supabaseAdmin 사용하여 RLS 우회)
+    const { data, error } = await supabaseAdmin
+      .from('main_curriculums')
+      .insert([curriculumData])
+      .select()
+      .single();
+
+    if (error) {
+      console.error('메인 커리큘럼 추가 오류:', error);
+      return { success: false, error: error.message };
+    }
+
+    return { success: true, data };
+  } catch (error) {
+    console.error('메인 커리큘럼 추가 중 오류:', error);
+    return { success: false, error: '메인 커리큘럼 추가 중 오류가 발생했습니다.' };
+  }
+}
+
+// 메인 커리큘럼 수정 서버 액션
+export async function updateMainCurriculum(formData: FormData) {
+  try {
+    // 현재 로그인한 사용자 정보 가져오기
+    const cookieStore = await cookies();
+    const currentUserId = cookieStore.get('user_id')?.value;
+    const currentUserRole = cookieStore.get('user_role')?.value;
+
+    if (!currentUserId) {
+      return { success: false, error: '로그인이 필요합니다.' };
+    }
+
+    // 관리자만 메인 커리큘럼 수정 가능
+    if (currentUserRole !== 'admin') {
+      return { success: false, error: '관리자만 접근할 수 있습니다.' };
+    }
+
+    // FormData에서 데이터 추출
+    const id = formData.get('id') as string;
+    const title = formData.get('title') as string;
+    const category = formData.get('category') as string;
+    const level = formData.get('level') as string;
+    const description = formData.get('description') as string || '';
+    const image = formData.get('image') as string || '';
+
+    // 필수 필드 검증
+    if (!id || !title || !category || !level) {
+      return { success: false, error: '모든 필수 항목을 입력해주세요.' };
+    }
+
+    // 메인 커리큘럼 데이터 준비
+    const curriculumData = {
+      title: title.trim(),
+      category: category.trim(),
+      level: level.trim(),
+      description: description.trim(),
+      image: image.trim(),
+    };
+
+    // Supabase에서 메인 커리큘럼 수정 (supabaseAdmin 사용하여 RLS 우회)
+    const { data, error } = await supabaseAdmin
+      .from('main_curriculums')
+      .update(curriculumData)
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('메인 커리큘럼 수정 오류:', error);
+      return { success: false, error: error.message };
+    }
+
+    return { success: true, data };
+  } catch (error) {
+    console.error('메인 커리큘럼 수정 중 오류:', error);
+    return { success: false, error: '메인 커리큘럼 수정 중 오류가 발생했습니다.' };
+  }
+}
+
+// 메인 커리큘럼 삭제 서버 액션
+export async function deleteMainCurriculum(curriculumId: string) {
+  try {
+    // 현재 로그인한 사용자 정보 가져오기
+    const cookieStore = await cookies();
+    const currentUserId = cookieStore.get('user_id')?.value;
+    const currentUserRole = cookieStore.get('user_role')?.value;
+
+    if (!currentUserId) {
+      return { success: false, error: '로그인이 필요합니다.' };
+    }
+
+    // 관리자만 메인 커리큘럼 삭제 가능
+    if (currentUserRole !== 'admin') {
+      return { success: false, error: '관리자만 접근할 수 있습니다.' };
+    }
+
+    // Supabase에서 메인 커리큘럼 삭제 (supabaseAdmin 사용하여 RLS 우회)
+    const { error } = await supabaseAdmin
+      .from('main_curriculums')
+      .delete()
+      .eq('id', curriculumId);
+
+    if (error) {
+      console.error('메인 커리큘럼 삭제 오류:', error);
+      return { success: false, error: error.message };
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error('메인 커리큘럼 삭제 중 오류:', error);
+    return { success: false, error: '메인 커리큘럼 삭제 중 오류가 발생했습니다.' };
   }
 }
 

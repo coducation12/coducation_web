@@ -44,6 +44,8 @@ export interface Curriculum {
   checklist?: string[];
   created_by?: string;
   public: boolean;
+  show_on_main?: boolean;
+  main_display_order?: number;
   created_at: string;
 }
 

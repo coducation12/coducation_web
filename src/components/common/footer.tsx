@@ -14,7 +14,7 @@ export function Footer() {
             </div>
             <div className="text-sm leading-tight">
               <span className="font-semibold text-sm">광양코딩(창덕)</span>
-              <span className="text-muted-foreground text-sm ml-2">010-1234-5678</span>
+              <span className="text-muted-foreground text-sm ml-2">061-911-1101</span>
             </div>
           </div>
 

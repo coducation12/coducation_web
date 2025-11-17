@@ -964,6 +964,98 @@ export async function getContent() {
   }
 }
 
+// 메인화면 커리큘럼 조회 서버 액션
+export async function getMainCurriculums() {
+  try {
+    // 현재 로그인한 사용자가 관리자인지 확인
+    const cookieStore = await cookies();
+    const currentUserRole = cookieStore.get('user_role')?.value;
+    
+    if (currentUserRole !== 'admin') {
+      return { success: false, error: '관리자만 접근할 수 있습니다.' };
+    }
+
+    // 모든 커리큘럼 조회 (show_on_main, main_display_order 포함)
+    const { data, error } = await supabase
+      .from('curriculums')
+      .select('id, title, description, category, level, image, checklist, created_by, created_at, show_on_main, main_display_order')
+      .order('level', { ascending: true })
+      .order('main_display_order', { ascending: true });
+
+    if (error) {
+      console.error('메인화면 커리큘럼 조회 오류:', error);
+      return { success: false, error: error.message };
+    }
+
+    // show_on_main이 null인 경우 false로 처리
+    const curriculums = (data || []).map((curr: any) => ({
+      ...curr,
+      show_on_main: curr.show_on_main ?? false,
+      main_display_order: curr.main_display_order ?? 0,
+    }));
+
+    return { success: true, data: curriculums };
+  } catch (error) {
+    console.error('메인화면 커리큘럼 조회 중 오류:', error);
+    return { success: false, error: '메인화면 커리큘럼 조회 중 오류가 발생했습니다.' };
+  }
+}
+
+// 메인화면 커리큘럼 업데이트 서버 액션
+export async function updateMainCurriculums(curriculums: Array<{ id: string; show_on_main?: boolean; main_display_order?: number }>) {
+  try {
+    // 현재 로그인한 사용자가 관리자인지 확인
+    const cookieStore = await cookies();
+    const currentUserRole = cookieStore.get('user_role')?.value;
+    
+    if (currentUserRole !== 'admin') {
+      return { success: false, error: '관리자만 접근할 수 있습니다.' };
+    }
+
+    // 모든 커리큘럼의 show_on_main을 false로 초기화
+    await supabase
+      .from('curriculums')
+      .update({ show_on_main: false, main_display_order: 0 });
+
+    // 선택된 커리큘럼만 업데이트
+    const updates = curriculums
+      .filter(curr => curr.show_on_main === true)
+      .map(curr => ({
+        id: curr.id,
+        show_on_main: true,
+        main_display_order: curr.main_display_order || 0,
+      }));
+
+    if (updates.length > 0) {
+      // 배치 업데이트
+      const updatePromises = updates.map(update =>
+        supabase
+          .from('curriculums')
+          .update({
+            show_on_main: update.show_on_main,
+            main_display_order: update.main_display_order,
+          })
+          .eq('id', update.id)
+      );
+
+      const results = await Promise.all(updatePromises);
+      
+      // 에러 확인
+      const hasError = results.some(result => result.error);
+      if (hasError) {
+        const errorResult = results.find(result => result.error);
+        console.error('메인화면 커리큘럼 업데이트 오류:', errorResult?.error);
+        return { success: false, error: errorResult?.error?.message || '업데이트 중 오류가 발생했습니다.' };
+      }
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error('메인화면 커리큘럼 업데이트 중 오류:', error);
+    return { success: false, error: '메인화면 커리큘럼 업데이트 중 오류가 발생했습니다.' };
+  }
+}
+
 // 강사 추가 서버 액션
 export async function addTeacher(formData: FormData) {
   try {

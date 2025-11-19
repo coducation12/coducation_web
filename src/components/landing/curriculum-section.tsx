@@ -109,7 +109,7 @@ export function CurriculumSection() {
                         기초부터 심화까지, 여러분의 성장을 이끌 Coducation의 전문 교육 과정을 만나보세요.
                     </p>
                 </div>
-                <div className="flex justify-center items-center py-12"></div>
+                <div className="flex justify-center items-center py-12">
                     <div className="text-sm md:text-base text-muted-foreground">표시할 커리큘럼이 없습니다.</div>
                 </div>
             </section>

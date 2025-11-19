@@ -84,12 +84,12 @@ export function InstructorsSection() {
         </p>
       </div>
 
-      <div className="flex flex-col items-center gap-8 md:gap-12 w-full px-4">
+      <div className="flex flex-col items-center gap-6 md:gap-12 w-full px-4">
         {/* Top row with 2 cards (원장, 부원장) */}
         {topInstructors.length > 0 && (
-          <div className="flex flex-wrap justify-center gap-4 md:gap-8 w-full">
+          <div className="grid grid-cols-2 gap-3 sm:gap-4 md:gap-8 w-full max-w-4xl">
             {topInstructors.map((instructor) => (
-              <div key={instructor.id} className="w-full sm:w-[280px] md:w-[340px] h-[200px] sm:h-[220px] md:h-[250px]">
+              <div key={instructor.id} className="w-full aspect-[4/3] sm:h-[200px] md:h-[250px]">
                 <InstructorCard 
                   instructor={instructor} 
                   onClick={() => handleInstructorClick(instructor)}
@@ -101,9 +101,9 @@ export function InstructorsSection() {
         
         {/* Bottom row with 3 cards (나머지 강사진) */}
         {bottomInstructors.length > 0 && (
-          <div className="flex flex-wrap justify-center gap-4 md:gap-8 w-full">
+          <div className="grid grid-cols-3 gap-2 sm:gap-3 md:gap-6 w-full max-w-5xl">
             {bottomInstructors.map((instructor) => (
-              <div key={instructor.id} className="w-full sm:w-[280px] md:w-[340px] h-[200px] sm:h-[220px] md:h-[250px]">
+              <div key={instructor.id} className="w-full aspect-[4/3] sm:h-[180px] md:h-[220px]">
                 <InstructorCard 
                   instructor={instructor} 
                   onClick={() => handleInstructorClick(instructor)}

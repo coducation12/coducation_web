@@ -119,14 +119,14 @@ export function Header() {
             Coducation
           </span>
         </Link>
-        <nav className="flex items-center gap-6 text-base lg:gap-8 flex-1">
+        <nav className="flex items-center gap-3 text-sm sm:gap-4 sm:text-base lg:gap-6 flex-1">
           {navLinks.map((link) => (
             <Link
               key={link.href}
               href={link.href}
               onClick={(e) => handleSmoothScroll(e, link.id)}
               className={cn(
-                'relative py-2 transition-colors hover:text-foreground/80 cursor-pointer',
+                'relative py-2 whitespace-nowrap transition-colors hover:text-foreground/80 cursor-pointer',
                 pathname === '/' && activeLink === link.href
                   ? 'text-foreground active-nav-link'
                   : 'text-foreground/60'

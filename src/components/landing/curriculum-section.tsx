@@ -126,39 +126,49 @@ export function CurriculumSection() {
             </div>
 
             <div className="w-full space-y-12">
-                {levelOrder.map((level, index) => (
-                groupedCurriculums[level] && groupedCurriculums[level].length > 0 && (
-                    <div key={level}>
-                        <h3 className="text-3xl font-bold font-headline mb-6 text-left text-primary">{level} 과정</h3>
-                        <Carousel
-                            opts={{
-                                align: 'start',
-                                loop: true,
-                            }}
-                            plugins={[
-                                Autoplay({
-                                    delay: 3000, // 3초마다 자동 슬라이드
-                                    stopOnInteraction: false, // 사용자 상호작용 시에도 계속 자동 슬라이드
-                                    stopOnMouseEnter: false, // 마우스 호버 시에도 계속 자동 슬라이드
-                                })
-                            ]}
-                            className="w-full"
-                        >
-                            <CarouselContent>
-                                {groupedCurriculums[level].map((curriculum) => (
-                                    <CarouselItem key={curriculum.id} className="md:basis-1/2 lg:basis-1/3">
-                                        <div className="p-1">
-                                            <CurriculumCard curriculum={curriculum} />
-                                        </div>
-                                    </CarouselItem>
-                                ))}
-                            </CarouselContent>
-                            <CarouselPrevious className="hidden lg:flex" />
-                            <CarouselNext className="hidden lg:flex"/>
-                        </Carousel>
-                    </div>
-                )
-                ))}
+                {levelOrder.map((level, index) => {
+                    // 각 레벨별로 다른 자동 슬라이드 간격 설정 (시간차를 두기 위해)
+                    const autoplayDelays = {
+                        '기초': 2000,  // 2초
+                        '중급': 2500,  // 2.5초
+                        '고급': 3000,  // 3초
+                    };
+                    const delay = autoplayDelays[level];
+
+                    return (
+                        groupedCurriculums[level] && groupedCurriculums[level].length > 0 && (
+                            <div key={level}>
+                                <h3 className="text-3xl font-bold font-headline mb-6 text-left text-primary">{level} 과정</h3>
+                                <Carousel
+                                    opts={{
+                                        align: 'start',
+                                        loop: true,
+                                    }}
+                                    plugins={[
+                                        Autoplay({
+                                            delay: delay, // 레벨별로 다른 간격으로 자동 슬라이드
+                                            stopOnInteraction: false, // 사용자 상호작용 시에도 계속 자동 슬라이드
+                                            stopOnMouseEnter: false, // 마우스 호버 시에도 계속 자동 슬라이드
+                                        })
+                                    ]}
+                                    className="w-full"
+                                >
+                                    <CarouselContent>
+                                        {groupedCurriculums[level].map((curriculum) => (
+                                            <CarouselItem key={curriculum.id} className="md:basis-1/2 lg:basis-1/3">
+                                                <div className="p-1">
+                                                    <CurriculumCard curriculum={curriculum} />
+                                                </div>
+                                            </CarouselItem>
+                                        ))}
+                                    </CarouselContent>
+                                    <CarouselPrevious className="hidden lg:flex" />
+                                    <CarouselNext className="hidden lg:flex"/>
+                                </Carousel>
+                            </div>
+                        )
+                    );
+                })}
             </div>
         </section>
     );

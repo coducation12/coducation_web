@@ -30,11 +30,11 @@ function AcademyCarousel({ slides }: { slides: any[] }) {
         {slides.map((slide, index) => (
           <CarouselItem key={index}>
             <div className="grid grid-cols-1 md:grid-cols-2 items-center bg-card rounded-xl overflow-hidden">
-              <div className="p-8 md:p-12 space-y-4 order-2 md:order-1">
-                <h3 className="text-3xl font-bold text-primary font-headline tracking-wider">{slide.title}</h3>
-                <p className="text-lg text-muted-foreground mt-2">{slide.description}</p>
+              <div className="p-6 md:p-8 lg:p-12 space-y-3 md:space-y-4 order-2 md:order-1">
+                <h3 className="text-xl sm:text-2xl md:text-3xl font-bold text-primary font-headline tracking-wider">{slide.title}</h3>
+                <p className="text-sm sm:text-base md:text-lg text-muted-foreground mt-2">{slide.description}</p>
               </div>
-              <div className="relative w-full h-96 order-1 md:order-2">
+              <div className="relative w-full h-48 sm:h-64 md:h-96 order-1 md:order-2">
                 <Image 
                   src={slide.image} 
                   alt={slide.title}
@@ -127,12 +127,12 @@ export function AcademySection() {
   ];
 
   return (
-    <section id="academy" className="container w-full py-32 md:py-52">
-      <div className="flex flex-col items-center text-center space-y-4 mb-12">
-        <h2 className="text-4xl font-bold tracking-tighter sm:text-5xl font-headline">
+    <section id="academy" className="container w-full py-16 md:py-32 lg:py-52">
+      <div className="flex flex-col items-center text-center space-y-3 md:space-y-4 mb-8 md:mb-12 px-4">
+        <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold tracking-tighter font-headline">
           {content?.academy_title || '코딩메이커 학원 안내'}
         </h2>
-        <p className="max-w-2xl text-lg text-muted-foreground">
+        <p className="max-w-2xl text-sm sm:text-base md:text-lg text-muted-foreground">
           {content?.academy_subtitle || '창의력과 기술이 만나는 곳, 코딩메이커 학원에 오신 것을 환영합니다.'}
         </p>
       </div>
@@ -140,8 +140,8 @@ export function AcademySection() {
       <AcademyCarousel slides={academySlides} />
 
       {/* 학원 지점 안내 카드 섹션 */}
-      <div className="mt-8">
-        <div className="grid gap-8 md:grid-cols-2">
+      <div className="mt-6 md:mt-8 px-4">
+        <div className="grid gap-6 md:gap-8 md:grid-cols-2">
           {/* 첫 번째 카드 - 코딩메이커(중마) */}
           <Card 
             className="cyber-card overflow-hidden cursor-pointer hover:scale-105 transition-transform duration-300"
@@ -152,13 +152,13 @@ export function AcademySection() {
               }
             }}
           >
-            <CardHeader className="text-center pb-4">
-              <CardTitle className="text-2xl font-headline">
+            <CardHeader className="text-center pb-3 md:pb-4 px-4 pt-4">
+              <CardTitle className="text-xl sm:text-2xl font-headline">
                 {content?.featured_card_1_title || '코딩메이커(중마)'}
               </CardTitle>
             </CardHeader>
             <CardContent className="p-0">
-              <div className="grid grid-cols-2 gap-2 p-4">
+              <div className="grid grid-cols-2 gap-2 p-3 md:p-4">
                 <div className="relative aspect-[4/3] rounded-lg overflow-hidden">
                   <Image 
                     src={content?.featured_card_1_image_1 || 'https://placehold.co/400x300.png'} 
@@ -196,13 +196,13 @@ export function AcademySection() {
               }
             }}
           >
-            <CardHeader className="text-center pb-4">
-              <CardTitle className="text-2xl font-headline">
+            <CardHeader className="text-center pb-3 md:pb-4 px-4 pt-4">
+              <CardTitle className="text-xl sm:text-2xl font-headline">
                 {content?.featured_card_2_title || '광양코딩(창덕)'}
               </CardTitle>
             </CardHeader>
             <CardContent className="p-0">
-              <div className="grid grid-cols-2 gap-2 p-4">
+              <div className="grid grid-cols-2 gap-2 p-3 md:p-4">
                 <div className="relative aspect-[4/3] rounded-lg overflow-hidden">
                   <Image 
                     src={content?.featured_card_2_image_1 || 'https://placehold.co/400x300.png'} 

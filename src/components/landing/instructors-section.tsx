@@ -51,15 +51,15 @@ export function InstructorsSection() {
   // 로딩 상태 표시
   if (isLoading) {
     return (
-      <section id="instructors" className="container w-full py-32 md:py-52">
-        <div className="flex flex-col items-center text-center space-y-4 mb-12">
-          <h2 className="text-4xl font-bold tracking-tighter sm:text-5xl font-headline">전문 강사진 소개</h2>
-          <p className="max-w-2xl text-lg text-muted-foreground">
+      <section id="instructors" className="container w-full py-16 md:py-32 lg:py-52">
+        <div className="flex flex-col items-center text-center space-y-3 md:space-y-4 mb-8 md:mb-12 px-4">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold tracking-tighter font-headline">전문 강사진 소개</h2>
+          <p className="max-w-2xl text-sm sm:text-base md:text-lg text-muted-foreground">
             열정과 실력을 겸비한 Coducation의 전문 강사님들을 소개합니다.
           </p>
         </div>
         <div className="flex justify-center">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
+          <div className="animate-spin rounded-full h-16 w-16 md:h-32 md:w-32 border-b-2 border-primary"></div>
         </div>
       </section>
     );
@@ -76,20 +76,20 @@ export function InstructorsSection() {
   const bottomInstructors = instructors.slice(2); // 나머지 강사진
 
   return (
-    <section id="instructors" className="container w-full py-32 md:py-52">
-      <div className="flex flex-col items-center text-center space-y-4 mb-12">
-        <h2 className="text-4xl font-bold tracking-tighter sm:text-5xl font-headline">전문 강사진 소개</h2>
-        <p className="max-w-2xl text-lg text-muted-foreground">
+    <section id="instructors" className="container w-full py-16 md:py-32 lg:py-52">
+      <div className="flex flex-col items-center text-center space-y-3 md:space-y-4 mb-8 md:mb-12 px-4">
+        <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold tracking-tighter font-headline">전문 강사진 소개</h2>
+        <p className="max-w-2xl text-sm sm:text-base md:text-lg text-muted-foreground">
           열정과 실력을 겸비한 Coducation의 전문 강사님들을 소개합니다.
         </p>
       </div>
 
-      <div className="flex flex-col items-center gap-12 w-full">
+      <div className="flex flex-col items-center gap-8 md:gap-12 w-full px-4">
         {/* Top row with 2 cards (원장, 부원장) */}
         {topInstructors.length > 0 && (
-          <div className="flex flex-wrap justify-center gap-8 w-full">
+          <div className="flex flex-wrap justify-center gap-4 md:gap-8 w-full">
             {topInstructors.map((instructor) => (
-              <div key={instructor.id} className="w-[340px] h-[250px]">
+              <div key={instructor.id} className="w-full sm:w-[280px] md:w-[340px] h-[200px] sm:h-[220px] md:h-[250px]">
                 <InstructorCard 
                   instructor={instructor} 
                   onClick={() => handleInstructorClick(instructor)}
@@ -101,9 +101,9 @@ export function InstructorsSection() {
         
         {/* Bottom row with 3 cards (나머지 강사진) */}
         {bottomInstructors.length > 0 && (
-          <div className="flex flex-wrap justify-center gap-8 w-full">
+          <div className="flex flex-wrap justify-center gap-4 md:gap-8 w-full">
             {bottomInstructors.map((instructor) => (
-              <div key={instructor.id} className="w-[340px] h-[250px]">
+              <div key={instructor.id} className="w-full sm:w-[280px] md:w-[340px] h-[200px] sm:h-[220px] md:h-[250px]">
                 <InstructorCard 
                   instructor={instructor} 
                   onClick={() => handleInstructorClick(instructor)}

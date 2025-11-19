@@ -85,15 +85,15 @@ export function CurriculumSection() {
     // 로딩 중이거나 커리큘럼이 없을 때
     if (isLoading) {
         return (
-            <section id="curriculum" className="container w-full py-32 md:py-52">
-                <div className="flex flex-col items-center text-center space-y-4 mb-12">
-                    <h2 className="text-4xl font-bold tracking-tighter sm:text-5xl font-headline">체계적인 커리큘럼</h2>
-                    <p className="max-w-2xl text-lg text-muted-foreground">
+            <section id="curriculum" className="container w-full py-16 md:py-32 lg:py-52">
+                <div className="flex flex-col items-center text-center space-y-3 md:space-y-4 mb-8 md:mb-12 px-4">
+                    <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold tracking-tighter font-headline">체계적인 커리큘럼</h2>
+                    <p className="max-w-2xl text-sm sm:text-base md:text-lg text-muted-foreground">
                         기초부터 심화까지, 여러분의 성장을 이끌 Coducation의 전문 교육 과정을 만나보세요.
                     </p>
                 </div>
                 <div className="flex justify-center items-center py-12">
-                    <div className="text-muted-foreground">커리큘럼을 불러오는 중...</div>
+                    <div className="text-sm md:text-base text-muted-foreground">커리큘럼을 불러오는 중...</div>
                 </div>
             </section>
         );
@@ -102,30 +102,30 @@ export function CurriculumSection() {
     // 커리큘럼이 없을 때
     if (curriculums.length === 0) {
         return (
-            <section id="curriculum" className="container w-full py-32 md:py-52">
-                <div className="flex flex-col items-center text-center space-y-4 mb-12">
-                    <h2 className="text-4xl font-bold tracking-tighter sm:text-5xl font-headline">체계적인 커리큘럼</h2>
-                    <p className="max-w-2xl text-lg text-muted-foreground">
+            <section id="curriculum" className="container w-full py-16 md:py-32 lg:py-52">
+                <div className="flex flex-col items-center text-center space-y-3 md:space-y-4 mb-8 md:mb-12 px-4">
+                    <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold tracking-tighter font-headline">체계적인 커리큘럼</h2>
+                    <p className="max-w-2xl text-sm sm:text-base md:text-lg text-muted-foreground">
                         기초부터 심화까지, 여러분의 성장을 이끌 Coducation의 전문 교육 과정을 만나보세요.
                     </p>
                 </div>
-                <div className="flex justify-center items-center py-12">
-                    <div className="text-muted-foreground">표시할 커리큘럼이 없습니다.</div>
+                <div className="flex justify-center items-center py-12"></div>
+                    <div className="text-sm md:text-base text-muted-foreground">표시할 커리큘럼이 없습니다.</div>
                 </div>
             </section>
         );
     }
 
     return (
-        <section id="curriculum" className="container w-full py-32 md:py-52">
-            <div className="flex flex-col items-center text-center space-y-4 mb-12">
-                <h2 className="text-4xl font-bold tracking-tighter sm:text-5xl font-headline">체계적인 커리큘럼</h2>
-                <p className="max-w-2xl text-lg text-muted-foreground">
+        <section id="curriculum" className="container w-full py-16 md:py-32 lg:py-52">
+            <div className="flex flex-col items-center text-center space-y-3 md:space-y-4 mb-8 md:mb-12 px-4">
+                <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold tracking-tighter font-headline">체계적인 커리큘럼</h2>
+                <p className="max-w-2xl text-sm sm:text-base md:text-lg text-muted-foreground">
                     기초부터 심화까지, 여러분의 성장을 이끌 Coducation의 전문 교육 과정을 만나보세요.
                 </p>
             </div>
 
-            <div className="w-full space-y-12">
+            <div className="w-full space-y-8 md:space-y-12 px-4">
                 {levelOrder.map((level, index) => {
                     // 각 레벨별로 다른 자동 슬라이드 간격 설정 (시간차를 두기 위해)
                     const autoplayDelays = {
@@ -138,7 +138,7 @@ export function CurriculumSection() {
                     return (
                         groupedCurriculums[level] && groupedCurriculums[level].length > 0 && (
                             <div key={level}>
-                                <h3 className="text-3xl font-bold font-headline mb-6 text-left text-primary">{level} 과정</h3>
+                                <h3 className="text-xl sm:text-2xl md:text-3xl font-bold font-headline mb-4 md:mb-6 text-left text-primary">{level} 과정</h3>
                                 <Carousel
                                     opts={{
                                         align: 'start',

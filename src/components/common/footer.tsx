@@ -11,12 +11,14 @@ export function Footer() {
             <div className="text-sm leading-tight flex flex-wrap items-center gap-2">
               <span className="font-semibold text-sm">코딩메이커(중마)</span>
               <span className="text-muted-foreground text-sm">061-745-3355</span>
-              {/* 모바일에서만 운영시간 표시 */}
-              <span className="md:hidden text-muted-foreground text-xs">운영시간: 평일 14:00 - 19:00</span>
             </div>
             <div className="text-sm leading-tight flex flex-wrap items-center gap-2">
               <span className="font-semibold text-sm">광양코딩(창덕)</span>
               <span className="text-muted-foreground text-sm">061-911-1101</span>
+            </div>
+            {/* 모바일에서만 운영시간 표시 */}
+            <div className="md:hidden text-xs text-muted-foreground mt-2">
+              운영시간: 평일 14:00 - 19:00
             </div>
           </div>
 

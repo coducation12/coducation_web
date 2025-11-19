@@ -89,7 +89,7 @@ export function InstructorsSection() {
         {topInstructors.length > 0 && (
           <div className="grid grid-cols-2 gap-3 sm:gap-4 md:gap-8 w-full max-w-4xl">
             {topInstructors.map((instructor) => (
-              <div key={instructor.id} className="w-full aspect-[4/3] sm:h-[200px] md:h-[250px]">
+              <div key={instructor.id} className="w-full h-auto md:h-[250px]">
                 <InstructorCard 
                   instructor={instructor} 
                   onClick={() => handleInstructorClick(instructor)}
@@ -103,7 +103,7 @@ export function InstructorsSection() {
         {bottomInstructors.length > 0 && (
           <div className="grid grid-cols-3 gap-2 sm:gap-3 md:gap-6 w-full max-w-5xl">
             {bottomInstructors.map((instructor) => (
-              <div key={instructor.id} className="w-full aspect-[4/3] sm:h-[180px] md:h-[220px]">
+              <div key={instructor.id} className="w-full h-auto md:h-[220px]">
                 <InstructorCard 
                   instructor={instructor} 
                   onClick={() => handleInstructorClick(instructor)}

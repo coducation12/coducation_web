@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState, useCallback } from 'react';
 import Image from 'next/image';
+import { LogIn } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -137,7 +138,13 @@ export function Header() {
           ))}
         </nav>
         <div className="flex items-center justify-end space-x-2">
-          <Button asChild>
+          <Button asChild size="icon" className="md:hidden">
+            <Link href="/login" className="flex items-center justify-center">
+              <LogIn className="h-4 w-4" />
+              <span className="sr-only">로그인</span>
+            </Link>
+          </Button>
+          <Button asChild className="hidden md:inline-flex">
             <Link href="/login">로그인</Link>
           </Button>
         </div>

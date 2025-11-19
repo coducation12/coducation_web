@@ -129,9 +129,9 @@ export function CurriculumSection() {
                 {levelOrder.map((level, index) => {
                     // 각 레벨별로 다른 자동 슬라이드 간격 설정 (시간차를 두기 위해)
                     const autoplayDelays = {
-                        '기초': 2000,  // 2초
+                        '기초': 1800,  // 1.8초
                         '중급': 2500,  // 2.5초
-                        '고급': 3000,  // 3초
+                        '고급': 3200,  // 3.2초
                     };
                     const delay = autoplayDelays[level];
 

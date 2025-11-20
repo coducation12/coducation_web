@@ -8,15 +8,19 @@ export function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-start">
           {/* 왼쪽: 학원 정보 */}
           <div className="space-y-1">
-            <div className="text-sm leading-tight flex flex-wrap items-center gap-2">
-              <span className="font-semibold text-sm">코딩메이커(중마)</span>
-              <span className="text-muted-foreground text-sm">061-745-3355</span>
+            <div className="text-sm leading-tight">
+              <div className="flex items-center gap-2">
+                <span className="font-semibold text-sm">코딩메이커(중마)</span>
+                <span className="text-muted-foreground text-sm">061-745-3355</span>
+              </div>
             </div>
-            <div className="text-sm leading-tight flex flex-wrap items-center gap-2">
-              <span className="font-semibold text-sm">광양코딩(창덕)</span>
-              <span className="text-muted-foreground text-sm">061-911-1101</span>
+            <div className="text-sm leading-tight">
+              <div className="flex items-center gap-2">
+                <span className="font-semibold text-sm">광양코딩(창덕)</span>
+                <span className="text-muted-foreground text-sm">061-911-1101</span>
+              </div>
             </div>
-            {/* 모바일에서만 운영시간 표시 */}
+            {/* 모바일에서만 운영시간 표시 - 별도 줄로 */}
             <div className="md:hidden text-xs text-muted-foreground mt-2">
               운영시간: 평일 14:00 - 19:00
             </div>

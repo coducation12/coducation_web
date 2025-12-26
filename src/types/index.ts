@@ -5,9 +5,11 @@ export interface User {
   username: string;
   name: string;
   role: UserRole;
+  email: string;
   birth_year?: number;
   phone?: string;
   academy: string;
+  profile_image_url?: string;
   assigned_teacher_id?: string;
   status: string;
   created_at: string;

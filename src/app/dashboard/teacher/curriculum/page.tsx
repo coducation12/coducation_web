@@ -1,6 +1,8 @@
 // TODO: 강사 커리큘럼 페이지 완성 후 활성화 예정
 // import CurriculumManager from "@/components/curriculum/CurriculumManager";
 
+export const dynamic = 'force-dynamic';
+
 export default function TeacherCurriculumPage() {
     return (
         <div className="p-6 space-y-6 pt-16 lg:pt-2 h-screen overflow-y-auto scrollbar-hide">

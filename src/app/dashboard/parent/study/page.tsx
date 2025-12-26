@@ -53,6 +53,8 @@ interface ProgressItem {
   }>;
 }
 
+export const dynamic = 'force-dynamic';
+
 export default function ParentStudyPage() {
   const searchParams = useSearchParams();
   const studentId = searchParams.get('studentId') || "1";
@@ -93,7 +95,7 @@ export default function ParentStudyPage() {
     }));
     setProgressList(newProgressList);
   };
-  
+
   const [expandedStep, setExpandedStep] = useState<string | null>(null);
   const [currentUserRole] = useState<"admin" | "teacher" | "parent" | "student">("parent");
 
@@ -126,14 +128,14 @@ export default function ParentStudyPage() {
 
   // 완료된 학습 2단 접이식 구현
   const [openedCompleted, setOpenedCompleted] = useState<number | null>(null);
-  const [expandedCompletedStep, setExpandedCompletedStep] = useState<{[curId: number]: string | null}>({});
+  const [expandedCompletedStep, setExpandedCompletedStep] = useState<{ [curId: number]: string | null }>({});
 
   return (
     <div className="container mx-auto p-6 max-w-4xl">
       <div className="flex items-center justify-between mb-6">
         <StudentHeading size="h1">{selectedStudent.name} 학습관리</StudentHeading>
       </div>
-      
+
       {/* 진행 중인 커리큘럼 */}
       {ongoing.map(cur => (
         <div key={cur.id} className="bg-transparent border-2 border-cyan-400/60 p-6 shadow-[0_0_24px_0_rgba(0,255,255,0.15)] mb-8">
@@ -183,7 +185,7 @@ export default function ParentStudyPage() {
                         </div>
                       </div>
                     )}
-                    
+
                     {/* 피드백 영역 - 부모가 작성 가능 */}
                     <CurriculumMemo
                       stepId={step.id}
@@ -257,7 +259,7 @@ export default function ParentStudyPage() {
                                   </div>
                                 </div>
                               )}
-                              
+
                               {/* 피드백 보기 */}
                               <CurriculumMemo
                                 stepId={step.id}

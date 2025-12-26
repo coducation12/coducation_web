@@ -8,6 +8,8 @@ import { createCommunityPost } from "@/lib/community";
 import { ImageUploader } from "@/components/ui/image-uploader";
 import { deleteImageFromStorageClient } from "@/lib/client-image-upload";
 
+export const dynamic = 'force-dynamic';
+
 export default function CommunityNewPage() {
   const router = useRouter();
   const [title, setTitle] = useState("");
@@ -17,12 +19,12 @@ export default function CommunityNewPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!title.trim() || !content.trim()) {
       alert('제목과 내용을 모두 입력해주세요.');
       return;
     }
-    
+
     setLoading(true);
     try {
       await createCommunityPost(title, content, images);

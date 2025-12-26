@@ -8,6 +8,8 @@ import { DashboardCard } from "@/app/dashboard/student/components/DashboardCard"
 import { CompletedLearning } from "@/app/dashboard/student/components/completed-learning";
 import { StudentHeading } from "@/app/dashboard/student/components/StudentThemeProvider";
 
+export const dynamic = 'force-dynamic';
+
 export default async function ParentDashboardPage({
   searchParams,
 }: {

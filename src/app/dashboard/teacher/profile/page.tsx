@@ -2,10 +2,12 @@ import { getAuthenticatedUser } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import TeacherProfileClient from "./profile-client";
 
+export const dynamic = 'force-dynamic';
+
 export default async function TeacherProfilePage() {
   const user = await getAuthenticatedUser();
 
-      if (!user) {
+  if (!user) {
     redirect("/login");
   }
 

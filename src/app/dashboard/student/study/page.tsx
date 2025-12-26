@@ -1,5 +1,7 @@
 import { StudentHeading } from "../components/StudentThemeProvider";
 
+export const dynamic = 'force-dynamic';
+
 export default function TodayLearningPage() {
   // TODO: 학생 학습하기 페이지 완성 후 활성화 예정
   return (

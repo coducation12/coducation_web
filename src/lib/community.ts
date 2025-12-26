@@ -10,9 +10,11 @@ export interface CommunityPost {
   images?: string[];
   user_id: string;
   author: {
+    id: string;
     name: string;
     role: 'student' | 'parent' | 'teacher' | 'admin';
     avatar?: string;
+    profile_image_url?: string;
   };
   created_at: string;
   comments_count: number;
@@ -24,9 +26,11 @@ export interface CommunityComment {
   post_id: string;
   user_id: string;
   author: {
+    id: string;
     name: string;
     role: 'student' | 'parent' | 'teacher' | 'admin';
     avatar?: string;
+    profile_image_url?: string;
   };
   created_at: string;
 }
@@ -123,6 +127,7 @@ export async function getCommunityPosts(page: number = 1, limit: number = 10, se
     images: post.images || [],
     user_id: post.user_id,
     author: {
+      id: post.user_id,
       name: post.users?.name || '익명',
       role: post.users?.role || 'student',
       avatar: undefined,
@@ -179,6 +184,7 @@ export async function getCommunityPost(postId: string): Promise<CommunityPost | 
     images: post.images || [],
     user_id: post.user_id,
     author: {
+      id: post.user_id,
       name: post.users?.name || '익명',
       role: post.users?.role || 'student',
       avatar: undefined,
@@ -192,7 +198,7 @@ export async function getCommunityPost(postId: string): Promise<CommunityPost | 
 // 게시글 생성
 export async function createCommunityPost(title: string, content: string, images?: string[]) {
   const { userId } = await getCurrentUser();
-  
+
   if (!userId) {
     throw new Error('로그인이 필요합니다.');
   }
@@ -252,6 +258,7 @@ export async function getCommunityComments(postId: string): Promise<CommunityCom
     post_id: comment.post_id,
     user_id: comment.user_id,
     author: {
+      id: comment.user_id,
       name: comment.users?.name || '익명',
       role: comment.users?.role || 'student',
       avatar: undefined,
@@ -264,7 +271,7 @@ export async function getCommunityComments(postId: string): Promise<CommunityCom
 // 댓글 생성
 export async function createCommunityComment(postId: string, content: string) {
   const { userId } = await getCurrentUser();
-  
+
   if (!userId) {
     throw new Error('로그인이 필요합니다.');
   }
@@ -295,7 +302,7 @@ export async function createCommunityComment(postId: string, content: string) {
 // 게시글 삭제 (소프트 삭제)
 export async function deleteCommunityPost(postId: string) {
   const { userId } = await getCurrentUser();
-  
+
   if (!userId) {
     throw new Error('로그인이 필요합니다.');
   }
@@ -325,7 +332,7 @@ export async function deleteCommunityPost(postId: string) {
 // 댓글 삭제 (소프트 삭제)
 export async function deleteCommunityComment(commentId: string) {
   const { userId } = await getCurrentUser();
-  
+
   if (!userId) {
     throw new Error('로그인이 필요합니다.');
   }

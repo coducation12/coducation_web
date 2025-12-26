@@ -30,7 +30,7 @@ interface Student {
     lastLogin: string;
     studentId?: string;
     classSchedules?: ClassSchedule[];
-    assignedTeachers?: Array<{id: string, name: string}>;
+    assignedTeachers?: Array<{ id: string, name: string }>;
     type?: string;
     uniqueKey?: string;
     requested_at?: string;
@@ -44,6 +44,8 @@ interface ClassSchedule {
     endTime: string;
 }
 
+
+export const dynamic = 'force-dynamic';
 
 export default function TeacherStudentsPage() {
     const [students, setStudents] = useState<Student[]>([]);
@@ -73,26 +75,26 @@ export default function TeacherStudentsPage() {
         if (sortField !== field) {
             return <ArrowUpDown className="w-4 h-4" />;
         }
-        return sortDirection === 'asc' ? 
-            <ArrowUp className="w-4 h-4" /> : 
+        return sortDirection === 'asc' ?
+            <ArrowUp className="w-4 h-4" /> :
             <ArrowDown className="w-4 h-4" />;
     };
 
     // 정렬된 학생 목록 생성
     const getSortedStudents = (students: Student[]) => {
         if (!sortField) return students;
-        
+
         return [...students].sort((a, b) => {
             let aValue: any = a[sortField as keyof Student];
             let bValue: any = b[sortField as keyof Student];
-            
-            
+
+
             // 문자열 필드 처리
             if (typeof aValue === 'string') {
                 aValue = aValue.toLowerCase();
                 bValue = bValue.toLowerCase();
             }
-            
+
             if (aValue < bValue) {
                 return sortDirection === 'asc' ? -1 : 1;
             }
@@ -108,18 +110,18 @@ export default function TeacherStudentsPage() {
         try {
             const response = await fetch('/api/auth/current-user');
             const userData = await response.json();
-            
+
             if (!userData || userData.role !== 'teacher') {
                 setStudents([]);
                 return;
             }
-            
+
             const currentUserId = userData.id;
-            
+
             // 모든 학생 데이터 조회
-        const { data, error } = await supabase
-            .from('students')
-            .select(`
+            const { data, error } = await supabase
+                .from('students')
+                .select(`
                 user_id, 
                 parent_id, 
                 current_curriculum_id, 
@@ -139,73 +141,73 @@ export default function TeacherStudentsPage() {
                 ), 
                 parent:users!students_parent_id_fkey ( phone )
             `);
-        
-        if (error) {
-            setStudents([]);
-            return;
-        }
-        
-        // Student 타입에 맞게 매핑
-        let mapped = (data || []).map((item: any) => {
-            // 담당강사 정보 찾기 (students 테이블의 assigned_teachers 배열에서 최대 2명)
-            const assignedTeacherIds = item.assigned_teachers || [];
-            const assignedTeachers = assignedTeacherIds.map((teacherId: string) => {
-                // 강사 이름을 찾기 위해 임시로 생성 (실제로는 teachers 배열에서 찾아야 함)
-                return { id: teacherId, name: `강사 ${teacherId.slice(-4)}` };
-            });
-            
-            return {
-                id: item.user_id,
-                name: item.users?.name || '-',
-                email: item.users?.email || '-',
-                phone: item.users?.phone || '-',
-                parentPhone: item.parent?.phone || '-',
-                birthDate: item.users?.birth_year ? String(item.users.birth_year) : '-',
-                avatar: '/default-avatar.png',
-                course: '프로그래밍', // 기본값, 나중에 실제 과목 데이터로 교체
-                curriculum: '기초 프로그래밍', // 기본값, 나중에 실제 커리큘럼 데이터로 교체
-                status: item.users?.status === 'pending' ? '승인대기' : 
+
+            if (error) {
+                setStudents([]);
+                return;
+            }
+
+            // Student 타입에 맞게 매핑
+            let mapped = (data || []).map((item: any) => {
+                // 담당강사 정보 찾기 (students 테이블의 assigned_teachers 배열에서 최대 2명)
+                const assignedTeacherIds = item.assigned_teachers || [];
+                const assignedTeachers = assignedTeacherIds.map((teacherId: string) => {
+                    // 강사 이름을 찾기 위해 임시로 생성 (실제로는 teachers 배열에서 찾아야 함)
+                    return { id: teacherId, name: `강사 ${teacherId.slice(-4)}` };
+                });
+
+                return {
+                    id: item.user_id,
+                    name: item.users?.name || '-',
+                    email: item.users?.email || '-',
+                    phone: item.users?.phone || '-',
+                    parentPhone: item.parent?.phone || '-',
+                    birthDate: item.users?.birth_year ? String(item.users.birth_year) : '-',
+                    avatar: '/default-avatar.png',
+                    course: '프로그래밍', // 기본값, 나중에 실제 과목 데이터로 교체
+                    curriculum: '기초 프로그래밍', // 기본값, 나중에 실제 커리큘럼 데이터로 교체
+                    status: item.users?.status === 'pending' ? '승인대기' :
                         item.users?.status === 'suspended' ? '휴강' : '수강',
-                joinDate: item.users?.created_at ? new Date(item.users.created_at).toLocaleDateString() : '-',
-                lastLogin: '2024-01-15', // 기본값, 나중에 실제 마지막 로그인 데이터로 교체
-                studentId: item.users?.username || '-',
-                assignedTeachers: assignedTeachers,
-                classSchedules: item.attendance_schedule ? Object.entries(item.attendance_schedule).map(([day, schedule]: [string, any]) => {
-                    // 숫자를 요일로 변환 (0=일요일, 1=월요일, ..., 6=토요일)
-                    const dayMap: { [key: string]: string } = {
-                        '0': 'sunday',
-                        '1': 'monday', 
-                        '2': 'tuesday',
-                        '3': 'wednesday',
-                        '4': 'thursday',
-                        '5': 'friday',
-                        '6': 'saturday'
-                    };
-                    return {
-                        day: dayMap[day] || day,
-                        startTime: schedule.startTime || '',
-                        endTime: schedule.endTime || ''
-                    };
-                }) : []
-            };
-        });
-        
-        // 강사인 경우 담당 학생만 필터링
-        const assignedStudents = mapped.filter((student: any) => {
-            const studentData = data?.find((item: any) => item.user_id === student.id);
-            const assignedTeachers = studentData?.assigned_teachers || [];
-            
-            // UUID 비교를 위해 문자열로 변환하여 비교
-            const isAssigned = assignedTeachers.some((teacherId: string) => 
-                teacherId.toString() === currentUserId.toString()
-            );
-            
-            
-            return isAssigned;
-        });
-        
-        
-        setStudents(assignedStudents);
+                    joinDate: item.users?.created_at ? new Date(item.users.created_at).toLocaleDateString() : '-',
+                    lastLogin: '2024-01-15', // 기본값, 나중에 실제 마지막 로그인 데이터로 교체
+                    studentId: item.users?.username || '-',
+                    assignedTeachers: assignedTeachers,
+                    classSchedules: item.attendance_schedule ? Object.entries(item.attendance_schedule).map(([day, schedule]: [string, any]) => {
+                        // 숫자를 요일로 변환 (0=일요일, 1=월요일, ..., 6=토요일)
+                        const dayMap: { [key: string]: string } = {
+                            '0': 'sunday',
+                            '1': 'monday',
+                            '2': 'tuesday',
+                            '3': 'wednesday',
+                            '4': 'thursday',
+                            '5': 'friday',
+                            '6': 'saturday'
+                        };
+                        return {
+                            day: dayMap[day] || day,
+                            startTime: schedule.startTime || '',
+                            endTime: schedule.endTime || ''
+                        };
+                    }) : []
+                };
+            });
+
+            // 강사인 경우 담당 학생만 필터링
+            const assignedStudents = mapped.filter((student: any) => {
+                const studentData = data?.find((item: any) => item.user_id === student.id);
+                const assignedTeachers = studentData?.assigned_teachers || [];
+
+                // UUID 비교를 위해 문자열로 변환하여 비교
+                const isAssigned = assignedTeachers.some((teacherId: string) =>
+                    teacherId.toString() === currentUserId.toString()
+                );
+
+
+                return isAssigned;
+            });
+
+
+            setStudents(assignedStudents);
         } catch (error) {
             setStudents([]);
         }
@@ -236,7 +238,7 @@ export default function TeacherStudentsPage() {
                     description: `${studentData.name} 학생이 성공적으로 추가되었습니다.`,
                     variant: "default",
                 });
-                
+
                 // 학생 목록 새로고침
                 fetchStudents();
             } else {
@@ -283,7 +285,7 @@ export default function TeacherStudentsPage() {
                     description: `${studentData.name} 학생의 정보가 성공적으로 수정되었습니다.`,
                     variant: "default",
                 });
-                
+
                 // 학생 목록 새로고침
                 fetchStudents();
             } else {
@@ -348,7 +350,7 @@ export default function TeacherStudentsPage() {
                     <Table>
                         <TableHeader>
                             <TableRow className="border-cyan-500/20">
-                                <TableHead 
+                                <TableHead
                                     className="text-cyan-200 cursor-pointer hover:text-cyan-100 transition-colors select-none"
                                     onClick={() => handleSort('name')}
                                 >
@@ -357,7 +359,7 @@ export default function TeacherStudentsPage() {
                                         {getSortIcon('name')}
                                     </div>
                                 </TableHead>
-                                <TableHead 
+                                <TableHead
                                     className="text-cyan-200 cursor-pointer hover:text-cyan-100 transition-colors select-none"
                                     onClick={() => handleSort('phone')}
                                 >
@@ -366,7 +368,7 @@ export default function TeacherStudentsPage() {
                                         {getSortIcon('phone')}
                                     </div>
                                 </TableHead>
-                                <TableHead 
+                                <TableHead
                                     className="text-cyan-200 cursor-pointer hover:text-cyan-100 transition-colors select-none"
                                     onClick={() => handleSort('course')}
                                 >
@@ -375,7 +377,7 @@ export default function TeacherStudentsPage() {
                                         {getSortIcon('course')}
                                     </div>
                                 </TableHead>
-                                <TableHead 
+                                <TableHead
                                     className="text-cyan-200 cursor-pointer hover:text-cyan-100 transition-colors select-none"
                                     onClick={() => handleSort('status')}
                                 >
@@ -384,7 +386,7 @@ export default function TeacherStudentsPage() {
                                         {getSortIcon('status')}
                                     </div>
                                 </TableHead>
-                                <TableHead 
+                                <TableHead
                                     className="text-cyan-200 cursor-pointer hover:text-cyan-100 transition-colors select-none"
                                     onClick={() => handleSort('joinDate')}
                                 >
@@ -402,7 +404,7 @@ export default function TeacherStudentsPage() {
                                         {student.type === 'signup_request' ? (
                                             <span className="text-cyan-100">{student.name}</span>
                                         ) : (
-                                            <button 
+                                            <button
                                                 onClick={() => handleEditStudent(student)}
                                                 className="text-cyan-100 hover:text-cyan-300 transition-colors cursor-pointer"
                                             >
@@ -425,7 +427,7 @@ export default function TeacherStudentsPage() {
                                     </TableCell>
                                     <TableCell>
                                         {student.type === 'signup_request' ? (
-                                            <Badge 
+                                            <Badge
                                                 variant="outline"
                                                 className="border-yellow-500/50 text-yellow-400"
                                             >
@@ -433,14 +435,14 @@ export default function TeacherStudentsPage() {
                                                 승인대기
                                             </Badge>
                                         ) : (
-                                            <Badge 
+                                            <Badge
                                                 variant="outline"
                                                 className={
                                                     student.status === '승인대기'
                                                         ? "border-yellow-500/50 text-yellow-400"
                                                         : student.status === '휴강'
-                                                        ? "border-orange-500/50 text-orange-400"
-                                                        : "border-green-500/50 text-green-400"
+                                                            ? "border-orange-500/50 text-orange-400"
+                                                            : "border-green-500/50 text-green-400"
                                                 }
                                             >
                                                 {student.status === '승인대기' ? (
@@ -458,7 +460,7 @@ export default function TeacherStudentsPage() {
                                         )}
                                     </TableCell>
                                     <TableCell className="text-cyan-300">
-                                        {student.type === 'signup_request' ? 
+                                        {student.type === 'signup_request' ?
                                             (student.requested_at ? new Date(student.requested_at).toLocaleDateString() : '-') :
                                             student.joinDate
                                         }

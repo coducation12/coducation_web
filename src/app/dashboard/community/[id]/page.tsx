@@ -9,7 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Calendar, MessageCircle, ArrowLeft, Trash2 } from 'lucide-react';
 import { UserAvatar } from '@/components/community/UserAvatar';
 import Image from 'next/image';
-import { 
+import {
   getCommunityPost,
   getCommunityComments,
   createCommunityComment,
@@ -26,6 +26,8 @@ const badgeColorMap = {
   teacher: 'bg-purple-700 text-white',
   admin: 'bg-red-700 text-white',
 };
+
+export const dynamic = 'force-dynamic';
 
 export default function PostDetailPage() {
   const params = useParams();
@@ -63,7 +65,7 @@ export default function PostDetailPage() {
         getCommunityPost(params.id as string),
         getCommunityComments(params.id as string)
       ]);
-      
+
       setPost(postData);
       setComments(commentsData);
     } catch (error) {
@@ -247,20 +249,19 @@ export default function PostDetailPage() {
         </Button>
       </div>
 
-      <Card className={`mb-6 bg-transparent text-cyan-100 ${
-        post.author.role === 'admin' 
-          ? 'border border-cyan-400/30 border-b-4 border-b-red-400' 
+      <Card className={`mb-6 bg-transparent text-cyan-100 ${post.author.role === 'admin'
+          ? 'border border-cyan-400/30 border-b-4 border-b-red-400'
           : 'border border-cyan-400/30'
-      }`}>
+        }`}>
         <CardHeader className="pb-3">
-            <div className="flex items-start justify-between">
-              <div className="flex items-center space-x-3">
-                <UserAvatar 
-                  src={post.author.profile_image_url || post.author.avatar} 
-                  name={post.author.name}
-                  role={post.author.role}
-                  size="lg"
-                />
+          <div className="flex items-start justify-between">
+            <div className="flex items-center space-x-3">
+              <UserAvatar
+                src={post.author.profile_image_url || post.author.avatar}
+                name={post.author.name}
+                role={post.author.role}
+                size="lg"
+              />
               <div>
                 <div className="flex items-center space-x-2">
                   <span className="font-bold text-cyan-200 text-lg">{post.author.name}</span>
@@ -297,7 +298,7 @@ export default function PostDetailPage() {
               {post.content}
             </div>
           </div>
-          
+
           {/* 게시글 이미지 */}
           {post.images && post.images.length > 0 && (
             <div className="mb-6">
@@ -311,7 +312,7 @@ export default function PostDetailPage() {
                       height={0}
                       sizes="(max-width: 768px) 100vw, (max-width: 1200px) 80vw, 70vw"
                       className="w-auto h-auto max-w-full max-h-[500px] object-contain"
-                      style={{ 
+                      style={{
                         display: 'block',
                         margin: '0 auto'
                       }}
@@ -349,9 +350,9 @@ export default function PostDetailPage() {
                 className="bg-[#1a2a3a] text-cyan-100 border-cyan-400/30"
               />
               <div className="flex justify-end">
-                <Button 
-                  className="bg-cyan-500 hover:bg-cyan-600 text-white font-bold shadow disabled:opacity-50" 
-                  onClick={handleAddComment} 
+                <Button
+                  className="bg-cyan-500 hover:bg-cyan-600 text-white font-bold shadow disabled:opacity-50"
+                  onClick={handleAddComment}
                   disabled={!newComment.trim() || commenting}
                 >
                   {commenting ? '작성 중...' : '댓글 작성'}
@@ -363,8 +364,8 @@ export default function PostDetailPage() {
             <div className="space-y-4">
               {comments.map((comment) => (
                 <div key={comment.id} className="flex space-x-3 p-4 border border-cyan-400/30 rounded-lg bg-transparent">
-                  <UserAvatar 
-                    src={comment.author.profile_image_url || comment.author.avatar} 
+                  <UserAvatar
+                    src={comment.author.profile_image_url || comment.author.avatar}
                     name={comment.author.name}
                     role={comment.author.role}
                     size="md"

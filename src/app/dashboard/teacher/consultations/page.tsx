@@ -46,6 +46,8 @@ const academyLabels = {
   'gwangyang-coding': '광양코딩 (창덕)'
 };
 
+export const dynamic = 'force-dynamic';
+
 export default function TeacherConsultationsPage() {
   const [consultations, setConsultations] = useState<Consultation[]>([]);
   const [loading, setLoading] = useState(true);
@@ -164,7 +166,7 @@ export default function TeacherConsultationsPage() {
                               <Select
                                 defaultValue={consultation.status}
                                 onValueChange={(value) => {
-                                  setSelectedConsultation(prev => 
+                                  setSelectedConsultation(prev =>
                                     prev ? { ...prev, status: value as any } : null
                                   );
                                 }}
@@ -178,7 +180,7 @@ export default function TeacherConsultationsPage() {
                                 </SelectContent>
                               </Select>
                             </div>
-                            
+
                             <div>
                               <Label>응답 내용 (선택사항)</Label>
                               <Textarea
@@ -188,7 +190,7 @@ export default function TeacherConsultationsPage() {
                                 rows={4}
                               />
                             </div>
-                            
+
                             <div className="flex justify-end gap-2">
                               <Button
                                 variant="outline"
@@ -239,7 +241,7 @@ export default function TeacherConsultationsPage() {
                           {subjectLabels[consultation.subject as keyof typeof subjectLabels]}
                         </p>
                       </div>
-                      
+
                       <div className="col-span-4">
                         <Label className="text-sm font-medium">문의 내용</Label>
                         <p className="text-sm text-white whitespace-pre-wrap">
@@ -292,7 +294,7 @@ export default function TeacherConsultationsPage() {
                               <Select
                                 defaultValue={consultation.status}
                                 onValueChange={(value) => {
-                                  setSelectedConsultation(prev => 
+                                  setSelectedConsultation(prev =>
                                     prev ? { ...prev, status: value as any } : null
                                   );
                                 }}
@@ -306,7 +308,7 @@ export default function TeacherConsultationsPage() {
                                 </SelectContent>
                               </Select>
                             </div>
-                            
+
                             <div>
                               <Label>응답 내용 (선택사항)</Label>
                               <Textarea
@@ -316,7 +318,7 @@ export default function TeacherConsultationsPage() {
                                 rows={4}
                               />
                             </div>
-                            
+
                             <div className="flex justify-end gap-2">
                               <Button
                                 variant="outline"
@@ -367,7 +369,7 @@ export default function TeacherConsultationsPage() {
                           {subjectLabels[consultation.subject as keyof typeof subjectLabels]}
                         </p>
                       </div>
-                      
+
                       <div className="col-span-4">
                         <Label className="text-sm font-medium">문의 내용</Label>
                         <p className="text-sm text-white whitespace-pre-wrap">

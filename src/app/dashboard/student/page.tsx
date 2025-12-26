@@ -9,6 +9,8 @@ import { Trophy } from "lucide-react";
 import { CompletedLearning } from "@/app/dashboard/student/components/completed-learning";
 import { StudentHeading } from "@/app/dashboard/student/components/StudentThemeProvider";
 
+export const dynamic = 'force-dynamic';
+
 export default async function StudentDashboardPage() {
     const user = await getAuthenticatedUser();
 
@@ -22,14 +24,14 @@ export default async function StudentDashboardPage() {
             <div className="grid sm:grid-cols-1 md:grid-cols-2 gap-6 flex-1 min-h-0">
                 {/* 왼쪽: 학습진행률+완료된학습 (세로로 긴 카드) */}
                 <DashboardCard className="student-card-container">
-                  <div className="student-card-content flex flex-col gap-4">
-                    <section className="flex-1 flex flex-col min-h-0">
-                      <LearningProgress studentId={user.id} vertical />
-                    </section>
-                    <section className="flex-1 flex flex-col min-h-0">
-                      <CompletedLearning studentId={user.id} />
-                    </section>
-                  </div>
+                    <div className="student-card-content flex flex-col gap-4">
+                        <section className="flex-1 flex flex-col min-h-0">
+                            <LearningProgress studentId={user.id} vertical />
+                        </section>
+                        <section className="flex-1 flex flex-col min-h-0">
+                            <CompletedLearning studentId={user.id} />
+                        </section>
+                    </div>
                 </DashboardCard>
                 {/* 오른쪽: 2행 2열 구조 */}
                 <div className="h-full grid grid-rows-2 gap-6 min-h-0">

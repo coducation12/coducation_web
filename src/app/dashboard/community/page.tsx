@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Search, Plus } from 'lucide-react';
-import { 
+import {
   getCommunityPosts,
   createCommunityPost
 } from '@/lib/community';
@@ -15,6 +15,8 @@ import { getCurrentUserClient } from '@/lib/client-auth';
 import { PostCard } from '@/components/community/PostCard';
 import { PostForm } from '@/components/community/PostForm';
 import { Pagination } from '@/components/community/Pagination';
+
+export const dynamic = 'force-dynamic';
 
 function CommunityPage() {
   const router = useRouter();
@@ -178,8 +180,8 @@ function CommunityPage() {
             onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
             className="bg-cyan-900/30 border-cyan-400/30 text-cyan-100 placeholder:text-cyan-400/50"
           />
-          <Button 
-            onClick={handleSearch} 
+          <Button
+            onClick={handleSearch}
             disabled={isSearching}
             className="bg-cyan-600 hover:bg-cyan-700 text-white"
           >

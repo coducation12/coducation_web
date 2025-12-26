@@ -1,0 +1,262 @@
+'use client';
+
+import { useState } from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Loader2, Save, Trash2, GripVertical, Plus } from "lucide-react";
+import ImageUpload from "@/components/ui/image-upload";
+import { updateContent } from "@/lib/actions";
+import { toast } from "@/hooks/use-toast";
+import { useRouter } from 'next/navigation';
+import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
+
+interface AcademyContentSettingsProps {
+    initialData: {
+        academy_title: string;
+        academy_subtitle: string;
+        academy_slides: Array<{ id: string; image: string; title?: string }>;
+        featured_card_1_title: string;
+        featured_card_1_image_1: string;
+        featured_card_1_image_2: string;
+        featured_card_1_link: string;
+        featured_card_2_title: string;
+        featured_card_2_image_1: string;
+        featured_card_2_image_2: string;
+        featured_card_2_link: string;
+    };
+}
+
+export default function AcademyContentSettings({ initialData }: AcademyContentSettingsProps) {
+    const router = useRouter();
+    const [loading, setLoading] = useState(false);
+    const [formData, setFormData] = useState(initialData);
+
+    const handleInputChange = (field: string, value: string) => {
+        setFormData(prev => ({ ...prev, [field]: value }));
+    };
+
+    const handleSlideChange = (id: string, field: string, value: string) => {
+        setFormData(prev => ({
+            ...prev,
+            academy_slides: prev.academy_slides.map(slide =>
+                slide.id === id ? { ...slide, [field]: value } : slide
+            )
+        }));
+    };
+
+    const addSlide = () => {
+        setFormData(prev => ({
+            ...prev,
+            academy_slides: [...(prev.academy_slides || []), { id: Date.now().toString(), image: '' }]
+        }));
+    };
+
+    const removeSlide = (id: string) => {
+        setFormData(prev => ({
+            ...prev,
+            academy_slides: prev.academy_slides.filter(slide => slide.id !== id)
+        }));
+    };
+
+    const onDragEnd = (result: any) => {
+        if (!result.destination) return;
+
+        const items = Array.from(formData.academy_slides || []);
+        const [reorderedItem] = items.splice(result.source.index, 1);
+        items.splice(result.destination.index, 0, reorderedItem);
+
+        setFormData(prev => ({ ...prev, academy_slides: items }));
+    };
+
+    const handleSave = async () => {
+        try {
+            setLoading(true);
+            const data = new FormData();
+
+            // Basic info
+            data.set('academy_title', formData.academy_title);
+            data.set('academy_subtitle', formData.academy_subtitle);
+            data.set('academy_slides', JSON.stringify(formData.academy_slides));
+
+            // Card 1
+            data.set('featured_card_1_title', formData.featured_card_1_title);
+            data.set('featured_card_1_image_1', formData.featured_card_1_image_1);
+            data.set('featured_card_1_image_2', formData.featured_card_1_image_2);
+            data.set('featured_card_1_link', formData.featured_card_1_link);
+
+            // Card 2
+            data.set('featured_card_2_title', formData.featured_card_2_title);
+            data.set('featured_card_2_image_1', formData.featured_card_2_image_1);
+            data.set('featured_card_2_image_2', formData.featured_card_2_image_2);
+            data.set('featured_card_2_link', formData.featured_card_2_link);
+
+            const result = await updateContent(data);
+
+            if (result.success) {
+                toast({ title: "저장 완료", description: "학원 소개 컨텐츠가 업데이트되었습니다." });
+                router.refresh();
+            } else {
+                throw new Error(result.error);
+            }
+        } catch (error) {
+            toast({
+                title: "저장 실패",
+                description: "저장 중 오류가 발생했습니다.",
+                variant: "destructive"
+            });
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    return (
+        <div className="space-y-6">
+            <Card>
+                <CardHeader>
+                    <CardTitle>기본 정보 설정</CardTitle>
+                    <CardDescription>메인 화면 상단의 제목과 부제목을 설정합니다.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    <div className="space-y-2">
+                        <Label>메인 타이틀</Label>
+                        <Input
+                            value={formData.academy_title}
+                            onChange={(e) => handleInputChange('academy_title', e.target.value)}
+                            placeholder="예: 코딩 교육의 새로운 기준"
+                        />
+                    </div>
+                    <div className="space-y-2">
+                        <Label>서브 타이틀</Label>
+                        <Input
+                            value={formData.academy_subtitle}
+                            onChange={(e) => handleInputChange('academy_subtitle', e.target.value)}
+                            placeholder="예: 체계적인 커리큘럼과 1:1 맞춤 관리"
+                        />
+                    </div>
+                </CardContent>
+            </Card>
+
+            <Card>
+                <CardHeader>
+                    <div className="flex justify-between items-center">
+                        <div>
+                            <CardTitle>슬라이드 배너 설정</CardTitle>
+                            <CardDescription>메인 화면 상단의 슬라이드 배너를 관리합니다.</CardDescription>
+                        </div>
+                        <Button onClick={addSlide} variant="outline" size="sm">
+                            <Plus className="w-4 h-4 mr-2" /> 슬라이드 추가
+                        </Button>
+                    </div>
+                </CardHeader>
+                <CardContent>
+                    <DragDropContext onDragEnd={onDragEnd}>
+                        <Droppable droppableId="slides">
+                            {(provided) => (
+                                <div {...provided.droppableProps} ref={provided.innerRef} className="space-y-4">
+                                    {formData.academy_slides?.map((slide, index) => (
+                                        <Draggable key={slide.id} draggableId={slide.id} index={index}>
+                                            {(provided) => (
+                                                <div
+                                                    ref={provided.innerRef}
+                                                    {...provided.draggableProps}
+                                                    className="flex items-start space-x-4 p-4 border rounded-lg bg-card"
+                                                >
+                                                    <div {...provided.dragHandleProps} className="mt-2 text-muted-foreground hover:text-foreground">
+                                                        <GripVertical className="w-5 h-5" />
+                                                    </div>
+
+                                                    <div className="w-[200px] space-y-2">
+                                                        <Label>배너 이미지</Label>
+                                                        <ImageUpload
+                                                            value={slide.image}
+                                                            onChange={(url) => handleSlideChange(slide.id, 'image', url)}
+                                                        />
+                                                    </div>
+
+                                                    <div className="flex-1 space-y-2">
+                                                        <Label>배너 제목 (선택)</Label>
+                                                        <Input
+                                                            value={slide.title || ''}
+                                                            onChange={(e) => handleSlideChange(slide.id, 'title', e.target.value)}
+                                                            placeholder="배너 위에 표시될 제목"
+                                                        />
+                                                        <div className="pt-4 flex justify-end">
+                                                            <Button
+                                                                variant="destructive"
+                                                                size="sm"
+                                                                onClick={() => removeSlide(slide.id)}
+                                                            >
+                                                                <Trash2 className="w-4 h-4 mr-2" /> 삭제
+                                                            </Button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </Draggable>
+                                    ))}
+                                    {provided.placeholder}
+                                </div>
+                            )}
+                        </Droppable>
+                    </DragDropContext>
+                </CardContent>
+            </Card>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {[1, 2].map((num) => (
+                    <Card key={num}>
+                        <CardHeader>
+                            <CardTitle>추천 카드 {num} 설정</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            <div className="space-y-2">
+                                <Label>제목</Label>
+                                <Input
+                                    value={(formData as any)[`featured_card_${num}_title`] || ''}
+                                    onChange={(e) => handleInputChange(`featured_card_${num}_title`, e.target.value)}
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <Label>기본 이미지</Label>
+                                <ImageUpload
+                                    value={(formData as any)[`featured_card_${num}_image_1`] || ''}
+                                    onChange={(url) => handleInputChange(`featured_card_${num}_image_1`, url)}
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <Label>호버 이미지 (선택)</Label>
+                                <ImageUpload
+                                    value={(formData as any)[`featured_card_${num}_image_2`] || ''}
+                                    onChange={(url) => handleInputChange(`featured_card_${num}_image_2`, url)}
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <Label>링크 URL</Label>
+                                <Input
+                                    value={(formData as any)[`featured_card_${num}_link`] || ''}
+                                    onChange={(e) => handleInputChange(`featured_card_${num}_link`, e.target.value)}
+                                />
+                            </div>
+                        </CardContent>
+                    </Card>
+                ))}
+            </div>
+
+            <div className="flex justify-end pt-6">
+                <Button onClick={handleSave} disabled={loading} size="lg">
+                    {loading ? (
+                        <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" /> 저장 중...
+                        </>
+                    ) : (
+                        <>
+                            <Save className="mr-2 h-4 w-4" /> 전체 저장
+                        </>
+                    )}
+                </Button>
+            </div>
+        </div>
+    );
+}

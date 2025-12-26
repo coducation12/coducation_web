@@ -14,18 +14,28 @@ interface ImageUploadProps {
     onChange: (url: string) => void;
     label?: string;
     className?: string;
+    disabled?: boolean;
+    bucketName?: string;
 }
 
-export default function ImageUpload({ value, onChange, label = "이미지", className = "" }: ImageUploadProps) {
+export default function ImageUpload({
+    value,
+    onChange,
+    label = "이미지",
+    className = "",
+    disabled = false,
+    bucketName = "content-images"
+}: ImageUploadProps) {
     const [uploading, setUploading] = useState(false);
     const [preview, setPreview] = useState<string>(value || "");
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
+        if (disabled) return;
         const file = event.target.files?.[0];
         if (!file) return;
 
-        // 파일 유효성 검사
+        // ... validation ...
         const validation = validateImageFile(file, 10 * 1024 * 1024); // 10MB 제한
         if (!validation.valid) {
             alert(validation.error);
@@ -35,6 +45,7 @@ export default function ImageUpload({ value, onChange, label = "이미지", clas
         setUploading(true);
 
         try {
+            // ... compression and upload logic ...
             console.log(`원본 파일 크기: ${formatFileSize(file.size)}`);
 
             // 이미지 압축 (프로필 이미지는 작게)
@@ -54,10 +65,10 @@ export default function ImageUpload({ value, onChange, label = "이미지", clas
             });
 
             // Supabase Storage에 압축된 이미지 업로드
-            const fileName = `teacher-profiles/${Date.now()}-${compressedFile.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
-            
+            const fileName = `${Date.now()}-${compressedFile.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
+
             const { data, error } = await supabase.storage
-                .from('content-images')
+                .from(bucketName)
                 .upload(fileName, compressedFile, {
                     cacheControl: '31536000', // 1년 캐시
                     upsert: true
@@ -78,7 +89,7 @@ export default function ImageUpload({ value, onChange, label = "이미지", clas
                 onChange(urlData.publicUrl);
                 console.log('onChange 콜백 호출됨');
             }
-            
+
             setUploading(false);
         } catch (error) {
             console.error("이미지 업로드 오류:", error);
@@ -88,12 +99,13 @@ export default function ImageUpload({ value, onChange, label = "이미지", clas
     };
 
     const handleRemove = async () => {
+        if (disabled) return;
         try {
-            // 기존 이미지가 Supabase Storage에 저장된 것이라면 삭제
+            // ... remove logic ...
             if (preview && preview.includes('supabase')) {
                 const url = new URL(preview);
                 const filePath = url.pathname.split('/storage/v1/object/public/content-images/')[1];
-                
+
                 if (filePath) {
                     await supabase.storage
                         .from('content-images')
@@ -102,9 +114,8 @@ export default function ImageUpload({ value, onChange, label = "이미지", clas
             }
         } catch (error) {
             console.error("이미지 삭제 오류:", error);
-            // 삭제 실패해도 UI에서는 제거
         }
-        
+
         setPreview("");
         onChange("");
         if (fileInputRef.current) {
@@ -113,13 +124,15 @@ export default function ImageUpload({ value, onChange, label = "이미지", clas
     };
 
     const handleClick = () => {
-        fileInputRef.current?.click();
+        if (!disabled) {
+            fileInputRef.current?.click();
+        }
     };
 
     return (
         <div className={`space-y-2 ${className}`}>
             <Label className="text-cyan-200">{label}</Label>
-            
+
             <div className="space-y-3">
                 {/* 이미지 미리보기 영역 */}
                 <div className="relative w-32 h-32 mx-auto border-2 border-dashed border-cyan-400/40 rounded-lg overflow-hidden bg-background/20">
@@ -127,22 +140,24 @@ export default function ImageUpload({ value, onChange, label = "이미지", clas
                         <>
                             <Image
                                 src={preview}
-                                alt="프로필 이미지"
+                                alt="이미지 미리보기"
                                 fill
                                 className="object-cover"
                             />
-                            <button
-                                type="button"
-                                onClick={handleRemove}
-                                className="absolute top-1 right-1 p-1 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
-                            >
-                                <X className="w-3 h-3" />
-                            </button>
+                            {!disabled && (
+                                <button
+                                    type="button"
+                                    onClick={handleRemove}
+                                    className="absolute top-1 right-1 p-1 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
+                                >
+                                    <X className="w-3 h-3" />
+                                </button>
+                            )}
                         </>
                     ) : (
                         <div className="flex flex-col items-center justify-center h-full text-cyan-400">
                             <User className="w-8 h-8 mb-2" />
-                            <span className="text-xs">프로필 이미지</span>
+                            <span className="text-xs">이미지 선택</span>
                         </div>
                     )}
                 </div>
@@ -154,7 +169,7 @@ export default function ImageUpload({ value, onChange, label = "이미지", clas
                         variant="outline"
                         size="sm"
                         onClick={handleClick}
-                        disabled={uploading}
+                        disabled={uploading || disabled}
                         className="border-cyan-500/50 text-cyan-400 hover:bg-cyan-500/20 hover:text-cyan-300"
                     >
                         <Upload className="w-4 h-4 mr-2" />

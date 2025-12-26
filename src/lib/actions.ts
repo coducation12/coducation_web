@@ -41,16 +41,16 @@ interface TeacherInfo {
 export async function login(formData: FormData) {
   try {
     const userType = formData.get('userType') as string;
-    
+
     if (!userType) {
       return { success: false, error: '사용자 타입이 지정되지 않았습니다.' };
     }
-    
+
     if (userType === 'teacher') {
       // 강사/관리자: Supabase Auth를 사용한 이메일과 비밀번호 인증
       const email = formData.get('email') as string;
       const password = formData.get('password') as string;
-      
+
       try {
         // Supabase Auth로 로그인
         const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
@@ -58,9 +58,9 @@ export async function login(formData: FormData) {
           password: password
         });
 
-      if (authError) {
-        return { success: false, error: '로그인에 실패했습니다.' };
-      }
+        if (authError) {
+          return { success: false, error: '로그인에 실패했습니다.' };
+        }
 
         if (!authData.user) {
           return { success: false, error: '사용자 정보를 찾을 수 없습니다.' };
@@ -88,7 +88,7 @@ export async function login(formData: FormData) {
         cookieStore.set('user_id', user.id, { httpOnly: true, path: '/' });
         cookieStore.set('user_role', user.role, { httpOnly: true, path: '/' });
         cookieStore.set('auth_token', authData.session?.access_token || '', { httpOnly: true, path: '/' });
-        
+
         return { success: true, redirect: '/dashboard' };
       } catch (error) {
         return { success: false, error: '로그인 중 오류가 발생했습니다.' };
@@ -97,7 +97,7 @@ export async function login(formData: FormData) {
       // 학생/학부모: 기존 방식 유지 (Auth 사용하지 않음)
       const username = formData.get('username') as string;
       const password = formData.get('password') as string;
-      
+
       try {
         const { data: user, error } = await supabase
           .from('users')
@@ -130,24 +130,24 @@ export async function login(formData: FormData) {
             return { success: false, error: '계정이 아직 승인되지 않았습니다.' };
           }
         }
-        
+
         // 배포 환경: 비밀번호 필수 입력
         if (!password || password.trim() === '') {
           return { success: false, error: '비밀번호를 입력해주세요.' };
         }
-        
+
         // 비밀번호가 있으면 검증
         if (user.password && await bcrypt.compare(password, user.password)) {
           const cookieStore = await cookies();
           cookieStore.set('user_id', user.id, { httpOnly: true, path: '/' });
           cookieStore.set('user_role', user.role, { httpOnly: true, path: '/' });
-        return { success: true, redirect: '/dashboard' };
-      } else {
-        return { success: false, error: '비밀번호가 올바르지 않습니다.' };
+          return { success: true, redirect: '/dashboard' };
+        } else {
+          return { success: false, error: '비밀번호가 올바르지 않습니다.' };
+        }
+      } catch (error) {
+        return { success: false, error: '로그인 중 오류가 발생했습니다.' };
       }
-    } catch (error) {
-      return { success: false, error: '로그인 중 오류가 발생했습니다.' };
-    }
     }
   } catch (error) {
     return { success: false, error: '로그인 처리 중 오류가 발생했습니다.' };
@@ -160,7 +160,7 @@ export async function getCurrentUser() {
     const cookieStore = await cookies();
     const userId = cookieStore.get('user_id')?.value;
     const userRole = cookieStore.get('user_role')?.value;
-    
+
     if (!userId || !userRole) {
       return null;
     }
@@ -197,7 +197,7 @@ export async function logout() {
     cookieStore.delete('user_role');
     cookieStore.delete('auth_token');
   }
-  
+
   return { success: true, redirect: '/login' };
 }
 
@@ -446,11 +446,11 @@ export async function updateStudent(formData: FormData) {
     if (studentData.classSchedules && studentData.classSchedules.length > 0) {
       // 수업 일정을 attendance_schedule 형식으로 변환
       const attendanceSchedule: any = {};
-      
+
       studentData.classSchedules.forEach((schedule: any) => {
         if (schedule.day && schedule.startTime && schedule.endTime) {
           const dayMap: { [key: string]: string } = {
-            'monday': '1', 'tuesday': '2', 'wednesday': '3', 
+            'monday': '1', 'tuesday': '2', 'wednesday': '3',
             'thursday': '4', 'friday': '5', 'saturday': '6', 'sunday': '0'
           };
           const dayNumber = dayMap[schedule.day];
@@ -458,7 +458,7 @@ export async function updateStudent(formData: FormData) {
             // 시간 형식 정리 (HH:MM 형식으로 통일)
             let startTime = schedule.startTime;
             let endTime = schedule.endTime;
-            
+
             if (startTime && !startTime.includes(':')) {
               const numbers = startTime.replace(/[^0-9]/g, '');
               if (numbers.length === 4) {
@@ -467,7 +467,7 @@ export async function updateStudent(formData: FormData) {
                 startTime = `${hours}:${minutes}`;
               }
             }
-            
+
             if (endTime && !endTime.includes(':')) {
               const numbers = endTime.replace(/[^0-9]/g, '');
               if (numbers.length === 4) {
@@ -476,7 +476,7 @@ export async function updateStudent(formData: FormData) {
                 endTime = `${hours}:${minutes}`;
               }
             }
-            
+
             attendanceSchedule[dayNumber] = {
               startTime: startTime,
               endTime: endTime
@@ -649,7 +649,7 @@ export async function saveTypingResult(data: {
     // 현재 로그인한 사용자 정보 가져오기
     const cookieStore = await cookies();
     const userId = cookieStore.get('user_id')?.value;
-    
+
     if (!userId) {
       return { success: false, error: '로그인이 필요합니다.' };
     }
@@ -674,9 +674,9 @@ export async function saveTypingResult(data: {
 
     if (existingRecord) {
       // 기존 기록이 있으면 더 좋은 점수로만 업데이트
-      const shouldUpdate = data.accuracy > existingRecord.typing_score || 
-                          (data.accuracy === existingRecord.typing_score && data.speed > existingRecord.typing_speed);
-      
+      const shouldUpdate = data.accuracy > existingRecord.typing_score ||
+        (data.accuracy === existingRecord.typing_score && data.speed > existingRecord.typing_speed);
+
       if (shouldUpdate) {
         const { error } = await supabaseAdmin
           .from('student_activity_logs')
@@ -725,16 +725,16 @@ export async function saveTypingResult(data: {
 export async function getTypingRecords(studentId: string, daysBack: number = 90) {
   try {
     console.log('getTypingRecords - 시작:', { studentId, daysBack });
-    
+
     // 임시로 인증 검증을 우회하고 데이터 조회만 테스트
     // TODO: 실제 인증 로직 추가 필요
 
     const fromDate = new Date();
     fromDate.setDate(fromDate.getDate() - daysBack);
     const fromDateString = fromDate.toISOString().split('T')[0];
-    
+
     console.log('getTypingRecords - 쿼리 실행:', { studentId, fromDateString });
-    
+
     const { data, error } = await supabaseAdmin
       .from('student_activity_logs')
       .select('date, typing_score, typing_speed, typing_language, created_at')
@@ -762,19 +762,19 @@ export async function getTypingRecords(studentId: string, daysBack: number = 90)
 export async function getAttendanceRecords(studentId: string, year: number, month: number) {
   try {
     console.log('getAttendanceRecords - 시작:', { studentId, year, month });
-    
+
     // 임시로 인증 검증을 우회하고 데이터 조회만 테스트
     // TODO: 실제 인증 로직 추가 필요
 
     const startOfMonth = new Date(year, month - 1, 1);
     const endOfMonth = new Date(year, month, 0);
-    
-    console.log('getAttendanceRecords - 쿼리 실행:', { 
-      studentId, 
-      startDate: startOfMonth.toISOString().split('T')[0], 
-      endDate: endOfMonth.toISOString().split('T')[0] 
+
+    console.log('getAttendanceRecords - 쿼리 실행:', {
+      studentId,
+      startDate: startOfMonth.toISOString().split('T')[0],
+      endDate: endOfMonth.toISOString().split('T')[0]
     });
-    
+
     const { data, error } = await supabaseAdmin
       .from('student_activity_logs')
       .select('date, attended, activity_type')
@@ -798,20 +798,20 @@ export async function getAttendanceRecords(studentId: string, year: number, mont
 }
 
 // 컨텐츠 이미지 Supabase Storage 업로드
-export async function uploadContentImage(file: File, section: string): Promise<{success: boolean, url?: string, error?: string}> {
+export async function uploadContentImage(file: File, section: string): Promise<{ success: boolean, url?: string, error?: string }> {
   try {
     console.log('이미지 업로드 시작:', { fileName: file.name, fileSize: file.size, fileType: file.type, section });
-    
+
     // 인증 정보 확인
     const cookieStore = await cookies();
     const userId = cookieStore.get('user_id')?.value;
     const userRole = cookieStore.get('user_role')?.value;
     console.log('현재 사용자 정보:', { userId, userRole });
-    
+
     if (!userId || userRole !== 'admin') {
       return { success: false, error: '관리자만 이미지를 업로드할 수 있습니다.' };
     }
-    
+
     // 파일 유효성 검사
     const validation = validateImageFile(file, 10 * 1024 * 1024); // 10MB 제한
     if (!validation.valid) {
@@ -839,7 +839,7 @@ export async function uploadContentImage(file: File, section: string): Promise<{
     // 파일명 정리 (특수문자 제거)
     const cleanFileName = compressedFile.name.replace(/[^a-zA-Z0-9.-]/g, '_');
     const fileName = `${section}/${Date.now()}-${cleanFileName}`;
-    
+
     console.log('업로드 파일명:', fileName);
 
     // Supabase Storage에 압축된 이미지 업로드
@@ -852,9 +852,9 @@ export async function uploadContentImage(file: File, section: string): Promise<{
 
     if (error) {
       console.error('Storage 업로드 오류:', error);
-      return { 
-        success: false, 
-        error: `이미지 업로드에 실패했습니다: ${error.message}` 
+      return {
+        success: false,
+        error: `이미지 업로드에 실패했습니다: ${error.message}`
       };
     }
 
@@ -866,13 +866,13 @@ export async function uploadContentImage(file: File, section: string): Promise<{
       .getPublicUrl(fileName);
 
     console.log('공개 URL:', urlData.publicUrl);
-    
+
     return { success: true, url: urlData.publicUrl };
   } catch (error) {
     console.error('이미지 업로드 오류:', error);
-    return { 
-      success: false, 
-      error: `이미지 업로드에 실패했습니다: ${error instanceof Error ? error.message : '알 수 없는 오류'}` 
+    return {
+      success: false,
+      error: `이미지 업로드에 실패했습니다: ${error instanceof Error ? error.message : '알 수 없는 오류'}`
     };
   }
 }
@@ -888,21 +888,43 @@ export async function updateContent(formData: FormData) {
       return { success: false, error: '관리자만 수정할 수 있습니다.' };
     }
 
-    const contentData = {
-      academy_title: formData.get('academy_title') as string,
-      academy_subtitle: formData.get('academy_subtitle') as string,
-      academy_features: JSON.parse(formData.get('academy_features') as string),
-      academy_slides: JSON.parse(formData.get('academy_slides') as string),
-      featured_card_1_title: formData.get('featured_card_1_title') as string,
-      featured_card_1_image_1: formData.get('featured_card_1_image_1') as string,
-      featured_card_1_image_2: formData.get('featured_card_1_image_2') as string,
-      featured_card_1_link: formData.get('featured_card_1_link') as string,
-      featured_card_2_title: formData.get('featured_card_2_title') as string,
-      featured_card_2_image_1: formData.get('featured_card_2_image_1') as string,
-      featured_card_2_image_2: formData.get('featured_card_2_image_2') as string,
-      featured_card_2_link: formData.get('featured_card_2_link') as string,
+    // 부분 업데이트를 위한 객체 생성
+    const updates: Record<string, any> = {
       updated_at: new Date().toISOString()
     };
+
+    // 텍스트/문자열 필드 처리
+    const textFields = [
+      'academy_title', 'academy_subtitle',
+      'featured_card_1_title', 'featured_card_1_image_1', 'featured_card_1_image_2', 'featured_card_1_link',
+      'featured_card_2_title', 'featured_card_2_image_1', 'featured_card_2_image_2', 'featured_card_2_link',
+      'promo_image'
+    ];
+
+    textFields.forEach(field => {
+      if (formData.has(field)) {
+        updates[field] = formData.get(field);
+      }
+    });
+
+    // 불리언 필드 처리
+    if (formData.has('promo_active')) {
+      updates['promo_active'] = formData.get('promo_active') === 'true';
+    }
+
+    // JSON 필드 처리
+    const jsonFields = ['academy_features', 'academy_slides'];
+    jsonFields.forEach(field => {
+      if (formData.has(field)) {
+        try {
+          updates[field] = JSON.parse(formData.get(field) as string);
+        } catch (e) {
+          console.error(`Filed ${field} parse error`, e);
+        }
+      }
+    });
+
+    const contentData = updates;
 
     // 기존 레코드가 있는지 확인
     const { data: existingRecord, error: selectError } = await supabase
@@ -970,7 +992,7 @@ export async function getMainCurriculums() {
     // 현재 로그인한 사용자가 관리자인지 확인
     const cookieStore = await cookies();
     const currentUserRole = cookieStore.get('user_role')?.value;
-    
+
     if (currentUserRole !== 'admin') {
       return { success: false, error: '관리자만 접근할 수 있습니다.' };
     }
@@ -1000,7 +1022,7 @@ export async function updateMainCurriculums(curriculums: Array<{ id: string; dis
     // 현재 로그인한 사용자가 관리자인지 확인
     const cookieStore = await cookies();
     const currentUserRole = cookieStore.get('user_role')?.value;
-    
+
     if (currentUserRole !== 'admin') {
       return { success: false, error: '관리자만 접근할 수 있습니다.' };
     }
@@ -1020,7 +1042,7 @@ export async function updateMainCurriculums(curriculums: Array<{ id: string; dis
     );
 
     const results = await Promise.all(updatePromises);
-    
+
     // 에러 확인
     const hasError = results.some(result => result.error);
     if (hasError) {
@@ -1073,8 +1095,8 @@ export async function addMainCurriculum(formData: FormData) {
       .order('display_order', { ascending: false })
       .limit(1);
 
-    const maxOrder = existingCurriculums && existingCurriculums.length > 0 
-      ? (existingCurriculums[0].display_order || 0) + 1 
+    const maxOrder = existingCurriculums && existingCurriculums.length > 0
+      ? (existingCurriculums[0].display_order || 0) + 1
       : 0;
 
     // 메인 커리큘럼 데이터 준비
@@ -1206,7 +1228,7 @@ export async function addTeacher(formData: FormData) {
     // 현재 로그인한 사용자가 관리자인지 확인
     const cookieStore = await cookies();
     const currentUserRole = cookieStore.get('user_role')?.value;
-    
+
     if (currentUserRole !== 'admin') {
       return { success: false, error: '관리자만 강사를 추가할 수 있습니다.' };
     }
@@ -1269,7 +1291,7 @@ export async function addTeacher(formData: FormData) {
         }
       }
     });
-    
+
     if (authError) {
       console.error('Supabase Auth 계정 생성 실패:', authError);
       // Auth 생성 실패해도 계속 진행 (개발 환경 고려)
@@ -1318,8 +1340,8 @@ export async function addTeacher(formData: FormData) {
       return { success: false, error: `강사 상세 정보 등록 실패: ${teacherError.message}` };
     }
 
-    return { 
-      success: true, 
+    return {
+      success: true,
       data: {
         id: userData.id,
         name: userData.name,
@@ -1339,7 +1361,7 @@ export async function updateTeacher(formData: FormData) {
     // 현재 로그인한 사용자가 관리자인지 확인
     const cookieStore = await cookies();
     const currentUserRole = cookieStore.get('user_role')?.value;
-    
+
     if (currentUserRole !== 'admin') {
       return { success: false, error: '관리자만 강사 정보를 수정할 수 있습니다.' };
     }
@@ -1405,17 +1427,17 @@ export async function updateTeacher(formData: FormData) {
         try {
           // Service Role Key를 사용하여 Auth 사용자 목록 조회
           const { data: authUsers, error: listError } = await supabaseAdmin.auth.admin.listUsers();
-          
+
           if (!listError && authUsers.users) {
             const authUser = authUsers.users.find((user: any) => user.email === teacherData.email);
-            
+
             if (authUser) {
               // Auth 비밀번호 업데이트
               const { error: authUpdateError } = await supabaseAdmin.auth.admin.updateUserById(
                 authUser.id,
                 { password: teacherData.password }
               );
-              
+
               if (authUpdateError) {
                 console.error('Supabase Auth 비밀번호 업데이트 실패:', authUpdateError);
                 return { success: false, error: '비밀번호 업데이트에 실패했습니다.' };
@@ -1474,8 +1496,8 @@ export async function updateTeacher(formData: FormData) {
       return { success: false, error: `상세 정보 수정 실패: ${teacherError.message}` };
     }
 
-    return { 
-      success: true, 
+    return {
+      success: true,
       data: {
         id: teacherData.teacherId,
         name: teacherData.name,
@@ -1514,8 +1536,8 @@ export async function getTeacherDetails(teacherId: string) {
       return { success: false, error: userError.message };
     }
 
-    return { 
-      success: true, 
+    return {
+      success: true,
       data: {
         bio: teacherData?.bio || '',
         certs: teacherData?.certs || '',
@@ -1538,7 +1560,7 @@ export async function updateAdminProfile(formData: FormData) {
     // 현재 로그인한 사용자가 관리자인지 확인
     const cookieStore = await cookies();
     const currentUserRole = cookieStore.get('user_role')?.value;
-    
+
     if (currentUserRole !== 'admin') {
       return { success: false, error: '관리자만 프로필을 수정할 수 있습니다.' };
     }
@@ -1601,18 +1623,18 @@ export async function updateAdminProfile(formData: FormData) {
         try {
           // Service Role Key를 사용하여 Auth 사용자 목록 조회
           const { data: authUsers, error: listError } = await supabaseAdmin.auth.admin.listUsers();
-          
+
           if (!listError && authUsers.users) {
             // 관리자 계정의 경우 이메일로 검색
             const authUser = authUsers.users.find((user: any) => user.email === adminData.email);
-            
+
             if (authUser) {
               // Auth 비밀번호 업데이트
               const { error: authUpdateError } = await supabaseAdmin.auth.admin.updateUserById(
                 authUser.id,
                 { password: adminData.newPassword }
               );
-              
+
               if (authUpdateError) {
                 console.error('Supabase Auth 비밀번호 업데이트 실패:', authUpdateError);
                 return { success: false, error: '비밀번호 업데이트에 실패했습니다.' };
@@ -1655,8 +1677,8 @@ export async function updateAdminProfile(formData: FormData) {
       return { success: false, error: `프로필 업데이트 실패: ${userError.message}` };
     }
 
-    return { 
-      success: true, 
+    return {
+      success: true,
       data: {
         id: adminData.adminId,
         name: adminData.name,
@@ -1721,10 +1743,10 @@ export async function saveConsultation(formData: FormData) {
     }
 
     console.log('상담 문의 저장 성공:', data);
-    return { 
-      success: true, 
+    return {
+      success: true,
       message: '상담 문의가 접수되었습니다. 빠른 시일 내에 연락드리겠습니다.',
-      data: data 
+      data: data
     };
 
   } catch (error) {
@@ -1859,10 +1881,10 @@ export async function getInstructors() {
     const sortedInstructors = instructors.sort((a: TeacherInfo, b: TeacherInfo) => {
       const aIsLeader = a.bio.includes('원장');
       const bIsLeader = b.bio.includes('원장');
-      
+
       if (aIsLeader && !bIsLeader) return -1;
       if (!aIsLeader && bIsLeader) return 1;
-      
+
       // 둘 다 원장이거나 둘 다 원장이 아닌 경우 이름순
       return a.name.localeCompare(b.name);
     });
@@ -1883,7 +1905,7 @@ export async function deleteStudent(studentId: string) {
     // 현재 로그인한 사용자가 관리자인지 확인
     const cookieStore = await cookies();
     const currentUserRole = cookieStore.get('user_role')?.value;
-    
+
     if (currentUserRole !== 'admin') {
       return { success: false, error: '관리자만 학생을 삭제할 수 있습니다.' };
     }
@@ -1914,7 +1936,7 @@ export async function deleteStudent(studentId: string) {
     }
 
     // 3. 관련 데이터 삭제 (CASCADE로 자동 삭제되지만 명시적으로 처리)
-    
+
     // 3-1. 학생 활동 로그 삭제
     const { error: activityLogsError } = await supabase
       .from('student_activity_logs')
@@ -1999,9 +2021,9 @@ export async function deleteStudent(studentId: string) {
       return { success: false, error: '학생 계정 삭제에 실패했습니다.' };
     }
 
-    return { 
-      success: true, 
-      message: `${studentData.name} 학생의 계정이 성공적으로 삭제되었습니다.` 
+    return {
+      success: true,
+      message: `${studentData.name} 학생의 계정이 성공적으로 삭제되었습니다.`
     };
 
   } catch (error) {
@@ -2193,13 +2215,13 @@ export async function getNewStudentSignupRequests(teacherId?: string) {
     // 학생 정보와 담당 교사 정보를 별도로 조회
     const studentIds = (data || []).map((request: any) => request.student_id);
     const teacherIds = (data || []).map((request: any) => request.assigned_teacher_id).filter(Boolean);
-    
+
     // 학생 정보 조회
     const { data: studentsData } = await supabase
       .from('users')
       .select('id, username, name, birth_year, phone')
       .in('id', studentIds);
-    
+
     // 담당 교사 정보 조회
     const { data: teachersData } = await supabase
       .from('users')
@@ -2210,7 +2232,7 @@ export async function getNewStudentSignupRequests(teacherId?: string) {
     const requests = (data || []).map((request: any) => {
       const student = studentsData?.find((s: any) => s.id === request.student_id);
       const teacher = teachersData?.find((t: any) => t.id === request.assigned_teacher_id);
-      
+
       return {
         id: request.id,
         student_id: request.student_id,

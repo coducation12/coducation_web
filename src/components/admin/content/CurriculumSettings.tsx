@@ -249,27 +249,28 @@ export default function CurriculumSettings({ initialCurriculums }: CurriculumSet
             </div>
 
             <DragDropContext onDragEnd={onDragEnd}>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="flex flex-col gap-10">
                     {LEVELS.map(level => (
-                        <Card key={level} className="flex flex-col h-full bg-slate-50/50 border-2">
-                            <CardHeader className="pb-3 bg-white border-b rounded-t-lg">
-                                <CardTitle className={`text-lg flex items-center gap-2
-                                    ${level === '기초' ? 'text-green-700' :
-                                        level === '중급' ? 'text-blue-700' :
-                                            'text-purple-700'}`}>
+                        <Card key={level} className="flex flex-col h-full bg-background border shadow-md">
+                            <CardHeader className="pb-4 border-b bg-card/50">
+                                <CardTitle className="text-xl flex items-center gap-3">
+                                    <span className={`w-3 h-8 rounded-full ${level === '기초' ? 'bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.5)]' :
+                                        level === '중급' ? 'bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.5)]' :
+                                            'bg-purple-500 shadow-[0_0_10px_rgba(168,85,247,0.5)]'
+                                        }`} />
                                     {level} 과정
-                                    <span className="text-sm font-normal text-muted-foreground ml-auto bg-slate-100 px-2 py-1 rounded-full border">
-                                        {curriculums.filter(c => c.level === level).length}개
+                                    <span className="text-sm font-normal text-muted-foreground ml-auto bg-background px-3 py-1 rounded-full border shadow-sm">
+                                        {curriculums.filter(c => c.level === level).length}개 강좌 마련됨
                                     </span>
                                 </CardTitle>
                             </CardHeader>
-                            <CardContent className="flex-1 p-3">
+                            <CardContent className="flex-1 p-6">
                                 <Droppable droppableId={level}>
                                     {(provided) => (
                                         <div
                                             {...provided.droppableProps}
                                             ref={provided.innerRef}
-                                            className="space-y-3 min-h-[150px]"
+                                            className="space-y-4 min-h-[120px]"
                                         >
                                             {curriculums
                                                 .filter(c => c.level === level)
@@ -280,24 +281,30 @@ export default function CurriculumSettings({ initialCurriculums }: CurriculumSet
                                                             <div
                                                                 ref={provided.innerRef}
                                                                 {...provided.draggableProps}
-                                                                className="bg-white p-3 rounded-lg border shadow-sm group hover:border-cyan-400 hover:shadow-md transition-all"
+                                                                className="bg-card p-5 rounded-xl border shadow-sm group hover:border-primary/50 hover:shadow-lg transition-all flex items-center gap-6"
                                                             >
-                                                                <div className="flex gap-3">
-                                                                    <div {...provided.dragHandleProps} className="mt-1 text-gray-400 hover:text-gray-600 cursor-move">
-                                                                        <GripVertical className="w-4 h-4" />
-                                                                    </div>
-                                                                    <div className="flex-1 min-w-0">
-                                                                        <h4 className="font-medium text-sm truncate mb-1">{item.title}</h4>
-                                                                        <p className="text-xs text-muted-foreground line-clamp-2">{item.description}</p>
-                                                                    </div>
+                                                                <div {...provided.dragHandleProps} className="text-muted-foreground/30 hover:text-primary cursor-move">
+                                                                    <GripVertical className="w-6 h-6" />
                                                                 </div>
 
-                                                                <div className="flex justify-end mt-2 pt-2 border-t gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                                    <Button variant="ghost" size="sm" className="h-7 w-7 p-0 hover:bg-slate-100" onClick={() => handleOpenDialog(item)}>
-                                                                        <Pencil className="w-3 h-3 text-slate-500" />
+                                                                {item.image && (
+                                                                    <div className="w-20 h-14 relative rounded-lg overflow-hidden flex-shrink-0 bg-secondary hidden sm:block">
+                                                                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                                                                        <img src={item.image} alt={item.title} className="w-full h-full object-cover" />
+                                                                    </div>
+                                                                )}
+
+                                                                <div className="flex-1 min-w-0">
+                                                                    <h4 className="font-bold text-lg truncate mb-1 text-foreground">{item.title}</h4>
+                                                                    <p className="text-sm text-muted-foreground line-clamp-1">{item.description}</p>
+                                                                </div>
+
+                                                                <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                                    <Button variant="outline" size="sm" className="h-9 w-9 p-0 rounded-full" onClick={() => handleOpenDialog(item)}>
+                                                                        <Pencil className="w-4 h-4" />
                                                                     </Button>
-                                                                    <Button variant="ghost" size="sm" className="h-7 w-7 p-0 hover:bg-red-50 text-red-500 hover:text-red-600" onClick={() => handleDelete(item.id)}>
-                                                                        <Trash2 className="w-3 h-3" />
+                                                                    <Button variant="outline" size="sm" className="h-9 w-9 p-0 rounded-full text-destructive hover:bg-destructive/10" onClick={() => handleDelete(item.id)}>
+                                                                        <Trash2 className="w-4 h-4" />
                                                                     </Button>
                                                                 </div>
                                                             </div>
@@ -309,10 +316,11 @@ export default function CurriculumSettings({ initialCurriculums }: CurriculumSet
                                             {/* 빈 상태일 빈 공간 클릭으로 추가 유도 */}
                                             {curriculums.filter(c => c.level === level).length === 0 && (
                                                 <div
-                                                    className="h-24 border-2 border-dashed rounded-lg flex items-center justify-center text-gray-400 text-sm cursor-pointer hover:bg-white hover:border-gray-400 transition-all bg-white/50"
+                                                    className="h-28 border-2 border-dashed rounded-xl flex items-center justify-center text-muted-foreground text-sm cursor-pointer hover:bg-secondary/20 hover:border-primary/30 transition-all bg-secondary/5"
                                                     onClick={() => handleOpenDialog(undefined, level)}
                                                 >
-                                                    여기에 추가하기
+                                                    <Plus className="w-5 h-5 mr-2" />
+                                                    이 수준의 첫 커리큘럼 추가하기
                                                 </div>
                                             )}
                                         </div>

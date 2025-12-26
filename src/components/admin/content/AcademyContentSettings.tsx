@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 import { Loader2, Save, Trash2, GripVertical, Plus } from "lucide-react";
 import ImageUpload from "@/components/ui/image-upload";
 import { updateContent } from "@/lib/actions";
@@ -39,7 +40,7 @@ export default function AcademyContentSettings({ initialData }: AcademyContentSe
         ...initialData,
         academy_slides: initialData.academy_slides?.map((slide, index) => ({
             ...slide,
-            id: slide.id || `slide-${Date.now()}-${index}`,
+            id: slide.id || `slide - ${Date.now()} -${index} `,
             description: slide.description || (slide as any).content || ''
         })) || []
     });
@@ -201,10 +202,11 @@ export default function AcademyContentSettings({ initialData }: AcademyContentSe
                                                         </div>
                                                         <div className="space-y-2">
                                                             <Label>배너 내용</Label>
-                                                            <Input
+                                                            <Textarea
                                                                 value={slide.description || ''}
                                                                 onChange={(e) => handleSlideChange(slide.id!, 'description', e.target.value)}
                                                                 placeholder="배너 위에 표시될 부가 설명"
+                                                                rows={5}
                                                             />
                                                         </div>
                                                         <div className="flex justify-end">
@@ -233,31 +235,42 @@ export default function AcademyContentSettings({ initialData }: AcademyContentSe
                 {[1, 2].map((num) => (
                     <Card key={num} className="h-full">
                         <CardHeader>
-                            <CardTitle>추천 카드 {num} 설정</CardTitle>
-                            <CardDescription>메인 화면 중간에 표시될 안내 카드입니다.</CardDescription>
+                            <CardTitle>Card {num} Settings</CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-4">
                             <div className="space-y-2">
-                                <Label>카드 제목</Label>
+                                <Label>제목</Label>
                                 <Input
                                     value={(formData as any)[`featured_card_${num}_title`] || ''}
                                     onChange={(e) => handleInputChange(`featured_card_${num}_title`, e.target.value)}
                                     placeholder="카드 이미지 위에 표시될 제목"
                                 />
                             </div>
-                            <div className="space-y-2">
-                                <Label>카드 이미지</Label>
-                                <div className="aspect-[4/3] w-full">
-                                    <ImageUpload
-                                        value={(formData as any)[`featured_card_${num}_image_1`] || ''}
-                                        onChange={(url) => handleInputChange(`featured_card_${num}_image_1`, url)}
-                                        className="h-full"
-                                    />
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <Label>디폴트 이미지</Label>
+                                    <div className="aspect-[4/3] w-full">
+                                        <ImageUpload
+                                            value={(formData as any)[`featured_card_${num}_image_1`] || ''}
+                                            onChange={(url) => handleInputChange(`featured_card_${num}_image_1`, url)}
+                                            className="h-full"
+                                        />
+                                    </div>
                                 </div>
-                                <p className="text-xs text-muted-foreground mt-1">
-                                    * 메인 페이지 카드 비율(4:3)에 맞춰 표시됩니다.
-                                </p>
+                                <div className="space-y-2">
+                                    <Label>호버 이미지</Label>
+                                    <div className="aspect-[4/3] w-full">
+                                        <ImageUpload
+                                            value={(formData as any)[`featured_card_${num}_image_2`] || ''}
+                                            onChange={(url) => handleInputChange(`featured_card_${num}_image_2`, url)}
+                                            className="h-full"
+                                        />
+                                    </div>
+                                </div>
                             </div>
+                            <p className="text-xs text-muted-foreground">
+                                * 메인 페이지 카드 비율(4:3)에 맞춰 표시됩니다.
+                            </p>
                             <div className="space-y-2">
                                 <Label>링크 URL</Label>
                                 <Input

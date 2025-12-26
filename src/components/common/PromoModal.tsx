@@ -52,7 +52,7 @@ export default function PromoModal({ active, imageUrl, onClose }: PromoModalProp
 
     return (
         <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
-            <DialogContent className="sm:max-w-md p-0 overflow-hidden bg-transparent border-none shadow-none">
+            <DialogContent className="fixed left-4 top-20 translate-x-0 translate-y-0 sm:max-w-xl p-0 overflow-hidden bg-transparent border-none shadow-none z-[100]">
                 <div className="relative bg-white rounded-lg overflow-hidden shadow-2xl flex flex-col w-full">
                     <DialogHeader className="sr-only">
                         <DialogTitle>Promotion</DialogTitle>
@@ -60,7 +60,7 @@ export default function PromoModal({ active, imageUrl, onClose }: PromoModalProp
 
                     <button
                         onClick={() => handleClose()}
-                        className="absolute top-2 right-2 z-50 p-1.5 bg-black/50 hover:bg-black/70 rounded-full text-white transition-colors"
+                        className="absolute top-2 right-2 z-[110] p-1.5 bg-black/50 hover:bg-black/70 rounded-full text-white transition-colors"
                     >
                         <X className="w-5 h-5" />
                     </button>

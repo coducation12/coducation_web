@@ -248,7 +248,7 @@ export default function AdminConsultationsPage() {
                             <Label>상태 변경</Label>
                             <Select
                               value={consultation.status}
-                              onValueChange={(value) => {
+                              onValueChange={(value: string) => {
                                 setSelectedConsultation({
                                   ...consultation,
                                   status: value as 'pending' | 'completed'
@@ -361,7 +361,7 @@ export default function AdminConsultationsPage() {
                             <Label>상태 변경</Label>
                             <Select
                               value={consultation.status}
-                              onValueChange={(value) => {
+                              onValueChange={(value: string) => {
                                 setSelectedConsultation({
                                   ...consultation,
                                   status: value as 'pending' | 'completed'

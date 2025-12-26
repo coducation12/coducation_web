@@ -11,6 +11,8 @@ import { supabase } from "@/lib/supabase";
 import AddTeacherModal from "./components/AddTeacherModal";
 import EditTeacherModal from "./components/EditTeacherModal";
 
+export const dynamic = 'force-dynamic';
+
 interface Teacher {
     id: string;
     name: string;
@@ -49,25 +51,25 @@ export default function AdminTeachersPage() {
         if (sortField !== field) {
             return <ArrowUpDown className="w-4 h-4" />;
         }
-        return sortDirection === 'asc' ? 
-            <ArrowUp className="w-4 h-4" /> : 
+        return sortDirection === 'asc' ?
+            <ArrowUp className="w-4 h-4" /> :
             <ArrowDown className="w-4 h-4" />;
     };
 
     // 정렬된 강사 목록 생성
     const getSortedTeachers = (teachers: Teacher[]) => {
         if (!sortField) return teachers;
-        
+
         return [...teachers].sort((a, b) => {
             let aValue: any = a[sortField as keyof Teacher];
             let bValue: any = b[sortField as keyof Teacher];
-            
+
             // 문자열 필드 처리
             if (typeof aValue === 'string') {
                 aValue = aValue.toLowerCase();
                 bValue = bValue.toLowerCase();
             }
-            
+
             if (aValue < bValue) {
                 return sortDirection === 'asc' ? -1 : 1;
             }
@@ -180,7 +182,7 @@ export default function AdminTeachersPage() {
                         <TableHeader>
                             <TableRow className="border-cyan-500/20">
                                 <TableHead className="text-cyan-200 text-center">프로필</TableHead>
-                                <TableHead 
+                                <TableHead
                                     className="text-cyan-200 cursor-pointer hover:text-cyan-100 transition-colors select-none"
                                     onClick={() => handleSort('name')}
                                 >
@@ -189,7 +191,7 @@ export default function AdminTeachersPage() {
                                         {getSortIcon('name')}
                                     </div>
                                 </TableHead>
-                                <TableHead 
+                                <TableHead
                                     className="text-cyan-200 cursor-pointer hover:text-cyan-100 transition-colors select-none"
                                     onClick={() => handleSort('email')}
                                 >
@@ -198,7 +200,7 @@ export default function AdminTeachersPage() {
                                         {getSortIcon('email')}
                                     </div>
                                 </TableHead>
-                                <TableHead 
+                                <TableHead
                                     className="text-cyan-200 cursor-pointer hover:text-cyan-100 transition-colors select-none"
                                     onClick={() => handleSort('phone')}
                                 >
@@ -207,7 +209,7 @@ export default function AdminTeachersPage() {
                                         {getSortIcon('phone')}
                                     </div>
                                 </TableHead>
-                                <TableHead 
+                                <TableHead
                                     className="text-cyan-200 text-center cursor-pointer hover:text-cyan-100 transition-colors select-none"
                                     onClick={() => handleSort('subject')}
                                 >
@@ -216,7 +218,7 @@ export default function AdminTeachersPage() {
                                         {getSortIcon('subject')}
                                     </div>
                                 </TableHead>
-                                <TableHead 
+                                <TableHead
                                     className="text-cyan-200 text-center cursor-pointer hover:text-cyan-100 transition-colors select-none"
                                     onClick={() => handleSort('status')}
                                 >
@@ -225,7 +227,7 @@ export default function AdminTeachersPage() {
                                         {getSortIcon('status')}
                                     </div>
                                 </TableHead>
-                                <TableHead 
+                                <TableHead
                                     className="text-cyan-200 text-center cursor-pointer hover:text-cyan-100 transition-colors select-none"
                                     onClick={() => handleSort('createdAt')}
                                 >
@@ -271,7 +273,7 @@ export default function AdminTeachersPage() {
                                             </div>
                                         </TableCell>
                                         <TableCell className="text-cyan-100 font-medium">
-                                            <button 
+                                            <button
                                                 onClick={() => handleEditTeacher(teacher)}
                                                 className="text-cyan-100 hover:text-cyan-300 transition-colors cursor-pointer"
                                             >

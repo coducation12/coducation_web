@@ -16,6 +16,8 @@ import AddStudentModal, { StudentFormData } from "@/components/common/AddStudent
 import EditStudentModal from "@/components/common/EditStudentModal";
 import { useToast } from "@/hooks/use-toast";
 
+export const dynamic = 'force-dynamic';
+
 interface Student {
     id: string;
     name: string;
@@ -33,7 +35,7 @@ interface Student {
     classSchedules?: ClassSchedule[];
     assignedTeacherId?: string;
     assignedTeacherName?: string;
-    assignedTeachers?: Array<{id: string, name: string}>;
+    assignedTeachers?: Array<{ id: string, name: string }>;
 }
 
 interface ClassSchedule {
@@ -51,7 +53,7 @@ export default function AdminStudentsPage() {
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
     const [studentToDelete, setStudentToDelete] = useState<Student | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
-    const [teachers, setTeachers] = useState<{id: string, name: string}[]>([]);
+    const [teachers, setTeachers] = useState<{ id: string, name: string }[]>([]);
     const [sortField, setSortField] = useState<string | null>(null);
     const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
     const { toast } = useToast();
@@ -71,26 +73,26 @@ export default function AdminStudentsPage() {
         if (sortField !== field) {
             return <ArrowUpDown className="w-4 h-4" />;
         }
-        return sortDirection === 'asc' ? 
-            <ArrowUp className="w-4 h-4" /> : 
+        return sortDirection === 'asc' ?
+            <ArrowUp className="w-4 h-4" /> :
             <ArrowDown className="w-4 h-4" />;
     };
 
     // 정렬된 학생 목록 생성
     const getSortedStudents = (students: Student[]) => {
         if (!sortField) return students;
-        
+
         return [...students].sort((a, b) => {
             let aValue: any = a[sortField as keyof Student];
             let bValue: any = b[sortField as keyof Student];
-            
-            
+
+
             // 문자열 필드 처리
             if (typeof aValue === 'string') {
                 aValue = aValue.toLowerCase();
                 bValue = bValue.toLowerCase();
             }
-            
+
             if (aValue < bValue) {
                 return sortDirection === 'asc' ? -1 : 1;
             }
@@ -104,7 +106,7 @@ export default function AdminStudentsPage() {
     // 담당강사별 색상 매핑 함수
     const getTeacherColor = (teacherName: string) => {
         if (teacherName === '미지정') return 'text-gray-400';
-        
+
         const colors = [
             'text-blue-300',    // 파란색
             'text-green-300',   // 초록색
@@ -115,7 +117,7 @@ export default function AdminStudentsPage() {
             'text-cyan-300',    // 청록색
             'text-red-300',     // 빨간색
         ];
-        
+
         // 강사 이름의 해시값을 사용해서 일관된 색상 할당
         let hash = 0;
         for (let i = 0; i < teacherName.length; i++) {
@@ -185,13 +187,13 @@ export default function AdminStudentsPage() {
                 ), 
                 parent:users!students_parent_id_fkey ( phone )
             `)
-            // 모든 상태의 학생 포함 (active, pending)
-        
+        // 모든 상태의 학생 포함 (active, pending)
+
         if (error) {
             setStudents([]);
             return;
         }
-        
+
         // Student 타입에 맞게 매핑
         const mapped = (data || []).map((item: any) => {
             // 담당강사 정보 찾기 (students 테이블의 assigned_teachers 배열에서 최대 2명)
@@ -200,12 +202,12 @@ export default function AdminStudentsPage() {
                 const teacher = currentTeachers.find(t => t.id === teacherId);
                 return teacher || { id: teacherId, name: `강사 ${teacherId.slice(-4)}` };
             });
-            
+
             // 기존 호환성을 위한 첫 번째 강사 정보
             const assignedTeacherId = assignedTeacherIds.length > 0 ? assignedTeacherIds[0] : null;
             const assignedTeacherName = assignedTeachers.length > 0 ? assignedTeachers[0].name : '미지정';
-            
-            
+
+
             return {
                 id: item.user_id,
                 name: item.users?.name || '-',
@@ -216,8 +218,8 @@ export default function AdminStudentsPage() {
                 avatar: '/default-avatar.png',
                 course: '프로그래밍', // 기본값, 나중에 실제 과목 데이터로 교체
                 curriculum: '기초 프로그래밍', // 기본값, 나중에 실제 커리큘럼 데이터로 교체
-                status: item.users?.status === 'pending' ? '승인대기' : 
-                        item.users?.status === 'suspended' ? '휴강' : '수강',
+                status: item.users?.status === 'pending' ? '승인대기' :
+                    item.users?.status === 'suspended' ? '휴강' : '수강',
                 joinDate: item.users?.created_at ? new Date(item.users.created_at).toLocaleDateString() : '-',
                 lastLogin: '2024-01-15', // 기본값, 나중에 실제 마지막 로그인 데이터로 교체
                 studentId: item.users?.username || '-',
@@ -228,7 +230,7 @@ export default function AdminStudentsPage() {
                     // 숫자를 요일로 변환 (0=일요일, 1=월요일, ..., 6=토요일)
                     const dayMap: { [key: string]: string } = {
                         '0': 'sunday',
-                        '1': 'monday', 
+                        '1': 'monday',
                         '2': 'tuesday',
                         '3': 'wednesday',
                         '4': 'thursday',
@@ -243,7 +245,7 @@ export default function AdminStudentsPage() {
                 }) : []
             };
         });
-        
+
         setStudents(mapped);
     };
 
@@ -279,7 +281,7 @@ export default function AdminStudentsPage() {
                     description: `${studentData.name} 학생이 성공적으로 등록되었습니다.`,
                     variant: "default",
                 });
-                
+
                 // 학생 목록 새로고침
                 fetchStudents();
             } else {
@@ -386,10 +388,10 @@ export default function AdminStudentsPage() {
             }
 
             // 로컬 상태 업데이트
-            setStudents(prev => prev.map(student => 
-                student.id === studentId 
-                    ? { 
-                        ...student, 
+            setStudents(prev => prev.map(student =>
+                student.id === studentId
+                    ? {
+                        ...student,
                         assignedTeachers: newTeachers,
                         assignedTeacherId: newTeachers.length > 0 ? newTeachers[0].id : undefined,
                         assignedTeacherName: newTeachers.length > 0 ? newTeachers[0].name : '미지정'
@@ -432,7 +434,7 @@ export default function AdminStudentsPage() {
                     description: `${studentData.name} 학생의 정보가 성공적으로 수정되었습니다.`,
                     variant: "default",
                 });
-                
+
                 // 학생 목록 새로고침
                 fetchStudents();
             } else {
@@ -488,7 +490,7 @@ export default function AdminStudentsPage() {
                     <Table>
                         <TableHeader>
                             <TableRow className="border-cyan-500/20">
-                                <TableHead 
+                                <TableHead
                                     className="text-cyan-200 cursor-pointer hover:text-cyan-100 transition-colors select-none"
                                     onClick={() => handleSort('name')}
                                 >
@@ -497,7 +499,7 @@ export default function AdminStudentsPage() {
                                         {getSortIcon('name')}
                                     </div>
                                 </TableHead>
-                                <TableHead 
+                                <TableHead
                                     className="text-cyan-200 cursor-pointer hover:text-cyan-100 transition-colors select-none"
                                     onClick={() => handleSort('phone')}
                                 >
@@ -506,7 +508,7 @@ export default function AdminStudentsPage() {
                                         {getSortIcon('phone')}
                                     </div>
                                 </TableHead>
-                                <TableHead 
+                                <TableHead
                                     className="text-cyan-200 cursor-pointer hover:text-cyan-100 transition-colors select-none"
                                     onClick={() => handleSort('course')}
                                 >
@@ -515,7 +517,7 @@ export default function AdminStudentsPage() {
                                         {getSortIcon('course')}
                                     </div>
                                 </TableHead>
-                                <TableHead 
+                                <TableHead
                                     className="text-cyan-200 cursor-pointer hover:text-cyan-100 transition-colors select-none"
                                     onClick={() => handleSort('assignedTeacherName')}
                                 >
@@ -524,7 +526,7 @@ export default function AdminStudentsPage() {
                                         {getSortIcon('assignedTeacherName')}
                                     </div>
                                 </TableHead>
-                                <TableHead 
+                                <TableHead
                                     className="text-cyan-200 cursor-pointer hover:text-cyan-100 transition-colors select-none"
                                     onClick={() => handleSort('status')}
                                 >
@@ -533,7 +535,7 @@ export default function AdminStudentsPage() {
                                         {getSortIcon('status')}
                                     </div>
                                 </TableHead>
-                                <TableHead 
+                                <TableHead
                                     className="text-cyan-200 cursor-pointer hover:text-cyan-100 transition-colors select-none"
                                     onClick={() => handleSort('joinDate')}
                                 >
@@ -549,8 +551,8 @@ export default function AdminStudentsPage() {
                         </TableHeader>
                         <TableBody>
                             {sortedStudents.map((student) => (
-                                <TableRow 
-                                    key={student.id} 
+                                <TableRow
+                                    key={student.id}
                                     className="border-cyan-500/10 hover:bg-cyan-900/10 cursor-pointer"
                                     onClick={() => handleEditStudent(student)}
                                 >
@@ -571,8 +573,8 @@ export default function AdminStudentsPage() {
                                     <TableCell className="text-cyan-300">
                                         <div className="flex items-center space-x-2">
                                             {/* 첫 번째 담당강사 */}
-                                            <Select 
-                                                value={student.assignedTeachers?.[0]?.id || 'none'} 
+                                            <Select
+                                                value={student.assignedTeachers?.[0]?.id || 'none'}
                                                 onValueChange={(value) => handleTeacherChange(student.id, value, 0)}
                                                 onClick={(e) => e.stopPropagation()}
                                             >
@@ -594,10 +596,10 @@ export default function AdminStudentsPage() {
                                                     ))}
                                                 </SelectContent>
                                             </Select>
-                                            
+
                                             {/* 두 번째 담당강사 */}
-                                            <Select 
-                                                value={student.assignedTeachers?.[1]?.id || 'none'} 
+                                            <Select
+                                                value={student.assignedTeachers?.[1]?.id || 'none'}
                                                 onValueChange={(value) => handleTeacherChange(student.id, value, 1)}
                                                 onClick={(e) => e.stopPropagation()}
                                             >
@@ -622,15 +624,15 @@ export default function AdminStudentsPage() {
                                         </div>
                                     </TableCell>
                                     <TableCell>
-                                        <Badge 
+                                        <Badge
                                             variant="outline"
-                        className={
-                            student.status === '승인대기'
-                                ? "border-yellow-500/50 text-yellow-400"
-                                : student.status === '휴강'
-                                ? "border-orange-500/50 text-orange-400"
-                                : "border-green-500/50 text-green-400"
-                        }
+                                            className={
+                                                student.status === '승인대기'
+                                                    ? "border-yellow-500/50 text-yellow-400"
+                                                    : student.status === '휴강'
+                                                        ? "border-orange-500/50 text-orange-400"
+                                                        : "border-green-500/50 text-green-400"
+                                            }
                                         >
                                             {student.status === '승인대기' ? (
                                                 <>

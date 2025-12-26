@@ -10,6 +10,8 @@ import { User, Lock, Mail, Phone, Building } from 'lucide-react';
 import { getCurrentUserClient } from '@/lib/client-auth';
 import { updateAdminProfile } from '@/lib/actions';
 
+export const dynamic = 'force-dynamic';
+
 interface AdminProfile {
   id: string;
   name: string;
@@ -24,7 +26,7 @@ export default function AdminProfilePage() {
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
-  
+
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -68,7 +70,7 @@ export default function AdminProfilePage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!profile) return;
 
     // 비밀번호 변경 시 검증
@@ -77,7 +79,7 @@ export default function AdminProfilePage() {
         setMessage({ type: 'error', text: '새 비밀번호와 확인 비밀번호가 일치하지 않습니다.' });
         return;
       }
-      
+
       if (formData.newPassword.length < 6) {
         setMessage({ type: 'error', text: '새 비밀번호는 최소 6자 이상이어야 합니다.' });
         return;
@@ -93,7 +95,7 @@ export default function AdminProfilePage() {
       formDataToSubmit.append('name', formData.name);
       formDataToSubmit.append('email', formData.email);
       formDataToSubmit.append('phone', formData.phone);
-      
+
       if (formData.newPassword) {
         formDataToSubmit.append('newPassword', formData.newPassword);
       }
@@ -179,7 +181,7 @@ export default function AdminProfilePage() {
                   <User className="w-5 h-5" />
                   기본 정보
                 </h3>
-                
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="name" className="text-cyan-200">이름 *</Label>
@@ -244,7 +246,7 @@ export default function AdminProfilePage() {
                   <Lock className="w-5 h-5" />
                   비밀번호 변경
                 </h3>
-                
+
                 <div className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
@@ -271,7 +273,7 @@ export default function AdminProfilePage() {
                       />
                     </div>
                   </div>
-                  
+
                   <p className="text-sm text-cyan-300/70">
                     비밀번호를 변경하지 않으려면 비밀번호 필드를 비워두세요.
                   </p>

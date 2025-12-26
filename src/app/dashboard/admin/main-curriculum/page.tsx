@@ -15,6 +15,8 @@ import { supabase } from '@/lib/supabase';
 import { compressImage, validateImageFile, formatFileSize } from '@/lib/image-utils';
 import type { MainCurriculum } from '@/types';
 
+export const dynamic = 'force-dynamic';
+
 export default function MainCurriculumPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [curriculums, setCurriculums] = useState<MainCurriculum[]>([]);
@@ -56,13 +58,13 @@ export default function MainCurriculumPage() {
           acc[level].push(curr);
           return acc;
         }, {} as Record<string, MainCurriculum[]>);
-        
+
         // 각 레벨별로 정렬 (display_order로 정렬)
         Object.keys(grouped).forEach(level => {
           grouped[level] = grouped[level]
             .sort((a, b) => (a.display_order || 0) - (b.display_order || 0));
         });
-        
+
         setGroupedCurriculums(grouped);
       }
       setIsLoading(false);
@@ -80,11 +82,11 @@ export default function MainCurriculumPage() {
       acc[level].push(curr);
       return acc;
     }, {} as Record<string, MainCurriculum[]>);
-    
+
     Object.keys(grouped).forEach(level => {
       grouped[level].sort((a, b) => (a.display_order || 0) - (b.display_order || 0));
     });
-    
+
     setGroupedCurriculums(grouped);
   };
 
@@ -96,16 +98,16 @@ export default function MainCurriculumPage() {
     const level = curriculum.level;
     const levelCurriculums = groupedCurriculums[level] || [];
     const currentIndex = levelCurriculums.findIndex(c => c.id === curriculumId);
-    
+
     if (currentIndex === -1) return;
-    
+
     const newIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
     if (newIndex < 0 || newIndex >= levelCurriculums.length) return;
 
     // 같은 레벨 내에서만 순서 변경
     const reordered = [...levelCurriculums];
     [reordered[currentIndex], reordered[newIndex]] = [reordered[newIndex], reordered[currentIndex]];
-    
+
     // display_order 업데이트
     const updatedCurriculums = curriculums.map(curr => {
       const reorderedItem = reordered.find(r => r.id === curr.id);
@@ -130,14 +132,14 @@ export default function MainCurriculumPage() {
       acc[level].push(curr);
       return acc;
     }, {} as Record<string, MainCurriculum[]>);
-    
+
     Object.keys(grouped).forEach(level => {
       grouped[level] = grouped[level]
         .sort((a, b) => (a.display_order || 0) - (b.display_order || 0));
     });
-    
+
     setGroupedCurriculums(grouped);
-    
+
     // 순서 변경 시 자동 저장
     saveCurriculums(updatedCurriculums.filter(c => c.level === level));
   };
@@ -221,7 +223,7 @@ export default function MainCurriculumPage() {
   // 이미지 업로드 처리
   const handleImageUpload = async (file: File) => {
     if (!file) return;
-    
+
     setIsUploading(true);
     try {
       // 파일 유효성 검사
@@ -324,7 +326,7 @@ export default function MainCurriculumPage() {
       if (result.success) {
         alert('커리큘럼이 성공적으로 추가되었습니다.');
         closeModal();
-        
+
         // 목록 다시 로드
         const loadResult = await getMainCurriculums();
         if (loadResult.success && loadResult.data) {
@@ -368,7 +370,7 @@ export default function MainCurriculumPage() {
       if (result.success) {
         alert('커리큘럼이 성공적으로 수정되었습니다.');
         closeEditModal();
-        
+
         // 목록 다시 로드
         const loadResult = await getMainCurriculums();
         if (loadResult.success && loadResult.data) {
@@ -394,7 +396,7 @@ export default function MainCurriculumPage() {
 
     try {
       const deleteResult = await deleteMainCurriculum(selectedCurriculum.id);
-      
+
       if (!deleteResult.success) {
         alert(deleteResult.error || '커리큘럼 삭제에 실패했습니다.');
         return;
@@ -402,7 +404,7 @@ export default function MainCurriculumPage() {
 
       alert('커리큘럼이 성공적으로 삭제되었습니다.');
       closeEditModal();
-      
+
       // 목록 다시 로드
       const loadResult = await getMainCurriculums();
       if (loadResult.success && loadResult.data) {
@@ -484,7 +486,7 @@ export default function MainCurriculumPage() {
                           </div>
 
                           {/* 커리큘럼 정보 */}
-                          <div 
+                          <div
                             className="flex-grow min-w-0 cursor-pointer"
                             onClick={() => openEditModal(curriculum)}
                           >
@@ -543,7 +545,7 @@ export default function MainCurriculumPage() {
               {selectedLevel} 과정 항목 추가
             </DialogTitle>
           </DialogHeader>
-          
+
           <div className="space-y-4 mt-4">
             <div className="space-y-2">
               <Label htmlFor="title" className="text-cyan-200">과정명 *</Label>
@@ -661,7 +663,7 @@ export default function MainCurriculumPage() {
               커리큘럼 수정
             </DialogTitle>
           </DialogHeader>
-          
+
           <div className="space-y-4 mt-4">
             <div className="space-y-2">
               <Label htmlFor="edit-title" className="text-cyan-200">과정명 *</Label>

@@ -11,11 +11,13 @@ import { supabase } from '@/lib/supabase';
 import { updateContent, getContent } from '@/lib/actions';
 import { compressImage, validateImageFile, formatFileSize } from '@/lib/image-utils';
 
+export const dynamic = 'force-dynamic';
+
 export default function ContentManagePage() {
   const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
   const [isUploading, setIsUploading] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  
+
   // 통합 컨텐츠 상태
   const [content, setContent] = useState({
     academy_title: '코딩메이커 학원 안내',
@@ -123,7 +125,7 @@ export default function ContentManagePage() {
           if (section === 'academy' && slideIndex !== undefined) {
             setContent(prev => ({
               ...prev,
-              academy_slides: prev.academy_slides.map((slide, idx) => 
+              academy_slides: prev.academy_slides.map((slide, idx) =>
                 idx === slideIndex ? { ...slide, image: urlData.publicUrl } : slide
               )
             }));
@@ -173,7 +175,7 @@ export default function ContentManagePage() {
     formData.append('featured_card_2_link', content.featured_card_2_link || '');
 
     const result = await updateContent(formData);
-    
+
     if (result.success) {
       alert('모든 컨텐츠가 저장되었습니다.');
       // 저장 후 데이터 다시 로드
@@ -213,13 +215,13 @@ export default function ContentManagePage() {
       alert('최소 1개의 슬라이드는 필요합니다.');
       return;
     }
-    
+
     if (confirm('정말로 이 슬라이드를 삭제하시겠습니까?')) {
       setContent(prev => ({
         ...prev,
         academy_slides: prev.academy_slides.filter((_, idx) => idx !== index)
       }));
-      
+
       // 현재 인덱스 조정
       if (currentSlideIndex >= content.academy_slides.length - 1) {
         setCurrentSlideIndex(Math.max(0, content.academy_slides.length - 2));
@@ -233,12 +235,12 @@ export default function ContentManagePage() {
 
     const newSlides = [...content.academy_slides];
     [newSlides[index], newSlides[newIndex]] = [newSlides[newIndex], newSlides[index]];
-    
+
     setContent(prev => ({
       ...prev,
       academy_slides: newSlides
     }));
-    
+
     setCurrentSlideIndex(newIndex);
   };
 
@@ -255,7 +257,7 @@ export default function ContentManagePage() {
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-cyan-100 drop-shadow-[0_0_6px_#00fff7]">메인페이지 컨텐츠 관리</h1>
       </div>
-      
+
       <div className="space-y-16 max-w-7xl mx-auto">
 
         {/* Academy 섹션 */}
@@ -263,7 +265,7 @@ export default function ContentManagePage() {
           <div className="absolute -top-4 left-6 bg-orange-600 px-4 py-2 rounded text-white font-bold">
             학원 안내 섹션
           </div>
-          
+
           <div className="container px-6 pt-8">
             <div className="flex flex-col items-center text-center space-y-6 mb-12">
               <div className="space-y-2 w-full max-w-4xl">
@@ -287,7 +289,7 @@ export default function ContentManagePage() {
                 />
               </div>
             </div>
-            
+
             {/* 슬라이드 섹션 */}
             <div className="mb-12">
               <div className="flex items-center justify-between mb-6">
@@ -312,7 +314,7 @@ export default function ContentManagePage() {
                     <ChevronRight className="w-4 h-4" />
                   </Button>
                 </div>
-                
+
                 <div className="flex items-center gap-2">
                   <Button
                     onClick={addSlide}
@@ -351,7 +353,7 @@ export default function ContentManagePage() {
                   </Button>
                 </div>
               </div>
-              
+
               <div className="grid grid-cols-1 md:grid-cols-2 items-center bg-card rounded-xl overflow-hidden border-2 border-orange-400/30">
                 <div className="p-8 md:p-12 space-y-6 order-2 md:order-1">
                   <div className="space-y-2">
@@ -383,9 +385,9 @@ export default function ContentManagePage() {
                   </div>
                 </div>
                 <div className="relative w-full h-96 order-1 md:order-2 cursor-pointer group"
-                     onClick={() => handleImageUpload('academy', currentSlideIndex)}>
-                  <Image 
-                    src={content.academy_slides[currentSlideIndex].image} 
+                  onClick={() => handleImageUpload('academy', currentSlideIndex)}>
+                  <Image
+                    src={content.academy_slides[currentSlideIndex].image}
                     alt={content.academy_slides[currentSlideIndex].title}
                     width={600}
                     height={400}
@@ -410,18 +412,17 @@ export default function ContentManagePage() {
                   )}
                 </div>
               </div>
-              
+
               {/* 슬라이드 도트 네비게이션 */}
               <div className="flex justify-center items-center gap-2 mt-6">
                 {content.academy_slides.map((_, index) => (
                   <button
                     key={index}
                     onClick={() => setCurrentSlideIndex(index)}
-                    className={`w-4 h-4 rounded-full transition-all ${
-                      index === currentSlideIndex 
-                        ? 'bg-orange-400 scale-125 shadow-lg' 
+                    className={`w-4 h-4 rounded-full transition-all ${index === currentSlideIndex
+                        ? 'bg-orange-400 scale-125 shadow-lg'
                         : 'bg-gray-400 hover:bg-gray-300'
-                    }`}
+                      }`}
                   />
                 ))}
               </div>
@@ -454,12 +455,12 @@ export default function ContentManagePage() {
                   </CardHeader>
                   <CardContent className="p-0">
                     <div className="grid grid-cols-2 gap-2 p-4">
-                      <div 
+                      <div
                         className="relative aspect-[4/3] rounded-lg overflow-hidden cursor-pointer group"
                         onClick={() => handleImageUpload('featured', undefined, 1, 1)}
                       >
-                        <Image 
-                          src={content.featured_card_1_image_1} 
+                        <Image
+                          src={content.featured_card_1_image_1}
                           alt="코딩메이커 중마 외부 이미지"
                           fill
                           className="object-cover"
@@ -479,12 +480,12 @@ export default function ContentManagePage() {
                           </div>
                         )}
                       </div>
-                      <div 
+                      <div
                         className="relative aspect-[4/3] rounded-lg overflow-hidden cursor-pointer group"
                         onClick={() => handleImageUpload('featured', undefined, 1, 2)}
                       >
-                        <Image 
-                          src={content.featured_card_1_image_2} 
+                        <Image
+                          src={content.featured_card_1_image_2}
                           alt="코딩메이커 중마 지도"
                           fill
                           className="object-cover"
@@ -532,12 +533,12 @@ export default function ContentManagePage() {
                   </CardHeader>
                   <CardContent className="p-0">
                     <div className="grid grid-cols-2 gap-2 p-4">
-                      <div 
+                      <div
                         className="relative aspect-[4/3] rounded-lg overflow-hidden cursor-pointer group"
                         onClick={() => handleImageUpload('featured', undefined, 2, 1)}
                       >
-                        <Image 
-                          src={content.featured_card_2_image_1} 
+                        <Image
+                          src={content.featured_card_2_image_1}
                           alt="광양코딩 창덕 외부 이미지"
                           fill
                           className="object-cover"
@@ -557,12 +558,12 @@ export default function ContentManagePage() {
                           </div>
                         )}
                       </div>
-                      <div 
+                      <div
                         className="relative aspect-[4/3] rounded-lg overflow-hidden cursor-pointer group"
                         onClick={() => handleImageUpload('featured', undefined, 2, 2)}
                       >
-                        <Image 
-                          src={content.featured_card_2_image_2} 
+                        <Image
+                          src={content.featured_card_2_image_2}
                           alt="광양코딩 창덕 지도"
                           fill
                           className="object-cover"
@@ -590,7 +591,7 @@ export default function ContentManagePage() {
           </div>
         </section>
       </div>
-      
+
       {/* 최하단 전체 저장 버튼 */}
       <div className="w-full flex justify-center py-8">
         <Button

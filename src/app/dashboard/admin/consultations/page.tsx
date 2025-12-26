@@ -298,7 +298,7 @@ export default function AdminConsultationsPage() {
                     </span>
                     <span className="text-sm font-normal text-white ml-4">
                       <Building2 className="h-4 w-4 inline mr-1" />
-                      {academyLabels[consultation.academy as keyof typeof academyLabels]}
+                      {academyLabels[consultation.academy as keyof typeof academyLabels] || consultation.academy}
                     </span>
                     <span className="text-sm font-normal text-white ml-4">
                       <CalendarDays className="h-4 w-4 inline mr-1" />
@@ -316,7 +316,7 @@ export default function AdminConsultationsPage() {
                     <div className="col-span-1">
                       <Label className="text-sm font-medium">문의 과목</Label>
                       <p className="text-sm text-white">
-                        {subjectLabels[consultation.subject as keyof typeof subjectLabels]}
+                        {subjectLabels[consultation.subject as keyof typeof subjectLabels] || consultation.subject}
                       </p>
                     </div>
                     <div className="col-span-4">
@@ -411,7 +411,7 @@ export default function AdminConsultationsPage() {
                     </span>
                     <span className="text-sm font-normal text-white ml-4">
                       <Building2 className="h-4 w-4 inline mr-1" />
-                      {academyLabels[consultation.academy as keyof typeof academyLabels]}
+                      {academyLabels[consultation.academy as keyof typeof academyLabels] || consultation.academy}
                     </span>
                     <span className="text-sm font-normal text-white ml-4">
                       <CalendarDays className="h-4 w-4 inline mr-1" />
@@ -429,7 +429,7 @@ export default function AdminConsultationsPage() {
                     <div className="col-span-1">
                       <Label className="text-sm font-medium">문의 과목</Label>
                       <p className="text-sm text-white">
-                        {subjectLabels[consultation.subject as keyof typeof subjectLabels]}
+                        {subjectLabels[consultation.subject as keyof typeof subjectLabels] || consultation.subject}
                       </p>
                     </div>
                     <div className="col-span-4">

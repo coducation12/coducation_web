@@ -15,7 +15,7 @@ interface UserInfo {
   id: string;
   name: string;
   email: string;
-  phone: string;
+  phone?: string;
   academy: string;
   profile_image_url?: string;
   created_at: string;
@@ -33,9 +33,10 @@ interface TeacherProfileClientProps {
     id: string;
     name: string;
     email: string;
-    phone: string;
-    academy: string;
     profile_image_url?: string;
+    phone?: string;
+    academy?: string;
+    birth_year?: number;
     role: string;
   };
 }
@@ -73,7 +74,7 @@ export default function TeacherProfileClient({ user }: TeacherProfileClientProps
       }
 
       setTeacherInfo(teacherData);
-      
+
       // 폼 데이터 설정
       setFormData(prev => ({
         ...prev,
@@ -192,7 +193,7 @@ export default function TeacherProfileClient({ user }: TeacherProfileClientProps
                 className="mt-2"
               />
             </div>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="name" className="text-cyan-200">이름</Label>

@@ -54,7 +54,7 @@ export default async function ParentDashboardPage({
           <div className="grid grid-cols-2 gap-6 h-full">
             <DashboardCard className="flex flex-col min-w-[180px] h-full">
               <section className="flex-1">
-                <AttendanceCalendar />
+                <AttendanceCalendar studentId={studentId} />
               </section>
             </DashboardCard>
             <DashboardCard className="flex flex-col min-w-[180px] h-full">

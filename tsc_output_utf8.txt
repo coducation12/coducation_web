@@ -1,0 +1,23 @@
+﻿.next/types/validator.ts(395,39): error TS2306: File 'C:/Users/tech_ha/Desktop/Project Files/Coducation Web/src/app/dashboard/typing/korean/basic/page.tsx' is not a module.
+src/app/dashboard/admin/profile/page.tsx(47,20): error TS2345: Argument of type 'User' is not assignable to parameter of type 'SetStateAction<AdminProfile | null>'.
+  Type 'User' is not assignable to type 'AdminProfile'.
+    Types of property 'phone' are incompatible.
+      Type 'string | undefined' is not assignable to type 'string'.
+        Type 'undefined' is not assignable to type 'string'.
+src/app/dashboard/admin/students/page.tsx(202,54): error TS7006: Parameter 't' implicitly has an 'any' type.
+src/app/dashboard/admin/students/page.tsx(579,49): error TS2322: Type '{ children: Element[]; value: string; onValueChange: (value: string) => Promise<void>; onClick: (e: any) => any; }' is not assignable to type 'IntrinsicAttributes & SelectSharedProps & { value?: string | undefined; defaultValue?: string | undefined; onValueChange?(value: string): void; }'.
+  Property 'onClick' does not exist on type 'IntrinsicAttributes & SelectSharedProps & { value?: string | undefined; defaultValue?: string | undefined; onValueChange?(value: string): void; }'.
+src/app/dashboard/admin/students/page.tsx(579,59): error TS7006: Parameter 'e' implicitly has an 'any' type.
+src/app/dashboard/admin/students/page.tsx(604,49): error TS2322: Type '{ children: Element[]; value: string; onValueChange: (value: string) => Promise<void>; onClick: (e: any) => any; }' is not assignable to type 'IntrinsicAttributes & SelectSharedProps & { value?: string | undefined; defaultValue?: string | undefined; onValueChange?(value: string): void; }'.
+  Property 'onClick' does not exist on type 'IntrinsicAttributes & SelectSharedProps & { value?: string | undefined; defaultValue?: string | undefined; onValueChange?(value: string): void; }'.
+src/app/dashboard/admin/students/page.tsx(604,59): error TS7006: Parameter 'e' implicitly has an 'any' type.
+src/app/dashboard/parent/page.tsx(57,18): error TS2741: Property 'studentId' is missing in type '{}' but required in type 'AttendanceCalendarProps'.
+src/app/dashboard/student/profile/profile-client.tsx(38,15): error TS2339: Property 'profile_image_url' does not exist on type '{ id: string; name: string; role: string; email?: string | undefined; grade?: string | undefined; phone?: string | undefined; academy?: string | undefined; birth_year?: number | undefined; }'.
+src/app/dashboard/student/profile/profile-client.tsx(39,28): error TS2339: Property 'profile_image_url' does not exist on type '{ id: string; name: string; role: string; email?: string | undefined; grade?: string | undefined; phone?: string | undefined; academy?: string | undefined; birth_year?: number | undefined; }'.
+src/app/dashboard/teacher/curriculum/components/EditCurriculumModal.tsx(114,19): error TS2554: Expected 1 arguments, but got 0.
+src/app/dashboard/teacher/curriculum/components/EditCurriculumModal.tsx(114,19): error TS7009: 'new' expression, whose target lacks a construct signature, implicitly has an 'any' type.
+src/app/dashboard/teacher/curriculum/components/EditCurriculumModal.tsx(145,22): error TS7006: Parameter 'error' implicitly has an 'any' type.
+src/app/dashboard/teacher/profile/page.tsx(18,32): error TS2322: Type 'User' is not assignable to type '{ id: string; name: string; email: string; phone: string; academy: string; profile_image_url?: string | undefined; role: string; }'.
+  Types of property 'phone' are incompatible.
+    Type 'string | undefined' is not assignable to type 'string'.
+      Type 'undefined' is not assignable to type 'string'.

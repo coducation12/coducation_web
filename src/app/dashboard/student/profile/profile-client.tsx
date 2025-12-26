@@ -17,6 +17,7 @@ interface StudentProfileClientProps {
     role: string;
     email?: string;
     grade?: string;
+    profile_image_url?: string;
     phone?: string;
     academy?: string;
     birth_year?: number;
@@ -116,13 +117,13 @@ export function StudentProfileClient({ user }: StudentProfileClientProps) {
 
       // 프로필 이미지 상태 업데이트
       setProfileImage(urlData.publicUrl)
-      
+
       // 로컬 스토리지에 저장 (임시)
       localStorage.setItem('profile_image', urlData.publicUrl)
-      
+
       // 커스텀 이벤트 발생으로 사이드바 업데이트
       window.dispatchEvent(new CustomEvent('profileImageUpdated'))
-      
+
       toast({
         title: "성공",
         description: "프로필 이미지가 업데이트되었습니다.",
@@ -177,7 +178,7 @@ export function StudentProfileClient({ user }: StudentProfileClientProps) {
       // bcrypt를 사용한 비밀번호 확인 (클라이언트에서는 bcryptjs 사용)
       const bcrypt = await import('bcryptjs')
       const match = await bcrypt.compare(currentPassword, userData.password)
-      
+
       if (!match) {
         setPasswordError('현재 비밀번호가 올바르지 않습니다.')
         return
@@ -199,7 +200,7 @@ export function StudentProfileClient({ user }: StudentProfileClientProps) {
       setCurrentPassword('')
       setNewPassword('')
       setConfirmPassword('')
-      
+
       toast({
         title: "성공",
         description: "비밀번호가 성공적으로 변경되었습니다.",
@@ -216,7 +217,7 @@ export function StudentProfileClient({ user }: StudentProfileClientProps) {
     <div className="student-dashboard-content w-full h-full flex-1 min-h-0 px-4 py-4 lg:px-12 lg:py-10 box-border pt-16 lg:pt-2">
       <div className="max-w-4xl mx-auto space-y-8">
         <h1 className="text-3xl font-bold text-cyan-100 mb-8">내 정보</h1>
-        
+
         {/* 프로필 이미지 섹션 */}
         <Card className="bg-cyan-950/50 border-cyan-400/20">
           <CardHeader>
@@ -265,33 +266,33 @@ export function StudentProfileClient({ user }: StudentProfileClientProps) {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <Label className="text-cyan-300">이름</Label>
-                <Input 
-                  value={user.name || ''} 
-                  disabled 
+                <Input
+                  value={user.name || ''}
+                  disabled
                   className="bg-cyan-900/30 border-cyan-400/20 text-cyan-100"
                 />
               </div>
               <div>
                 <Label className="text-cyan-300">역할</Label>
-                <Input 
-                  value={user.role || ''} 
-                  disabled 
+                <Input
+                  value={user.role || ''}
+                  disabled
                   className="bg-cyan-900/30 border-cyan-400/20 text-cyan-100"
                 />
               </div>
               <div>
                 <Label className="text-cyan-300">이메일</Label>
-                <Input 
-                  value={user.email || ''} 
-                  disabled 
+                <Input
+                  value={user.email || ''}
+                  disabled
                   className="bg-cyan-900/30 border-cyan-400/20 text-cyan-100"
                 />
               </div>
               <div>
                 <Label className="text-cyan-300">학년</Label>
-                <Input 
-                  value={user.grade || ''} 
-                  disabled 
+                <Input
+                  value={user.grade || ''}
+                  disabled
                   className="bg-cyan-900/30 border-cyan-400/20 text-cyan-100"
                 />
               </div>
@@ -311,47 +312,47 @@ export function StudentProfileClient({ user }: StudentProfileClientProps) {
             <form onSubmit={handleChangePassword} className="space-y-4">
               <div>
                 <Label htmlFor="currentPassword" className="text-cyan-300">현재 비밀번호</Label>
-                <Input 
-                  id="currentPassword" 
-                  type="password" 
-                  value={currentPassword} 
-                  onChange={e => setCurrentPassword(e.target.value)} 
-                  required 
+                <Input
+                  id="currentPassword"
+                  type="password"
+                  value={currentPassword}
+                  onChange={e => setCurrentPassword(e.target.value)}
+                  required
                   className="bg-cyan-900/30 border-cyan-400/20 text-cyan-100"
                 />
               </div>
               <div>
                 <Label htmlFor="newPassword" className="text-cyan-300">새 비밀번호</Label>
-                <Input 
-                  id="newPassword" 
-                  type="password" 
-                  value={newPassword} 
-                  onChange={e => setNewPassword(e.target.value)} 
-                  required 
+                <Input
+                  id="newPassword"
+                  type="password"
+                  value={newPassword}
+                  onChange={e => setNewPassword(e.target.value)}
+                  required
                   className="bg-cyan-900/30 border-cyan-400/20 text-cyan-100"
                 />
               </div>
               <div>
                 <Label htmlFor="confirmPassword" className="text-cyan-300">새 비밀번호 확인</Label>
-                <Input 
-                  id="confirmPassword" 
-                  type="password" 
-                  value={confirmPassword} 
-                  onChange={e => setConfirmPassword(e.target.value)} 
-                  required 
+                <Input
+                  id="confirmPassword"
+                  type="password"
+                  value={confirmPassword}
+                  onChange={e => setConfirmPassword(e.target.value)}
+                  required
                   className="bg-cyan-900/30 border-cyan-400/20 text-cyan-100"
                 />
               </div>
-              
+
               {passwordError && (
                 <div className="text-red-400 text-sm">{passwordError}</div>
               )}
               {passwordSuccess && (
                 <div className="text-cyan-400 text-sm">{passwordSuccess}</div>
               )}
-              
-              <Button 
-                type="submit" 
+
+              <Button
+                type="submit"
                 disabled={passwordLoading}
                 className="bg-cyan-600 hover:bg-cyan-700 text-white font-medium"
               >

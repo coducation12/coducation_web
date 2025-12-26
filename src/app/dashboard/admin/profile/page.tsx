@@ -16,7 +16,7 @@ interface AdminProfile {
   id: string;
   name: string;
   email: string;
-  phone: string;
+  phone?: string;
   academy: string;
   profile_image_url?: string;
 }

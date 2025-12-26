@@ -32,11 +32,11 @@ interface EditCurriculumModalProps {
   onUpdateCurriculum: (data: CurriculumData) => void;
 }
 
-export default function EditCurriculumModal({ 
-  isOpen, 
-  onClose, 
-  curriculum, 
-  onUpdateCurriculum 
+export default function EditCurriculumModal({
+  isOpen,
+  onClose,
+  curriculum,
+  onUpdateCurriculum
 }: EditCurriculumModalProps) {
   const [formData, setFormData] = useState<CurriculumData>({
     id: '',
@@ -87,7 +87,7 @@ export default function EditCurriculumModal({
 
   const handleImageUpload = async (file: File) => {
     if (!file) return;
-    
+
     setIsUploading(true);
     try {
       // 파일 크기 체크 (5MB 제한)
@@ -107,17 +107,17 @@ export default function EditCurriculumModal({
 
       // RLS 정책 문제로 인해 임시로 Base64 방식 사용
       // TODO: Supabase Storage RLS 정책 설정 후 다시 Supabase Storage 사용
-      
+
       // 이미지 압축을 위한 Canvas 사용
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d');
-      const img = new Image();
-      
+      const img = new window.Image();
+
       img.onload = () => {
         // 이미지 크기 조정 (최대 800px)
         const maxSize = 800;
         let { width, height } = img;
-        
+
         if (width > height) {
           if (width > maxSize) {
             height = (height * maxSize) / width;
@@ -129,31 +129,31 @@ export default function EditCurriculumModal({
             height = maxSize;
           }
         }
-        
+
         canvas.width = width;
         canvas.height = height;
-        
+
         // 이미지 그리기
         ctx?.drawImage(img, 0, 0, width, height);
-        
+
         // 압축된 Base64 생성 (품질 0.7)
         const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.7);
         setFormData(prev => ({ ...prev, image: compressedDataUrl }));
         setIsUploading(false);
       };
-      
-      img.onerror = (error) => {
+
+      img.onerror = (error: any) => {
         console.error('이미지 로드 오류:', error);
         alert('이미지를 로드하는 중 오류가 발생했습니다.');
         setIsUploading(false);
       };
-      
+
       // FileReader로 이미지 로드
       const reader = new FileReader();
       reader.onload = (e) => {
         img.src = e.target?.result as string;
       };
-      reader.onerror = (error) => {
+      reader.onerror = (error: any) => {
         console.error('파일 읽기 오류:', error);
         alert('파일을 읽는 중 오류가 발생했습니다.');
         setIsUploading(false);
@@ -183,7 +183,7 @@ export default function EditCurriculumModal({
 
   const handleSubmit = () => {
     const filteredCourses = formData.courses?.filter(course => course.trim() !== '') || [];
-    
+
     if (!formData.title.trim() || !formData.category.trim() || filteredCourses.length === 0) {
       alert('모든 필수 항목을 입력해주세요.');
       return;
@@ -193,7 +193,7 @@ export default function EditCurriculumModal({
       ...formData,
       courses: filteredCourses
     });
-    
+
     onClose();
   };
 
@@ -216,7 +216,7 @@ export default function EditCurriculumModal({
         <DialogHeader>
           <DialogTitle className="text-cyan-100 text-xl font-bold">커리큘럼 수정</DialogTitle>
         </DialogHeader>
-        
+
         <div className="space-y-6">
           {/* 기본 정보 */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -230,7 +230,7 @@ export default function EditCurriculumModal({
                 className="bg-background/40 border-cyan-400/40 text-cyan-100 placeholder:text-cyan-400/60 focus:border-cyan-400/80"
               />
             </div>
-            
+
             <div className="space-y-2">
               <Label htmlFor="category" className="text-cyan-200">분류 *</Label>
               <Input
@@ -290,9 +290,9 @@ export default function EditCurriculumModal({
             <div className="space-y-3">
               {formData.image ? (
                 <div className="relative w-full h-48 rounded-lg border border-cyan-500/30 overflow-hidden">
-                  <Image 
-                    src={formData.image.startsWith('data:') ? formData.image : formData.image} 
-                    alt="커리큘럼 이미지" 
+                  <Image
+                    src={formData.image.startsWith('data:') ? formData.image : formData.image}
+                    alt="커리큘럼 이미지"
                     fill
                     className="object-cover"
                     placeholder="blur"
@@ -360,7 +360,7 @@ export default function EditCurriculumModal({
                 과정 추가
               </Button>
             </div>
-            
+
             <Card className="bg-background/20 border-cyan-500/20">
               <CardContent className="p-4">
                 <div className="max-h-60 overflow-y-auto space-y-3 pr-2 custom-scrollbar">

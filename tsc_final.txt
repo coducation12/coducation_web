@@ -1,0 +1,1 @@
+﻿.next/types/validator.ts(395,39): error TS2307: Cannot find module '../../src/app/dashboard/typing/korean/basic/page.js' or its corresponding type declarations.

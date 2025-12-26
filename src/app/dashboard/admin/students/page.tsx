@@ -147,7 +147,11 @@ export default function AdminStudentsPage() {
             }
 
             setTeachers(data || []);
-        } catch (error) {
+        } catch (error: any) { // Added type annotation for catch error
+            // The original request included `reader.onerror` and `img.onerror` here,
+            // but they are not defined in this scope and would cause syntax errors.
+            // Assuming the intent was to add type to the catch block's error parameter.
+            // If `reader` or `img` are meant to be used, they need to be defined elsewhere.
         }
     };
 
@@ -199,7 +203,7 @@ export default function AdminStudentsPage() {
             // 담당강사 정보 찾기 (students 테이블의 assigned_teachers 배열에서 최대 2명)
             const assignedTeacherIds = item.assigned_teachers || [];
             const assignedTeachers = assignedTeacherIds.map((teacherId: string) => {
-                const teacher = currentTeachers.find(t => t.id === teacherId);
+                const teacher = currentTeachers.find((t: any) => t.id === teacherId);
                 return teacher || { id: teacherId, name: `강사 ${teacherId.slice(-4)}` };
             });
 
@@ -573,54 +577,56 @@ export default function AdminStudentsPage() {
                                     <TableCell className="text-cyan-300">
                                         <div className="flex items-center space-x-2">
                                             {/* 첫 번째 담당강사 */}
-                                            <Select
-                                                value={student.assignedTeachers?.[0]?.id || 'none'}
-                                                onValueChange={(value) => handleTeacherChange(student.id, value, 0)}
-                                                onClick={(e) => e.stopPropagation()}
-                                            >
-                                                <SelectTrigger className="w-28 h-8 text-xs bg-cyan-900/30 border-cyan-500/30 text-cyan-200">
-                                                    <SelectValue placeholder="강사1">
-                                                        <span className={`${getTeacherColor(student.assignedTeachers?.[0]?.name || '미지정')} font-medium`}>
-                                                            {student.assignedTeachers?.[0]?.name || '미지정'}
-                                                        </span>
-                                                    </SelectValue>
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    <SelectItem value="none">
-                                                        <span className="text-gray-400">미지정</span>
-                                                    </SelectItem>
-                                                    {teachers.map((teacher) => (
-                                                        <SelectItem key={teacher.id} value={teacher.id}>
-                                                            <span className={`${getTeacherColor(teacher.name)} font-medium`}>{teacher.name}</span>
+                                            <div onClick={(e) => e.stopPropagation()}>
+                                                <Select
+                                                    value={student.assignedTeachers?.[0]?.id || 'none'}
+                                                    onValueChange={(value) => handleTeacherChange(student.id, value, 0)}
+                                                >
+                                                    <SelectTrigger className="w-28 h-8 text-xs bg-cyan-900/30 border-cyan-500/30 text-cyan-200">
+                                                        <SelectValue placeholder="강사1">
+                                                            <span className={`${getTeacherColor(student.assignedTeachers?.[0]?.name || '미지정')} font-medium`}>
+                                                                {student.assignedTeachers?.[0]?.name || '미지정'}
+                                                            </span>
+                                                        </SelectValue>
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        <SelectItem value="none">
+                                                            <span className="text-gray-400">미지정</span>
                                                         </SelectItem>
-                                                    ))}
-                                                </SelectContent>
-                                            </Select>
+                                                        {teachers.map((teacher) => (
+                                                            <SelectItem key={teacher.id} value={teacher.id}>
+                                                                <span className={`${getTeacherColor(teacher.name)} font-medium`}>{teacher.name}</span>
+                                                            </SelectItem>
+                                                        ))}
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
 
                                             {/* 두 번째 담당강사 */}
-                                            <Select
-                                                value={student.assignedTeachers?.[1]?.id || 'none'}
-                                                onValueChange={(value) => handleTeacherChange(student.id, value, 1)}
-                                                onClick={(e) => e.stopPropagation()}
-                                            >
-                                                <SelectTrigger className="w-28 h-8 text-xs bg-cyan-900/30 border-cyan-500/30 text-cyan-200">
-                                                    <SelectValue placeholder="강사2">
-                                                        <span className={`${getTeacherColor(student.assignedTeachers?.[1]?.name || '미지정')} font-medium`}>
-                                                            {student.assignedTeachers?.[1]?.name || '미지정'}
-                                                        </span>
-                                                    </SelectValue>
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    <SelectItem value="none">
-                                                        <span className="text-gray-400">미지정</span>
-                                                    </SelectItem>
-                                                    {teachers.map((teacher) => (
-                                                        <SelectItem key={teacher.id} value={teacher.id}>
-                                                            <span className={`${getTeacherColor(teacher.name)} font-medium`}>{teacher.name}</span>
+                                            <div onClick={(e) => e.stopPropagation()}>
+                                                <Select
+                                                    value={student.assignedTeachers?.[1]?.id || 'none'}
+                                                    onValueChange={(value) => handleTeacherChange(student.id, value, 1)}
+                                                >
+                                                    <SelectTrigger className="w-28 h-8 text-xs bg-cyan-900/30 border-cyan-500/30 text-cyan-200">
+                                                        <SelectValue placeholder="강사2">
+                                                            <span className={`${getTeacherColor(student.assignedTeachers?.[1]?.name || '미지정')} font-medium`}>
+                                                                {student.assignedTeachers?.[1]?.name || '미지정'}
+                                                            </span>
+                                                        </SelectValue>
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        <SelectItem value="none">
+                                                            <span className="text-gray-400">미지정</span>
                                                         </SelectItem>
-                                                    ))}
-                                                </SelectContent>
-                                            </Select>
+                                                        {teachers.map((teacher) => (
+                                                            <SelectItem key={teacher.id} value={teacher.id}>
+                                                                <span className={`${getTeacherColor(teacher.name)} font-medium`}>{teacher.name}</span>
+                                                            </SelectItem>
+                                                        ))}
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
                                         </div>
                                     </TableCell>
                                     <TableCell>

@@ -1,7 +1,8 @@
 'use server'
 
-import { cookies } from 'next/headers'
+import { cookies, headers } from 'next/headers'
 import { redirect } from 'next/navigation'
+import { revalidatePath } from 'next/cache'
 import { supabase, supabaseAdmin } from '@/lib/supabase'
 import bcrypt from 'bcryptjs'
 import { compressImage, validateImageFile, formatFileSize } from '@/lib/image-utils'
@@ -907,6 +908,11 @@ export async function updateContent(formData: FormData) {
       }
     });
 
+    // promo_image는 빈 문자열도 업데이트 가능하도록 별도 처리
+    if (formData.has('promo_image')) {
+      updates['promo_image'] = formData.get('promo_image');
+    }
+
     // 불리언 필드 처리
     if (formData.has('promo_active')) {
       updates['promo_active'] = formData.get('promo_active') === 'true';
@@ -959,6 +965,7 @@ export async function updateContent(formData: FormData) {
       return { success: false, error: error.message };
     }
 
+    revalidatePath('/');
     return { success: true, data: data };
   } catch (error) {
     console.error('컨텐츠 업데이트 오류:', error);

@@ -30,9 +30,7 @@ export default function PromoModalSettings({ initialData }: PromoModalSettingsPr
             const formData = new FormData();
             formData.set('section', 'promo_modal'); // Identifier for the server action
             formData.set('promo_active', active.toString());
-            if (imageUrl) {
-                formData.set('promo_image', imageUrl);
-            }
+            formData.set('promo_image', imageUrl || '');
 
             // We reuse the generic updateContent action
             const result = await updateContent(formData);

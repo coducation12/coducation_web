@@ -333,7 +333,7 @@ export default function CurriculumSettings({ initialCurriculums }: CurriculumSet
             </DragDropContext>
 
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                <DialogContent className="max-w-2xl bg-white">
+                <DialogContent className="max-w-2xl bg-card border-border">
                     <DialogHeader>
                         <DialogTitle>{editingId ? '커리큘럼 수정' : '새 커리큘럼 추가'}</DialogTitle>
                         <DialogDescription>

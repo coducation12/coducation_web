@@ -247,22 +247,22 @@ export default function AcademyContentSettings({ initialData }: AcademyContentSe
                                 />
                             </div>
                             <div className="grid grid-cols-2 gap-4">
-                                <div className="space-y-2">
-                                    <Label>디폴트 이미지</Label>
+                                <div className="space-y-4">
                                     <div className="aspect-[4/3] w-full">
                                         <ImageUpload
                                             value={(formData as any)[`featured_card_${num}_image_1`] || ''}
                                             onChange={(url) => handleInputChange(`featured_card_${num}_image_1`, url)}
+                                            label="이미지 1"
                                             className="h-full"
                                         />
                                     </div>
                                 </div>
-                                <div className="space-y-2">
-                                    <Label>호버 이미지</Label>
+                                <div className="space-y-4">
                                     <div className="aspect-[4/3] w-full">
                                         <ImageUpload
                                             value={(formData as any)[`featured_card_${num}_image_2`] || ''}
                                             onChange={(url) => handleInputChange(`featured_card_${num}_image_2`, url)}
+                                            label="이미지 2"
                                             className="h-full"
                                         />
                                     </div>

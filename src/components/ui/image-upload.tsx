@@ -130,12 +130,12 @@ export default function ImageUpload({
     };
 
     return (
-        <div className={`space-y-2 ${className}`}>
-            <Label className="text-cyan-200">{label}</Label>
+        <div className={`flex flex-col h-full ${className}`}>
+            {label && <Label className="text-cyan-200 mb-2 truncate">{label}</Label>}
 
-            <div className="space-y-3">
+            <div className="flex-1 flex flex-col items-center justify-center space-y-3 p-2 bg-background/20 border border-cyan-500/20 rounded-lg overflow-hidden relative">
                 {/* 이미지 미리보기 영역 */}
-                <div className="relative w-32 h-32 mx-auto border-2 border-dashed border-cyan-400/40 rounded-lg overflow-hidden bg-background/20">
+                <div className="relative w-full aspect-video sm:aspect-square max-h-[120px] rounded-md overflow-hidden bg-background/40">
                     {preview ? (
                         <>
                             <Image
@@ -148,33 +148,37 @@ export default function ImageUpload({
                                 <button
                                     type="button"
                                     onClick={handleRemove}
-                                    className="absolute top-1 right-1 p-1 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
+                                    className="absolute top-1 right-1 p-1 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors z-10 shadow-md"
                                 >
                                     <X className="w-3 h-3" />
                                 </button>
                             )}
                         </>
                     ) : (
-                        <div className="flex flex-col items-center justify-center h-full text-cyan-400">
-                            <User className="w-8 h-8 mb-2" />
-                            <span className="text-xs">이미지 선택</span>
+                        <div className="flex flex-col items-center justify-center h-full text-cyan-500/40">
+                            <Upload className="w-6 h-6 mb-1" />
                         </div>
                     )}
                 </div>
 
                 {/* 업로드 버튼 */}
-                <div className="flex justify-center">
+                <div className="w-full flex flex-col gap-2">
                     <Button
                         type="button"
                         variant="outline"
                         size="sm"
                         onClick={handleClick}
                         disabled={uploading || disabled}
-                        className="border-cyan-500/50 text-cyan-400 hover:bg-cyan-500/20 hover:text-cyan-300"
+                        className="w-full h-8 text-xs border-cyan-500/50 text-cyan-400 hover:bg-cyan-500/20 hover:text-cyan-300"
                     >
-                        <Upload className="w-4 h-4 mr-2" />
-                        {uploading ? "업로드 중..." : preview ? "이미지 변경" : "이미지 선택"}
+                        <Upload className="w-3 h-3 mr-1" />
+                        {uploading ? "업로드 중" : preview ? "이미지 변경" : "이미지 선택"}
                     </Button>
+
+                    {/* 도움말 텍스트 */}
+                    <p className="text-[10px] text-cyan-400/50 text-center leading-tight">
+                        JPG, PNG, GIF, WEBP (Max 5MB)
+                    </p>
                 </div>
 
                 {/* 숨겨진 파일 입력 */}
@@ -185,11 +189,6 @@ export default function ImageUpload({
                     onChange={handleFileSelect}
                     className="hidden"
                 />
-
-                {/* 도움말 텍스트 */}
-                <p className="text-xs text-cyan-400/60 text-center">
-                    JPG, PNG, GIF, WEBP (최대 5MB)
-                </p>
             </div>
         </div>
     );

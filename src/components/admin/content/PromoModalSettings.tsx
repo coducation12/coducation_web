@@ -80,16 +80,19 @@ export default function PromoModalSettings({ initialData }: PromoModalSettingsPr
 
                 <div className="space-y-2">
                     <Label>팝업 이미지</Label>
-                    <div className="max-w-[400px]">
+                    <div className="max-w-[500px] w-full">
                         <ImageUpload
                             value={imageUrl}
                             onChange={(url) => setImageUrl(url)}
                             disabled={loading}
-                            aspectRatio="aspect-square"
+                            aspectRatio="aspect-auto min-h-[200px]"
+                            maxWidth={1200}
+                            maxHeight={1500}
+                            quality={0.9}
                         />
                     </div>
                     <p className="text-xs text-muted-foreground">
-                        권장 사이즈: 600x600px 또는 4:5 비율
+                        권장 사이즈: 600x600px 이상 도는 원하는 비율의 고화질 이미지
                     </p>
                 </div>
 

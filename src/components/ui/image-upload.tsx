@@ -16,6 +16,10 @@ interface ImageUploadProps {
     className?: string;
     disabled?: boolean;
     bucketName?: string;
+    aspectRatio?: string;
+    maxWidth?: number;
+    maxHeight?: number;
+    quality?: number;
 }
 
 export default function ImageUpload({
@@ -25,8 +29,11 @@ export default function ImageUpload({
     className = "",
     disabled = false,
     bucketName = "content-images",
-    aspectRatio = "aspect-video"
-}: ImageUploadProps & { aspectRatio?: string }) {
+    aspectRatio = "aspect-video",
+    maxWidth = 800,
+    maxHeight = 800,
+    quality = 0.8
+}: ImageUploadProps) {
     const [uploading, setUploading] = useState(false);
     const [preview, setPreview] = useState<string>(value || "");
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -36,7 +43,7 @@ export default function ImageUpload({
         const file = event.target.files?.[0];
         if (!file) return;
 
-        // ... validation ...
+        // validation
         const validation = validateImageFile(file, 10 * 1024 * 1024); // 10MB 제한
         if (!validation.valid) {
             alert(validation.error);
@@ -46,14 +53,13 @@ export default function ImageUpload({
         setUploading(true);
 
         try {
-            // ... compression and upload logic ...
             console.log(`원본 파일 크기: ${formatFileSize(file.size)}`);
 
-            // 이미지 압축 (프로필 이미지는 작게)
+            // 이미지 압축 옵션 적용
             const compressedBlob = await compressImage(file, {
-                maxWidth: 400,
-                maxHeight: 400,
-                quality: 0.8,
+                maxWidth: maxWidth,
+                maxHeight: maxHeight,
+                quality: quality,
                 outputFormat: 'webp'
             });
 
@@ -88,7 +94,6 @@ export default function ImageUpload({
                 console.log('이미지 업로드 성공, URL:', urlData.publicUrl);
                 setPreview(urlData.publicUrl);
                 onChange(urlData.publicUrl);
-                console.log('onChange 콜백 호출됨');
             }
 
             setUploading(false);
@@ -102,7 +107,6 @@ export default function ImageUpload({
     const handleRemove = async () => {
         if (disabled) return;
         try {
-            // ... remove logic ...
             if (preview && preview.includes('supabase')) {
                 const url = new URL(preview);
                 const filePath = url.pathname.split('/storage/v1/object/public/content-images/')[1];

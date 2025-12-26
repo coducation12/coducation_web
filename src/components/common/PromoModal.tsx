@@ -65,13 +65,14 @@ export default function PromoModal({ active, imageUrl, onClose }: PromoModalProp
                         <X className="w-5 h-5" />
                     </button>
 
-                    <div className="relative w-full aspect-[4/5] sm:aspect-square bg-gray-100">
+                    <div className="relative w-full bg-gray-100 min-h-[100px]">
                         {imageUrl && (
                             <Image
                                 src={imageUrl}
                                 alt="Promotion"
-                                fill
-                                className="object-cover"
+                                width={1200}
+                                height={1500}
+                                className="w-full h-auto object-contain block"
                                 priority
                             />
                         )}

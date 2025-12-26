@@ -3,37 +3,7 @@
 import { supabase, supabaseAdmin } from '@/lib/supabase'
 import { cookies } from 'next/headers'
 
-export interface CommunityPost {
-  id: string;
-  title: string;
-  content: string;
-  images?: string[];
-  user_id: string;
-  author: {
-    id: string;
-    name: string;
-    role: 'student' | 'parent' | 'teacher' | 'admin';
-    avatar?: string;
-    profile_image_url?: string;
-  };
-  created_at: string;
-  comments_count: number;
-}
-
-export interface CommunityComment {
-  id: string;
-  content: string;
-  post_id: string;
-  user_id: string;
-  author: {
-    id: string;
-    name: string;
-    role: 'student' | 'parent' | 'teacher' | 'admin';
-    avatar?: string;
-    profile_image_url?: string;
-  };
-  created_at: string;
-}
+import type { CommunityPost, CommunityComment } from '@/types/community';
 
 // 현재 로그인된 사용자 정보 가져오기
 async function getCurrentUser() {
@@ -97,7 +67,7 @@ export async function getCommunityPosts(page: number = 1, limit: number = 10, se
   }
 
   // 클라이언트 사이드에서 관리자 게시글을 최상단으로 정렬
-  const sortedPosts = posts.sort((a, b) => {
+  const sortedPosts = posts.sort((a: any, b: any) => {
     // 관리자 게시글을 최상단에 배치
     if (a.users?.role === 'admin' && b.users?.role !== 'admin') return -1;
     if (a.users?.role !== 'admin' && b.users?.role === 'admin') return 1;
@@ -106,7 +76,7 @@ export async function getCommunityPosts(page: number = 1, limit: number = 10, se
   });
 
   // 모든 게시글의 댓글 수를 한 번에 가져오기
-  const postIds = sortedPosts.map(post => post.id);
+  const postIds = sortedPosts.map((post: any) => post.id);
   const { data: commentCounts } = await supabase
     .from('community_comments')
     .select('post_id')
@@ -114,13 +84,13 @@ export async function getCommunityPosts(page: number = 1, limit: number = 10, se
     .eq('is_deleted', false);
 
   // 댓글 수를 게시글 ID별로 그룹화
-  const commentCountMap = commentCounts?.reduce((acc, comment) => {
+  const commentCountMap = commentCounts?.reduce((acc: any, comment: any) => {
     acc[comment.post_id] = (acc[comment.post_id] || 0) + 1;
     return acc;
   }, {} as Record<string, number>) || {};
 
   // 게시글 데이터와 댓글 수 결합
-  const postsWithCounts = sortedPosts.map(post => ({
+  const postsWithCounts = sortedPosts.map((post: any) => ({
     id: post.id,
     title: post.title,
     content: post.content,
@@ -252,7 +222,7 @@ export async function getCommunityComments(postId: string): Promise<CommunityCom
     return [];
   }
 
-  return comments.map(comment => ({
+  return comments.map((comment: any) => ({
     id: comment.id,
     content: comment.content,
     post_id: comment.post_id,

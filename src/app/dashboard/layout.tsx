@@ -1,5 +1,7 @@
 import React from "react";
 
+export const dynamic = 'force-dynamic';
+
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex h-screen w-screen bg-gradient-to-br from-[#0a1837] to-[#0a1a2f]">

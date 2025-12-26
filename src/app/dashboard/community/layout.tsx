@@ -4,6 +4,8 @@ import { TeacherSidebar } from "../teacher/components/TeacherSidebar";
 import { StudentSidebar } from "../student/components/StudentSidebar";
 import { AdminSidebar } from "../admin/components/AdminSidebar";
 
+export const dynamic = 'force-dynamic';
+
 export default async function CommunityLayout({
   children,
 }: {

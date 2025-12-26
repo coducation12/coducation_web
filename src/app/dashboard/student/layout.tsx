@@ -2,6 +2,8 @@ import React from "react";
 import { getAuthenticatedUser } from "@/lib/auth";
 import { StudentSidebar } from "@/app/dashboard/student/components/StudentSidebar";
 
+export const dynamic = 'force-dynamic';
+
 export default async function StudentDashboardLayout({ children }: { children: React.ReactNode }) {
   const user = await getAuthenticatedUser();
   if (!user) return <div>로그인이 필요합니다.</div>;

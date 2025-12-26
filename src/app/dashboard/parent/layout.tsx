@@ -2,6 +2,8 @@ import { getAuthenticatedUser } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { ParentSidebar } from "./components/ParentSidebar";
 
+export const dynamic = 'force-dynamic';
+
 export default async function ParentLayout({
   children,
 }: {

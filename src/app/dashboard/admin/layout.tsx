@@ -2,6 +2,8 @@ import React from "react";
 import { getAuthenticatedUser } from "@/lib/auth";
 import { AdminSidebar } from "@/app/dashboard/admin/components/AdminSidebar";
 
+export const dynamic = 'force-dynamic';
+
 export default async function AdminDashboardLayout({ children }: { children: React.ReactNode }) {
   const user = await getAuthenticatedUser();
   if (!user) return <div>로그인이 필요합니다.</div>;

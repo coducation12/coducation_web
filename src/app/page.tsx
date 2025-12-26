@@ -5,6 +5,8 @@ import { InstructorsSection } from '@/components/landing/instructors-section';
 import PromoModal from '@/components/common/PromoModal';
 import { getContent } from '@/lib/actions';
 
+export const dynamic = 'force-dynamic';
+
 export default async function Home() {
   const { data: content } = await getContent();
 

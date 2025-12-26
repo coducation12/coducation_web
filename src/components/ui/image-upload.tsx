@@ -24,8 +24,9 @@ export default function ImageUpload({
     label = "이미지",
     className = "",
     disabled = false,
-    bucketName = "content-images"
-}: ImageUploadProps) {
+    bucketName = "content-images",
+    aspectRatio = "aspect-video"
+}: ImageUploadProps & { aspectRatio?: string }) {
     const [uploading, setUploading] = useState(false);
     const [preview, setPreview] = useState<string>(value || "");
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -130,12 +131,12 @@ export default function ImageUpload({
     };
 
     return (
-        <div className={`flex flex-col h-full ${className}`}>
-            {label && <Label className="text-cyan-200 mb-2 truncate">{label}</Label>}
+        <div className={`flex flex-col gap-2 ${className}`}>
+            {label && <Label className="text-cyan-200 truncate">{label}</Label>}
 
-            <div className="flex-1 flex flex-col items-center justify-center space-y-3 p-2 bg-background/20 border border-cyan-500/20 rounded-lg overflow-hidden relative">
+            <div className="relative group border-2 border-dashed border-cyan-500/20 rounded-xl overflow-hidden bg-background/40 transition-all hover:border-cyan-500/50">
                 {/* 이미지 미리보기 영역 */}
-                <div className="relative w-full aspect-video sm:aspect-square max-h-[120px] rounded-md overflow-hidden bg-background/40">
+                <div className={`relative ${aspectRatio} w-full flex items-center justify-center`}>
                     {preview ? (
                         <>
                             <Image
@@ -145,41 +146,53 @@ export default function ImageUpload({
                                 className="object-cover"
                             />
                             {!disabled && (
-                                <button
-                                    type="button"
-                                    onClick={handleRemove}
-                                    className="absolute top-1 right-1 p-1 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors z-10 shadow-md"
-                                >
-                                    <X className="w-3 h-3" />
-                                </button>
+                                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                                    <Button
+                                        type="button"
+                                        variant="secondary"
+                                        size="sm"
+                                        onClick={handleClick}
+                                        className="h-8 text-xs"
+                                    >
+                                        <Upload className="w-3 h-3 mr-1" />
+                                        수정
+                                    </Button>
+                                    <Button
+                                        type="button"
+                                        variant="destructive"
+                                        size="sm"
+                                        onClick={handleRemove}
+                                        className="h-8 text-xs"
+                                    >
+                                        <X className="w-3 h-3 mr-1" />
+                                        삭제
+                                    </Button>
+                                </div>
                             )}
                         </>
                     ) : (
-                        <div className="flex flex-col items-center justify-center h-full text-cyan-500/40">
-                            <Upload className="w-6 h-6 mb-1" />
+                        <div
+                            className="flex flex-col items-center justify-center w-full h-full cursor-pointer py-8"
+                            onClick={handleClick}
+                        >
+                            <Upload className="w-8 h-8 mb-2 text-cyan-500/40" />
+                            <span className="text-sm text-cyan-500/60 font-medium">이미지 선택</span>
+                            <p className="text-[10px] text-cyan-500/40 mt-1">
+                                JPG, PNG, WEBP (Max 5MB)
+                            </p>
                         </div>
                     )}
                 </div>
 
-                {/* 업로드 버튼 */}
-                <div className="w-full flex flex-col gap-2">
-                    <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={handleClick}
-                        disabled={uploading || disabled}
-                        className="w-full h-8 text-xs border-cyan-500/50 text-cyan-400 hover:bg-cyan-500/20 hover:text-cyan-300"
-                    >
-                        <Upload className="w-3 h-3 mr-1" />
-                        {uploading ? "업로드 중" : preview ? "이미지 변경" : "이미지 선택"}
-                    </Button>
-
-                    {/* 도움말 텍스트 */}
-                    <p className="text-[10px] text-cyan-400/50 text-center leading-tight">
-                        JPG, PNG, GIF, WEBP (Max 5MB)
-                    </p>
-                </div>
+                {/* 업로드 중 오버레이 */}
+                {uploading && (
+                    <div className="absolute inset-0 bg-background/80 flex items-center justify-center z-20">
+                        <div className="flex flex-col items-center gap-2">
+                            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-cyan-400"></div>
+                            <span className="text-xs text-cyan-400 font-medium">업로드 중...</span>
+                        </div>
+                    </div>
+                )}
 
                 {/* 숨겨진 파일 입력 */}
                 <Input

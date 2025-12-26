@@ -392,6 +392,7 @@ export default function CurriculumSettings({ initialCurriculums }: CurriculumSet
                                 <ImageUpload
                                     value={formData.image}
                                     onChange={(url) => setFormData(prev => ({ ...prev, image: url }))}
+                                    aspectRatio="aspect-video"
                                 />
                             </div>
                         </div>

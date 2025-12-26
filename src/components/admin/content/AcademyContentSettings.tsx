@@ -182,12 +182,12 @@ export default function AcademyContentSettings({ initialData }: AcademyContentSe
                                                         <GripVertical className="w-5 h-5" />
                                                     </div>
 
-                                                    <div className="w-[200px] space-y-2 flex-shrink-0">
+                                                    <div className="w-[400px] space-y-2 flex-shrink-0">
                                                         <Label>배너 이미지</Label>
                                                         <ImageUpload
                                                             value={slide.image}
                                                             onChange={(url) => handleSlideChange(slide.id!, 'image', url)}
-                                                            className="aspect-video"
+                                                            className="w-full"
                                                         />
                                                     </div>
 
@@ -248,24 +248,20 @@ export default function AcademyContentSettings({ initialData }: AcademyContentSe
                             </div>
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-4">
-                                    <div className="aspect-[4/3] w-full">
-                                        <ImageUpload
-                                            value={(formData as any)[`featured_card_${num}_image_1`] || ''}
-                                            onChange={(url) => handleInputChange(`featured_card_${num}_image_1`, url)}
-                                            label="이미지 1"
-                                            className="h-full"
-                                        />
-                                    </div>
+                                    <ImageUpload
+                                        value={(formData as any)[`featured_card_${num}_image_1`] || ''}
+                                        onChange={(url) => handleInputChange(`featured_card_${num}_image_1`, url)}
+                                        label="이미지 1"
+                                        aspectRatio="aspect-[4/3]"
+                                    />
                                 </div>
                                 <div className="space-y-4">
-                                    <div className="aspect-[4/3] w-full">
-                                        <ImageUpload
-                                            value={(formData as any)[`featured_card_${num}_image_2`] || ''}
-                                            onChange={(url) => handleInputChange(`featured_card_${num}_image_2`, url)}
-                                            label="이미지 2"
-                                            className="h-full"
-                                        />
-                                    </div>
+                                    <ImageUpload
+                                        value={(formData as any)[`featured_card_${num}_image_2`] || ''}
+                                        onChange={(url) => handleInputChange(`featured_card_${num}_image_2`, url)}
+                                        label="이미지 2"
+                                        aspectRatio="aspect-[4/3]"
+                                    />
                                 </div>
                             </div>
                             <p className="text-xs text-muted-foreground">

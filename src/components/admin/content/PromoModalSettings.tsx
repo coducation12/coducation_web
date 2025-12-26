@@ -80,11 +80,12 @@ export default function PromoModalSettings({ initialData }: PromoModalSettingsPr
 
                 <div className="space-y-2">
                     <Label>팝업 이미지</Label>
-                    <div className="max-w-[300px]">
+                    <div className="max-w-[400px]">
                         <ImageUpload
                             value={imageUrl}
                             onChange={(url) => setImageUrl(url)}
                             disabled={loading}
+                            aspectRatio="aspect-square"
                         />
                     </div>
                     <p className="text-xs text-muted-foreground">
@@ -96,7 +97,7 @@ export default function PromoModalSettings({ initialData }: PromoModalSettingsPr
                     <Button onClick={handleSave} disabled={loading}>
                         {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                         {!loading && <Save className="mr-2 h-4 w-4" />}
-                        설장 저장
+                        설정 저장
                     </Button>
                 </div>
             </CardContent>

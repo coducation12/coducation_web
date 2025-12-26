@@ -2418,4 +2418,3 @@ export async function rejectNewStudentSignupRequest(requestId: string, rejection
     return { success: false, error: '학생 가입 요청 거부 중 오류가 발생했습니다.' };
   }
 }
-

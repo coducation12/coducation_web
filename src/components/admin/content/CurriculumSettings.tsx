@@ -28,6 +28,8 @@ interface CurriculumSettingsProps {
     initialCurriculums: MainCurriculum[];
 }
 
+const LEVELS = ['기초', '중급', '고급'] as const;
+
 export default function CurriculumSettings({ initialCurriculums }: CurriculumSettingsProps) {
     const router = useRouter();
     const [curriculums, setCurriculums] = useState<MainCurriculum[]>(initialCurriculums);
@@ -40,7 +42,7 @@ export default function CurriculumSettings({ initialCurriculums }: CurriculumSet
         title: '',
         description: '',
         category: '',
-        level: '기초',
+        level: '기초' as '기초' | '중급' | '고급',
         image: '',
         display_order: 0
     });
@@ -57,7 +59,7 @@ export default function CurriculumSettings({ initialCurriculums }: CurriculumSet
         setEditingId(null);
     };
 
-    const handleOpenDialog = (curriculum?: MainCurriculum) => {
+    const handleOpenDialog = (curriculum?: MainCurriculum, defaultLevel?: '기초' | '중급' | '고급') => {
         if (curriculum) {
             setEditingId(curriculum.id);
             setFormData({
@@ -70,6 +72,9 @@ export default function CurriculumSettings({ initialCurriculums }: CurriculumSet
             });
         } else {
             resetForm();
+            if (defaultLevel) {
+                setFormData(prev => ({ ...prev, level: defaultLevel }));
+            }
         }
         setIsDialogOpen(true);
     };
@@ -139,107 +144,188 @@ export default function CurriculumSettings({ initialCurriculums }: CurriculumSet
     };
 
     const onDragEnd = async (result: any) => {
-        if (!result.destination) return;
+        const { source, destination } = result;
+        if (!destination) return;
 
-        const items = Array.from(curriculums);
-        const [reorderedItem] = items.splice(result.source.index, 1);
-        items.splice(result.destination.index, 0, reorderedItem);
+        // 같은 리스트, 같은 위치면 무시
+        if (source.droppableId === destination.droppableId && source.index === destination.index) return;
 
-        // Optimistic update
-        setCurriculums(items);
+        const sourceLevel = source.droppableId;
+        const destLevel = destination.droppableId;
 
-        // Server update
+        let newCurriculums = [...curriculums];
+
+        // 1. 같은 레벨 내 이동
+        if (sourceLevel === destLevel) {
+            const levelItems = newCurriculums
+                .filter(c => c.level === sourceLevel)
+                .sort((a, b) => a.display_order - b.display_order);
+
+            const [movedItem] = levelItems.splice(source.index, 1);
+            levelItems.splice(destination.index, 0, movedItem);
+
+            // 전체 리스트 재구성: 해당 레벨의 순서만 재정렬하고 나머지는 유지
+            // (주의: 단순 map으로는 display_order가 겹칠 수 있으니, 매핑 로직을 신중해야 함)
+            // 가장 확실한 방법: 모든 아이템을 다시 정렬된 상태로 map을 돌리는 것.
+
+            newCurriculums = newCurriculums.map(c => {
+                if (c.level !== sourceLevel) return c;
+                const newIndex = levelItems.findIndex(item => item.id === c.id);
+                return { ...c, display_order: newIndex };
+            });
+
+        }
+        // 2. 다른 레벨로 이동 (레벨 변경)
+        else {
+            const itemToMove = newCurriculums.find(c => c.id === result.draggableId);
+            if (!itemToMove) return;
+
+            const updatedItem = { ...itemToMove, level: destLevel };
+
+            const destLevelItems = newCurriculums
+                .filter(c => c.level === destLevel && c.id !== itemToMove.id)
+                .sort((a, b) => a.display_order - b.display_order);
+
+            destLevelItems.splice(destination.index, 0, updatedItem);
+
+            // 소스 레벨 아이템들 (빠진 후 재정렬)
+            const sourceLevelItems = newCurriculums
+                .filter(c => c.level === sourceLevel && c.id !== itemToMove.id)
+                .sort((a, b) => a.display_order - b.display_order);
+
+            // 전체 리스트 재구성
+            newCurriculums = newCurriculums.map(c => {
+                // 이동한 아이템 -> 목적지 레벨에서의 인덱스
+                if (c.id === itemToMove.id) {
+                    const idx = destLevelItems.findIndex(item => item.id === updatedItem.id); // 사실상 updatedItem과 같음
+                    // destLevelItems에는 updatedItem 객체 자체가 들어있음.
+                    // 하지만 map 돌때 c는 원본 객체임.
+                    return { ...c, level: destLevel, display_order: idx };
+                }
+
+                // 목적지 레벨의 기존 아이템들
+                if (c.level === destLevel) {
+                    const idx = destLevelItems.findIndex(item => item.id === c.id);
+                    if (idx > -1) return { ...c, display_order: idx };
+                }
+
+                // 소스 레벨의 기존 아이템들 (하나 빠짐 -> 순서 당겨짐)
+                if (c.level === sourceLevel) {
+                    const idx = sourceLevelItems.findIndex(item => item.id === c.id);
+                    if (idx > -1) return { ...c, display_order: idx };
+                }
+
+                return c;
+            });
+        }
+
+        setCurriculums(newCurriculums);
+
         try {
-            // Create update payload with new orders
-            const updates = items.map((item, index) => ({
-                id: item.id,
-                display_order: index
+            // 변경된 아이템들만 서버로 전송
+            const updates = newCurriculums.map(c => ({
+                id: c.id,
+                level: c.level,
+                display_order: c.display_order
             }));
-
             await updateMainCurriculums(updates);
             router.refresh();
         } catch (error) {
-            console.error('Reorder error:', error);
-            toast({
-                title: "순서 변경 실패",
-                description: "순서를 저장하는 중 오류가 발생했습니다.",
-                variant: "destructive"
-            });
+            console.error('Update error:', error);
+            toast({ title: "업데이트 실패", description: "변경사항 저장 중 오류가 발생했습니다.", variant: "destructive" });
         }
     };
 
     return (
-        <Card>
-            <CardHeader>
-                <div className="flex justify-between items-center">
-                    <div>
-                        <CardTitle>커리큘럼 관리</CardTitle>
-                        <CardDescription>
-                            메인 화면에 표시될 커리큘럼을 관리하고 순서를 변경합니다.
-                        </CardDescription>
-                    </div>
-                    <Button onClick={() => handleOpenDialog()}>
-                        <Plus className="w-4 h-4 mr-2" /> 커리큘럼 추가
-                    </Button>
+        <div className="space-y-6">
+            <div className="flex justify-between items-center bg-card p-4 rounded-lg border shadow-sm">
+                <div>
+                    <h2 className="text-2xl font-bold tracking-tight">커리큘럼 관리</h2>
+                    <p className="text-muted-foreground">메인 화면의 커리큘럼을 레벨별로 관리합니다.</p>
                 </div>
-            </CardHeader>
-            <CardContent>
-                <DragDropContext onDragEnd={onDragEnd}>
-                    <Droppable droppableId="curriculums">
-                        {(provided) => (
-                            <div {...provided.droppableProps} ref={provided.innerRef} className="space-y-3">
-                                {curriculums.map((item, index) => (
-                                    <Draggable key={item.id} draggableId={item.id} index={index}>
-                                        {(provided) => (
-                                            <div
-                                                ref={provided.innerRef}
-                                                {...provided.draggableProps}
-                                                className="flex items-center gap-4 p-4 bg-card border rounded-lg group"
-                                            >
-                                                <div {...provided.dragHandleProps} className="text-muted-foreground hover:text-foreground cursor-grab active:cursor-grabbing">
-                                                    <GripVertical className="w-5 h-5" />
-                                                </div>
+                <Button onClick={() => handleOpenDialog()}>
+                    <Plus className="w-4 h-4 mr-2" /> 커리큘럼 추가
+                </Button>
+            </div>
 
-                                                {item.image && (
-                                                    <div className="w-16 h-16 rounded overflow-hidden flex-shrink-0 bg-muted">
-                                                        <img src={item.image} alt="" className="w-full h-full object-cover" />
-                                                    </div>
-                                                )}
+            <DragDropContext onDragEnd={onDragEnd}>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    {LEVELS.map(level => (
+                        <Card key={level} className="flex flex-col h-full bg-slate-50/50 border-2">
+                            <CardHeader className="pb-3 bg-white border-b rounded-t-lg">
+                                <CardTitle className={`text-lg flex items-center gap-2
+                                    ${level === '기초' ? 'text-green-700' :
+                                        level === '중급' ? 'text-blue-700' :
+                                            'text-purple-700'}`}>
+                                    {level} 과정
+                                    <span className="text-sm font-normal text-muted-foreground ml-auto bg-slate-100 px-2 py-1 rounded-full border">
+                                        {curriculums.filter(c => c.level === level).length}개
+                                    </span>
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent className="flex-1 p-3">
+                                <Droppable droppableId={level}>
+                                    {(provided) => (
+                                        <div
+                                            {...provided.droppableProps}
+                                            ref={provided.innerRef}
+                                            className="space-y-3 min-h-[150px]"
+                                        >
+                                            {curriculums
+                                                .filter(c => c.level === level)
+                                                .sort((a, b) => a.display_order - b.display_order)
+                                                .map((item, index) => (
+                                                    <Draggable key={item.id} draggableId={item.id} index={index}>
+                                                        {(provided) => (
+                                                            <div
+                                                                ref={provided.innerRef}
+                                                                {...provided.draggableProps}
+                                                                className="bg-white p-3 rounded-lg border shadow-sm group hover:border-cyan-400 hover:shadow-md transition-all"
+                                                            >
+                                                                <div className="flex gap-3">
+                                                                    <div {...provided.dragHandleProps} className="mt-1 text-gray-400 hover:text-gray-600 cursor-move">
+                                                                        <GripVertical className="w-4 h-4" />
+                                                                    </div>
+                                                                    <div className="flex-1 min-w-0">
+                                                                        <h4 className="font-medium text-sm truncate mb-1">{item.title}</h4>
+                                                                        <p className="text-xs text-muted-foreground line-clamp-2">{item.description}</p>
+                                                                    </div>
+                                                                </div>
 
-                                                <div className="flex-1 min-w-0">
-                                                    <div className="flex items-center gap-2 mb-1">
-                                                        <span className={`px-2 py-0.5 rounded text-xs font-medium 
-                              ${item.level === '기초' ? 'bg-green-100 text-green-700' :
-                                                                item.level === '중급' ? 'bg-blue-100 text-blue-700' :
-                                                                    'bg-purple-100 text-purple-700'}`}>
-                                                            {item.level}
-                                                        </span>
-                                                        <h4 className="font-semibold truncate">{item.title}</h4>
-                                                    </div>
-                                                    <p className="text-sm text-muted-foreground truncate">{item.description}</p>
-                                                </div>
+                                                                <div className="flex justify-end mt-2 pt-2 border-t gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                                    <Button variant="ghost" size="sm" className="h-7 w-7 p-0 hover:bg-slate-100" onClick={() => handleOpenDialog(item)}>
+                                                                        <Pencil className="w-3 h-3 text-slate-500" />
+                                                                    </Button>
+                                                                    <Button variant="ghost" size="sm" className="h-7 w-7 p-0 hover:bg-red-50 text-red-500 hover:text-red-600" onClick={() => handleDelete(item.id)}>
+                                                                        <Trash2 className="w-3 h-3" />
+                                                                    </Button>
+                                                                </div>
+                                                            </div>
+                                                        )}
+                                                    </Draggable>
+                                                ))}
+                                            {provided.placeholder}
 
-                                                <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                    <Button variant="ghost" size="icon" onClick={() => handleOpenDialog(item)}>
-                                                        <Pencil className="w-4 h-4" />
-                                                    </Button>
-                                                    <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => handleDelete(item.id)}>
-                                                        <Trash2 className="w-4 h-4" />
-                                                    </Button>
+                                            {/* 빈 상태일 빈 공간 클릭으로 추가 유도 */}
+                                            {curriculums.filter(c => c.level === level).length === 0 && (
+                                                <div
+                                                    className="h-24 border-2 border-dashed rounded-lg flex items-center justify-center text-gray-400 text-sm cursor-pointer hover:bg-white hover:border-gray-400 transition-all bg-white/50"
+                                                    onClick={() => handleOpenDialog(undefined, level)}
+                                                >
+                                                    여기에 추가하기
                                                 </div>
-                                            </div>
-                                        )}
-                                    </Draggable>
-                                ))}
-                                {provided.placeholder}
-                            </div>
-                        )}
-                    </Droppable>
-                </DragDropContext>
-            </CardContent>
+                                            )}
+                                        </div>
+                                    )}
+                                </Droppable>
+                            </CardContent>
+                        </Card>
+                    ))}
+                </div>
+            </DragDropContext>
 
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                <DialogContent className="max-w-2xl">
+                <DialogContent className="max-w-2xl bg-white">
                     <DialogHeader>
                         <DialogTitle>{editingId ? '커리큘럼 수정' : '새 커리큘럼 추가'}</DialogTitle>
                         <DialogDescription>
@@ -312,6 +398,6 @@ export default function CurriculumSettings({ initialCurriculums }: CurriculumSet
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
-        </Card>
+        </div>
     );
 }

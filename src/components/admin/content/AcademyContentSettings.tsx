@@ -12,11 +12,13 @@ import { toast } from "@/hooks/use-toast";
 import { useRouter } from 'next/navigation';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 
+// ... (Top implementation with new types)
+// ... imports
 interface AcademyContentSettingsProps {
     initialData: {
         academy_title: string;
         academy_subtitle: string;
-        academy_slides: Array<{ id: string; image: string; title?: string }>;
+        academy_slides: Array<{ id?: string; image: string; title?: string; description?: string }>;
         featured_card_1_title: string;
         featured_card_1_image_1: string;
         featured_card_1_image_2: string;
@@ -31,7 +33,16 @@ interface AcademyContentSettingsProps {
 export default function AcademyContentSettings({ initialData }: AcademyContentSettingsProps) {
     const router = useRouter();
     const [loading, setLoading] = useState(false);
-    const [formData, setFormData] = useState(initialData);
+
+    // Ensure slides have IDs and use description field
+    const [formData, setFormData] = useState({
+        ...initialData,
+        academy_slides: initialData.academy_slides?.map((slide, index) => ({
+            ...slide,
+            id: slide.id || `slide-${Date.now()}-${index}`,
+            description: slide.description || (slide as any).content || ''
+        })) || []
+    });
 
     const handleInputChange = (field: string, value: string) => {
         setFormData(prev => ({ ...prev, [field]: value }));
@@ -49,9 +60,11 @@ export default function AcademyContentSettings({ initialData }: AcademyContentSe
     const addSlide = () => {
         setFormData(prev => ({
             ...prev,
-            academy_slides: [...(prev.academy_slides || []), { id: Date.now().toString(), image: '' }]
+            academy_slides: [...(prev.academy_slides || []), { id: Date.now().toString(), image: '', title: '', description: '' }]
         }));
     };
+
+    // ... removeSlide, onDragEnd, handleSave (same logic)
 
     const removeSlide = (id: string) => {
         setFormData(prev => ({
@@ -83,13 +96,14 @@ export default function AcademyContentSettings({ initialData }: AcademyContentSe
             // Card 1
             data.set('featured_card_1_title', formData.featured_card_1_title);
             data.set('featured_card_1_image_1', formData.featured_card_1_image_1);
-            data.set('featured_card_1_image_2', formData.featured_card_1_image_2);
+            // featured_card_1_image_2 is kept for DB compatibility if needed, using image_1 or empty
+            data.set('featured_card_1_image_2', formData.featured_card_1_image_2 || '');
             data.set('featured_card_1_link', formData.featured_card_1_link);
 
             // Card 2
             data.set('featured_card_2_title', formData.featured_card_2_title);
             data.set('featured_card_2_image_1', formData.featured_card_2_image_1);
-            data.set('featured_card_2_image_2', formData.featured_card_2_image_2);
+            data.set('featured_card_2_image_2', formData.featured_card_2_image_2 || '');
             data.set('featured_card_2_link', formData.featured_card_2_link);
 
             const result = await updateContent(data);
@@ -163,30 +177,41 @@ export default function AcademyContentSettings({ initialData }: AcademyContentSe
                                                     {...provided.draggableProps}
                                                     className="flex items-start space-x-4 p-4 border rounded-lg bg-card"
                                                 >
-                                                    <div {...provided.dragHandleProps} className="mt-2 text-muted-foreground hover:text-foreground">
+                                                    <div {...provided.dragHandleProps} className="mt-2 text-muted-foreground hover:text-foreground cursor-move">
                                                         <GripVertical className="w-5 h-5" />
                                                     </div>
 
-                                                    <div className="w-[200px] space-y-2">
+                                                    <div className="w-[200px] space-y-2 flex-shrink-0">
                                                         <Label>배너 이미지</Label>
                                                         <ImageUpload
                                                             value={slide.image}
-                                                            onChange={(url) => handleSlideChange(slide.id, 'image', url)}
+                                                            onChange={(url) => handleSlideChange(slide.id!, 'image', url)}
+                                                            className="aspect-video"
                                                         />
                                                     </div>
 
-                                                    <div className="flex-1 space-y-2">
-                                                        <Label>배너 제목 (선택)</Label>
-                                                        <Input
-                                                            value={slide.title || ''}
-                                                            onChange={(e) => handleSlideChange(slide.id, 'title', e.target.value)}
-                                                            placeholder="배너 위에 표시될 제목"
-                                                        />
-                                                        <div className="pt-4 flex justify-end">
+                                                    <div className="flex-1 space-y-4">
+                                                        <div className="space-y-2">
+                                                            <Label>배너 제목</Label>
+                                                            <Input
+                                                                value={slide.title || ''}
+                                                                onChange={(e) => handleSlideChange(slide.id!, 'title', e.target.value)}
+                                                                placeholder="배너 위에 표시될 제목"
+                                                            />
+                                                        </div>
+                                                        <div className="space-y-2">
+                                                            <Label>배너 내용</Label>
+                                                            <Input
+                                                                value={slide.description || ''}
+                                                                onChange={(e) => handleSlideChange(slide.id!, 'description', e.target.value)}
+                                                                placeholder="배너 위에 표시될 부가 설명"
+                                                            />
+                                                        </div>
+                                                        <div className="flex justify-end">
                                                             <Button
                                                                 variant="destructive"
                                                                 size="sm"
-                                                                onClick={() => removeSlide(slide.id)}
+                                                                onClick={() => removeSlide(slide.id!)}
                                                             >
                                                                 <Trash2 className="w-4 h-4 mr-2" /> 삭제
                                                             </Button>
@@ -206,37 +231,39 @@ export default function AcademyContentSettings({ initialData }: AcademyContentSe
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {[1, 2].map((num) => (
-                    <Card key={num}>
+                    <Card key={num} className="h-full">
                         <CardHeader>
                             <CardTitle>추천 카드 {num} 설정</CardTitle>
+                            <CardDescription>메인 화면 중간에 표시될 안내 카드입니다.</CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-4">
                             <div className="space-y-2">
-                                <Label>제목</Label>
+                                <Label>카드 제목</Label>
                                 <Input
                                     value={(formData as any)[`featured_card_${num}_title`] || ''}
                                     onChange={(e) => handleInputChange(`featured_card_${num}_title`, e.target.value)}
+                                    placeholder="카드 이미지 위에 표시될 제목"
                                 />
                             </div>
                             <div className="space-y-2">
-                                <Label>기본 이미지</Label>
-                                <ImageUpload
-                                    value={(formData as any)[`featured_card_${num}_image_1`] || ''}
-                                    onChange={(url) => handleInputChange(`featured_card_${num}_image_1`, url)}
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <Label>호버 이미지 (선택)</Label>
-                                <ImageUpload
-                                    value={(formData as any)[`featured_card_${num}_image_2`] || ''}
-                                    onChange={(url) => handleInputChange(`featured_card_${num}_image_2`, url)}
-                                />
+                                <Label>카드 이미지</Label>
+                                <div className="aspect-[4/3] w-full">
+                                    <ImageUpload
+                                        value={(formData as any)[`featured_card_${num}_image_1`] || ''}
+                                        onChange={(url) => handleInputChange(`featured_card_${num}_image_1`, url)}
+                                        className="h-full"
+                                    />
+                                </div>
+                                <p className="text-xs text-muted-foreground mt-1">
+                                    * 메인 페이지 카드 비율(4:3)에 맞춰 표시됩니다.
+                                </p>
                             </div>
                             <div className="space-y-2">
                                 <Label>링크 URL</Label>
                                 <Input
                                     value={(formData as any)[`featured_card_${num}_link`] || ''}
                                     onChange={(e) => handleInputChange(`featured_card_${num}_link`, e.target.value)}
+                                    placeholder="클릭 시 이동할 주소 (예: /curriculum)"
                                 />
                             </div>
                         </CardContent>
@@ -244,15 +271,15 @@ export default function AcademyContentSettings({ initialData }: AcademyContentSe
                 ))}
             </div>
 
-            <div className="flex justify-end pt-6">
-                <Button onClick={handleSave} disabled={loading} size="lg">
+            <div className="flex justify-end pt-6 sticky bottom-6 z-10">
+                <Button onClick={handleSave} disabled={loading} size="lg" className="shadow-lg">
                     {loading ? (
                         <>
                             <Loader2 className="mr-2 h-4 w-4 animate-spin" /> 저장 중...
                         </>
                     ) : (
                         <>
-                            <Save className="mr-2 h-4 w-4" /> 전체 저장
+                            <Save className="mr-2 h-4 w-4" /> 변경사항 저장
                         </>
                     )}
                 </Button>

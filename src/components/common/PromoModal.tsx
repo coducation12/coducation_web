@@ -20,8 +20,19 @@ export default function PromoModal({ active, imageUrl, onClose }: PromoModalProp
         const hideUntil = localStorage.getItem('hidePromoUntil');
         const now = new Date().getTime();
 
-        // Only open if logic permits
-        if (active && imageUrl && (!hideUntil || now > parseInt(hideUntil))) {
+        console.log('[PromoModal] Debug:', {
+            active,
+            imageUrl,
+            hideUntil,
+            shouldShow: active && imageUrl && (!hideUntil || now > parseInt(hideUntil))
+        });
+
+        // 이미 오늘 하루 안 보기를 선택했고, 아직 하루가 지나지 않았으면 모달을 띄우지 않음
+        if (hideUntil && now < parseInt(hideUntil)) {
+            return;
+        }
+
+        if (active && imageUrl) {
             setIsOpen(true);
         }
     }, [active, imageUrl]);

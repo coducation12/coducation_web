@@ -24,6 +24,8 @@ import {
 } from '@/components/ui/dialog';
 import { CalendarDays, Phone, User, MessageSquare, Building2, Filter } from 'lucide-react';
 
+export const dynamic = 'force-dynamic';
+
 const statusLabels: Record<'pending' | 'completed', string> = {
   pending: '대기중',
   completed: '완료'

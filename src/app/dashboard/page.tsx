@@ -3,9 +3,11 @@ import { getAuthenticatedUser } from "@/lib/auth";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
+export const dynamic = 'force-dynamic';
+
 export default async function DashboardPage() {
     const user = await getAuthenticatedUser();
-    
+
     // 디버깅을 위한 로그 (개발 환경에서만)
     if (process.env.NODE_ENV === 'development') {
         console.log('Dashboard - User data:', user);
@@ -36,7 +38,7 @@ export default async function DashboardPage() {
                 <CardHeader>
                     <CardTitle>대시보드에 오신 것을 환영합니다</CardTitle>
                     <CardDescription>
-                        {user ? `역할을 찾을 수 없습니다: ${user.role}` : '사용자 정보를 찾을 수 없습니다.'} 
+                        {user ? `역할을 찾을 수 없습니다: ${user.role}` : '사용자 정보를 찾을 수 없습니다.'}
                         관리자에게 문의하세요.
                     </CardDescription>
                 </CardHeader>

@@ -9,6 +9,8 @@ import { Activity, ArrowUpRight, BookUser, Users, GraduationCap, Calendar, BookO
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 
+export const dynamic = 'force-dynamic';
+
 interface ActivityItem {
     id: string;
     type: 'community' | 'learning';
@@ -120,7 +122,7 @@ export default function AdminDashboardPage() {
     return (
         <div className="p-6 space-y-6 pt-16 lg:pt-2 h-screen overflow-y-auto scrollbar-hide">
             <h1 className="text-3xl font-bold text-cyan-100 drop-shadow-[0_0_6px_#00fff7]">관리자 대시보드</h1>
-            
+
             {/* 통계 카드 */}
             <div className="grid gap-4 md:grid-cols-3 md:gap-8">
                 <Card className="bg-gradient-to-br from-cyan-900/20 to-blue-900/20 border-cyan-500/30">
@@ -133,7 +135,7 @@ export default function AdminDashboardPage() {
                         <p className="text-xs text-cyan-300">전체 등록 학생</p>
                     </CardContent>
                 </Card>
-                
+
                 <Card className="bg-gradient-to-br from-cyan-900/20 to-blue-900/20 border-cyan-500/30">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium text-cyan-200">금일 출석</CardTitle>
@@ -144,7 +146,7 @@ export default function AdminDashboardPage() {
                         <p className="text-xs text-cyan-300">오늘 출석한 학생</p>
                     </CardContent>
                 </Card>
-                
+
                 <Card className="bg-gradient-to-br from-cyan-900/20 to-blue-900/20 border-cyan-500/30">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium text-cyan-200">커리큘럼 수</CardTitle>
@@ -185,7 +187,7 @@ export default function AdminDashboardPage() {
                                         <TableRow key={activity.id} className="border-cyan-500/10">
                                             <TableCell className="text-cyan-100">
                                                 <Badge className={
-                                                    activity.type === 'community' 
+                                                    activity.type === 'community'
                                                         ? 'bg-blue-600/20 text-blue-300 border-blue-500/30'
                                                         : 'bg-green-600/20 text-green-300 border-green-500/30'
                                                 }>

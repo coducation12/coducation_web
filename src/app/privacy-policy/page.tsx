@@ -1,5 +1,11 @@
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  title: '정보보호방침',
+  description: 'Coducation의 개인정보 처리방침 및 정보보호 정책에 대한 안내입니다.',
+};
 
 export default function PrivacyPolicyPage() {
   return (
@@ -7,8 +13,8 @@ export default function PrivacyPolicyPage() {
       <div className="container mx-auto px-4 py-8">
         {/* 헤더 */}
         <div className="mb-8">
-          <Link 
-            href="/" 
+          <Link
+            href="/"
             className="inline-flex items-center gap-2 text-cyan-400 hover:text-cyan-300 transition-colors mb-4"
           >
             <ArrowLeft className="w-4 h-4" />

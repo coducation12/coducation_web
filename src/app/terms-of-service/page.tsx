@@ -1,5 +1,11 @@
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  title: '이용약관',
+  description: 'Coducation 서비스 이용 규약 및 약관에 대한 안내입니다.',
+};
 
 export default function TermsOfServicePage() {
   return (
@@ -7,8 +13,8 @@ export default function TermsOfServicePage() {
       <div className="container mx-auto px-4 py-8">
         {/* 헤더 */}
         <div className="mb-8">
-          <Link 
-            href="/" 
+          <Link
+            href="/"
             className="inline-flex items-center gap-2 text-cyan-400 hover:text-cyan-300 transition-colors mb-4"
           >
             <ArrowLeft className="w-4 h-4" />

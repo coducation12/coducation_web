@@ -30,11 +30,70 @@ const codeFont = Source_Code_Pro({
 
 
 export const metadata: Metadata = {
-  title: 'Coducation - 코딩으로 세상을 교육하다',
+  metadataBase: new URL('https://coducation.kr'), // TODO: 실제 도메인으로 변경하세요
+  title: {
+    default: 'Coducation - 코딩으로 세상을 교육하다',
+    template: '%s | Coducation',
+  },
   description:
-    ' 코딩 교육의 새로운 시작, Coducation',
+    '코딩 교육의 새로운 시작, Coducation. 광양 코딩메이커 학원의 온라인 교육 및 관리 시스템입니다.',
+  keywords: [
+    '코딩',
+    '코딩교육',
+    '광양코딩',
+    '코딩메이커',
+    'Coducation',
+    '타자연습',
+    '프로그래밍',
+    '자바스크립트',
+    '파이썬',
+  ],
+  authors: [{ name: 'Coding Maker' }],
+  creator: 'Coding Maker',
+  publisher: 'Coding Maker',
+  openGraph: {
+    type: 'website',
+    locale: 'ko_KR',
+    url: 'https://coducation.kr',
+    title: 'Coducation - 코딩으로 세상을 교육하다',
+    description:
+      '코딩 교육의 새로운 시작, Coducation. 광양 코딩메이커 학원의 온라인 교육 및 관리 시스템입니다.',
+    siteName: 'Coducation',
+    images: [
+      {
+        url: '/logo.png',
+        width: 1200,
+        height: 630,
+        alt: 'Coducation - 코딩으로 세상을 교육하다',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Coducation - 코딩으로 세상을 교육하다',
+    description:
+      '코딩 교육의 새로운 시작, Coducation. 광양 코딩메이커 학원의 온라인 교육 및 관리 시스템입니다.',
+    images: ['/logo.png'],
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
+  },
   icons: {
     icon: '/favicon.ico',
+    shortcut: '/favicon.ico',
+    apple: '/favicon.ico',
+  },
+  verification: {
+    // google: 'your-google-verification-code',
+    // naver: 'your-naver-verification-code',
   },
 };
 

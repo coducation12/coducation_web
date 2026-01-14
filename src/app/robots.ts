@@ -7,6 +7,6 @@ export default function robots(): MetadataRoute.Robots {
             allow: '/',
             disallow: ['/dashboard/', '/api/'],
         },
-        sitemap: 'https://coducation.kr/sitemap.xml',
+        sitemap: 'https://coducation.co.kr/sitemap.xml',
     };
 }

@@ -30,7 +30,7 @@ const codeFont = Source_Code_Pro({
 
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://coducation.kr'), // TODO: 실제 도메인으로 변경하세요
+  metadataBase: new URL('https://coducation.co.kr'), // 실제 도메인으로 변경 완료
   title: {
     default: 'Coducation - 코딩으로 세상을 교육하다',
     template: '%s | Coducation',
@@ -54,7 +54,7 @@ export const metadata: Metadata = {
   openGraph: {
     type: 'website',
     locale: 'ko_KR',
-    url: 'https://coducation.kr',
+    url: 'https://coducation.co.kr',
     title: 'Coducation - 코딩으로 세상을 교육하다',
     description:
       '코딩 교육의 새로운 시작, Coducation. 광양 코딩메이커 학원의 온라인 교육 및 관리 시스템입니다.',

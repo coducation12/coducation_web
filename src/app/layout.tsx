@@ -99,7 +99,9 @@ export const metadata: Metadata = {
   },
   verification: {
     // google: 'your-google-verification-code',
-    // naver: 'your-naver-verification-code',
+    other: {
+      'naver-site-verification': '601fb98687eb1b3d96eb26038d7d4040aa41f94a',
+    },
   },
 };
 
@@ -113,6 +115,31 @@ export default function RootLayout({
       <head>
         <meta name="autocomplete" content="off" />
         <meta name="form-autocomplete" content="off" />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              '@context': 'https://schema.org',
+              '@type': 'EducationalOrganization',
+              name: 'Coducation (코딩메이커)',
+              url: 'https://coducation.co.kr',
+              logo: 'https://coducation.co.kr/logo.png',
+              description:
+                '코딩 교육의 새로운 시작, Coducation. 광양 코딩메이커 학원의 온라인 교육 및 관리 시스템입니다.',
+              address: {
+                '@type': 'PostalAddress',
+                addressLocality: 'Gwangyang',
+                addressRegion: 'Jeollanam-do',
+                addressCountry: 'KR',
+              },
+              contactPoint: {
+                '@type': 'ContactPoint',
+                telephone: '+82-61-745-3355',
+                contactType: 'customer service',
+              },
+            }),
+          }}
+        />
       </head>
       <body
         className={cn(

@@ -25,12 +25,12 @@ import { Checkbox } from '@/components/ui/checkbox';
 const formatPhoneNumber = (value: string): string => {
   // 숫자만 추출
   const numbers = value.replace(/[^0-9]/g, '');
-  
+
   // 11자리 제한
   if (numbers.length > 11) {
     return numbers.slice(0, 11);
   }
-  
+
   // 하이픈 추가 (3-4-4 형식)
   if (numbers.length <= 3) {
     return numbers;
@@ -64,30 +64,33 @@ export function ContactModal({ open, onOpenChange }: ContactModalProps) {
   ];
 
   const subjectOptions = [
-    { value: 'certification', label: '자격증' },
     { value: 'block-coding', label: '블록 코딩' },
     { value: 'advanced-programming', label: '프로그래밍 언어' },
-    { value: 'graphics', label: '그래픽스' },
-    { value: 'other', label: '기타' }
+    { value: 'ai-vibe-coding', label: 'Ai 바이브 코딩' },
+    { value: 'certification', label: '자격증' },
+    { value: 'digital-drawing', label: '디지털 드로잉' },
+    { value: '3d-modeling', label: '3D 모델링' },
+    { value: 'project', label: '프로젝트' },
+    { value: 'etc', label: '기타 문의' }
   ];
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     // 필수 필드 검증
     if (!formData.name || !formData.phone || !formData.academy || !formData.subject || !formData.message) {
       alert('모든 필수 항목을 입력해주세요.');
       return;
     }
-    
+
     // 개인정보 동의 검증
     if (!privacyConsent) {
       alert('개인정보 수집 및 이용에 동의해주세요.');
       return;
     }
-    
+
     setIsSubmitting(true);
-    
+
     try {
       // FormData 생성
       const formDataToSubmit = new FormData();
@@ -97,10 +100,10 @@ export function ContactModal({ open, onOpenChange }: ContactModalProps) {
       formDataToSubmit.append('subject', formData.subject);
       formDataToSubmit.append('message', formData.message);
       formDataToSubmit.append('privacy_consent', privacyConsent.toString());
-      
+
       // 서버 액션 호출
       const result = await saveConsultation(formDataToSubmit);
-      
+
       if (result.success) {
         // 폼 초기화
         setFormData({ name: '', phone: '', academy: '', subject: '', message: '' });
@@ -147,7 +150,7 @@ export function ContactModal({ open, onOpenChange }: ContactModalProps) {
               required
             />
           </div>
-          
+
           <div className="space-y-2">
             <Label htmlFor="phone">연락처 *</Label>
             <Input
@@ -160,7 +163,7 @@ export function ContactModal({ open, onOpenChange }: ContactModalProps) {
               maxLength={13}
             />
           </div>
-          
+
           <div className="space-y-2">
             <Label htmlFor="academy">학원 선택 *</Label>
             <Select value={formData.academy} onValueChange={(value) => handleInputChange('academy', value)}>
@@ -176,7 +179,7 @@ export function ContactModal({ open, onOpenChange }: ContactModalProps) {
               </SelectContent>
             </Select>
           </div>
-          
+
           <div className="space-y-2">
             <Label htmlFor="subject">희망 과목 *</Label>
             <Select value={formData.subject} onValueChange={(value) => handleInputChange('subject', value)}>
@@ -192,7 +195,7 @@ export function ContactModal({ open, onOpenChange }: ContactModalProps) {
               </SelectContent>
             </Select>
           </div>
-          
+
           <div className="space-y-2">
             <Label htmlFor="message">문의 내용 *</Label>
             <Textarea
@@ -204,7 +207,7 @@ export function ContactModal({ open, onOpenChange }: ContactModalProps) {
               required
             />
           </div>
-          
+
           {/* 개인정보 수집 및 이용 동의 */}
           <div className="space-y-3 border-t border-border pt-4">
             <div className="text-sm text-muted-foreground">
@@ -216,22 +219,22 @@ export function ContactModal({ open, onOpenChange }: ContactModalProps) {
                 <p><strong>• 동의 거부 권리:</strong> 개인정보 수집에 동의하지 않을 권리가 있으며, 동의 거부 시 상담 서비스 이용이 제한될 수 있습니다.</p>
               </div>
             </div>
-            
+
             <div className="flex items-center space-x-2">
-              <Checkbox 
-                id="privacy-consent" 
+              <Checkbox
+                id="privacy-consent"
                 checked={privacyConsent}
                 onCheckedChange={(checked) => setPrivacyConsent(checked as boolean)}
               />
-              <Label 
-                htmlFor="privacy-consent" 
+              <Label
+                htmlFor="privacy-consent"
                 className="text-sm cursor-pointer"
               >
                 개인정보 수집 및 이용에 동의합니다. (필수)
               </Label>
             </div>
           </div>
-          
+
           <div className="flex gap-3 pt-4">
             <Button
               type="button"

@@ -6,6 +6,7 @@ import { cn } from '@/lib/utils';
 import { BackgroundWrapper } from '@/components/common/background-wrapper';
 import { LayoutWrapper } from '@/components/common/layout-wrapper';
 import { SupabaseProvider } from './providers';
+import { Analytics } from "@vercel/analytics/next"
 
 const bodyFont = Noto_Sans_KR({
   subsets: ['latin'],
@@ -158,6 +159,7 @@ export default function RootLayout({
           </LayoutWrapper>
         </div>
         <Toaster />
+        <Analytics />
       </body>
     </html>
   );

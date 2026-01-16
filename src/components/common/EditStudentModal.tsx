@@ -42,8 +42,7 @@ interface ClassSchedule {
 }
 
 const subjects = [
-    "React", "Python", "알고리즘", "웹 개발", "JavaScript", "TypeScript", 
-    "Node.js", "데이터베이스", "머신러닝", "앱 개발"
+    "블록 코딩", "프로그래밍 언어", "Ai 바이브 코딩", "자격증", "디지털 드로잉", "3D 모델링", "프로젝트"
 ];
 
 const daysOfWeek = [

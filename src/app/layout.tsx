@@ -6,7 +6,7 @@ import { cn } from '@/lib/utils';
 import { BackgroundWrapper } from '@/components/common/background-wrapper';
 import { LayoutWrapper } from '@/components/common/layout-wrapper';
 import { SupabaseProvider } from './providers';
-import { Analytics } from "@vercel/analytics/next"
+import { Analytics } from "@vercel/analytics/react"
 
 const bodyFont = Noto_Sans_KR({
   subsets: ['latin'],

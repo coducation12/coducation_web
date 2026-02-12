@@ -29,7 +29,7 @@ export default function ImageUpload({
     className = "",
     disabled = false,
     bucketName = "content-images",
-    aspectRatio = "aspect-video",
+    aspectRatio = "aspect-square",
     maxWidth = 800,
     maxHeight = 800,
     quality = 0.8

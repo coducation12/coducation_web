@@ -221,7 +221,10 @@ export async function addStudent(formData: FormData, isSignup: boolean = false) 
       email: formData.get('email') as string,
       classSchedules: JSON.parse(formData.get('classSchedules') as string),
       academy: formData.get('academy') as string,
-      assignedTeacherId: formData.get('assignedTeacherId') as string
+      assignedTeacherId: formData.get('assignedTeacherId') as string,
+      sub_subject: formData.get('sub_subject') as string,
+      enrollment_date: formData.get('enrollment_date') as string,
+      memo: formData.get('memo') as string
     };
 
     // 회원가입인 경우 새로운 시스템 사용
@@ -362,6 +365,10 @@ export async function addStudent(formData: FormData, isSignup: boolean = false) 
       parent_id: parentData.id,
       current_curriculum_id: null,
       attendance_schedule: Object.keys(attendanceSchedule).length > 0 ? attendanceSchedule : null,
+      main_subject: studentData.subject || null,
+      sub_subject: studentData.sub_subject || null,
+      memo: studentData.memo || null,
+      enrollment_start_date: studentData.enrollment_date || new Date().toISOString().split('T')[0],
       created_at: new Date().toISOString()
     };
 
@@ -395,6 +402,9 @@ export async function updateStudent(formData: FormData) {
       parentPhone: formData.get('parentPhone') as string,
       email: formData.get('email') as string,
       status: formData.get('status') as string,
+      sub_subject: formData.get('sub_subject') as string,
+      enrollment_date: formData.get('enrollment_date') as string,
+      memo: formData.get('memo') as string,
       classSchedules: formData.get('classSchedules') ? JSON.parse(formData.get('classSchedules') as string) : []
     };
 
@@ -491,7 +501,11 @@ export async function updateStudent(formData: FormData) {
         const { error: studentError } = await supabase
           .from('students')
           .update({
-            attendance_schedule: attendanceSchedule
+            attendance_schedule: attendanceSchedule,
+            main_subject: studentData.subject || null,
+            sub_subject: studentData.sub_subject || null,
+            memo: studentData.memo || null,
+            enrollment_start_date: studentData.enrollment_date || null
           })
           .eq('user_id', existingUser.id);
 

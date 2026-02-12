@@ -23,6 +23,38 @@ export function AdminSidebar() {
   const pathname = usePathname();
   const router = useRouter();
   const [open, setOpen] = useState(false);
+  const [pendingCount, setPendingCount] = useState(0);
+
+  React.useEffect(() => {
+    fetchPendingCount();
+  }, []);
+
+  const fetchPendingCount = async () => {
+    try {
+      const { supabase } = await import("@/lib/supabase");
+      const { data, error } = await supabase
+        .from('consultations')
+        .select('id', { count: 'exact', head: true })
+        .eq('status', 'pending');
+
+      if (!error) {
+        setPendingCount(data?.length || 0);
+        // Supabase select with count: 'exact' and head: true returns count in 'count' property if using specific return type, 
+        // but here we can just use length if we select 'id' or use the count metadata.
+        // Let's use simpler query for count.
+        const { count, error: countError } = await supabase
+          .from('consultations')
+          .select('*', { count: 'exact', head: true })
+          .eq('status', 'pending');
+
+        if (!countError) {
+          setPendingCount(count || 0);
+        }
+      }
+    } catch (error) {
+      console.error("상담문의 건수 조회 실패:", error);
+    }
+  };
 
   const handleLogout = async () => {
     try {
@@ -46,11 +78,18 @@ export function AdminSidebar() {
           <Link
             key={item.href}
             href={item.href}
-            className={`flex items-center gap-3 px-3 py-2 rounded-lg text-cyan-100 hover:bg-cyan-900/20 transition-colors font-medium ${pathname === item.href ? "bg-cyan-900/30" : ""}`}
+            className={`flex items-center justify-between px-3 py-2 rounded-lg text-cyan-100 hover:bg-cyan-900/20 transition-colors font-medium ${pathname === item.href ? "bg-cyan-900/30" : ""}`}
             onClick={() => setOpen(false)}
           >
-            {item.icon}
-            {item.label}
+            <div className="flex items-center gap-3">
+              {item.icon}
+              {item.label}
+            </div>
+            {item.label === "상담문의" && pendingCount > 0 && (
+              <span className="bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center animate-pulse shadow-[0_0_8px_rgba(239,68,68,0.5)]">
+                {pendingCount}
+              </span>
+            )}
           </Link>
         ))}
       </nav>

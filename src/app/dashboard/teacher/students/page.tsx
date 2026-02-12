@@ -11,8 +11,7 @@ import { Mail, Phone, CheckCircle, XCircle, Clock, ArrowUpDown, ArrowUp, ArrowDo
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/lib/supabase";
 import { addStudent, updateStudent } from "@/lib/actions";
-import AddStudentModal, { StudentFormData } from "@/components/common/AddStudentModal";
-import EditStudentModal from "@/components/common/EditStudentModal";
+import StudentModal from "@/components/common/StudentModal";
 import { useToast } from "@/hooks/use-toast";
 
 interface Student {
@@ -29,6 +28,9 @@ interface Student {
     joinDate: string;
     lastLogin: string;
     studentId?: string;
+    sub_subject?: string;
+    enrollment_date?: string;
+    memo?: string;
     classSchedules?: ClassSchedule[];
     assignedTeachers?: Array<{ id: string, name: string }>;
     type?: string;
@@ -122,25 +124,26 @@ export default function TeacherStudentsPage() {
             const { data, error } = await supabase
                 .from('students')
                 .select(`
-                user_id, 
-                parent_id, 
-                current_curriculum_id, 
-                enrollment_start_date, 
-                attendance_schedule,
-                assigned_teachers,
-                users!students_user_id_fkey ( 
-                    id, 
-                    name, 
-                    username, 
-                    phone, 
-                    birth_year, 
-                    academy, 
-                    created_at, 
-                    email, 
-                    status 
-                ), 
-                parent:users!students_parent_id_fkey ( phone )
-            `);
+                    user_id, 
+                    parent_id, 
+                    enrollment_start_date, 
+                    attendance_schedule,
+                    assigned_teachers,
+                    main_subject,
+                    sub_subject,
+                    memo,
+                    users!students_user_id_fkey ( 
+                        id, 
+                        name, 
+                        username, 
+                        phone, 
+                        birth_year, 
+                        created_at, 
+                        email, 
+                        status 
+                    ), 
+                    parent:users!students_parent_id_fkey ( phone )
+                `);
 
             if (error) {
                 setStudents([]);
@@ -164,24 +167,20 @@ export default function TeacherStudentsPage() {
                     parentPhone: item.parent?.phone || '-',
                     birthDate: item.users?.birth_year ? String(item.users.birth_year) : '-',
                     avatar: '/default-avatar.png',
-                    course: '프로그래밍', // 기본값, 나중에 실제 과목 데이터로 교체
+                    course: item.main_subject || '프로그래밍',
                     curriculum: '기초 프로그래밍', // 기본값, 나중에 실제 커리큘럼 데이터로 교체
                     status: item.users?.status === 'pending' ? '승인대기' :
                         item.users?.status === 'suspended' ? '휴강' : '수강',
                     joinDate: item.users?.created_at ? new Date(item.users.created_at).toLocaleDateString() : '-',
-                    lastLogin: '2024-01-15', // 기본값, 나중에 실제 마지막 로그인 데이터로 교체
+                    lastLogin: '2024-01-15', // 기본값
                     studentId: item.users?.username || '-',
+                    sub_subject: item.sub_subject || '',
+                    enrollment_date: item.enrollment_start_date || '',
+                    memo: item.memo || '',
                     assignedTeachers: assignedTeachers,
                     classSchedules: item.attendance_schedule ? Object.entries(item.attendance_schedule).map(([day, schedule]: [string, any]) => {
-                        // 숫자를 요일로 변환 (0=일요일, 1=월요일, ..., 6=토요일)
                         const dayMap: { [key: string]: string } = {
-                            '0': 'sunday',
-                            '1': 'monday',
-                            '2': 'tuesday',
-                            '3': 'wednesday',
-                            '4': 'thursday',
-                            '5': 'friday',
-                            '6': 'saturday'
+                            '0': 'sunday', '1': 'monday', '2': 'tuesday', '3': 'wednesday', '4': 'thursday', '5': 'friday', '6': 'saturday'
                         };
                         return {
                             day: dayMap[day] || day,
@@ -216,7 +215,7 @@ export default function TeacherStudentsPage() {
 
 
 
-    const handleAddStudent = async (studentData: StudentFormData) => {
+    const handleAddStudent = async (studentData: any) => {
         try {
             // FormData로 변환하여 서버 액션 호출
             const formData = new FormData();
@@ -228,6 +227,9 @@ export default function TeacherStudentsPage() {
             formData.append('phone', studentData.phone);
             formData.append('parentPhone', studentData.parentPhone);
             formData.append('email', studentData.email);
+            formData.append('sub_subject', studentData.sub_subject || '');
+            formData.append('enrollment_date', studentData.enrollment_date || '');
+            formData.append('memo', studentData.memo || '');
             formData.append('classSchedules', JSON.stringify(studentData.classSchedules));
 
             const result = await addStudent(formData);
@@ -262,19 +264,21 @@ export default function TeacherStudentsPage() {
         setIsEditModalOpen(true);
     };
 
-    const handleSaveStudent = async (studentData: StudentFormData) => {
+    const handleSaveStudent = async (studentData: any) => {
         try {
-            // FormData로 변환하여 서버 액션 호출
             const formData = new FormData();
             formData.append('studentId', studentData.studentId);
             formData.append('name', studentData.name);
             formData.append('birthYear', studentData.birthYear);
             formData.append('password', studentData.password);
             formData.append('subject', studentData.subject);
+            formData.append('sub_subject', studentData.sub_subject || '');
             formData.append('phone', studentData.phone);
             formData.append('parentPhone', studentData.parentPhone);
             formData.append('email', studentData.email);
             formData.append('status', studentData.status || 'active');
+            formData.append('enrollment_date', studentData.enrollment_date || '');
+            formData.append('memo', studentData.memo || '');
             formData.append('classSchedules', JSON.stringify(studentData.classSchedules));
 
             const result = await updateStudent(formData);
@@ -326,10 +330,9 @@ export default function TeacherStudentsPage() {
         <div className="p-6 pt-20 lg:pt-6 space-y-6">
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-3xl font-bold text-cyan-100">학생 관리</h1>
                     <p className="text-cyan-300 mt-2">담당 학생들의 정보를 관리하세요</p>
                 </div>
-                <AddStudentModal onAddStudent={handleAddStudent} />
+                <StudentModal mode="add" onSave={handleAddStudent} />
             </div>
 
             <Card className="bg-gradient-to-br from-cyan-900/20 to-blue-900/20 border-cyan-500/30">
@@ -399,17 +402,22 @@ export default function TeacherStudentsPage() {
                         </TableHeader>
                         <TableBody>
                             {sortedStudents.map((student) => (
-                                <TableRow key={student.uniqueKey} className="border-cyan-500/10 hover:bg-cyan-900/10">
+                                <TableRow
+                                    key={student.uniqueKey}
+                                    className="border-cyan-500/10 hover:bg-cyan-900/10 cursor-pointer"
+                                    onClick={() => {
+                                        if (student.type !== 'signup_request') {
+                                            handleEditStudent(student);
+                                        }
+                                    }}
+                                >
                                     <TableCell className="font-medium text-cyan-100">
                                         {student.type === 'signup_request' ? (
                                             <span className="text-cyan-100">{student.name}</span>
                                         ) : (
-                                            <button
-                                                onClick={() => handleEditStudent(student)}
-                                                className="text-cyan-100 hover:text-cyan-300 transition-colors cursor-pointer"
-                                            >
+                                            <span className="text-cyan-100 hover:text-cyan-300 transition-colors">
                                                 {student.name}
-                                            </button>
+                                            </span>
                                         )}
                                     </TableCell>
                                     <TableCell className="text-cyan-300">
@@ -472,7 +480,8 @@ export default function TeacherStudentsPage() {
                 </CardContent>
             </Card>
 
-            <EditStudentModal
+            <StudentModal
+                mode="edit"
                 student={selectedStudent}
                 isOpen={isEditModalOpen}
                 onClose={() => {
@@ -482,6 +491,6 @@ export default function TeacherStudentsPage() {
                 onSave={handleSaveStudent}
             />
 
-        </div>
+        </div >
     );
 }

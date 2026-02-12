@@ -23,16 +23,34 @@ export function TeacherSidebar() {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [userName, setUserName] = useState<string>("");
+  const [pendingCount, setPendingCount] = useState(0);
 
   useEffect(() => {
     fetchUserInfo();
+    fetchPendingCount();
   }, []);
+
+  const fetchPendingCount = async () => {
+    try {
+      const { supabase } = await import("@/lib/supabase");
+      const { count, error } = await supabase
+        .from('consultations')
+        .select('*', { count: 'exact', head: true })
+        .eq('status', 'pending');
+
+      if (!error) {
+        setPendingCount(count || 0);
+      }
+    } catch (error) {
+      console.error("상담문의 건수 조회 실패:", error);
+    }
+  };
 
   const fetchUserInfo = async () => {
     try {
       const user = await getCurrentUserClient();
       console.log('Current user:', user);
-      
+
       if (user && user.name) {
         setUserName(user.name);
         console.log('Set userName to:', user.name);
@@ -62,11 +80,18 @@ export function TeacherSidebar() {
           <Link
             key={item.href}
             href={item.href}
-            className={`flex items-center gap-3 px-3 py-2 rounded-lg text-cyan-100 hover:bg-cyan-900/20 transition-colors font-medium ${pathname === item.href ? "bg-cyan-900/30" : ""}`}
+            className={`flex items-center justify-between px-3 py-2 rounded-lg text-cyan-100 hover:bg-cyan-900/20 transition-colors font-medium ${pathname === item.href ? "bg-cyan-900/30" : ""}`}
             onClick={() => setOpen(false)}
           >
-            {item.icon}
-            {item.label}
+            <div className="flex items-center gap-3">
+              {item.icon}
+              {item.label}
+            </div>
+            {item.label === "상담문의" && pendingCount > 0 && (
+              <span className="bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center animate-pulse shadow-[0_0_8px_rgba(239,68,68,0.5)]">
+                {pendingCount}
+              </span>
+            )}
           </Link>
         ))}
       </nav>
@@ -75,7 +100,7 @@ export function TeacherSidebar() {
           <User className="w-5 h-5" />
           <span>{userName ? `${userName}강사` : '강사님'}</span>
         </Link>
-        <button 
+        <button
           onClick={handleLogout}
           className="flex items-center gap-2 text-sm text-red-400 hover:underline"
         >

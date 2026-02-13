@@ -19,6 +19,7 @@ interface Teacher {
     email: string;
     phone: string;
     subject: string;
+    position: string;
     status: '활성' | '비활성';
     createdAt: string;
     image?: string;
@@ -88,7 +89,7 @@ export default function AdminTeachersPage() {
                 .select(`
                     id, name, email, phone, username, created_at, profile_image_url,
                     teachers (
-                        bio, certs, career, subject
+                        bio, certs, career, subject, position
                     )
                 `)
                 .eq('role', 'teacher');
@@ -104,6 +105,7 @@ export default function AdminTeachersPage() {
                 email: teacher.email || '',
                 phone: teacher.phone || '',
                 subject: teacher.teachers?.subject || '코딩 교육', // subject 컬럼에서 직접 가져오기
+                position: teacher.teachers?.position || '',
                 status: '활성' as const,
                 createdAt: teacher.created_at,
                 image: teacher.profile_image_url || ''
@@ -211,6 +213,15 @@ export default function AdminTeachersPage() {
                                 </TableHead>
                                 <TableHead
                                     className="text-cyan-200 text-center cursor-pointer hover:text-cyan-100 transition-colors select-none"
+                                    onClick={() => handleSort('position')}
+                                >
+                                    <div className="flex items-center justify-center gap-2">
+                                        직위
+                                        {getSortIcon('position')}
+                                    </div>
+                                </TableHead>
+                                <TableHead
+                                    className="text-cyan-200 text-center cursor-pointer hover:text-cyan-100 transition-colors select-none"
                                     onClick={() => handleSort('subject')}
                                 >
                                     <div className="flex items-center justify-center gap-2">
@@ -285,6 +296,9 @@ export default function AdminTeachersPage() {
                                         </TableCell>
                                         <TableCell className="text-cyan-200">
                                             {teacher.phone}
+                                        </TableCell>
+                                        <TableCell className="text-cyan-200 text-center">
+                                            {teacher.position}
                                         </TableCell>
                                         <TableCell className="text-cyan-200 text-center">
                                             {teacher.subject}

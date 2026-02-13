@@ -30,9 +30,10 @@ export interface Student {
 export interface Teacher {
   user_id: string;
   bio?: string;
+  position?: string;
   image?: string;
-  certs?: string;
-  career?: string;
+  certs?: any;
+  career?: any;
   created_at: string;
 }
 
@@ -136,10 +137,11 @@ export interface Instructor {
   id: string;
   name: string;
   bio: string;
+  position?: string;
   profile_image: string;
   subject?: string;
-  certs?: string;
-  career?: string;
+  certs?: any;
+  career?: any;
   email?: string;
   phone?: string;
 }

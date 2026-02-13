@@ -11,6 +11,7 @@ import { supabase } from "@/lib/supabase";
 import { toast } from "@/hooks/use-toast";
 import { User, Save, Lock, Plus, X } from "lucide-react";
 import ImageUpload from "@/components/ui/image-upload";
+import { updateMyTeacherProfile } from "@/lib/actions";
 
 interface Certificate {
   name: string;
@@ -45,6 +46,7 @@ export default function TeacherProfileClient({ user }: TeacherProfileClientProps
     email: user.email || '',
     phone: user.phone || '',
     academy: user.academy || '',
+    position: '',
     bio: '',
     profile_image_url: user.profile_image_url || ''
   });
@@ -75,6 +77,7 @@ export default function TeacherProfileClient({ user }: TeacherProfileClientProps
       if (teacherData) {
         setFormData(prev => ({
           ...prev,
+          position: teacherData.position || '',
           bio: teacherData.bio || ''
         }));
 
@@ -130,41 +133,20 @@ export default function TeacherProfileClient({ user }: TeacherProfileClientProps
   const handleSave = async () => {
     setSaving(true);
     try {
-      // 사용자 기본 정보 업데이트
-      const { error: userError } = await supabase
-        .from('users')
-        .update({
-          phone: formData.phone,
-          academy: formData.academy,
-          profile_image_url: formData.profile_image_url
-        })
-        .eq('id', user.id);
+      const result = await updateMyTeacherProfile(user.id, {
+        phone: formData.phone,
+        academy: formData.academy,
+        position: formData.position,
+        profile_image_url: formData.profile_image_url,
+        bio: formData.bio,
+        certs: certificates,
+        career: careers
+      });
 
-      if (userError) {
-        console.error('사용자 정보 업데이트 실패:', userError);
+      if (!result.success) {
         toast({
           title: "오류",
-          description: `사용자 정보 업데이트에 실패했습니다: ${userError.message}`,
-          variant: "destructive",
-        });
-        return;
-      }
-
-      // 강사 추가 정보 업데이트 (JSON 형식으로 저장)
-      const { error: teacherError } = await supabase
-        .from('teachers')
-        .upsert({
-          user_id: user.id,
-          bio: formData.bio,
-          certs: certificates,
-          career: careers
-        });
-
-      if (teacherError) {
-        console.error('강사 정보 업데이트 실패:', teacherError);
-        toast({
-          title: "오류",
-          description: `강사 정보 업데이트에 실패했습니다: ${teacherError.message}`,
+          description: result.error || "정보 업데이트에 실패했습니다.",
           variant: "destructive",
         });
         return;
@@ -319,6 +301,16 @@ export default function TeacherProfileClient({ user }: TeacherProfileClientProps
                     className="bg-cyan-900/20 border-cyan-500/30 text-cyan-100"
                     placeholder="연락처를 입력하세요"
                     autoComplete="off"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="position" className="text-cyan-200">직위 / 직책</Label>
+                  <Input
+                    id="position"
+                    value={formData.position}
+                    onChange={(e) => handleInputChange('position', e.target.value)}
+                    className="bg-cyan-900/20 border-cyan-500/30 text-cyan-100"
+                    placeholder="예: 선임강사, 실장, 대표"
                   />
                 </div>
                 <div className="space-y-2">

@@ -39,6 +39,47 @@ interface TeacherInfo {
 
 // Supabase Auth를 사용한 로그인 시스템
 
+export async function updateMyTeacherProfile(userId: string, data: any) {
+  try {
+    const cookieStore = await cookies();
+    const sessionUserId = cookieStore.get('user_id')?.value;
+
+    if (sessionUserId !== userId) {
+      return { success: false, error: '권한이 없습니다.' };
+    }
+
+    // 1. users 테이블 업데이트 (기본 정보)
+    const { error: userError } = await supabaseAdmin
+      .from('users')
+      .update({
+        phone: data.phone,
+        academy: data.academy,
+        profile_image_url: data.profile_image_url
+      })
+      .eq('id', userId);
+
+    if (userError) throw userError;
+
+    // 2. teachers 테이블 업데이트 (상세 정보)
+    const { error: teacherError } = await supabaseAdmin
+      .from('teachers')
+      .upsert({
+        user_id: userId,
+        bio: data.bio,
+        position: data.position,
+        certs: data.certs,
+        career: data.career
+      });
+
+    if (teacherError) throw teacherError;
+
+    return { success: true };
+  } catch (error: any) {
+    console.error('Teacher profile update error:', error);
+    return { success: false, error: error.message };
+  }
+}
+
 export async function login(formData: FormData) {
   try {
     const userType = formData.get('userType') as string;
@@ -1397,7 +1438,8 @@ export async function updateTeacher(formData: FormData) {
       certs: formData.get('certs') as string,
       career: formData.get('career') as string,
       image: formData.get('image') as string,
-      subject: formData.get('subject') as string
+      subject: formData.get('subject') as string,
+      position: formData.get('position') as string
     };
 
     // 필수 필드 검증
@@ -1507,8 +1549,9 @@ export async function updateTeacher(formData: FormData) {
       .from('teachers')
       .update({
         bio: teacherData.bio || null,
-        certs: teacherData.certs || null,
-        career: teacherData.career || null,
+        position: teacherData.position || null,
+        certs: teacherData.certs ? (typeof teacherData.certs === 'string' && teacherData.certs.startsWith('[') ? JSON.parse(teacherData.certs) : teacherData.certs) : null,
+        career: teacherData.career ? (typeof teacherData.career === 'string' && teacherData.career.startsWith('[') ? JSON.parse(teacherData.career) : teacherData.career) : null,
         subject: teacherData.subject || '코딩 교육' // subject 컬럼에 직접 저장
       })
       .eq('user_id', teacherData.teacherId);
@@ -1557,14 +1600,16 @@ export async function getTeacherDetails(teacherId: string) {
       return { success: false, error: userError.message };
     }
 
+    // 필요한 필드들을 반환
     return {
       success: true,
       data: {
         bio: teacherData?.bio || '',
-        certs: teacherData?.certs || '',
-        career: teacherData?.career || '',
-        subject: teacherData?.subject || '코딩 교육',
-        image: userData?.profile_image_url || ''
+        position: teacherData?.position || '',
+        certs: teacherData?.certs || [],
+        career: teacherData?.career || [],
+        image: userData?.profile_image_url || '',
+        subject: teacherData?.subject || '코딩 교육'
       }
     };
   } catch (error) {
@@ -1873,7 +1918,8 @@ export async function getInstructors() {
           bio,
           certs,
           career,
-          subject
+          subject,
+          position
         )
       `)
       .in('role', ['teacher', 'admin'])
@@ -1892,16 +1938,17 @@ export async function getInstructors() {
       bio: teacher.teachers.bio || '전문 강사',
       profile_image: teacher.profile_image_url || 'https://placehold.co/400x400.png',
       subject: teacher.teachers.subject || '코딩 교육',
-      certs: teacher.teachers.certs || '',
-      career: teacher.teachers.career || '',
+      position: teacher.teachers.position || '',
+      certs: teacher.teachers.certs || [],
+      career: teacher.teachers.career || [],
       email: teacher.email,
       phone: teacher.phone
     }));
 
-    // bio 기준으로 정렬: 원장, 부원장을 상단에 배치
-    const sortedInstructors = instructors.sort((a: TeacherInfo, b: TeacherInfo) => {
-      const aIsLeader = a.bio.includes('원장');
-      const bIsLeader = b.bio.includes('원장');
+    // position 기준으로 정렬: 원장, 부원장을 상단에 배치
+    const sortedInstructors = instructors.sort((a: any, b: any) => {
+      const aIsLeader = a.position?.includes('원장') || a.bio?.includes('원장');
+      const bIsLeader = b.position?.includes('원장') || b.bio?.includes('원장');
 
       if (aIsLeader && !bIsLeader) return -1;
       if (!aIsLeader && bIsLeader) return 1;

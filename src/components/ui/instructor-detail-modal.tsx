@@ -24,7 +24,7 @@ export function InstructorDetailModal({ instructor, isOpen, onClose }: Instructo
             강사 상세 정보
           </DialogTitle>
         </DialogHeader>
-        
+
         <div className="space-y-6">
           {/* 프로필 섹션 */}
           <div className="flex flex-col items-center space-y-4">
@@ -43,10 +43,15 @@ export function InstructorDetailModal({ instructor, isOpen, onClose }: Instructo
                 }}
               />
             </div>
-            
-            {/* 이름과 담당 과목 */}
+
+            {/* 이름과 담당 과목 / 직위 */}
             <div className="text-center space-y-2">
-              <h3 className="text-3xl font-bold font-headline">{instructor.name}</h3>
+              <div className="flex flex-col items-center">
+                <h3 className="text-3xl font-bold font-headline">{instructor.name}</h3>
+                {instructor.position && (
+                  <span className="text-lg text-cyan-400 font-medium">{instructor.position}</span>
+                )}
+              </div>
               {instructor.subject && (
                 <Badge variant="secondary" className="text-lg px-4 py-2 bg-primary/10 text-primary border-primary/20">
                   {instructor.subject}
@@ -72,9 +77,23 @@ export function InstructorDetailModal({ instructor, isOpen, onClose }: Instructo
             <Card>
               <CardContent className="pt-6">
                 <h4 className="text-lg font-semibold mb-3 text-primary">경력</h4>
-                <p className="text-muted-foreground leading-relaxed whitespace-pre-line">
-                  {instructor.career}
-                </p>
+                {Array.isArray(instructor.career) ? (
+                  <ul className="space-y-3">
+                    {instructor.career.map((item: any, index: number) => (
+                      <li key={index} className="flex flex-col border-l-2 border-cyan-500/30 pl-3">
+                        <span className="font-semibold text-cyan-100">{item.company}</span>
+                        <div className="flex justify-between text-sm text-cyan-200/70">
+                          <span>{item.position}</span>
+                          <span>{item.period}</span>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="text-muted-foreground leading-relaxed whitespace-pre-line">
+                    {instructor.career}
+                  </p>
+                )}
               </CardContent>
             </Card>
           )}
@@ -84,9 +103,23 @@ export function InstructorDetailModal({ instructor, isOpen, onClose }: Instructo
             <Card>
               <CardContent className="pt-6">
                 <h4 className="text-lg font-semibold mb-3 text-primary">자격증</h4>
-                <p className="text-muted-foreground leading-relaxed whitespace-pre-line">
-                  {instructor.certs}
-                </p>
+                {Array.isArray(instructor.certs) ? (
+                  <ul className="space-y-2">
+                    {instructor.certs.map((item: any, index: number) => (
+                      <li key={index} className="flex items-start gap-2 text-cyan-100">
+                        <span className="text-cyan-400">•</span>
+                        <div className="flex-1 flex justify-between">
+                          <span>{item.name}</span>
+                          <span className="text-sm text-cyan-200/50">{item.issuer} {item.date && `(${item.date})`}</span>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="text-muted-foreground leading-relaxed whitespace-pre-line">
+                    {instructor.certs}
+                  </p>
+                )}
               </CardContent>
             </Card>
           )}

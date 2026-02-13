@@ -10,7 +10,7 @@ interface InstructorCardProps {
 
 export function InstructorCard({ instructor, onClick }: InstructorCardProps) {
   return (
-    <Card 
+    <Card
       className="cyber-card flex flex-col items-center text-center cursor-pointer hover:scale-105 transition-transform duration-200 hover:shadow-lg w-full h-full"
       onClick={onClick}
     >
@@ -22,9 +22,9 @@ export function InstructorCard({ instructor, onClick }: InstructorCardProps) {
         <CardTitle className="font-headline text-center text-base md:text-lg mb-0 md:mb-2">{instructor.name}</CardTitle>
         {/* 모바일에서는 bio와 subject 숨김 */}
         <div className="hidden md:block">
-          {instructor.bio && (
+          {instructor.position && (
             <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/20 text-sm px-3 py-1 mt-2">
-              {instructor.bio}
+              {instructor.position}
             </Badge>
           )}
         </div>

@@ -45,6 +45,7 @@ export interface EditTeacherFormData {
     career: string;
     image: string;
     subject: string;
+    position: string;
 }
 
 // 담당과목은 직접 입력으로 변경되어 옵션 배열 불필요
@@ -59,7 +60,8 @@ export default function EditTeacherModal({ teacher, isOpen, onClose, onUpdate }:
         certs: "",
         career: "",
         image: "",
-        subject: ""
+        subject: "",
+        position: ""
     });
     const [loading, setLoading] = useState(false);
     const [teacherDetails, setTeacherDetails] = useState<TeacherDetails>({});
@@ -76,9 +78,10 @@ export default function EditTeacherModal({ teacher, isOpen, onClose, onUpdate }:
                 certs: "",
                 career: "",
                 image: "",
-                subject: teacher.subject || "" // 빈 값으로 시작
+                subject: teacher.subject || "", // 빈 값으로 시작
+                position: ""
             });
-            
+
             // teachers 테이블에서 상세 정보 가져오기
             fetchTeacherDetails(teacher.id);
         }
@@ -93,10 +96,11 @@ export default function EditTeacherModal({ teacher, isOpen, onClose, onUpdate }:
                 setFormData(prev => ({
                     ...prev,
                     bio: details.bio || "",
-                    certs: details.certs || "",
-                    career: details.career || "",
+                    certs: Array.isArray(details.certs) ? JSON.stringify(details.certs, null, 2) : (details.certs || ""),
+                    career: Array.isArray(details.career) ? JSON.stringify(details.career, null, 2) : (details.career || ""),
                     image: details.image || "",
-                    subject: details.subject || prev.subject || ""
+                    subject: details.subject || prev.subject || "",
+                    position: details.position || ""
                 }));
             }
         } catch (error) {
@@ -145,7 +149,7 @@ export default function EditTeacherModal({ teacher, isOpen, onClose, onUpdate }:
 
         try {
             console.log('제출할 formData:', formData);
-            
+
             // FormData 생성
             const submitFormData = new FormData();
             submitFormData.append('teacherId', teacher.id);
@@ -160,7 +164,8 @@ export default function EditTeacherModal({ teacher, isOpen, onClose, onUpdate }:
             submitFormData.append('career', formData.career);
             submitFormData.append('image', formData.image);
             submitFormData.append('subject', formData.subject);
-            
+            submitFormData.append('position', formData.position);
+
             console.log('제출할 이미지 URL:', formData.image);
 
             // 서버 액션 호출
@@ -191,7 +196,8 @@ export default function EditTeacherModal({ teacher, isOpen, onClose, onUpdate }:
             certs: "",
             career: "",
             image: "",
-            subject: ""
+            subject: "",
+            position: ""
         });
         onClose();
     };
@@ -204,19 +210,19 @@ export default function EditTeacherModal({ teacher, isOpen, onClose, onUpdate }:
                 <DialogHeader>
                     <DialogTitle className="text-cyan-100 text-xl font-bold">강사 정보 수정</DialogTitle>
                 </DialogHeader>
-                
+
                 <div className="space-y-6">
                     {/* 기본 정보 섹션 */}
                     <div className="space-y-4">
                         <h3 className="text-cyan-200 text-lg font-semibold border-b border-cyan-500/30 pb-2">기본 정보</h3>
-                        
+
                         {/* 프로필 이미지 */}
                         <ImageUpload
                             value={formData.image}
                             onChange={(url) => handleInputChange("image", url)}
                             label="프로필 이미지"
                         />
-                        
+
                         <div className="space-y-2">
                             <Label htmlFor="email" className="text-cyan-200">이메일 (로그인 ID) *</Label>
                             <Input
@@ -273,12 +279,23 @@ export default function EditTeacherModal({ teacher, isOpen, onClose, onUpdate }:
                                 className="bg-background/40 border-cyan-400/40 text-cyan-100 placeholder:text-cyan-400/60 focus:border-cyan-400/80"
                             />
                         </div>
+
+                        <div className="space-y-2">
+                            <Label htmlFor="position" className="text-cyan-200">직위 / 직책</Label>
+                            <Input
+                                id="position"
+                                value={formData.position}
+                                onChange={(e) => handleInputChange("position", e.target.value)}
+                                placeholder="예: 선임강사, 실장, 대표"
+                                className="bg-background/40 border-cyan-400/40 text-cyan-100 placeholder:text-cyan-400/60 focus:border-cyan-400/80"
+                            />
+                        </div>
                     </div>
 
                     {/* 상세 정보 섹션 */}
                     <div className="space-y-4">
                         <h3 className="text-cyan-200 text-lg font-semibold border-b border-cyan-500/30 pb-2">상세 정보</h3>
-                        
+
                         <div className="space-y-2">
                             <Label htmlFor="bio" className="text-cyan-200">소개</Label>
                             <Textarea

@@ -433,6 +433,14 @@ export async function addStudent(formData: FormData, isSignup: boolean = false) 
 // 학생 정보 수정 서버 액션
 export async function updateStudent(formData: FormData) {
   try {
+    const cookieStore = await cookies();
+    const currentUserId = cookieStore.get('user_id')?.value;
+    const currentUserRole = cookieStore.get('user_role')?.value;
+
+    if (!currentUserId) {
+      return { success: false, error: '로그인이 필요합니다.' };
+    }
+
     const studentData = {
       studentId: formData.get('studentId') as string,
       name: formData.get('name') as string,
@@ -449,23 +457,7 @@ export async function updateStudent(formData: FormData) {
       classSchedules: formData.get('classSchedules') ? JSON.parse(formData.get('classSchedules') as string) : []
     };
 
-
-    // 1. 학생 계정 정보 업데이트
-    const updateData: any = {
-      name: studentData.name,
-      phone: studentData.phone,
-      birth_year: studentData.birthYear ? parseInt(studentData.birthYear) : null,
-      status: studentData.status === '휴강' ? 'suspended' : 'active' // 상태 업데이트 (suspended 또는 active만 허용)
-    };
-
-
-    // 비밀번호가 입력된 경우에만 업데이트
-    if (studentData.password) {
-      const studentPasswordHash = await bcrypt.hash(studentData.password, 10);
-      updateData.password = studentPasswordHash;
-    }
-
-    // 먼저 사용자 ID를 가져오기
+    // 1. 학생 계정 정보 및 ID 확인
     const { data: existingUser, error: userFetchError } = await supabase
       .from('users')
       .select('id')
@@ -476,84 +468,132 @@ export async function updateStudent(formData: FormData) {
       return { success: false, error: '학생을 찾을 수 없습니다.' };
     }
 
-    const { error: userError } = await supabase
-      .from('users')
-      .update(updateData)
-      .eq('username', studentData.studentId);
+    // 2. 권한 확인 (강사의 경우 본인 담당 요일만 수정 가능)
+    let finalAttendanceSchedule: any = {};
+    const { data: currentStudent, error: studentFetchError } = await supabase
+      .from('students')
+      .select('attendance_schedule, assigned_teachers')
+      .eq('user_id', existingUser.id)
+      .single();
 
-    if (userError) {
-      return { success: false, error: userError.message };
+    if (studentFetchError) {
+      return { success: false, error: '학생 정보를 가져오는데 실패했습니다.' };
     }
 
-    // 2. 학부모 연락처 업데이트 (학부모 계정이 있는 경우)
+    // 기존 스케줄 복사
+    const existingSchedule = currentStudent.attendance_schedule || {};
+
+    // 새 스케줄 생성
+    const newScheduleFromForm: any = {};
+    studentData.classSchedules.forEach((schedule: any) => {
+      if (schedule.day && schedule.startTime && schedule.endTime) {
+        const dayMap: { [key: string]: string } = {
+          'monday': '1', 'tuesday': '2', 'wednesday': '3',
+          'thursday': '4', 'friday': '5', 'saturday': '6', 'sunday': '0'
+        };
+        const dayNumber = dayMap[schedule.day];
+        if (dayNumber) {
+          // 시간 형식 정리
+          let startTime = schedule.startTime;
+          let endTime = schedule.endTime;
+          if (startTime && !startTime.includes(':') && startTime.length === 4) {
+            startTime = `${startTime.slice(0, 2)}:${startTime.slice(2, 4)}`;
+          }
+          if (endTime && !endTime.includes(':') && endTime.length === 4) {
+            endTime = `${endTime.slice(0, 2)}:${endTime.slice(2, 4)}`;
+          }
+
+          newScheduleFromForm[dayNumber] = {
+            startTime,
+            endTime,
+            teacherId: schedule.teacherId || null
+          };
+        }
+      }
+    });
+
+    if (currentUserRole === 'teacher') {
+      // 강사인 경우: 
+      // 1. 본인이 이미 담당하고 있던 요일의 정보만 업데이트 가능
+      // 2. 본인이 아닌 다른 강사가 담당하는 요일은 기존 데이터 유지
+      // 3. 새로 담당으로 설정하려는 요일은 관리자만 가능 (일단 여기서는 본인이 담당하는 것만 허용)
+
+      finalAttendanceSchedule = { ...existingSchedule };
+
+      // 모든 요일(0~6)을 순회하며 권한 체크
+      for (let day = 0; day <= 6; day++) {
+        const dayStr = day.toString();
+        const existingSlot = existingSchedule[dayStr];
+        const newSlot = newScheduleFromForm[dayStr];
+
+        // 해당 요일의 담당자가 본인인 경우에만 수정 적용
+        if (existingSlot?.teacherId === currentUserId || newSlot?.teacherId === currentUserId) {
+          if (newSlot) {
+            finalAttendanceSchedule[dayStr] = newSlot;
+          } else {
+            delete finalAttendanceSchedule[dayStr];
+          }
+        }
+      }
+    } else {
+      // 관리자는 전체 수정 가능
+      finalAttendanceSchedule = newScheduleFromForm;
+    }
+
+    // 3. DB 업데이트
+    // users 테이블 업데이트
+    const userUpdateData: any = {
+      name: studentData.name,
+      phone: studentData.phone,
+      birth_year: studentData.birthYear ? parseInt(studentData.birthYear) : null,
+      status: studentData.status === '휴강' ? 'suspended' :
+        studentData.status === '종료' ? 'inactive' : 'active'
+    };
+    if (studentData.password) {
+      userUpdateData.password = await bcrypt.hash(studentData.password, 10);
+    }
+
+    const { error: userError } = await supabaseAdmin
+      .from('users')
+      .update(userUpdateData)
+      .eq('id', existingUser.id);
+
+    if (userError) return { success: false, error: userError.message };
+
+    // parents 연락처 업데이트
     const parentUsername = `${studentData.studentId}p`;
-    const { error: parentError } = await supabase
+    await supabaseAdmin
       .from('users')
       .update({ phone: studentData.parentPhone })
       .eq('username', parentUsername);
 
-    // 학부모 업데이트 실패는 무시 (선택사항)
+    // students 테이블 업데이트 (assigned_teachers 배열도 업데이트 - 관리자만)
+    const assignedTeacherIds = Array.from(new Set(
+      Object.values(finalAttendanceSchedule)
+        .map((s: any) => s.teacherId)
+        .filter(id => id && id !== 'none')
+    )) as string[];
 
-    // 3. 수업 일정 업데이트 (선택사항)
-    if (studentData.classSchedules && studentData.classSchedules.length > 0) {
-      // 수업 일정을 attendance_schedule 형식으로 변환
-      const attendanceSchedule: any = {};
+    const studentUpdateData: any = {
+      attendance_schedule: finalAttendanceSchedule,
+      main_subject: studentData.subject || null,
+      sub_subject: studentData.sub_subject || null,
+      memo: studentData.memo || null,
+      enrollment_start_date: studentData.enrollment_date || null
+    };
 
-      studentData.classSchedules.forEach((schedule: any) => {
-        if (schedule.day && schedule.startTime && schedule.endTime) {
-          const dayMap: { [key: string]: string } = {
-            'monday': '1', 'tuesday': '2', 'wednesday': '3',
-            'thursday': '4', 'friday': '5', 'saturday': '6', 'sunday': '0'
-          };
-          const dayNumber = dayMap[schedule.day];
-          if (dayNumber) {
-            // 시간 형식 정리 (HH:MM 형식으로 통일)
-            let startTime = schedule.startTime;
-            let endTime = schedule.endTime;
+    // 관리자인 경우에만 전반적인 담당 강사 목록 업데이트
+    if (currentUserRole === 'admin') {
+      studentUpdateData.assigned_teachers = assignedTeacherIds;
+    }
 
-            if (startTime && !startTime.includes(':')) {
-              const numbers = startTime.replace(/[^0-9]/g, '');
-              if (numbers.length === 4) {
-                const hours = numbers.slice(0, 2);
-                const minutes = numbers.slice(2, 4);
-                startTime = `${hours}:${minutes}`;
-              }
-            }
+    const { error: studentError } = await supabaseAdmin
+      .from('students')
+      .update(studentUpdateData)
+      .eq('user_id', existingUser.id);
 
-            if (endTime && !endTime.includes(':')) {
-              const numbers = endTime.replace(/[^0-9]/g, '');
-              if (numbers.length === 4) {
-                const hours = numbers.slice(0, 2);
-                const minutes = numbers.slice(2, 4);
-                endTime = `${hours}:${minutes}`;
-              }
-            }
-
-            attendanceSchedule[dayNumber] = {
-              startTime: startTime,
-              endTime: endTime
-            };
-          }
-        }
-      });
-
-      // students 테이블의 attendance_schedule 업데이트
-      if (Object.keys(attendanceSchedule).length > 0) {
-        const { error: studentError } = await supabase
-          .from('students')
-          .update({
-            attendance_schedule: attendanceSchedule,
-            main_subject: studentData.subject || null,
-            sub_subject: studentData.sub_subject || null,
-            memo: studentData.memo || null,
-            enrollment_start_date: studentData.enrollment_date || null
-          })
-          .eq('user_id', existingUser.id);
-
-        if (studentError) {
-          console.warn('수업 일정 업데이트 실패 (무시):', studentError);
-        }
-      }
+    if (studentError) {
+      return { success: false, error: studentError.message };
     }
 
     return { success: true, message: '학생 정보가 성공적으로 업데이트되었습니다.' };
@@ -954,7 +994,7 @@ export async function updateContent(formData: FormData) {
       'academy_title', 'academy_subtitle',
       'featured_card_1_title', 'featured_card_1_image_1', 'featured_card_1_image_2', 'featured_card_1_link',
       'featured_card_2_title', 'featured_card_2_image_1', 'featured_card_2_image_2', 'featured_card_2_link',
-      'promo_image'
+      'promo_image', 'unit_threshold'
     ];
 
     textFields.forEach(field => {
@@ -1301,7 +1341,8 @@ export async function addTeacher(formData: FormData) {
       phone: formData.get('phone') as string,
       password: formData.get('password') as string,
       subject: formData.get('subject') as string,
-      image: formData.get('image') as string
+      image: formData.get('image') as string,
+      position: formData.get('position') as string
     };
 
     // 필수 필드 검증
@@ -1389,10 +1430,12 @@ export async function addTeacher(formData: FormData) {
       .from('teachers')
       .insert({
         user_id: userData.id,
-        bio: '코딩 전문 강사',
-        certs: '코딩 교육 전문가',
-        career: '코딩 교육 전문 강사',
+        bio: '전문 강사입니다.',
+        position: teacherData.position || '강사',
+        certs: '[]',
+        career: '[]',
         subject: teacherData.subject, // 입력된 담당과목
+        label_color: '#00fff7', // 기본 색상 (시안)
         created_at: new Date().toISOString()
       });
 
@@ -1439,7 +1482,8 @@ export async function updateTeacher(formData: FormData) {
       career: formData.get('career') as string,
       image: formData.get('image') as string,
       subject: formData.get('subject') as string,
-      position: formData.get('position') as string
+      position: formData.get('position') as string,
+      label_color: formData.get('label_color') as string
     };
 
     // 필수 필드 검증
@@ -1535,7 +1579,7 @@ export async function updateTeacher(formData: FormData) {
       updateUserData.password = passwordHash;
     }
 
-    const { error: userError } = await supabase
+    const { error: userError } = await supabaseAdmin
       .from('users')
       .update(updateUserData)
       .eq('id', teacherData.teacherId);
@@ -1544,17 +1588,17 @@ export async function updateTeacher(formData: FormData) {
       return { success: false, error: `기본 정보 수정 실패: ${userError.message}` };
     }
 
-    // 3. teachers 테이블 업데이트
-    const { error: teacherError } = await supabase
+    // 3. teachers 테이블 업데이트 (supabaseAdmin 및 upsert 사용으로 RLS 우회 및 데이터 생성 보장)
+    const { error: teacherError } = await supabaseAdmin
       .from('teachers')
-      .update({
+      .upsert({
+        user_id: teacherData.teacherId,
         bio: teacherData.bio || null,
         position: teacherData.position || null,
-        certs: teacherData.certs ? (typeof teacherData.certs === 'string' && teacherData.certs.startsWith('[') ? JSON.parse(teacherData.certs) : teacherData.certs) : null,
         career: teacherData.career ? (typeof teacherData.career === 'string' && teacherData.career.startsWith('[') ? JSON.parse(teacherData.career) : teacherData.career) : null,
-        subject: teacherData.subject || '코딩 교육' // subject 컬럼에 직접 저장
-      })
-      .eq('user_id', teacherData.teacherId);
+        subject: teacherData.subject || '코딩 교육',
+        label_color: teacherData.label_color || '#00fff7'
+      });
 
     if (teacherError) {
       return { success: false, error: `상세 정보 수정 실패: ${teacherError.message}` };
@@ -1581,7 +1625,7 @@ export async function getTeacherDetails(teacherId: string) {
     // teachers 테이블에서 상세 정보 조회
     const { data: teacherData, error: teacherError } = await supabase
       .from('teachers')
-      .select('bio, certs, career, subject')
+      .select('bio, certs, career, subject, position, label_color')
       .eq('user_id', teacherId)
       .single();
 
@@ -1609,7 +1653,8 @@ export async function getTeacherDetails(teacherId: string) {
         certs: teacherData?.certs || [],
         career: teacherData?.career || [],
         image: userData?.profile_image_url || '',
-        subject: teacherData?.subject || '코딩 교육'
+        subject: teacherData?.subject || '코딩 교육',
+        label_color: teacherData?.label_color || '#00fff7'
       }
     };
   } catch (error) {
@@ -1923,7 +1968,6 @@ export async function getInstructors() {
         )
       `)
       .in('role', ['teacher', 'admin'])
-      .not('teachers.bio', 'is', null)
       .order('name');
 
     if (error) {
@@ -1932,23 +1976,27 @@ export async function getInstructors() {
     }
 
     // 데이터 매핑
-    const instructors = (data || []).map((teacher: any) => ({
-      id: teacher.id,
-      name: teacher.name,
-      bio: teacher.teachers.bio || '전문 강사',
-      profile_image: teacher.profile_image_url || 'https://placehold.co/400x400.png',
-      subject: teacher.teachers.subject || '코딩 교육',
-      position: teacher.teachers.position || '',
-      certs: teacher.teachers.certs || [],
-      career: teacher.teachers.career || [],
-      email: teacher.email,
-      phone: teacher.phone
-    }));
+    const instructors = (data || []).map((teacher: any) => {
+      const t = Array.isArray(teacher.teachers) ? teacher.teachers[0] : teacher.teachers;
 
-    // position 기준으로 정렬: 원장, 부원장을 상단에 배치
+      return {
+        id: teacher.id,
+        name: teacher.name,
+        bio: t?.bio || '전문 강사',
+        profile_image: teacher.profile_image_url || 'https://placehold.co/400x400.png',
+        subject: t?.subject || '코딩 교육',
+        position: t?.position || '',
+        certs: t?.certs || [],
+        career: t?.career || [],
+        email: teacher.email,
+        phone: teacher.phone
+      };
+    });
+
+    // position/bio 기준으로 정렬: 원장, 부원장을 상단에 배치
     const sortedInstructors = instructors.sort((a: any, b: any) => {
-      const aIsLeader = a.position?.includes('원장') || a.bio?.includes('원장');
-      const bIsLeader = b.position?.includes('원장') || b.bio?.includes('원장');
+      const aIsLeader = (a.position && a.position.includes('원장')) || (a.bio && a.bio.includes('원장'));
+      const bIsLeader = (b.position && b.position.includes('원장')) || (b.bio && b.bio.includes('원장'));
 
       if (aIsLeader && !bIsLeader) return -1;
       if (!aIsLeader && bIsLeader) return 1;
@@ -2484,5 +2532,80 @@ export async function rejectNewStudentSignupRequest(requestId: string, rejection
   } catch (error) {
     console.error('학생 가입 요청 거부 중 오류:', error);
     return { success: false, error: '학생 가입 요청 거부 중 오류가 발생했습니다.' };
+  }
+}
+
+// 강사 삭제 서버 액션 (관리자만 가능)
+export async function deleteTeacher(teacherId: string) {
+  try {
+    const cookieStore = await cookies();
+    const currentUserRole = cookieStore.get('user_role')?.value;
+
+    if (currentUserRole !== 'admin') {
+      return { success: false, error: '관리자만 강사를 삭제할 수 있습니다.' };
+    }
+
+    // 1. 강사 정보 확인
+    const { data: teacher, error: fetchError } = await supabase
+      .from('users')
+      .select('id, name')
+      .eq('id', teacherId)
+      .eq('role', 'teacher')
+      .single();
+
+    if (fetchError || !teacher) {
+      return { success: false, error: '강사를 찾을 수 없습니다.' };
+    }
+
+    // 2. teachers 테이블 정보 삭제
+    const { error: detailError } = await supabaseAdmin
+      .from('teachers')
+      .delete()
+      .eq('user_id', teacherId);
+
+    if (detailError) {
+      console.error('강사 상세 정보 삭제 실패:', detailError);
+    }
+
+    // 3. users 테이블 계정 삭제
+    const { error: deleteError } = await supabaseAdmin
+      .from('users')
+      .delete()
+      .eq('id', teacherId);
+
+    if (deleteError) {
+      return { success: false, error: `강사 삭제 실패: ${deleteError.message}` };
+    }
+
+    return { success: true, message: `${teacher.name} 강사가 삭제되었습니다.` };
+  } catch (error) {
+    console.error('강사 삭제 중 오류:', error);
+    return { success: false, error: '강사 삭제 중 오류가 발생했습니다.' };
+  }
+}
+
+// 강사 라벨 색상 업데이트 서버 액션
+export async function updateTeacherLabelColor(teacherId: string, color: string) {
+  try {
+    const cookieStore = await cookies();
+    const currentUserRole = cookieStore.get('user_role')?.value;
+
+    if (currentUserRole !== 'admin') {
+      return { success: false, error: '관리자만 색상을 변경할 수 있습니다.' };
+    }
+
+    const { error } = await supabaseAdmin
+      .from('teachers')
+      .update({ label_color: color })
+      .eq('user_id', teacherId);
+
+    if (error) {
+      return { success: false, error: `색상 업데이트 실패: ${error.message}` };
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error('색상 업데이트 중 오류:', error);
+    return { success: false, error: '색상 업데이트 중 오류가 발생했습니다.' };
   }
 }

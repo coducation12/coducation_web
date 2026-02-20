@@ -1,5 +1,6 @@
 'use client';
 
+import React, { Fragment } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
@@ -18,7 +19,7 @@ export function InstructorDetailModal({ instructor, isOpen, onClose }: Instructo
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto scrollbar-hide">
         <DialogHeader>
           <DialogTitle className="text-2xl font-headline text-center">
             강사 상세 정보
@@ -44,79 +45,51 @@ export function InstructorDetailModal({ instructor, isOpen, onClose }: Instructo
               />
             </div>
 
-            {/* 이름과 담당 과목 / 직위 */}
-            <div className="text-center space-y-2">
-              <div className="flex flex-col items-center">
-                <h3 className="text-3xl font-bold font-headline">{instructor.name}</h3>
-                {instructor.position && (
-                  <span className="text-lg text-cyan-400 font-medium">{instructor.position}</span>
+            {/* 이름과 담당 과목 / 이메일 */}
+            <div className="text-center space-y-3">
+              <h3 className="text-3xl font-bold font-headline text-cyan-100">{instructor.name}</h3>
+              <div className="flex flex-col items-center gap-2">
+                {instructor.subject && (
+                  <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/20 text-base px-4 py-1.5">
+                    {instructor.subject}
+                  </Badge>
+                )}
+                {instructor.email && (
+                  <span className="text-cyan-200/70 text-sm font-medium hover:text-cyan-200 transition-colors">
+                    {instructor.email}
+                  </span>
                 )}
               </div>
-              {instructor.subject && (
-                <Badge variant="secondary" className="text-lg px-4 py-2 bg-primary/10 text-primary border-primary/20">
-                  {instructor.subject}
-                </Badge>
-              )}
             </div>
           </div>
 
-          <Separator />
-
           {/* 자기소개 */}
-          <Card>
+          <Card className="bg-cyan-900/10 border-cyan-500/20">
             <CardContent className="pt-6">
-              <h4 className="text-lg font-semibold mb-3 text-primary">자기소개</h4>
-              <p className="text-muted-foreground leading-relaxed whitespace-pre-line">
+              <h4 className="text-lg font-semibold mb-3 text-cyan-400 font-headline">자기소개</h4>
+              <p className="text-cyan-100 leading-relaxed whitespace-pre-line text-sm md:text-base">
                 {instructor.bio}
               </p>
             </CardContent>
           </Card>
 
-          {/* 경력 정보 */}
-          {instructor.career && (
-            <Card>
-              <CardContent className="pt-6">
-                <h4 className="text-lg font-semibold mb-3 text-primary">경력</h4>
-                {Array.isArray(instructor.career) ? (
-                  <ul className="space-y-3">
-                    {instructor.career.map((item: any, index: number) => (
-                      <li key={index} className="flex flex-col border-l-2 border-cyan-500/30 pl-3">
-                        <span className="font-semibold text-cyan-100">{item.company}</span>
-                        <div className="flex justify-between text-sm text-cyan-200/70">
-                          <span>{item.position}</span>
-                          <span>{item.period}</span>
-                        </div>
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p className="text-muted-foreground leading-relaxed whitespace-pre-line">
-                    {instructor.career}
-                  </p>
-                )}
-              </CardContent>
-            </Card>
-          )}
-
           {/* 자격증 정보 */}
           {instructor.certs && (
-            <Card>
+            <Card className="bg-cyan-900/10 border-cyan-500/20">
               <CardContent className="pt-6">
-                <h4 className="text-lg font-semibold mb-3 text-primary">자격증</h4>
+                <h4 className="text-lg font-semibold mb-3 text-cyan-400 font-headline">자격증</h4>
                 {Array.isArray(instructor.certs) ? (
-                  <ul className="space-y-2">
+                  <div className="grid grid-cols-[1.2fr_1fr_auto] gap-x-4 gap-y-3 items-baseline">
                     {instructor.certs.map((item: any, index: number) => (
-                      <li key={index} className="flex items-start gap-2 text-cyan-100">
-                        <span className="text-cyan-400">•</span>
-                        <div className="flex-1 flex justify-between">
-                          <span>{item.name}</span>
-                          <span className="text-sm text-cyan-200/50">{item.issuer} {item.date && `(${item.date})`}</span>
-                        </div>
-                      </li>
+                      <Fragment key={index}>
+                        <span className="text-cyan-100 font-medium text-sm md:text-base line-clamp-1 pb-1 border-b border-cyan-500/5">{item.name}</span>
+                        <span className="text-cyan-200/80 text-xs md:text-sm line-clamp-1 pb-1 border-b border-cyan-500/5">{item.issuer}</span>
+                        <span className="text-cyan-200/50 text-xs md:text-sm font-mono whitespace-nowrap text-right pb-1 border-b border-cyan-500/5">{item.date}</span>
+                      </Fragment>
                     ))}
-                  </ul>
+                  </div>
                 ) : (
-                  <p className="text-muted-foreground leading-relaxed whitespace-pre-line">
+                  <p className="text-cyan-100 text-sm md:text-base whitespace-pre-line">
                     {instructor.certs}
                   </p>
                 )}
@@ -124,14 +97,26 @@ export function InstructorDetailModal({ instructor, isOpen, onClose }: Instructo
             </Card>
           )}
 
-          {/* 이메일 정보 (있는 경우) */}
-          {instructor.email && (
-            <Card>
+          {/* 경력 정보 */}
+          {instructor.career && (
+            <Card className="bg-cyan-900/10 border-cyan-500/20">
               <CardContent className="pt-6">
-                <h4 className="text-lg font-semibold mb-3 text-primary">이메일</h4>
-                <p className="text-muted-foreground">
-                  {instructor.email}
-                </p>
+                <h4 className="text-lg font-semibold mb-3 text-cyan-400 font-headline">경력</h4>
+                {Array.isArray(instructor.career) ? (
+                  <div className="grid grid-cols-[1.2fr_1fr_auto] gap-x-4 gap-y-3 items-baseline">
+                    {instructor.career.map((item: any, index: number) => (
+                      <Fragment key={index}>
+                        <span className="text-cyan-100 font-medium text-sm md:text-base line-clamp-1 pb-1 border-b border-cyan-500/5">{item.company}</span>
+                        <span className="text-cyan-200/80 text-xs md:text-sm line-clamp-1 pb-1 border-b border-cyan-500/5">{item.position}</span>
+                        <span className="text-cyan-200/50 text-xs md:text-sm font-mono whitespace-nowrap text-right pb-1 border-b border-cyan-500/5">{item.period}</span>
+                      </Fragment>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-cyan-100 text-sm md:text-base whitespace-pre-line">
+                    {instructor.career}
+                  </p>
+                )}
               </CardContent>
             </Card>
           )}

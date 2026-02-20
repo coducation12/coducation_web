@@ -21,6 +21,8 @@ export interface TeacherFormData {
     password: string;
     subject: string;
     image: string;
+    position: string;
+    label_color: string;
 }
 
 // 담당과목은 직접 입력으로 변경
@@ -33,7 +35,9 @@ export default function AddTeacherModal({ onAddTeacher }: AddTeacherModalProps) 
         phone: "",
         password: "",
         subject: "",
-        image: ""
+        image: "",
+        position: "",
+        label_color: "#00fff7"
     });
     const [loading, setLoading] = useState(false);
 
@@ -82,6 +86,8 @@ export default function AddTeacherModal({ onAddTeacher }: AddTeacherModalProps) 
             submitFormData.append('password', formData.password);
             submitFormData.append('subject', formData.subject);
             submitFormData.append('image', formData.image);
+            submitFormData.append('position', formData.position);
+            submitFormData.append('label_color', formData.label_color);
 
             // 서버 액션 호출
             const result = await addTeacher(submitFormData);
@@ -94,7 +100,9 @@ export default function AddTeacherModal({ onAddTeacher }: AddTeacherModalProps) 
                     phone: "",
                     password: "",
                     subject: "",
-                    image: ""
+                    image: "",
+                    position: "",
+                    label_color: "#00fff7"
                 });
                 setOpen(false);
                 onAddTeacher(); // 목록 새로고침
@@ -116,7 +124,9 @@ export default function AddTeacherModal({ onAddTeacher }: AddTeacherModalProps) 
             phone: "",
             password: "",
             subject: "",
-            image: ""
+            image: "",
+            position: "",
+            label_color: "#00fff7"
         });
         setOpen(false);
     };
@@ -129,18 +139,22 @@ export default function AddTeacherModal({ onAddTeacher }: AddTeacherModalProps) 
                     강사 추가
                 </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-md bg-gradient-to-br from-cyan-900/20 to-blue-900/20 border-cyan-500/30">
+            <DialogContent className="max-w-md bg-gradient-to-br from-cyan-900/20 to-blue-900/20 border-cyan-500/30 max-h-[90vh] overflow-y-auto scrollbar-hide">
                 <DialogHeader>
                     <DialogTitle className="text-cyan-100 text-xl font-bold">새 강사 등록</DialogTitle>
                 </DialogHeader>
-                
+
                 <div className="space-y-4">
-                    {/* 프로필 이미지 */}
-                    <ImageUpload
-                        value={formData.image}
-                        onChange={(url) => handleInputChange("image", url)}
-                        label="프로필 이미지"
-                    />
+                    {/* 프로필 이미지 (축소 및 가운데 정렬) */}
+                    <div className="flex justify-center">
+                        <div className="w-1/3">
+                            <ImageUpload
+                                value={formData.image}
+                                onChange={(url) => handleInputChange("image", url)}
+                                label="프로필 이미지"
+                            />
+                        </div>
+                    </div>
 
                     <div className="space-y-2">
                         <Label htmlFor="email" className="text-cyan-200">이메일 (로그인 ID) *</Label>
@@ -189,6 +203,17 @@ export default function AddTeacherModal({ onAddTeacher }: AddTeacherModalProps) 
                     </div>
 
                     <div className="space-y-2">
+                        <Label htmlFor="position" className="text-cyan-200">직위 / 직책</Label>
+                        <Input
+                            id="position"
+                            value={formData.position}
+                            onChange={(e) => handleInputChange("position", e.target.value)}
+                            placeholder="예: 원장, 수석강사, 팀장"
+                            className="bg-background/40 border-cyan-400/40 text-cyan-100 placeholder:text-cyan-400/60 focus:border-cyan-400/80"
+                        />
+                    </div>
+
+                    <div className="space-y-2">
                         <Label htmlFor="subject" className="text-cyan-200">담당 과목 *</Label>
                         <Input
                             id="subject"
@@ -198,6 +223,7 @@ export default function AddTeacherModal({ onAddTeacher }: AddTeacherModalProps) 
                             className="bg-background/40 border-cyan-400/40 text-cyan-100 placeholder:text-cyan-400/60 focus:border-cyan-400/80"
                         />
                     </div>
+
 
                     {/* 버튼 영역 */}
                     <div className="flex justify-end gap-3 pt-4 border-t border-cyan-500/20">
@@ -222,6 +248,6 @@ export default function AddTeacherModal({ onAddTeacher }: AddTeacherModalProps) 
             </DialogContent>
         </Dialog>
     );
-} 
+}
 
 // 강사 등록이 완료되면 즉시 users 테이블에 role='teacher'로 등록되고 teachers 테이블에도 상세 정보가 추가됩니다.

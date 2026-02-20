@@ -412,43 +412,45 @@ export default function TeacherProfileClient({ user }: TeacherProfileClientProps
               ) : (
                 <div className="space-y-3">
                   {certificates.map((cert, index) => (
-                    <div key={index} className="grid grid-cols-[1fr_1fr_1fr_auto] gap-2 items-end p-3 bg-cyan-900/10 rounded-lg border border-cyan-500/20">
-                      <div className="space-y-1">
-                        <Label className="text-xs text-cyan-300">자격증명</Label>
-                        <Input
-                          value={cert.name}
-                          onChange={(e) => updateCertificate(index, 'name', e.target.value)}
-                          className="bg-cyan-900/20 border-cyan-500/30 text-cyan-100 h-9"
-                          placeholder="예: 정보처리기사"
-                        />
+                    <div key={index} className="space-y-3 p-4 bg-cyan-900/10 rounded-lg border border-cyan-500/20">
+                      <div className="grid grid-cols-[1fr_1fr_1fr_auto] gap-3 items-end">
+                        <div className="space-y-1">
+                          <Label className="text-xs text-cyan-300">자격증명</Label>
+                          <Input
+                            value={cert.name}
+                            onChange={(e) => updateCertificate(index, 'name', e.target.value)}
+                            className="bg-cyan-900/20 border-cyan-500/30 text-cyan-100 h-9"
+                            placeholder="예: 정보처리기사"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-xs text-cyan-300">발급기관</Label>
+                          <Input
+                            value={cert.issuer}
+                            onChange={(e) => updateCertificate(index, 'issuer', e.target.value)}
+                            className="bg-cyan-900/20 border-cyan-500/30 text-cyan-100 h-9"
+                            placeholder="예: 한국산업인력공단"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-xs text-cyan-300">취득일</Label>
+                          <Input
+                            value={cert.date}
+                            onChange={(e) => updateCertificate(index, 'date', e.target.value)}
+                            className="bg-cyan-900/20 border-cyan-500/30 text-cyan-100 h-9"
+                            placeholder="예: 2020-05"
+                          />
+                        </div>
+                        <Button
+                          type="button"
+                          onClick={() => removeCertificate(index)}
+                          size="sm"
+                          variant="destructive"
+                          className="h-9"
+                        >
+                          <X className="w-4 h-4" />
+                        </Button>
                       </div>
-                      <div className="space-y-1">
-                        <Label className="text-xs text-cyan-300">발급기관</Label>
-                        <Input
-                          value={cert.issuer}
-                          onChange={(e) => updateCertificate(index, 'issuer', e.target.value)}
-                          className="bg-cyan-900/20 border-cyan-500/30 text-cyan-100 h-9"
-                          placeholder="예: 한국산업인력공단"
-                        />
-                      </div>
-                      <div className="space-y-1">
-                        <Label className="text-xs text-cyan-300">취득일</Label>
-                        <Input
-                          value={cert.date}
-                          onChange={(e) => updateCertificate(index, 'date', e.target.value)}
-                          className="bg-cyan-900/20 border-cyan-500/30 text-cyan-100 h-9"
-                          placeholder="예: 2020-05"
-                        />
-                      </div>
-                      <Button
-                        type="button"
-                        onClick={() => removeCertificate(index)}
-                        size="sm"
-                        variant="destructive"
-                        className="h-9"
-                      >
-                        <X className="w-4 h-4" />
-                      </Button>
                     </div>
                   ))}
                 </div>
@@ -474,43 +476,45 @@ export default function TeacherProfileClient({ user }: TeacherProfileClientProps
               ) : (
                 <div className="space-y-3">
                   {careers.map((career, index) => (
-                    <div key={index} className="grid grid-cols-[1fr_1fr_1fr_auto] gap-2 items-end p-3 bg-cyan-900/10 rounded-lg border border-cyan-500/20">
-                      <div className="space-y-1">
-                        <Label className="text-xs text-cyan-300">회사/기관명</Label>
-                        <Input
-                          value={career.company}
-                          onChange={(e) => updateCareer(index, 'company', e.target.value)}
-                          className="bg-cyan-900/20 border-cyan-500/30 text-cyan-100 h-9"
-                          placeholder="예: ABC 코딩학원"
-                        />
+                    <div key={index} className="space-y-3 p-4 bg-cyan-900/10 rounded-lg border border-cyan-500/20">
+                      <div className="grid grid-cols-[1fr_1fr_1fr_auto] gap-3 items-end">
+                        <div className="space-y-1">
+                          <Label className="text-xs text-cyan-300">회사/기관명</Label>
+                          <Input
+                            value={career.company}
+                            onChange={(e) => updateCareer(index, 'company', e.target.value)}
+                            className="bg-cyan-900/20 border-cyan-500/30 text-cyan-100 h-9"
+                            placeholder="예: ABC 코딩학원"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-xs text-cyan-300">직책</Label>
+                          <Input
+                            value={career.position}
+                            onChange={(e) => updateCareer(index, 'position', e.target.value)}
+                            className="bg-cyan-900/20 border-cyan-500/30 text-cyan-100 h-9"
+                            placeholder="예: 강사"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-xs text-cyan-300">기간</Label>
+                          <Input
+                            value={career.period}
+                            onChange={(e) => updateCareer(index, 'period', e.target.value)}
+                            className="bg-cyan-900/20 border-cyan-500/30 text-cyan-100 h-9"
+                            placeholder="예: 2019.03 - 2022.12"
+                          />
+                        </div>
+                        <Button
+                          type="button"
+                          onClick={() => removeCareer(index)}
+                          size="sm"
+                          variant="destructive"
+                          className="h-9"
+                        >
+                          <X className="w-4 h-4" />
+                        </Button>
                       </div>
-                      <div className="space-y-1">
-                        <Label className="text-xs text-cyan-300">직책</Label>
-                        <Input
-                          value={career.position}
-                          onChange={(e) => updateCareer(index, 'position', e.target.value)}
-                          className="bg-cyan-900/20 border-cyan-500/30 text-cyan-100 h-9"
-                          placeholder="예: 강사"
-                        />
-                      </div>
-                      <div className="space-y-1">
-                        <Label className="text-xs text-cyan-300">기간</Label>
-                        <Input
-                          value={career.period}
-                          onChange={(e) => updateCareer(index, 'period', e.target.value)}
-                          className="bg-cyan-900/20 border-cyan-500/30 text-cyan-100 h-9"
-                          placeholder="예: 2019.03 - 2022.12"
-                        />
-                      </div>
-                      <Button
-                        type="button"
-                        onClick={() => removeCareer(index)}
-                        size="sm"
-                        variant="destructive"
-                        className="h-9"
-                      >
-                        <X className="w-4 h-4" />
-                      </Button>
                     </div>
                   ))}
                 </div>

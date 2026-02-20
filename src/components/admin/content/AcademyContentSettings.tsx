@@ -13,8 +13,6 @@ import { toast } from "@/hooks/use-toast";
 import { useRouter } from 'next/navigation';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 
-// ... (Top implementation with new types)
-// ... imports
 interface AcademyContentSettingsProps {
     initialData: {
         academy_title: string;
@@ -28,6 +26,7 @@ interface AcademyContentSettingsProps {
         featured_card_2_image_1: string;
         featured_card_2_image_2: string;
         featured_card_2_link: string;
+        unit_threshold?: string;
     };
 }
 
@@ -40,7 +39,7 @@ export default function AcademyContentSettings({ initialData }: AcademyContentSe
         ...initialData,
         academy_slides: initialData.academy_slides?.map((slide, index) => ({
             ...slide,
-            id: slide.id || `slide - ${Date.now()} -${index} `,
+            id: slide.id || `slide-${Date.now()}-${index}`,
             description: slide.description || (slide as any).content || ''
         })) || []
     });
@@ -64,8 +63,6 @@ export default function AcademyContentSettings({ initialData }: AcademyContentSe
             academy_slides: [...(prev.academy_slides || []), { id: Date.now().toString(), image: '', title: '', description: '' }]
         }));
     };
-
-    // ... removeSlide, onDragEnd, handleSave (same logic)
 
     const removeSlide = (id: string) => {
         setFormData(prev => ({
@@ -97,7 +94,6 @@ export default function AcademyContentSettings({ initialData }: AcademyContentSe
             // Card 1
             data.set('featured_card_1_title', formData.featured_card_1_title);
             data.set('featured_card_1_image_1', formData.featured_card_1_image_1);
-            // featured_card_1_image_2 is kept for DB compatibility if needed, using image_1 or empty
             data.set('featured_card_1_image_2', formData.featured_card_1_image_2 || '');
             data.set('featured_card_1_link', formData.featured_card_1_link);
 
@@ -115,10 +111,10 @@ export default function AcademyContentSettings({ initialData }: AcademyContentSe
             } else {
                 throw new Error(result.error);
             }
-        } catch (error) {
+        } catch (error: any) {
             toast({
                 title: "저장 실패",
-                description: "저장 중 오류가 발생했습니다.",
+                description: error.message || "저장 중 오류가 발생했습니다.",
                 variant: "destructive"
             });
         } finally {
@@ -171,7 +167,7 @@ export default function AcademyContentSettings({ initialData }: AcademyContentSe
                             {(provided) => (
                                 <div {...provided.droppableProps} ref={provided.innerRef} className="space-y-4">
                                     {formData.academy_slides?.map((slide, index) => (
-                                        <Draggable key={slide.id} draggableId={slide.id} index={index}>
+                                        <Draggable key={slide.id} draggableId={slide.id!} index={index}>
                                             {(provided) => (
                                                 <div
                                                     ref={provided.innerRef}

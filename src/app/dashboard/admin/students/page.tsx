@@ -14,6 +14,7 @@ import { supabase } from "@/lib/supabase";
 import { addStudent, updateStudent, getCurrentUser, deleteStudent } from "@/lib/actions";
 import StudentModal from "@/components/common/StudentModal";
 import { useToast } from "@/hooks/use-toast";
+import { getTeacherColorSet } from "@/lib/colors";
 
 export const dynamic = 'force-dynamic';
 
@@ -55,7 +56,7 @@ export default function AdminStudentsPage() {
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
     const [studentToDelete, setStudentToDelete] = useState<Student | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
-    const [teachers, setTeachers] = useState<{ id: string, name: string }[]>([]);
+    const [teachers, setTeachers] = useState<{ id: string, name: string, label_color?: string }[]>([]);
     const [sortField, setSortField] = useState<string | null>(null);
     const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
     const { toast } = useToast();
@@ -105,28 +106,6 @@ export default function AdminStudentsPage() {
         });
     };
 
-    // 담당강사별 색상 매핑 함수
-    const getTeacherColor = (teacherName: string) => {
-        if (teacherName === '미지정') return 'text-gray-400';
-
-        const colors = [
-            'text-blue-300',    // 파란색
-            'text-green-300',   // 초록색
-            'text-yellow-300',  // 노란색
-            'text-purple-300',  // 보라색
-            'text-pink-300',    // 분홍색
-            'text-orange-300',  // 주황색
-            'text-cyan-300',    // 청록색
-            'text-red-300',     // 빨간색
-        ];
-
-        // 강사 이름의 해시값을 사용해서 일관된 색상 할당
-        let hash = 0;
-        for (let i = 0; i < teacherName.length; i++) {
-            hash = ((hash << 5) - hash + teacherName.charCodeAt(i)) & 0xffffffff;
-        }
-        return colors[Math.abs(hash) % colors.length];
-    };
 
     useEffect(() => {
         const loadData = async () => {
@@ -140,7 +119,11 @@ export default function AdminStudentsPage() {
         try {
             const { data, error } = await supabase
                 .from('users')
-                .select('id, name')
+                .select(`
+                    id, 
+                    name,
+                    teachers(label_color)
+                `)
                 .eq('role', 'teacher')
                 .eq('status', 'active');
 
@@ -148,7 +131,13 @@ export default function AdminStudentsPage() {
                 return;
             }
 
-            setTeachers(data || []);
+            const teachersWithColor = (data || []).map((t: any) => ({
+                id: t.id,
+                name: t.name,
+                label_color: t.teachers?.[0]?.label_color
+            }));
+
+            setTeachers(teachersWithColor);
         } catch (error: any) { // Added type annotation for catch error
             // The original request included `reader.onerror` and `img.onerror` here,
             // but they are not defined in this scope and would cause syntax errors.
@@ -161,14 +150,27 @@ export default function AdminStudentsPage() {
         // 먼저 강사 목록을 다시 조회
         const { data: teachersData, error: teachersError } = await supabase
             .from('users')
-            .select('id, name')
+            .select(`
+                id, 
+                name,
+                teachers(label_color)
+            `)
             .eq('role', 'teacher')
             .eq('status', 'active');
 
         if (teachersError) {
         }
 
-        const currentTeachers = teachersData || [];
+        const currentTeachers = (teachersData || []).map((t: any) => {
+            const detail = Array.isArray(t.teachers) ? t.teachers[0] : t.teachers;
+            return {
+                id: t.id,
+                name: t.name,
+                label_color: detail?.label_color || '#00fff7'
+            };
+        });
+
+        setTeachers(currentTeachers);
 
         const { data, error } = await supabase
             .from('students')
@@ -228,7 +230,8 @@ export default function AdminStudentsPage() {
                 course: item.main_subject || '프로그래밍',
                 curriculum: '기초 프로그래밍', // 기본값, 나중에 실제 커리큘럼 데이터로 교체
                 status: item.users?.status === 'pending' ? '승인대기' :
-                    item.users?.status === 'suspended' ? '휴강' : '수강',
+                    item.users?.status === 'suspended' ? '휴강' :
+                        item.users?.status === 'inactive' ? '종료' : '수강',
                 joinDate: item.users?.created_at ? new Date(item.users.created_at).toLocaleDateString() : '-',
                 lastLogin: '2024-01-15', // 기본값
                 studentId: item.users?.username || '-',
@@ -245,7 +248,8 @@ export default function AdminStudentsPage() {
                     return {
                         day: dayMap[day] || day,
                         startTime: schedule.startTime || '',
-                        endTime: schedule.endTime || ''
+                        endTime: schedule.endTime || '',
+                        teacherId: schedule.teacherId || ''
                     };
                 }) : []
             };
@@ -444,6 +448,10 @@ export default function AdminStudentsPage() {
 
                 // 학생 목록 새로고침
                 fetchStudents();
+
+                // 모달 닫기 및 상태 초기화
+                setIsEditModalOpen(false);
+                setSelectedStudent(null);
             } else {
                 toast({
                     title: "학생 정보 수정 실패",
@@ -529,8 +537,15 @@ export default function AdminStudentsPage() {
                                     onClick={() => handleSort('assignedTeacherName')}
                                 >
                                     <div className="flex items-center gap-2">
-                                        담당강사
+                                        담당강사1
                                         {getSortIcon('assignedTeacherName')}
+                                    </div>
+                                </TableHead>
+                                <TableHead
+                                    className="text-cyan-200 cursor-pointer hover:text-cyan-100 transition-colors select-none"
+                                >
+                                    <div className="flex items-center gap-2">
+                                        담당강사2
                                     </div>
                                 </TableHead>
                                 <TableHead
@@ -542,17 +557,8 @@ export default function AdminStudentsPage() {
                                         {getSortIcon('status')}
                                     </div>
                                 </TableHead>
-                                <TableHead
-                                    className="text-cyan-200 cursor-pointer hover:text-cyan-100 transition-colors select-none"
-                                    onClick={() => handleSort('joinDate')}
-                                >
-                                    <div className="flex items-center gap-2">
-                                        가입일
-                                        {getSortIcon('joinDate')}
-                                    </div>
-                                </TableHead>
-                                <TableHead className="text-cyan-200 text-center">
-                                    액션
+                                <TableHead className="text-cyan-200">
+                                    가입일
                                 </TableHead>
                             </TableRow>
                         </TableHeader>
@@ -578,58 +584,79 @@ export default function AdminStudentsPage() {
                                         {student.course}
                                     </TableCell>
                                     <TableCell className="text-cyan-300">
-                                        <div className="flex items-center space-x-2">
-                                            {/* 첫 번째 담당강사 */}
-                                            <div onClick={(e) => e.stopPropagation()}>
-                                                <Select
-                                                    value={student.assignedTeachers?.[0]?.id || 'none'}
-                                                    onValueChange={(value) => handleTeacherChange(student.id, value, 0)}
-                                                >
-                                                    <SelectTrigger className="w-28 h-8 text-xs bg-cyan-900/30 border-cyan-500/30 text-cyan-200">
-                                                        <SelectValue placeholder="강사1">
-                                                            <span className={`${getTeacherColor(student.assignedTeachers?.[0]?.name || '미지정')} font-medium`}>
-                                                                {student.assignedTeachers?.[0]?.name || '미지정'}
+                                        <div onClick={(e) => e.stopPropagation()}>
+                                            <Select
+                                                value={student.assignedTeachers?.[0]?.id || 'none'}
+                                                onValueChange={(value) => handleTeacherChange(student.id, value, 0)}
+                                            >
+                                                <SelectTrigger className="w-28 h-8 text-xs bg-cyan-900/30 border-cyan-500/30 text-cyan-200">
+                                                    <SelectValue placeholder="강사1">
+                                                        {student.assignedTeachers?.[0] ? (
+                                                            <span
+                                                                className="font-medium"
+                                                                style={{ color: getTeacherColorSet(teachers.find(t => t.id === student.assignedTeachers?.[0]?.id)?.label_color || student.assignedTeachers?.[0]?.id).style.color }}
+                                                            >
+                                                                {student.assignedTeachers?.[0]?.name}
                                                             </span>
-                                                        </SelectValue>
-                                                    </SelectTrigger>
-                                                    <SelectContent>
-                                                        <SelectItem value="none">
-                                                            <span className="text-gray-400">미지정</span>
-                                                        </SelectItem>
-                                                        {teachers.map((teacher) => (
-                                                            <SelectItem key={teacher.id} value={teacher.id}>
-                                                                <span className={`${getTeacherColor(teacher.name)} font-medium`}>{teacher.name}</span>
-                                                            </SelectItem>
-                                                        ))}
-                                                    </SelectContent>
-                                                </Select>
-                                            </div>
-
-                                            {/* 두 번째 담당강사 */}
-                                            <div onClick={(e) => e.stopPropagation()}>
-                                                <Select
-                                                    value={student.assignedTeachers?.[1]?.id || 'none'}
-                                                    onValueChange={(value) => handleTeacherChange(student.id, value, 1)}
-                                                >
-                                                    <SelectTrigger className="w-28 h-8 text-xs bg-cyan-900/30 border-cyan-500/30 text-cyan-200">
-                                                        <SelectValue placeholder="강사2">
-                                                            <span className={`${getTeacherColor(student.assignedTeachers?.[1]?.name || '미지정')} font-medium`}>
-                                                                {student.assignedTeachers?.[1]?.name || '미지정'}
+                                                        ) : (
+                                                            <span className="text-gray-400">강사1</span>
+                                                        )}
+                                                    </SelectValue>
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="none">
+                                                        <span className="text-gray-400">미지정</span>
+                                                    </SelectItem>
+                                                    {teachers.map((teacher) => (
+                                                        <SelectItem key={teacher.id} value={teacher.id}>
+                                                            <span
+                                                                className="font-medium"
+                                                                style={{ color: getTeacherColorSet(teacher.label_color || teacher.id).style.color }}
+                                                            >
+                                                                {teacher.name}
                                                             </span>
-                                                        </SelectValue>
-                                                    </SelectTrigger>
-                                                    <SelectContent>
-                                                        <SelectItem value="none">
-                                                            <span className="text-gray-400">미지정</span>
                                                         </SelectItem>
-                                                        {teachers.map((teacher) => (
-                                                            <SelectItem key={teacher.id} value={teacher.id}>
-                                                                <span className={`${getTeacherColor(teacher.name)} font-medium`}>{teacher.name}</span>
-                                                            </SelectItem>
-                                                        ))}
-                                                    </SelectContent>
-                                                </Select>
-                                            </div>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                    </TableCell>
+                                    <TableCell className="text-cyan-300">
+                                        <div onClick={(e) => e.stopPropagation()}>
+                                            <Select
+                                                value={student.assignedTeachers?.[1]?.id || 'none'}
+                                                onValueChange={(value) => handleTeacherChange(student.id, value, 1)}
+                                            >
+                                                <SelectTrigger className="w-28 h-8 text-xs bg-cyan-900/30 border-cyan-500/30 text-cyan-200">
+                                                    <SelectValue placeholder="강사2">
+                                                        {student.assignedTeachers?.[1] ? (
+                                                            <span
+                                                                className="font-medium"
+                                                                style={{ color: getTeacherColorSet(teachers.find(t => t.id === student.assignedTeachers?.[1]?.id)?.label_color || student.assignedTeachers?.[1]?.id).style.color }}
+                                                            >
+                                                                {student.assignedTeachers?.[1]?.name}
+                                                            </span>
+                                                        ) : (
+                                                            <span className="text-gray-400">강사2</span>
+                                                        )}
+                                                    </SelectValue>
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="none">
+                                                        <span className="text-gray-400">미지정</span>
+                                                    </SelectItem>
+                                                    {teachers.map((teacher) => (
+                                                        <SelectItem key={teacher.id} value={teacher.id}>
+                                                            <span
+                                                                className="font-medium"
+                                                                style={{ color: getTeacherColorSet(teacher.label_color || teacher.id).style.color }}
+                                                            >
+                                                                {teacher.name}
+                                                            </span>
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
                                         </div>
                                     </TableCell>
                                     <TableCell>
@@ -659,19 +686,6 @@ export default function AdminStudentsPage() {
                                     <TableCell className="text-cyan-300">
                                         {student.joinDate}
                                     </TableCell>
-                                    <TableCell className="text-center">
-                                        <Button
-                                            variant="destructive"
-                                            size="sm"
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                handleDeleteStudent(student);
-                                            }}
-                                            className="h-6 w-6 p-0 bg-red-600 hover:bg-red-700 text-white"
-                                        >
-                                            <Trash2 className="w-3 h-3" />
-                                        </Button>
-                                    </TableCell>
                                 </TableRow>
                             ))}
                         </TableBody>
@@ -689,6 +703,7 @@ export default function AdminStudentsPage() {
                     setSelectedStudent(null);
                 }}
                 onSave={handleSaveStudent}
+                teachers={teachers}
             />
 
             {/* 삭제 확인 다이얼로그 */}

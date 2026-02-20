@@ -10,6 +10,7 @@ import Image from "next/image";
 import { supabase } from "@/lib/supabase";
 import AddTeacherModal from "./components/AddTeacherModal";
 import EditTeacherModal from "./components/EditTeacherModal";
+import { deleteTeacher, updateTeacherLabelColor } from "@/lib/actions";
 
 export const dynamic = 'force-dynamic';
 
@@ -23,6 +24,7 @@ interface Teacher {
     status: '활성' | '비활성';
     createdAt: string;
     image?: string;
+    labelColor?: string;
 }
 
 export default function AdminTeachersPage() {
@@ -89,30 +91,37 @@ export default function AdminTeachersPage() {
                 .select(`
                     id, name, email, phone, username, created_at, profile_image_url,
                     teachers (
-                        bio, certs, career, subject, position
+                        bio, certs, career, subject, position, label_color
                     )
                 `)
                 .eq('role', 'teacher');
 
             if (error) {
+                console.error('Error fetching teachers:', error);
                 setTeachers([]);
                 return;
             }
 
-            const mappedTeachers = (data || []).map((teacher: any) => ({
-                id: teacher.id,
-                name: teacher.name || '이름 없음',
-                email: teacher.email || '',
-                phone: teacher.phone || '',
-                subject: teacher.teachers?.subject || '코딩 교육', // subject 컬럼에서 직접 가져오기
-                position: teacher.teachers?.position || '',
-                status: '활성' as const,
-                createdAt: teacher.created_at,
-                image: teacher.profile_image_url || ''
-            }));
+            const mappedTeachers = (data || []).map((teacher: any) => {
+                const t = Array.isArray(teacher.teachers) ? teacher.teachers[0] : teacher.teachers;
+
+                return {
+                    id: teacher.id,
+                    name: teacher.name || '이름 없음',
+                    email: teacher.email || '',
+                    phone: teacher.phone || '',
+                    subject: t?.subject || '코딩 교육',
+                    position: t?.position || '강사',
+                    status: '활성' as const,
+                    createdAt: teacher.created_at,
+                    image: teacher.profile_image_url || '',
+                    labelColor: t?.label_color || '#00fff7'
+                };
+            });
 
             setTeachers(mappedTeachers);
         } catch (error) {
+            console.error('Exception fetching teachers:', error);
             setTeachers([]);
         } finally {
             setLoading(false);
@@ -144,27 +153,35 @@ export default function AdminTeachersPage() {
         }
 
         try {
-            const { error } = await supabase
-                .from('users')
-                .delete()
-                .eq('id', teacherId);
-
-            if (error) {
-                alert('강사 삭제에 실패했습니다.');
-                return;
+            const result = await deleteTeacher(teacherId);
+            if (result.success) {
+                setTeachers(prev => prev.filter(teacher => teacher.id !== teacherId));
+                alert(result.message);
+            } else {
+                alert(result.error);
             }
-
-            setTeachers(prev => prev.filter(teacher => teacher.id !== teacherId));
-            alert('강사가 삭제되었습니다.');
         } catch (error) {
             alert('강사 삭제 중 오류가 발생했습니다.');
+        }
+    };
+
+    const handleColorChange = async (teacherId: string, color: string) => {
+        try {
+            const result = await updateTeacherLabelColor(teacherId, color);
+            if (result.success) {
+                setTeachers(prev => prev.map(t => t.id === teacherId ? { ...t, labelColor: color } : t));
+            } else {
+                alert(result.error);
+            }
+        } catch (error) {
+            alert('색상 업데이트 중 오류가 발생했습니다.');
         }
     };
 
     if (loading) {
         return (
             <div className="p-6 space-y-6 pt-16 lg:pt-2 h-screen overflow-y-auto scrollbar-hide">
-                <div className="text-cyan-100">로딩 중...</div>
+                <div className="text-cyan-100 text-center py-20">강사 정보를 불러오는 중...</div>
             </div>
         );
     }
@@ -179,103 +196,60 @@ export default function AdminTeachersPage() {
             </div>
 
             <Card className="bg-gradient-to-br from-cyan-900/20 to-blue-900/20 border-cyan-500/30">
-                <CardContent>
+                <CardContent className="p-0">
                     <Table>
                         <TableHeader>
-                            <TableRow className="border-cyan-500/20">
-                                <TableHead className="text-cyan-200 text-center">프로필</TableHead>
-                                <TableHead
-                                    className="text-cyan-200 cursor-pointer hover:text-cyan-100 transition-colors select-none"
-                                    onClick={() => handleSort('name')}
-                                >
-                                    <div className="flex items-center gap-2">
-                                        이름
-                                        {getSortIcon('name')}
+                            <TableRow className="border-cyan-500/20 hover:bg-transparent">
+                                <TableHead className="text-cyan-200 text-center w-[80px]">프로필</TableHead>
+                                <TableHead className="text-cyan-200 w-[100px]">
+                                    <div className="flex items-center gap-1 cursor-pointer select-none" onClick={() => handleSort('name')}>
+                                        이름 {getSortIcon('name')}
                                     </div>
                                 </TableHead>
-                                <TableHead
-                                    className="text-cyan-200 cursor-pointer hover:text-cyan-100 transition-colors select-none"
-                                    onClick={() => handleSort('email')}
-                                >
-                                    <div className="flex items-center gap-2">
-                                        이메일
-                                        {getSortIcon('email')}
+                                <TableHead className="text-cyan-200 text-center w-[80px]">라벨</TableHead>
+                                <TableHead className="text-cyan-200">
+                                    <div className="flex items-center gap-1 cursor-pointer select-none" onClick={() => handleSort('email')}>
+                                        이메일 {getSortIcon('email')}
                                     </div>
                                 </TableHead>
-                                <TableHead
-                                    className="text-cyan-200 cursor-pointer hover:text-cyan-100 transition-colors select-none"
-                                    onClick={() => handleSort('phone')}
-                                >
-                                    <div className="flex items-center gap-2">
-                                        연락처
-                                        {getSortIcon('phone')}
+                                <TableHead className="text-cyan-200">
+                                    <div className="flex items-center gap-1 cursor-pointer select-none" onClick={() => handleSort('phone')}>
+                                        연락처 {getSortIcon('phone')}
                                     </div>
                                 </TableHead>
-                                <TableHead
-                                    className="text-cyan-200 text-center cursor-pointer hover:text-cyan-100 transition-colors select-none"
-                                    onClick={() => handleSort('position')}
-                                >
-                                    <div className="flex items-center justify-center gap-2">
-                                        직위
-                                        {getSortIcon('position')}
+                                <TableHead className="text-cyan-200 text-center">
+                                    <div className="flex items-center gap-1 justify-center cursor-pointer select-none" onClick={() => handleSort('position')}>
+                                        직위 {getSortIcon('position')}
                                     </div>
                                 </TableHead>
-                                <TableHead
-                                    className="text-cyan-200 text-center cursor-pointer hover:text-cyan-100 transition-colors select-none"
-                                    onClick={() => handleSort('subject')}
-                                >
-                                    <div className="flex items-center justify-center gap-2">
-                                        담당 과목
-                                        {getSortIcon('subject')}
-                                    </div>
-                                </TableHead>
-                                <TableHead
-                                    className="text-cyan-200 text-center cursor-pointer hover:text-cyan-100 transition-colors select-none"
-                                    onClick={() => handleSort('status')}
-                                >
-                                    <div className="flex items-center justify-center gap-2">
-                                        상태
-                                        {getSortIcon('status')}
-                                    </div>
-                                </TableHead>
-                                <TableHead
-                                    className="text-cyan-200 text-center cursor-pointer hover:text-cyan-100 transition-colors select-none"
-                                    onClick={() => handleSort('createdAt')}
-                                >
-                                    <div className="flex items-center justify-center gap-2">
-                                        등록일
-                                        {getSortIcon('createdAt')}
-                                    </div>
-                                </TableHead>
-                                <TableHead className="text-cyan-200 text-center">삭제</TableHead>
+                                <TableHead className="text-cyan-200 text-center">담당 과목 {getSortIcon('subject')}</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
                             {getSortedTeachers(teachers).length === 0 ? (
                                 <TableRow>
-                                    <TableCell colSpan={8} className="text-center text-cyan-200 py-8">
+                                    <TableCell colSpan={7} className="text-center text-cyan-200 py-12">
                                         등록된 강사가 없습니다.
                                     </TableCell>
                                 </TableRow>
                             ) : (
                                 getSortedTeachers(teachers).map((teacher) => (
-                                    <TableRow key={teacher.id} className="border-cyan-500/10">
-                                        <TableCell className="text-center">
+                                    <TableRow
+                                        key={teacher.id}
+                                        className="border-cyan-500/10 cursor-pointer hover:bg-cyan-500/5 transition-colors group"
+                                        onClick={() => handleEditTeacher(teacher)}
+                                    >
+                                        <TableCell className="py-4">
                                             <div className="flex justify-center">
                                                 <div className="relative w-10 h-10 rounded-full overflow-hidden border-2 border-cyan-400/30">
                                                     {teacher.image ? (
                                                         <Image
                                                             src={teacher.image}
-                                                            alt={`${teacher.name} 프로필`}
+                                                            alt={teacher.name}
                                                             fill
                                                             className="object-cover"
-                                                            onError={(e) => {
-                                                                // 이미지 로딩 실패 시 숨김 처리
-                                                                e.currentTarget.style.display = 'none';
-                                                            }}
                                                         />
-                                                    ) : null}
-                                                    {!teacher.image && (
+                                                    ) : (
                                                         <div className="flex items-center justify-center h-full bg-cyan-900/20">
                                                             <User className="w-5 h-5 text-cyan-400" />
                                                         </div>
@@ -283,49 +257,32 @@ export default function AdminTeachersPage() {
                                                 </div>
                                             </div>
                                         </TableCell>
-                                        <TableCell className="text-cyan-100 font-medium">
-                                            <button
-                                                onClick={() => handleEditTeacher(teacher)}
-                                                className="text-cyan-100 hover:text-cyan-300 transition-colors cursor-pointer"
-                                            >
-                                                {teacher.name}
-                                            </button>
+                                        <TableCell className="font-medium text-cyan-100">
+                                            {teacher.name}
                                         </TableCell>
-                                        <TableCell className="text-cyan-200">
+                                        <TableCell>
+                                            <div className="flex justify-center items-center">
+                                                <input
+                                                    type="color"
+                                                    value={teacher.labelColor || '#00fff7'}
+                                                    onChange={(e) => handleColorChange(teacher.id, e.target.value)}
+                                                    onClick={(e) => e.stopPropagation()}
+                                                    className="w-8 h-8 rounded-full border-none cursor-pointer bg-transparent overflow-hidden"
+                                                    style={{ padding: 0 }}
+                                                />
+                                            </div>
+                                        </TableCell>
+                                        <TableCell className="text-cyan-200/80">
                                             {teacher.email}
                                         </TableCell>
-                                        <TableCell className="text-cyan-200">
+                                        <TableCell className="text-cyan-200/80">
                                             {teacher.phone}
                                         </TableCell>
-                                        <TableCell className="text-cyan-200 text-center">
+                                        <TableCell className="text-center text-cyan-200/80">
                                             {teacher.position}
                                         </TableCell>
-                                        <TableCell className="text-cyan-200 text-center">
+                                        <TableCell className="text-center text-cyan-200/80">
                                             {teacher.subject}
-                                        </TableCell>
-                                        <TableCell className="text-center">
-                                            <Badge
-                                                className={teacher.status === '활성'
-                                                    ? 'bg-green-600/20 text-green-300 border-green-500/30'
-                                                    : 'bg-red-600/20 text-red-300 border-red-500/30'}
-                                            >
-                                                {teacher.status}
-                                            </Badge>
-                                        </TableCell>
-                                        <TableCell className="text-cyan-200 text-center">
-                                            {new Date(teacher.createdAt).toLocaleDateString('ko-KR')}
-                                        </TableCell>
-                                        <TableCell className="text-center">
-                                            <div className="flex justify-center">
-                                                <Button
-                                                    variant="ghost"
-                                                    size="sm"
-                                                    onClick={() => handleDeleteTeacher(teacher.id)}
-                                                    className="text-red-400 hover:text-red-300 hover:bg-red-900/20"
-                                                >
-                                                    <Trash2 className="w-4 h-4" />
-                                                </Button>
-                                            </div>
                                         </TableCell>
                                     </TableRow>
                                 ))
@@ -335,7 +292,6 @@ export default function AdminTeachersPage() {
                 </CardContent>
             </Card>
 
-            {/* 강사 수정 모달 */}
             <EditTeacherModal
                 teacher={editingTeacher}
                 isOpen={isEditModalOpen}
@@ -344,4 +300,4 @@ export default function AdminTeachersPage() {
             />
         </div>
     );
-} 
+}

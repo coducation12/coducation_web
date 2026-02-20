@@ -8,11 +8,14 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Plus, Trash2, User, Users, Calendar, BookOpen, MessageSquare } from "lucide-react";
+import { getTeacherColorSet } from "@/lib/colors";
+import { deleteStudent } from "@/lib/actions";
 
 interface ClassSchedule {
     day: string;
     startTime: string;
     endTime: string;
+    teacherId?: string; // 추가됨
 }
 
 interface Student {
@@ -29,6 +32,7 @@ interface Student {
     enrollment_date?: string;
     memo?: string;
     classSchedules?: ClassSchedule[];
+    assignedTeachers?: Array<{ id: string, name: string }>; // 객체 배열로 복구
 }
 
 interface StudentModalProps {
@@ -38,6 +42,7 @@ interface StudentModalProps {
     onClose?: () => void;
     onSave: (formData: any) => Promise<void>;
     triggerText?: string;
+    teachers?: { id: string, name: string, label_color?: string }[]; // 강사 목록 추가
 }
 
 const subjects = [
@@ -82,7 +87,7 @@ const formatTime = (value: string): string => {
     return numbers;
 };
 
-export default function StudentModal({ mode, student, isOpen, onClose, onSave, triggerText }: StudentModalProps) {
+export default function StudentModal({ mode, student, isOpen, onClose, onSave, triggerText, teachers = [] }: StudentModalProps) {
     const [internalOpen, setInternalOpen] = useState(false);
     const [formData, setFormData] = useState({
         studentId: "",
@@ -97,7 +102,7 @@ export default function StudentModal({ mode, student, isOpen, onClose, onSave, t
         enrollment_date: new Date().toISOString().split('T')[0],
         status: "수강",
         memo: "",
-        classSchedules: [{ day: "", startTime: "", endTime: "" }] as ClassSchedule[]
+        classSchedules: [{ day: "", startTime: "", endTime: "", teacherId: "" }] as ClassSchedule[]
     });
 
     const isControlled = isOpen !== undefined;
@@ -121,7 +126,7 @@ export default function StudentModal({ mode, student, isOpen, onClose, onSave, t
                 memo: student.memo || "",
                 classSchedules: student.classSchedules && student.classSchedules.length > 0
                     ? student.classSchedules
-                    : [{ day: "", startTime: "", endTime: "" }]
+                    : [{ day: "", startTime: "", endTime: "", teacherId: "" }]
             });
         } else if (mode === "add") {
             setFormData({
@@ -137,7 +142,7 @@ export default function StudentModal({ mode, student, isOpen, onClose, onSave, t
                 enrollment_date: new Date().toISOString().split('T')[0],
                 status: "수강",
                 memo: "",
-                classSchedules: [{ day: "", startTime: "", endTime: "" }]
+                classSchedules: [{ day: "", startTime: "", endTime: "", teacherId: "" }]
             });
         }
     }, [mode, student, dialogOpen]);
@@ -193,7 +198,7 @@ export default function StudentModal({ mode, student, isOpen, onClose, onSave, t
     };
 
     const addSchedule = () => {
-        setFormData(prev => ({ ...prev, classSchedules: [...prev.classSchedules, { day: "", startTime: "", endTime: "" }] }));
+        setFormData(prev => ({ ...prev, classSchedules: [...prev.classSchedules, { day: "", startTime: "", endTime: "", teacherId: "" }] }));
     };
 
     const removeSchedule = (index: number) => {
@@ -326,8 +331,8 @@ export default function StudentModal({ mode, student, isOpen, onClose, onSave, t
                         </div>
                     </div>
 
-                    {/* 4행: 주요 과목, 세부 과목 */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border-t border-cyan-500/10 pt-4">
+                    {/* 4행: 주요 과목, 세부 과목, 상태 */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 border-t border-cyan-500/10 pt-4">
                         <div className="space-y-2">
                             <Label className="text-cyan-300 flex items-center gap-2 text-sm">
                                 <BookOpen className="w-4 h-4" /> 주요 과목
@@ -350,6 +355,19 @@ export default function StudentModal({ mode, student, isOpen, onClose, onSave, t
                                 placeholder="직접 입력"
                             />
                         </div>
+                        <div className="space-y-2">
+                            <Label className="text-cyan-300 flex items-center gap-2 text-sm">상태</Label>
+                            <Select value={formData.status} onValueChange={(v) => handleInputChange("status", v)}>
+                                <SelectTrigger className="bg-cyan-950/30 border-cyan-500/30">
+                                    <SelectValue placeholder="상태 선택" />
+                                </SelectTrigger>
+                                <SelectContent className="bg-[#0f172a] border-cyan-500/30">
+                                    <SelectItem value="수강">수강</SelectItem>
+                                    <SelectItem value="휴강">휴강</SelectItem>
+                                    <SelectItem value="종료">종료</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
                     </div>
 
                     {/* 5행: 수업 일정 */}
@@ -358,39 +376,74 @@ export default function StudentModal({ mode, student, isOpen, onClose, onSave, t
                             <Label className="text-cyan-100 font-bold flex items-center gap-2">
                                 <Calendar className="w-4 h-4 text-cyan-400" /> 수업 일정 (스케줄)
                             </Label>
-                            <Button type="button" onClick={addSchedule} size="sm" variant="outline" className="h-7 border-cyan-500/50 text-cyan-400">
+                            <Button type="button" onClick={addSchedule} size="sm" variant="outline" className="h-7 border-cyan-500/50 text-cyan-400 hover:bg-cyan-500/10 hover:text-cyan-300">
                                 <Plus className="w-3 h-3 mr-1" /> 일정 추가
                             </Button>
                         </div>
-                        <div className="space-y-2 max-h-40 overflow-y-auto pr-2 custom-scrollbar">
+                        <div className="space-y-2 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
                             {formData.classSchedules.map((schedule, index) => (
-                                <div key={index} className="flex gap-3 items-center w-full">
-                                    <Select value={schedule.day} onValueChange={(v) => handleScheduleChange(index, "day", v)}>
-                                        <SelectTrigger className="w-[140px] flex-shrink-0 bg-cyan-950/30 border-cyan-500/30">
-                                            <SelectValue placeholder="요일" />
-                                        </SelectTrigger>
-                                        <SelectContent className="bg-[#0f172a] border-cyan-500/30">
-                                            {daysOfWeek.map(d => <SelectItem key={d.id} value={d.id}>{d.label}</SelectItem>)}
-                                        </SelectContent>
-                                    </Select>
-                                    <div className="flex-1 flex gap-2 items-center">
+                                <div key={index} className="flex flex-col md:flex-row gap-3 items-start md:items-center w-full bg-cyan-950/20 p-3 rounded-lg border border-cyan-500/10 mb-2">
+                                    <div className="flex gap-2 w-full md:w-auto">
+                                        <Select value={schedule.day} onValueChange={(v) => handleScheduleChange(index, "day", v)}>
+                                            <SelectTrigger className="w-[110px] bg-cyan-950/30 border-cyan-500/30 text-xs">
+                                                <SelectValue placeholder="요일" />
+                                            </SelectTrigger>
+                                            <SelectContent className="bg-[#0f172a] border-cyan-500/30">
+                                                {daysOfWeek.map(d => <SelectItem key={d.id} value={d.id}>{d.label}</SelectItem>)}
+                                            </SelectContent>
+                                        </Select>
+
+                                        <Select value={schedule.teacherId || ""} onValueChange={(v) => handleScheduleChange(index, "teacherId", v)}>
+                                            <SelectTrigger className="w-[110px] bg-cyan-950/30 border-cyan-500/30 text-xs text-white">
+                                                <SelectValue placeholder="강사 선택">
+                                                    {schedule.teacherId && schedule.teacherId !== "none" ? (
+                                                        <span
+                                                            className="font-medium"
+                                                            style={{ color: getTeacherColorSet(teachers.find(t => t.id === schedule.teacherId)?.label_color || schedule.teacherId).style.color }}
+                                                        >
+                                                            {teachers.find(t => t.id === schedule.teacherId)?.name}
+                                                        </span>
+                                                    ) : (
+                                                        <span className="text-gray-400">강사 선택</span>
+                                                    )}
+                                                </SelectValue>
+                                            </SelectTrigger>
+                                            <SelectContent className="bg-[#0f172a] border-cyan-500/30">
+                                                <SelectItem value="none">
+                                                    <span className="text-gray-400">미배정</span>
+                                                </SelectItem>
+                                                {teachers.map(t => (
+                                                    <SelectItem key={t.id} value={t.id}>
+                                                        <span
+                                                            className="font-medium"
+                                                            style={{ color: getTeacherColorSet(t.label_color || t.id).style.color }}
+                                                        >
+                                                            {t.name}
+                                                        </span>
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+
+                                    <div className="flex flex-1 gap-2 items-center w-full">
                                         <Input
-                                            placeholder="시작시간 입력 (14:00)"
+                                            placeholder="시작(14:00)"
                                             value={schedule.startTime}
                                             onChange={(e) => handleScheduleChange(index, "startTime", e.target.value)}
-                                            className="bg-cyan-950/30 border-cyan-500/30 h-9 flex-1 text-center"
+                                            className="bg-cyan-950/30 border-cyan-500/30 h-8 flex-1 text-center text-xs"
                                         />
                                         <span className="text-cyan-700 flex-shrink-0 font-bold">~</span>
                                         <Input
-                                            placeholder="종료시간 입력 (16:00)"
+                                            placeholder="종료(16:00)"
                                             value={schedule.endTime}
                                             onChange={(e) => handleScheduleChange(index, "endTime", e.target.value)}
-                                            className="bg-cyan-950/30 border-cyan-500/30 h-9 flex-1 text-center"
+                                            className="bg-cyan-950/30 border-cyan-500/30 h-8 flex-1 text-center text-xs"
                                         />
+                                        <Button type="button" onClick={() => removeSchedule(index)} variant="ghost" size="icon" className="text-red-400 hover:text-red-300 hover:bg-red-400/10 h-8 w-8">
+                                            <Trash2 className="w-4 h-4" />
+                                        </Button>
                                     </div>
-                                    <Button type="button" onClick={() => removeSchedule(index)} variant="ghost" size="icon" className="text-red-400 hover:text-red-300">
-                                        <Trash2 className="w-4 h-4" />
-                                    </Button>
                                 </div>
                             ))}
                         </div>
@@ -410,13 +463,42 @@ export default function StudentModal({ mode, student, isOpen, onClose, onSave, t
                     </div>
 
                     {/* 하단 버튼 */}
-                    <div className="flex gap-3 pt-6 justify-end border-t border-cyan-500/20">
-                        <Button type="button" variant="outline" onClick={() => !isControlled && setInternalOpen(false)} className="border-cyan-700 text-cyan-300">
-                            취소
-                        </Button>
-                        <Button type="submit" className="bg-cyan-600 hover:bg-cyan-700 text-white min-w-[100px]">
-                            {mode === "add" ? "등록 완료" : "정보 업데이트"}
-                        </Button>
+                    <div className="flex pt-6 justify-between items-center border-t border-cyan-500/20">
+                        <div>
+                            {mode === "edit" && student && (
+                                <Button
+                                    type="button"
+                                    variant="destructive"
+                                    onClick={async () => {
+                                        if (confirm('정말로 이 학생을 삭제하시겠습니까?')) {
+                                            const result = await deleteStudent(student.id);
+                                            if (result.success) {
+                                                alert(result.message);
+                                                onClose?.();
+                                            } else {
+                                                alert(result.error);
+                                            }
+                                        }
+                                    }}
+                                    className="bg-red-900/40 hover:bg-red-900/60 text-red-200 border border-red-500/30"
+                                >
+                                    삭제
+                                </Button>
+                            )}
+                        </div>
+                        <div className="flex gap-3">
+                            <Button
+                                type="button"
+                                variant="outline"
+                                onClick={() => isControlled ? onClose?.() : setInternalOpen(false)}
+                                className="border-cyan-700 text-cyan-300 hover:bg-cyan-700/20 hover:text-cyan-100"
+                            >
+                                취소
+                            </Button>
+                            <Button type="submit" className="bg-cyan-600 hover:bg-cyan-500 text-white min-w-[100px] shadow-[0_0_15px_rgba(6,182,212,0.4)]">
+                                {mode === "add" ? "등록 완료" : "정보 업데이트"}
+                            </Button>
+                        </div>
                     </div>
                 </form>
             </DialogContent >

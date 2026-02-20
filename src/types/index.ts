@@ -133,6 +133,18 @@ export interface Review {
   content: string;
 }
 
+export interface Certificate {
+  name: string;
+  issuer: string;
+  date: string;
+}
+
+export interface CareerItem {
+  company: string;
+  position: string;
+  period: string;
+}
+
 export interface Instructor {
   id: string;
   name: string;
@@ -140,8 +152,8 @@ export interface Instructor {
   position?: string;
   profile_image: string;
   subject?: string;
-  certs?: any;
-  career?: any;
+  certs?: Certificate[] | string;
+  career?: CareerItem[] | string;
   email?: string;
   phone?: string;
 }

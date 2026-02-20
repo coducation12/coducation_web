@@ -30,11 +30,11 @@ export function InstructorCard({ instructor, onClick }: InstructorCardProps) {
         </div>
       </CardHeader>
       {/* 모바일에서는 CardContent 숨김 */}
-      <CardContent className="hidden md:flex flex-grow items-center justify-center px-6 pb-6">
+      {/* <CardContent className="hidden md:flex flex-grow items-center justify-center px-6 pb-6">
         <CardDescription className="text-sm leading-relaxed text-center">
           {instructor.subject}
         </CardDescription>
-      </CardContent>
+      </CardContent> */}
     </Card>
   );
 }

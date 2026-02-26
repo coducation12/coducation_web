@@ -14,6 +14,8 @@ import { MainCurriculum } from "@/types";
 import { addMainCurriculum, updateMainCurriculum, deleteMainCurriculum, updateMainCurriculums } from "@/lib/actions";
 import { toast } from "@/hooks/use-toast";
 import { useRouter } from 'next/navigation';
+import { createPortal } from 'react-dom';
+import { useEffect, useState as useMountedState } from 'react';
 import {
     Dialog,
     DialogContent,
@@ -36,6 +38,11 @@ export default function CurriculumSettings({ initialCurriculums }: CurriculumSet
     const [loading, setLoading] = useState(false);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [editingId, setEditingId] = useState<string | null>(null);
+    const [isMounted, setIsMounted] = useMountedState(false);
+
+    useEffect(() => {
+        setIsMounted(true);
+    }, []);
 
     // Form State
     const [formData, setFormData] = useState({
@@ -238,15 +245,16 @@ export default function CurriculumSettings({ initialCurriculums }: CurriculumSet
 
     return (
         <div className="space-y-6">
-            <div className="flex justify-between items-center bg-card p-4 rounded-lg border shadow-sm">
-                <div>
-                    <h2 className="text-2xl font-bold tracking-tight">커리큘럼 관리</h2>
-                    <p className="text-muted-foreground">메인 화면의 커리큘럼을 레벨별로 관리합니다.</p>
-                </div>
-                <Button onClick={() => handleOpenDialog()}>
+            {/* Top Right Action Button via Portal */}
+            {isMounted && typeof document !== 'undefined' && document.getElementById('admin-content-save-button-portal') && createPortal(
+                <Button
+                    onClick={() => handleOpenDialog()}
+                    className="bg-cyan-600 hover:bg-cyan-500 text-white border border-cyan-400/30 px-6 h-11 rounded-lg font-bold shadow-[0_0_15px_rgba(0,255,255,0.1)] transition-all hover:scale-105 active:scale-95"
+                >
                     <Plus className="w-4 h-4 mr-2" /> 커리큘럼 추가
-                </Button>
-            </div>
+                </Button>,
+                document.getElementById('admin-content-save-button-portal')!
+            )}
 
             <DragDropContext onDragEnd={onDragEnd}>
                 <div className="flex flex-col gap-10">

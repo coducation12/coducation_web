@@ -323,8 +323,8 @@ export default function TeacherProfileClient({ user }: TeacherProfileClientProps
                       <SelectValue placeholder="소속 학원을 선택하세요" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="coding-maker">코딩메이커학원</SelectItem>
-                      <SelectItem value="gwangyang-coding">광양코딩학원</SelectItem>
+                      <SelectItem value="코딩메이커">코딩메이커학원</SelectItem>
+                      <SelectItem value="광양코딩">광양코딩학원</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>

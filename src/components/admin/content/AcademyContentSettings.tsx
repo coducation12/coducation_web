@@ -12,6 +12,8 @@ import { updateContent } from "@/lib/actions";
 import { toast } from "@/hooks/use-toast";
 import { useRouter } from 'next/navigation';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
+import { createPortal } from 'react-dom';
+import { useEffect, useState as useMountedState } from 'react';
 
 interface AcademyContentSettingsProps {
     initialData: {
@@ -33,6 +35,11 @@ interface AcademyContentSettingsProps {
 export default function AcademyContentSettings({ initialData }: AcademyContentSettingsProps) {
     const router = useRouter();
     const [loading, setLoading] = useState(false);
+    const [isMounted, setIsMounted] = useMountedState(false);
+
+    useEffect(() => {
+        setIsMounted(true);
+    }, []);
 
     // Ensure slides have IDs and use description field
     const [formData, setFormData] = useState({
@@ -124,6 +131,26 @@ export default function AcademyContentSettings({ initialData }: AcademyContentSe
 
     return (
         <div className="space-y-6">
+            {/* Top Right Save Button via Portal */}
+            {isMounted && typeof document !== 'undefined' && document.getElementById('admin-content-save-button-portal') && createPortal(
+                <Button
+                    onClick={handleSave}
+                    disabled={loading}
+                    className="bg-cyan-600 hover:bg-cyan-500 text-white border border-cyan-400/30 px-6 h-11 rounded-lg font-bold shadow-[0_0_15px_rgba(0,255,255,0.1)] transition-all hover:scale-105 active:scale-95"
+                >
+                    {loading ? (
+                        <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" /> 저장 중...
+                        </>
+                    ) : (
+                        <>
+                            <Save className="mr-2 h-4 w-4" /> 변경사항 저장
+                        </>
+                    )}
+                </Button>,
+                document.getElementById('admin-content-save-button-portal')!
+            )}
+
             <Card>
                 <CardHeader>
                     <CardTitle>기본 정보 설정</CardTitle>
@@ -276,19 +303,6 @@ export default function AcademyContentSettings({ initialData }: AcademyContentSe
                 ))}
             </div>
 
-            <div className="flex justify-end pt-6 sticky bottom-6 z-10">
-                <Button onClick={handleSave} disabled={loading} size="lg" className="shadow-lg">
-                    {loading ? (
-                        <>
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" /> 저장 중...
-                        </>
-                    ) : (
-                        <>
-                            <Save className="mr-2 h-4 w-4" /> 변경사항 저장
-                        </>
-                    )}
-                </Button>
-            </div>
         </div>
     );
 }

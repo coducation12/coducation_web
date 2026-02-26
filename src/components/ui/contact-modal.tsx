@@ -59,8 +59,8 @@ export function ContactModal({ open, onOpenChange }: ContactModalProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const academyOptions = [
-    { value: 'coding-maker', label: '코딩메이커 (중마)' },
-    { value: 'gwangyang-coding', label: '광양코딩 (창덕)' }
+    { value: '코딩메이커', label: '코딩메이커 (중마)' },
+    { value: '광양코딩', label: '광양코딩 (창덕)' }
   ];
 
   const subjectOptions = [

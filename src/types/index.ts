@@ -79,6 +79,9 @@ export interface StudentActivityLog {
   student_id: string;
   date: string;
   attended: boolean;
+  status: 'present' | 'absent' | 'makeup';
+  teacher_id?: string;
+  is_makeup?: boolean;
   typing_score?: number;
   typing_speed?: number;
   typing_language?: 'korean' | 'english';

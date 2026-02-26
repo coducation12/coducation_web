@@ -23,7 +23,7 @@ const convertKoreanToEnglish = (korean: string): string => {
     'ㅏ': 'k', 'ㅑ': 'i', 'ㅓ': 'j', 'ㅕ': 'u', 'ㅗ': 'h', 'ㅛ': 'y', 'ㅜ': 'n', 'ㅠ': 'b', 'ㅡ': 'm', 'ㅣ': 'l',
     'ㄲ': 'R', 'ㄸ': 'E', 'ㅃ': 'Q', 'ㅆ': 'T', 'ㅉ': 'W'
   };
-  
+
   let result = '';
   for (let i = 0; i < korean.length; i++) {
     const char = korean[i];
@@ -40,12 +40,12 @@ const convertKoreanToEnglish = (korean: string): string => {
 const formatPhoneNumber = (value: string): string => {
   // 숫자만 추출
   const numbers = value.replace(/[^0-9]/g, '');
-  
+
   // 11자리 제한
   if (numbers.length > 11) {
     return numbers.slice(0, 11);
   }
-  
+
   // 하이픈 추가 (3-4-4 형식)
   if (numbers.length <= 3) {
     return numbers;
@@ -82,7 +82,7 @@ export default function StudentSignupPage() {
   const router = useRouter()
 
   // 자동 생성된 아이디 계산
-  const generatedUsername = formData.name && formData.birthYear 
+  const generatedUsername = formData.name && formData.birthYear
     ? `${formData.name}${formData.birthYear.slice(-2)}`
     : '';
 
@@ -106,7 +106,7 @@ export default function StudentSignupPage() {
           setError('교사 목록을 불러오는 중 오류가 발생했습니다.')
           return
         }
-        
+
         setTeachers(data || [])
       } catch (error) {
         console.error('교사 목록 불러오기 실패:', error)
@@ -142,8 +142,8 @@ export default function StudentSignupPage() {
 
   const validateForm = () => {
     // 필수 필드 검증
-    if (!formData.name || !formData.birthYear || !formData.password || 
-        !formData.confirmPassword || !formData.phone || !formData.academy || !formData.assignedTeacherId) {
+    if (!formData.name || !formData.birthYear || !formData.password ||
+      !formData.confirmPassword || !formData.phone || !formData.academy || !formData.assignedTeacherId) {
       setError("필수 필드를 모두 입력해주세요.");
       return false;
     }
@@ -203,7 +203,7 @@ export default function StudentSignupPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
+
     if (!validateForm()) return
 
     setLoading(true)
@@ -361,8 +361,8 @@ export default function StudentSignupPage() {
                     <SelectValue placeholder="학원을 선택하세요" />
                   </SelectTrigger>
                   <SelectContent className="bg-background border-cyan-400/40">
-                    <SelectItem value="coding-maker" className="text-cyan-100 hover:bg-cyan-900/20">코딩메이커</SelectItem>
-                    <SelectItem value="gwangyang-coding" className="text-cyan-100 hover:bg-cyan-900/20">광양코딩</SelectItem>
+                    <SelectItem value="코딩메이커" className="text-cyan-100 hover:bg-cyan-900/20">코딩메이커</SelectItem>
+                    <SelectItem value="광양코딩" className="text-cyan-100 hover:bg-cyan-900/20">광양코딩</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -375,10 +375,10 @@ export default function StudentSignupPage() {
                 >
                   <SelectTrigger className="bg-background/40 border-cyan-400/40 text-cyan-100 focus:border-cyan-400/80 text-sm sm:text-base">
                     <SelectValue placeholder={
-                      !formData.academy 
-                        ? "먼저 학원을 선택하세요" 
-                        : teachersLoading 
-                          ? "교사 목록을 불러오는 중..." 
+                      !formData.academy
+                        ? "먼저 학원을 선택하세요"
+                        : teachersLoading
+                          ? "교사 목록을 불러오는 중..."
                           : "담당 교사를 선택하세요"
                     } />
                   </SelectTrigger>
@@ -386,10 +386,10 @@ export default function StudentSignupPage() {
                     {teachers
                       .filter(teacher => !formData.academy || teacher.academy === formData.academy)
                       .map((teacher) => (
-                      <SelectItem key={teacher.id} value={teacher.id} className="text-cyan-100 hover:bg-cyan-900/20">
-                        {teacher.name}
-                      </SelectItem>
-                    ))}
+                        <SelectItem key={teacher.id} value={teacher.id} className="text-cyan-100 hover:bg-cyan-900/20">
+                          {teacher.name}
+                        </SelectItem>
+                      ))}
                   </SelectContent>
                 </Select>
               </div>

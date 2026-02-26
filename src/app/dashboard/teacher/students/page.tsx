@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input";
 import { supabase } from "@/lib/supabase";
 import { addStudent, updateStudent } from "@/lib/actions";
 import StudentModal from "@/components/common/StudentModal";
+import { AttendanceCalendarModal } from "../components/AttendanceCalendarModal";
 import { useToast } from "@/hooks/use-toast";
 
 interface Student {
@@ -38,12 +39,14 @@ interface Student {
     requested_at?: string;
     progress?: any;
     attendance?: any;
+    monthlyAttendanceCount?: number;
 }
 
 interface ClassSchedule {
     day: string;
     startTime: string;
     endTime: string;
+    teacherId: string;
 }
 
 
@@ -54,6 +57,8 @@ export default function TeacherStudentsPage() {
     const [search, setSearch] = useState("");
     const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [teachers, setTeachers] = useState<{ id: string, name: string }[]>([]);
+    const [currentUserId, setCurrentUserId] = useState<string | null>(null);
     const [sortField, setSortField] = useState<string | null>(null);
     const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
     const { toast } = useToast();
@@ -119,6 +124,17 @@ export default function TeacherStudentsPage() {
             }
 
             const currentUserId = userData.id;
+            setCurrentUserId(currentUserId);
+
+            // 강사 목록 조회 추가 (요일별 강사 배정 위해 필요)
+            const { data: teachersData, error: teachersError } = await supabase
+                .from('users')
+                .select('id, name')
+                .eq('role', 'teacher')
+                .eq('status', 'active');
+
+            const currentTeachers = teachersData || [];
+            setTeachers(currentTeachers);
 
             // 모든 학생 데이터 조회
             const { data, error } = await supabase
@@ -145,6 +161,19 @@ export default function TeacherStudentsPage() {
                     parent:users!students_parent_id_fkey ( phone )
                 `);
 
+            // 출석 데이터 가져오기 (이번 달)
+            const now = new Date();
+            const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
+            const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0];
+
+            const { data: attendanceData, error: attendanceError } = await supabase
+                .from('student_activity_logs')
+                .select('student_id, date, attended')
+                .eq('activity_type', 'attendance')
+                .eq('attended', true)
+                .gte('date', startOfMonth)
+                .lte('date', endOfMonth);
+
             if (error) {
                 setStudents([]);
                 return;
@@ -155,8 +184,8 @@ export default function TeacherStudentsPage() {
                 // 담당강사 정보 찾기 (students 테이블의 assigned_teachers 배열에서 최대 2명)
                 const assignedTeacherIds = item.assigned_teachers || [];
                 const assignedTeachers = assignedTeacherIds.map((teacherId: string) => {
-                    // 강사 이름을 찾기 위해 임시로 생성 (실제로는 teachers 배열에서 찾아야 함)
-                    return { id: teacherId, name: `강사 ${teacherId.slice(-4)}` };
+                    const teacher = currentTeachers.find((t: any) => t.id === teacherId);
+                    return teacher || { id: teacherId, name: `강사 ${teacherId.slice(-4)}` };
                 });
 
                 return {
@@ -178,16 +207,45 @@ export default function TeacherStudentsPage() {
                     enrollment_date: item.enrollment_start_date || '',
                     memo: item.memo || '',
                     assignedTeachers: assignedTeachers,
-                    classSchedules: item.attendance_schedule ? Object.entries(item.attendance_schedule).map(([day, schedule]: [string, any]) => {
-                        const dayMap: { [key: string]: string } = {
-                            '0': 'sunday', '1': 'monday', '2': 'tuesday', '3': 'wednesday', '4': 'thursday', '5': 'friday', '6': 'saturday'
-                        };
-                        return {
-                            day: dayMap[day] || day,
-                            startTime: schedule.startTime || '',
-                            endTime: schedule.endTime || ''
-                        };
-                    }) : []
+                    classSchedules: item.attendance_schedule ? Object.entries(item.attendance_schedule)
+                        .map(([day, schedule]: [string, any]) => {
+                            const dayMap: { [key: string]: string } = {
+                                '0': 'sunday', '1': 'monday', '2': 'tuesday', '3': 'wednesday', '4': 'thursday', '5': 'friday', '6': 'saturday'
+                            };
+                            return {
+                                day: dayMap[day] || day,
+                                startTime: schedule.startTime || '',
+                                endTime: schedule.endTime || '',
+                                teacherId: schedule.teacherId || ''
+                            };
+                        })
+                        .filter((s: any) => s.teacherId === currentUserId) // 본인 일정만 필터링
+                        : [],
+                    attendanceData: attendanceData?.filter((log: any) => log.student_id === item.user_id) || []
+                };
+            });
+
+            // 각 학생별로 본인 담당 수업 출석 횟수 계산
+            mapped = mapped.map((student: any) => {
+                const schedule = student.classSchedules || [];
+                const logs = student.attendanceData || [];
+
+                // 본인이 담당하는 요일 목록 (영문 소문자 요일명)
+                const assignedDays = schedule.map((s: any) => s.day.toLowerCase());
+
+                const dayOfWeekMap: { [key: number]: string } = {
+                    0: 'sunday', 1: 'monday', 2: 'tuesday', 3: 'wednesday', 4: 'thursday', 5: 'friday', 6: 'saturday'
+                };
+
+                const monthlyCount = logs.filter((log: any) => {
+                    const logDate = new Date(log.date);
+                    const logDayName = dayOfWeekMap[logDate.getDay()];
+                    return assignedDays.includes(logDayName);
+                }).length;
+
+                return {
+                    ...student,
+                    monthlyAttendanceCount: monthlyCount
                 };
             });
 
@@ -290,6 +348,10 @@ export default function TeacherStudentsPage() {
                     variant: "default",
                 });
 
+                // 모달 닫기
+                setIsEditModalOpen(false);
+                setSelectedStudent(null);
+
                 // 학생 목록 새로고침
                 fetchStudents();
             } else {
@@ -330,9 +392,14 @@ export default function TeacherStudentsPage() {
         <div className="p-6 pt-20 lg:pt-6 space-y-6">
             <div className="flex items-center justify-between">
                 <div>
+                    <h1 className="text-3xl font-bold text-cyan-100 drop-shadow-[0_0_6px_#00fff7]">학생 관리</h1>
                     <p className="text-cyan-300 mt-2">담당 학생들의 정보를 관리하세요</p>
                 </div>
-                <StudentModal mode="add" onSave={handleAddStudent} />
+                <StudentModal
+                    mode="add"
+                    onSave={handleAddStudent}
+                    teachers={teachers.filter(t => t.id === currentUserId)} // 본인만 선택 가능하도록 제한
+                />
             </div>
 
             <Card className="bg-gradient-to-br from-cyan-900/20 to-blue-900/20 border-cyan-500/30">
@@ -387,6 +454,15 @@ export default function TeacherStudentsPage() {
                                     <div className="flex items-center gap-2">
                                         상태
                                         {getSortIcon('status')}
+                                    </div>
+                                </TableHead>
+                                <TableHead
+                                    className="text-cyan-200 cursor-pointer hover:text-cyan-100 transition-colors select-none"
+                                    onClick={() => handleSort('monthlyAttendanceCount')}
+                                >
+                                    <div className="flex items-center gap-2 text-center justify-center">
+                                        출석 캘린더
+                                        {getSortIcon('monthlyAttendanceCount')}
                                     </div>
                                 </TableHead>
                                 <TableHead
@@ -467,6 +543,21 @@ export default function TeacherStudentsPage() {
                                             </Badge>
                                         )}
                                     </TableCell>
+                                    <TableCell className="text-center" onClick={(e) => e.stopPropagation()}>
+                                        <div className="flex items-center justify-center gap-2">
+                                            <Badge
+                                                variant="outline"
+                                                className="border-cyan-500/50 text-cyan-300 font-bold px-3 py-1 bg-cyan-900/20"
+                                            >
+                                                {student.monthlyAttendanceCount || 0}일
+                                            </Badge>
+                                            <AttendanceCalendarModal
+                                                studentId={student.id}
+                                                studentName={student.name}
+                                                teacherId={currentUserId}
+                                            />
+                                        </div>
+                                    </TableCell>
                                     <TableCell className="text-cyan-300">
                                         {student.type === 'signup_request' ?
                                             (student.requested_at ? new Date(student.requested_at).toLocaleDateString() : '-') :
@@ -489,6 +580,7 @@ export default function TeacherStudentsPage() {
                     setSelectedStudent(null);
                 }}
                 onSave={handleSaveStudent}
+                teachers={teachers.filter(t => t.id === currentUserId)} // 본인만 선택 가능하도록 제한
             />
 
         </div >

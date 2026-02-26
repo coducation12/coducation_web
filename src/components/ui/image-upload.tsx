@@ -143,12 +143,21 @@ export default function ImageUpload({
                 <div className={`relative ${aspectRatio} w-full flex items-center justify-center`}>
                     {preview ? (
                         <>
-                            <Image
-                                src={preview}
-                                alt="이미지 미리보기"
-                                fill
-                                className="object-cover"
-                            />
+                            {aspectRatio.includes('aspect-auto') ? (
+                                // eslint-disable-next-line @next/next/no-img-element
+                                <img
+                                    src={preview}
+                                    alt="이미지 미리보기"
+                                    className="w-full h-auto object-contain max-h-[800px]"
+                                />
+                            ) : (
+                                <Image
+                                    src={preview}
+                                    alt="이미지 미리보기"
+                                    fill
+                                    className="object-cover"
+                                />
+                            )}
                             {!disabled && (
                                 <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
                                     <Button

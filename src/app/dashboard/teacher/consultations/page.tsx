@@ -34,16 +34,27 @@ const statusColors: Record<'pending' | 'completed', string> = {
   completed: 'bg-green-500 text-white'
 };
 
-const subjectLabels = {
-  'certification': '자격증',
+const subjectLabels: Record<string, string> = {
   'block-coding': '블록 코딩',
   'advanced-programming': '프로그래밍 언어',
+  'ai-vibe-coding': 'Ai 바이브 코딩',
+  'certification': '자격증',
+  'digital-drawing': '디지털 드로잉',
+  '3d-modeling': '3D 모델링',
+  'project': '프로젝트',
+  'etc': '기타 문의',
   'other': '기타'
 };
 
-const academyLabels = {
+const academyLabels: Record<string, string> = {
+  '코딩메이커': '코딩메이커 (중마)',
+  '광양코딩': '광양코딩 (창덕)',
+  'codingmaker': '코딩메이커 (중마)',
   'coding-maker': '코딩메이커 (중마)',
-  'gwangyang-coding': '광양코딩 (창덕)'
+  'coding_maker': '코딩메이커 (중마)',
+  'gwangyangcoding': '광양코딩 (창덕)',
+  'gwangyang-coding': '광양코딩 (창덕)',
+  'gwangyang_coding': '광양코딩 (창덕)'
 };
 
 export const dynamic = 'force-dynamic';
@@ -124,21 +135,27 @@ export default function TeacherConsultationsPage() {
   return (
     <div className="container mx-auto p-6 pt-20 lg:pt-6 space-y-6 h-screen overflow-y-auto scrollbar-hide">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold text-sky-600">상담문의 관리</h1>
-        <Button onClick={loadConsultations} variant="outline">
+        <div>
+          <h1 className="text-3xl font-bold text-cyan-100 drop-shadow-[0_0_6px_#00fff7]">상담문의 관리</h1>
+          <p className="text-cyan-300 mt-2">대기 중이거나 완료된 상담 문의를 확인하세요</p>
+        </div>
+        <Button
+          onClick={loadConsultations}
+          className="bg-cyan-900/40 border border-cyan-500/50 text-cyan-100 hover:bg-cyan-800/60 transition-colors"
+        >
           새로고침
         </Button>
       </div>
 
       {/* 대기중인 상담문의 */}
       <div className="space-y-4">
-        <h2 className="text-xl font-semibold text-sky-600">대기중인 상담문의</h2>
+        <h2 className="text-xl font-bold text-cyan-100 drop-shadow-[0_0_4px_#00fff7]">대기중인 상담문의</h2>
         <div className="grid gap-6">
           {consultations.filter(c => c.status === 'pending').length === 0 ? (
-            <Card>
-              <CardContent className="p-8 text-center">
-                <MessageSquare className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-                <p className="text-lg text-gray-500">대기중인 상담문의가 없습니다.</p>
+            <Card className="bg-gradient-to-br from-cyan-900/20 to-blue-900/20 border-cyan-500/30">
+              <CardContent className="p-8 text-center text-cyan-200">
+                <MessageSquare className="mx-auto h-12 w-12 text-cyan-400/60 mb-4" />
+                <p className="text-lg">대기중인 상담문의가 없습니다.</p>
               </CardContent>
             </Card>
           ) : (
@@ -146,7 +163,7 @@ export default function TeacherConsultationsPage() {
               <Dialog key={consultation.id}>
                 <DialogTrigger asChild>
                   <Card
-                    className="border-2 cursor-pointer hover:border-sky-400 transition-all group"
+                    className="bg-gradient-to-br from-cyan-900/10 to-blue-900/10 border-cyan-500/30 cursor-pointer hover:border-cyan-400 hover:bg-cyan-900/20 transition-all group"
                     onClick={() => {
                       setSelectedConsultation(consultation);
                       setResponseNote(consultation.response_note || '');
@@ -155,22 +172,22 @@ export default function TeacherConsultationsPage() {
                     <CardHeader>
                       <div className="flex items-center justify-between">
                         <CardTitle className="flex items-center gap-2">
-                          <span className="text-left group-hover:text-sky-400 transition-colors">
+                          <span className="text-left text-cyan-100 group-hover:text-cyan-300 transition-colors drop-shadow-[0_0_4px_rgba(0,255,255,0.4)]">
                             {consultation.name}
                           </span>
-                          <span className="text-sm font-normal text-white ml-2">
+                          <span className="text-sm font-normal text-cyan-200/80 ml-2">
                             {consultation.phone}
                           </span>
-                          <span className="text-sm font-normal text-white ml-4">
-                            <Building2 className="h-4 w-4 inline mr-1" />
-                            {academyLabels[consultation.academy as keyof typeof academyLabels]}
-                          </span>
-                          <span className="text-sm font-normal text-white ml-4">
-                            <CalendarDays className="h-4 w-4 inline mr-1" />
+                          <span className="text-sm font-normal text-cyan-200/80 ml-4">
+                            <CalendarDays className="h-4 w-4 inline mr-1 text-cyan-400" />
                             {formatDate(consultation.created_at)}
                           </span>
+                          <span className="text-sm font-normal text-cyan-200/80 ml-4">
+                            <Building2 className="h-4 w-4 inline mr-1 text-cyan-400" />
+                            {academyLabels[consultation.academy as keyof typeof academyLabels] || consultation.academy}
+                          </span>
                         </CardTitle>
-                        <Badge className={statusColors[consultation.status]}>
+                        <Badge className={`${statusColors[consultation.status]} border-none shadow-[0_0_8px_rgba(234,179,8,0.5)]`}>
                           {statusLabels[consultation.status]}
                         </Badge>
                       </div>
@@ -179,15 +196,15 @@ export default function TeacherConsultationsPage() {
                       <div className="space-y-4">
                         <div className="grid grid-cols-5 gap-4">
                           <div className="col-span-1">
-                            <Label className="text-sm font-medium">문의 과목</Label>
-                            <p className="text-sm text-white">
+                            <Label className="text-sm font-medium text-cyan-300">문의 과목</Label>
+                            <p className="text-sm text-cyan-100">
                               {subjectLabels[consultation.subject as keyof typeof subjectLabels]}
                             </p>
                           </div>
 
                           <div className="col-span-4">
-                            <Label className="text-sm font-medium">문의 내용</Label>
-                            <p className="text-sm text-white whitespace-pre-wrap">
+                            <Label className="text-sm font-medium text-cyan-300">문의 내용</Label>
+                            <p className="text-sm text-cyan-100 whitespace-pre-wrap">
                               {consultation.message}
                             </p>
                           </div>
@@ -199,7 +216,7 @@ export default function TeacherConsultationsPage() {
                 </DialogTrigger>
                 <DialogContent className="max-w-2xl">
                   <DialogHeader>
-                    <DialogTitle>상담문의 처리하기 (ID: {consultation.id})</DialogTitle>
+                    <DialogTitle className="text-xl font-bold text-cyan-100 drop-shadow-[0_0_4px_#00fff7]">상담문의 처리하기 (ID: {consultation.id})</DialogTitle>
                   </DialogHeader>
                   <div className="space-y-6">
                     <div className="space-y-2">
@@ -255,13 +272,13 @@ export default function TeacherConsultationsPage() {
 
       {/* 완료된 상담문의 */}
       <div className="space-y-4">
-        <h2 className="text-xl font-semibold text-sky-600">완료된 상담문의</h2>
+        <h2 className="text-xl font-bold text-cyan-100 drop-shadow-[0_0_4px_#00fff7]">완료된 상담문의</h2>
         <div className="grid gap-6">
           {consultations.filter(c => c.status === 'completed').length === 0 ? (
-            <Card>
-              <CardContent className="p-8 text-center">
-                <MessageSquare className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-                <p className="text-lg text-gray-500">완료된 상담문의가 없습니다.</p>
+            <Card className="bg-gradient-to-br from-cyan-900/20 to-blue-900/20 border-cyan-500/30">
+              <CardContent className="p-8 text-center text-cyan-200">
+                <MessageSquare className="mx-auto h-12 w-12 text-cyan-400/60 mb-4" />
+                <p className="text-lg">완료된 상담문의가 없습니다.</p>
               </CardContent>
             </Card>
           ) : (
@@ -269,7 +286,7 @@ export default function TeacherConsultationsPage() {
               <Dialog key={consultation.id}>
                 <DialogTrigger asChild>
                   <Card
-                    className="border-2 cursor-pointer hover:border-sky-400 transition-all group opacity-80 hover:opacity-100"
+                    className="bg-gradient-to-br from-cyan-900/10 to-blue-900/10 border-cyan-500/30 cursor-pointer hover:border-cyan-400 hover:bg-cyan-900/20 transition-all group opacity-80 hover:opacity-100"
                     onClick={() => {
                       setSelectedConsultation(consultation);
                       setResponseNote(consultation.response_note || '');
@@ -278,22 +295,22 @@ export default function TeacherConsultationsPage() {
                     <CardHeader>
                       <div className="flex items-center justify-between">
                         <CardTitle className="flex items-center gap-2">
-                          <span className="text-left group-hover:text-sky-400 transition-colors">
+                          <span className="text-left text-cyan-100 group-hover:text-cyan-300 transition-colors drop-shadow-[0_0_4px_rgba(0,255,255,0.4)]">
                             {consultation.name}
                           </span>
-                          <span className="text-sm font-normal text-white ml-2">
+                          <span className="text-sm font-normal text-cyan-200/80 ml-2">
                             {consultation.phone}
                           </span>
-                          <span className="text-sm font-normal text-white ml-4">
-                            <Building2 className="h-4 w-4 inline mr-1" />
-                            {academyLabels[consultation.academy as keyof typeof academyLabels]}
-                          </span>
-                          <span className="text-sm font-normal text-white ml-4">
-                            <CalendarDays className="h-4 w-4 inline mr-1" />
+                          <span className="text-sm font-normal text-cyan-200/80 ml-4">
+                            <CalendarDays className="h-4 w-4 inline mr-1 text-cyan-400" />
                             {formatDate(consultation.created_at)}
                           </span>
+                          <span className="text-sm font-normal text-cyan-200/80 ml-4">
+                            <Building2 className="h-4 w-4 inline mr-1 text-cyan-400" />
+                            {academyLabels[consultation.academy as keyof typeof academyLabels] || consultation.academy}
+                          </span>
                         </CardTitle>
-                        <Badge className={statusColors[consultation.status]}>
+                        <Badge className={`${statusColors[consultation.status]} border-none shadow-[0_0_8px_rgba(34,197,94,0.5)]`}>
                           {statusLabels[consultation.status]}
                         </Badge>
                       </div>
@@ -302,15 +319,15 @@ export default function TeacherConsultationsPage() {
                       <div className="space-y-4">
                         <div className="grid grid-cols-5 gap-4">
                           <div className="col-span-1">
-                            <Label className="text-sm font-medium">문의 과목</Label>
-                            <p className="text-sm text-white">
+                            <Label className="text-sm font-medium text-cyan-300">문의 과목</Label>
+                            <p className="text-sm text-cyan-100">
                               {subjectLabels[consultation.subject as keyof typeof subjectLabels]}
                             </p>
                           </div>
 
                           <div className="col-span-4">
-                            <Label className="text-sm font-medium">문의 내용</Label>
-                            <p className="text-sm text-white whitespace-pre-wrap">
+                            <Label className="text-sm font-medium text-cyan-300">문의 내용</Label>
+                            <p className="text-sm text-cyan-100 whitespace-pre-wrap">
                               {consultation.message}
                             </p>
                           </div>
@@ -322,7 +339,7 @@ export default function TeacherConsultationsPage() {
                 </DialogTrigger>
                 <DialogContent className="max-w-2xl">
                   <DialogHeader>
-                    <DialogTitle>상담문의 확인/수정 (ID: {consultation.id})</DialogTitle>
+                    <DialogTitle className="text-xl font-bold text-cyan-100 drop-shadow-[0_0_4px_#00fff7]">상담문의 확인/수정 (ID: {consultation.id})</DialogTitle>
                   </DialogHeader>
                   <div className="space-y-6">
                     <div className="space-y-2">

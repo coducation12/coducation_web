@@ -314,7 +314,7 @@ export async function addStudent(formData: FormData, isSignup: boolean = false) 
         role: 'parent',
         password: parentPasswordHash,
         phone: studentData.parentPhone || null,
-        academy: studentData.academy || 'coding-maker',
+        academy: studentData.academy || '코딩메이커',
         status: 'active', // 관리자 추가 시에는 바로 active
         created_at: new Date().toISOString()
       })
@@ -337,7 +337,7 @@ export async function addStudent(formData: FormData, isSignup: boolean = false) 
         password: studentPasswordHash,
         phone: studentData.phone,
         birth_year: studentData.birthYear ? parseInt(studentData.birthYear) : null,
-        academy: studentData.academy || 'coding-maker',
+        academy: studentData.academy || '코딩메이커',
         assigned_teacher_id: studentData.assignedTeacherId || null,
         status: 'active', // 관리자 추가 시에는 바로 active
         created_at: new Date().toISOString()
@@ -367,7 +367,7 @@ export async function addStudent(formData: FormData, isSignup: boolean = false) 
             let startTime = schedule.startTime;
             let endTime = schedule.endTime || '';
 
-            // 시간 형식 정리
+            // 시간 형식 정리 (예: 1400 -> 14:00)
             if (startTime && !startTime.includes(':')) {
               const numbers = startTime.replace(/[^0-9]/g, '');
               if (numbers.length === 4) {
@@ -386,13 +386,13 @@ export async function addStudent(formData: FormData, isSignup: boolean = false) 
               }
             }
 
-            if (!endTime || endTime.trim() === '') {
-              throw new Error(`${schedule.day}의 종료시간을 입력해주세요.`);
-            }
+            // teacherId 처리: 강사가 추가하는 경우 본인 ID로 자동 할당
+            const teacherId = schedule.teacherId || (currentUserRole === 'teacher' ? currentUserId : null);
 
             attendanceSchedule[dayNumber] = {
               startTime: startTime,
-              endTime: endTime
+              endTime: endTime,
+              teacherId: teacherId
             };
           }
         }
@@ -424,6 +424,12 @@ export async function addStudent(formData: FormData, isSignup: boolean = false) 
       return { success: false, error: studentError.message };
     }
 
+    revalidatePath('/dashboard/admin/students', 'page');
+    revalidatePath('/dashboard/teacher/students', 'page');
+    revalidatePath('/dashboard/teacher', 'page');
+    revalidatePath('/dashboard/admin/timetable', 'page');
+    revalidatePath('/dashboard/teacher/timetable', 'page');
+
     return { success: true, data: userData };
   } catch (error) {
     return { success: false, error: '학생 추가 중 오류가 발생했습니다.' };
@@ -432,6 +438,7 @@ export async function addStudent(formData: FormData, isSignup: boolean = false) 
 
 // 학생 정보 수정 서버 액션
 export async function updateStudent(formData: FormData) {
+  console.log('--- updateStudent 시작 ---');
   try {
     const cookieStore = await cookies();
     const currentUserId = cookieStore.get('user_id')?.value;
@@ -477,22 +484,38 @@ export async function updateStudent(formData: FormData) {
       .single();
 
     if (studentFetchError) {
+      console.error('학생 정보를 가져오는데 실패했습니다:', studentFetchError);
       return { success: false, error: '학생 정보를 가져오는데 실패했습니다.' };
     }
 
-    // 기존 스케줄 복사
-    const existingSchedule = currentStudent.attendance_schedule || {};
+    console.log('기존 스케줄:', JSON.stringify(currentStudent.attendance_schedule));
+    console.log('폼 전송 스케줄:', JSON.stringify(studentData.classSchedules));
+
+    // 기존 스케줄 복사 (정규화 포함: 요일 이름 -> 인덱스)
+    const rawExistingSchedule = currentStudent.attendance_schedule || {};
+    const existingSchedule: any = {};
+    const reverseDayMap: { [key: string]: string } = {
+      'monday': '1', 'tuesday': '2', 'wednesday': '3',
+      'thursday': '4', 'friday': '5', 'saturday': '6', 'sunday': '0',
+      '월': '1', '화': '2', '수': '3', '목': '4', '금': '5', '토': '6', '일': '0'
+    };
+
+    Object.entries(rawExistingSchedule).forEach(([key, value]) => {
+      const normalizedKey = reverseDayMap[key.toLowerCase()] || key;
+      existingSchedule[normalizedKey] = value;
+    });
 
     // 새 스케줄 생성
     const newScheduleFromForm: any = {};
-    studentData.classSchedules.forEach((schedule: any) => {
-      if (schedule.day && schedule.startTime && schedule.endTime) {
+    (studentData.classSchedules || []).forEach((schedule: any) => {
+      // 요일, 시작시간, 종료시간이 모두 있는 경우만 처리
+      if (schedule && schedule.day && schedule.startTime && schedule.endTime && schedule.day !== "" && schedule.startTime !== "" && schedule.endTime !== "") {
         const dayMap: { [key: string]: string } = {
           'monday': '1', 'tuesday': '2', 'wednesday': '3',
           'thursday': '4', 'friday': '5', 'saturday': '6', 'sunday': '0'
         };
-        const dayNumber = dayMap[schedule.day];
-        if (dayNumber) {
+        const dayNumber = schedule.day ? dayMap[schedule.day.toLowerCase()] : undefined;
+        if (dayNumber !== undefined) {
           // 시간 형식 정리
           let startTime = schedule.startTime;
           let endTime = schedule.endTime;
@@ -526,8 +549,13 @@ export async function updateStudent(formData: FormData) {
         const existingSlot = existingSchedule[dayStr];
         const newSlot = newScheduleFromForm[dayStr];
 
-        // 해당 요일의 담당자가 본인인 경우에만 수정 적용
-        if (existingSlot?.teacherId === currentUserId || newSlot?.teacherId === currentUserId) {
+        // 해당 요일의 담당자가 본인인 경우에만 수정 적용 (UUID 대소문자 무관하게 비교)
+        const isExistingAssigned = existingSlot?.teacherId && currentUserId &&
+          existingSlot.teacherId.toLowerCase() === currentUserId.toLowerCase();
+        const isNewAssigned = newSlot?.teacherId && currentUserId &&
+          newSlot.teacherId.toLowerCase() === currentUserId.toLowerCase();
+
+        if (isExistingAssigned || isNewAssigned) {
           if (newSlot) {
             finalAttendanceSchedule[dayStr] = newSlot;
           } else {
@@ -540,12 +568,18 @@ export async function updateStudent(formData: FormData) {
       finalAttendanceSchedule = newScheduleFromForm;
     }
 
+    console.log('최종 저장 예정 스케줄:', JSON.stringify(finalAttendanceSchedule));
+
     // 3. DB 업데이트
     // users 테이블 업데이트
+    const birthYearInt = studentData.birthYear && !isNaN(parseInt(studentData.birthYear))
+      ? parseInt(studentData.birthYear)
+      : null;
+
     const userUpdateData: any = {
       name: studentData.name,
       phone: studentData.phone,
-      birth_year: studentData.birthYear ? parseInt(studentData.birthYear) : null,
+      birth_year: birthYearInt,
       status: studentData.status === '휴강' ? 'suspended' :
         studentData.status === '종료' ? 'inactive' : 'active'
     };
@@ -593,8 +627,16 @@ export async function updateStudent(formData: FormData) {
       .eq('user_id', existingUser.id);
 
     if (studentError) {
+      console.error('students 테이블 업데이트 실패:', studentError);
       return { success: false, error: studentError.message };
     }
+
+    console.log('--- updateStudent 성공 ---');
+    revalidatePath('/dashboard/admin/students', 'page');
+    revalidatePath('/dashboard/teacher/students', 'page');
+    revalidatePath('/dashboard/teacher', 'page');
+    revalidatePath('/dashboard/admin/timetable', 'page');
+    revalidatePath('/dashboard/teacher/timetable', 'page');
 
     return { success: true, message: '학생 정보가 성공적으로 업데이트되었습니다.' };
   } catch (error: any) {
@@ -1414,7 +1456,7 @@ export async function addTeacher(formData: FormData) {
         password: passwordHash,
         email: teacherData.email,
         phone: teacherData.phone,
-        academy: 'coding-maker',
+        academy: '코딩메이커',
         profile_image_url: teacherData.image || null, // 프로필 이미지 추가
         created_at: new Date().toISOString()
       })

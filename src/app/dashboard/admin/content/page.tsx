@@ -29,14 +29,19 @@ export default async function ContentManagePage() {
   };
 
   return (
-    <div className="p-6 space-y-6 pt-16 lg:pt-6">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight text-cyan-100 drop-shadow-[0_0_10px_rgba(0,255,255,0.3)]">
-          컨텐츠 관리
-        </h1>
-        <p className="text-muted-foreground mt-2">
-          메인 화면의 컨텐츠와 프로모션 팝업을 관리합니다.
-        </p>
+    <div className="p-6 space-y-6 pt-20 lg:pt-6 relative">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 sticky top-0 lg:top-6 z-50 bg-inherit pb-4 border-b border-cyan-500/10 mb-6 backdrop-blur-md">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight text-cyan-100 drop-shadow-[0_0_10px_rgba(0,255,255,0.3)]">
+            컨텐츠 관리
+          </h1>
+          <p className="text-muted-foreground mt-1">
+            메인 화면의 컨텐츠와 프로모션 팝업을 관리합니다.
+          </p>
+        </div>
+        <div id="admin-content-save-button-portal" className="flex items-center gap-2">
+          {/* 하위 컴포넌트들에서 Portal을 이용해 이곳에 저장 버튼을 배치합니다 */}
+        </div>
       </div>
 
       <Tabs defaultValue="academy" className="space-y-4">

@@ -48,9 +48,14 @@ export const calculateMonthlySessions = (
  */
 export const calculateRegistrationUnit = (sessionCount: number, threshold: number = 8): number => {
     if (sessionCount === 0) return 0;
+
+    // 주 2회 기준(threshold 8), 절반(4회) 단위를 한 스텝(0.5)으로 계산
+    // Math.floor를 사용하여 8회 미만(1~7회)은 전체 1.0이 되지 못하고 0.5에 머물게 함
     const halfThreshold = threshold / 2;
-    // 기준일수의 절반을 0.5 단위로 계산 (상한선 없음)
-    return Math.max(0.5, Math.ceil(sessionCount / halfThreshold) * 0.5);
+    const unit = Math.floor(sessionCount / halfThreshold) * 0.5;
+
+    // 최소 0.5 보장 (수업이 1회라도 있으면)
+    return Math.max(0.5, unit);
 };
 
 /**
@@ -73,17 +78,46 @@ export const getStudentRegistrationUnit = (
 ): number => {
     if (!schedule) return 0;
 
-    // 해당 강사가 배정된 요일만 필터링
-    const teacherDays = Object.keys(schedule).filter(day => {
-        const slot = schedule[day];
-        // 슬롯에 별도 강사가 지정되어 있으면 그것을 사용, 없으면 학생의 기본 강사 사용
-        const assignedTeacherId = slot.teacherId || studentDefaultTeacherId;
-        return assignedTeacherId === targetTeacherId;
-    }).map(Number);
+    const start = enrollmentDate ? new Date(enrollmentDate) : new Date(year, month - 1, 1);
+    const end = new Date(year, month, 0);
 
-    if (teacherDays.length === 0) return 0;
+    if (start > end) return 0;
 
-    const sessionCount = calculateMonthlySessions(year, month, teacherDays, enrollmentDate);
+    const effectiveStart = (start.getMonth() + 1 === month && start.getFullYear() === year)
+        ? start
+        : new Date(year, month - 1, 1);
 
-    return calculateRegistrationUnit(sessionCount, threshold);
+    let totalMinutes = 0;
+    const current = new Date(effectiveStart);
+
+    while (current <= end) {
+        const dayNum = current.getDay();
+        const slot = schedule[dayNum.toString()];
+
+        if (slot) {
+            const assignedTeacherId = slot.teacherId || studentDefaultTeacherId;
+            if (assignedTeacherId === targetTeacherId && slot.startTime && slot.endTime) {
+                try {
+                    const [startH, startM] = slot.startTime.split(':').map(Number);
+                    const [endH, endM] = slot.endTime.split(':').map(Number);
+                    if (!isNaN(startH) && !isNaN(startM) && !isNaN(endH) && !isNaN(endM)) {
+                        const duration = (endH * 60 + endM) - (startH * 60 + startM);
+                        if (duration > 0) {
+                            totalMinutes += duration;
+                        }
+                    }
+                } catch (e) {
+                    console.error('시간 계산 중 오류:', e);
+                }
+            }
+        }
+        current.setDate(current.getDate() + 1);
+    }
+
+    if (totalMinutes === 0) return 0;
+
+    // 표준 수업 시간(1.5시간 = 90분)으로 환산하여 단위 계산
+    // 예: 주 3회 1시간(총 180분) = 주 2회 1.5시간(총 180분)과 동일한 8회분(720분) 가중치 부여
+    const effectiveSessions = totalMinutes / 90;
+    return calculateRegistrationUnit(effectiveSessions, threshold);
 };

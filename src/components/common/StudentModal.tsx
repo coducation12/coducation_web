@@ -89,6 +89,8 @@ const formatTime = (value: string): string => {
 
 export default function StudentModal({ mode, student, isOpen, onClose, onSave, triggerText, teachers = [] }: StudentModalProps) {
     const [internalOpen, setInternalOpen] = useState(false);
+    const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+    const [originalData, setOriginalData] = useState<any>(null);
     const [formData, setFormData] = useState({
         studentId: "",
         name: "",
@@ -111,7 +113,7 @@ export default function StudentModal({ mode, student, isOpen, onClose, onSave, t
 
     useEffect(() => {
         if (mode === "edit" && student) {
-            setFormData({
+            const initialData = {
                 studentId: student.studentId || "",
                 name: student.name,
                 birthYear: student.birthDate || "",
@@ -125,9 +127,14 @@ export default function StudentModal({ mode, student, isOpen, onClose, onSave, t
                 status: student.status || "수강",
                 memo: student.memo || "",
                 classSchedules: student.classSchedules && student.classSchedules.length > 0
-                    ? student.classSchedules
-                    : [{ day: "", startTime: "", endTime: "", teacherId: "" }]
-            });
+                    ? student.classSchedules.map(s => ({
+                        ...s,
+                        teacherId: s.teacherId || (teachers.length === 1 ? teachers[0].id : "")
+                    }))
+                    : [{ day: "", startTime: "", endTime: "", teacherId: teachers.length === 1 ? teachers[0].id : "" }]
+            };
+            setFormData(initialData);
+            setOriginalData(initialData);
         } else if (mode === "add") {
             setFormData({
                 studentId: "",
@@ -142,10 +149,10 @@ export default function StudentModal({ mode, student, isOpen, onClose, onSave, t
                 enrollment_date: new Date().toISOString().split('T')[0],
                 status: "수강",
                 memo: "",
-                classSchedules: [{ day: "", startTime: "", endTime: "", teacherId: "" }]
+                classSchedules: [{ day: "", startTime: "", endTime: "", teacherId: teachers.length === 1 ? teachers[0].id : "" }]
             });
         }
-    }, [mode, student, dialogOpen]);
+    }, [mode, student, dialogOpen, teachers.length]);
 
     // ID 자동 생성 로직
     useEffect(() => {
@@ -198,13 +205,63 @@ export default function StudentModal({ mode, student, isOpen, onClose, onSave, t
     };
 
     const addSchedule = () => {
-        setFormData(prev => ({ ...prev, classSchedules: [...prev.classSchedules, { day: "", startTime: "", endTime: "", teacherId: "" }] }));
+        setFormData(prev => ({
+            ...prev,
+            classSchedules: [...prev.classSchedules, {
+                day: "",
+                startTime: "",
+                endTime: "",
+                teacherId: teachers.length === 1 ? teachers[0].id : ""
+            }]
+        }));
     };
 
     const removeSchedule = (index: number) => {
         if (formData.classSchedules.length > 1) {
             setFormData(prev => ({ ...prev, classSchedules: prev.classSchedules.filter((_, i) => i !== index) }));
         }
+    };
+
+    const getDiff = () => {
+        if (!originalData) return [];
+        const diff = [];
+        const labels: { [key: string]: string } = {
+            name: "이름",
+            birthYear: "출생년도",
+            subject: "희망 과목",
+            sub_subject: "서브 과목",
+            phone: "본인 연락처",
+            parentPhone: "학부모 연락처",
+            email: "이메일",
+            status: "상태",
+            enrollment_date: "수강 시작일",
+            memo: "메모",
+            password: "비밀번호"
+        };
+
+        for (const key in labels) {
+            if (formData[key as keyof typeof formData] !== originalData[key as keyof typeof formData]) {
+                if (key === 'password' && !formData.password) continue;
+                diff.push({
+                    label: labels[key],
+                    old: String(originalData[key as keyof typeof originalData] || "(공백)"),
+                    new: String(formData[key as keyof typeof formData] || "(공백)")
+                });
+            }
+        }
+
+        // 스케줄 비교 (간략히)
+        const oldScheds = JSON.stringify(originalData.classSchedules);
+        const newScheds = JSON.stringify(formData.classSchedules);
+        if (oldScheds !== newScheds) {
+            diff.push({
+                label: "수업 스케줄",
+                old: `${originalData.classSchedules.length}개 슬롯`,
+                new: `${formData.classSchedules.length}개 슬롯 (참고: 시간/강사가 변경됨)`
+            });
+        }
+
+        return diff;
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -219,7 +276,22 @@ export default function StudentModal({ mode, student, isOpen, onClose, onSave, t
             return;
         }
 
+        if (mode === 'edit') {
+            const diff = getDiff();
+            if (diff.length === 0) {
+                alert("변경 내역이 없습니다.");
+                return;
+            }
+            setShowConfirmDialog(true);
+        } else {
+            await onSave(formData);
+            if (!isControlled) setInternalOpen(false);
+        }
+    };
+
+    const handleConfirmSave = async () => {
         await onSave(formData);
+        setShowConfirmDialog(false);
         if (!isControlled) setInternalOpen(false);
     };
 
@@ -273,7 +345,6 @@ export default function StudentModal({ mode, student, isOpen, onClose, onSave, t
                                 type="date"
                                 value={formData.enrollment_date}
                                 onChange={(e) => handleInputChange("enrollment_date", e.target.value)}
-                                disabled={mode === "edit"}
                                 className="bg-cyan-950/30 border-cyan-500/30 focus:border-cyan-400 disabled:opacity-80 disabled:cursor-not-allowed"
                             />
                         </div>
@@ -393,37 +464,48 @@ export default function StudentModal({ mode, student, isOpen, onClose, onSave, t
                                             </SelectContent>
                                         </Select>
 
-                                        <Select value={schedule.teacherId || ""} onValueChange={(v) => handleScheduleChange(index, "teacherId", v)}>
-                                            <SelectTrigger className="w-[110px] bg-cyan-950/30 border-cyan-500/30 text-xs text-white">
-                                                <SelectValue placeholder="강사 선택">
-                                                    {schedule.teacherId && schedule.teacherId !== "none" ? (
-                                                        <span
-                                                            className="font-medium"
-                                                            style={{ color: getTeacherColorSet(teachers.find(t => t.id === schedule.teacherId)?.label_color || schedule.teacherId).style.color }}
-                                                        >
-                                                            {teachers.find(t => t.id === schedule.teacherId)?.name}
-                                                        </span>
-                                                    ) : (
-                                                        <span className="text-gray-400">강사 선택</span>
-                                                    )}
-                                                </SelectValue>
-                                            </SelectTrigger>
-                                            <SelectContent className="bg-[#0f172a] border-cyan-500/30">
-                                                <SelectItem value="none">
-                                                    <span className="text-gray-400">미배정</span>
-                                                </SelectItem>
-                                                {teachers.map(t => (
-                                                    <SelectItem key={t.id} value={t.id}>
-                                                        <span
-                                                            className="font-medium"
-                                                            style={{ color: getTeacherColorSet(t.label_color || t.id).style.color }}
-                                                        >
-                                                            {t.name}
-                                                        </span>
+                                        {teachers.length === 1 ? (
+                                            <div className="flex items-center px-3 bg-cyan-950/50 border border-cyan-500/20 rounded-md h-9 text-xs">
+                                                <span
+                                                    className="font-medium"
+                                                    style={{ color: getTeacherColorSet(teachers[0].label_color || teachers[0].id).style.color }}
+                                                >
+                                                    {teachers[0].name}
+                                                </span>
+                                            </div>
+                                        ) : (
+                                            <Select value={schedule.teacherId || ""} onValueChange={(v) => handleScheduleChange(index, "teacherId", v)}>
+                                                <SelectTrigger className="w-[110px] bg-cyan-950/30 border-cyan-500/30 text-xs text-white">
+                                                    <SelectValue placeholder="강사 선택">
+                                                        {schedule.teacherId && schedule.teacherId !== "none" ? (
+                                                            <span
+                                                                className="font-medium"
+                                                                style={{ color: getTeacherColorSet(teachers.find(t => t.id === schedule.teacherId)?.label_color || schedule.teacherId).style.color }}
+                                                            >
+                                                                {teachers.find(t => t.id === schedule.teacherId)?.name}
+                                                            </span>
+                                                        ) : (
+                                                            <span className="text-gray-400">강사 선택</span>
+                                                        )}
+                                                    </SelectValue>
+                                                </SelectTrigger>
+                                                <SelectContent className="bg-[#0f172a] border-cyan-500/30">
+                                                    <SelectItem value="none">
+                                                        <span className="text-gray-400">미배정</span>
                                                     </SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
+                                                    {teachers.map(t => (
+                                                        <SelectItem key={t.id} value={t.id}>
+                                                            <span
+                                                                className="font-medium"
+                                                                style={{ color: getTeacherColorSet(t.label_color || t.id).style.color }}
+                                                            >
+                                                                {t.name}
+                                                            </span>
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                        )}
                                     </div>
 
                                     <div className="flex flex-1 gap-2 items-center w-full">
@@ -502,6 +584,55 @@ export default function StudentModal({ mode, student, isOpen, onClose, onSave, t
                     </div>
                 </form>
             </DialogContent >
+
+            {/* 변경 사항 확인 모달 */}
+            <Dialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
+                <DialogContent className="bg-slate-900 border-cyan-500/50 text-cyan-100 max-w-md">
+                    <DialogHeader>
+                        <DialogTitle className="text-xl font-bold text-cyan-100 flex items-center gap-2">
+                            <Calendar className="w-5 h-5 text-cyan-400" /> 정보 업데이트 확인
+                        </DialogTitle>
+                    </DialogHeader>
+                    <div className="py-4 space-y-4">
+                        <p className="text-sm text-cyan-300">다음과 같이 학생 정보가 변경됩니다. 저장하시겠습니까?</p>
+                        <div className="bg-cyan-950/30 rounded-lg border border-cyan-500/20 overflow-hidden">
+                            <table className="w-full text-sm">
+                                <thead className="bg-cyan-900/40 text-cyan-200">
+                                    <tr>
+                                        <th className="px-3 py-2 text-left font-medium">항목</th>
+                                        <th className="px-3 py-2 text-left font-medium">기존</th>
+                                        <th className="px-3 py-2 text-left font-medium">변경</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-cyan-500/10">
+                                    {getDiff().map((item, i) => (
+                                        <tr key={i} className="hover:bg-cyan-500/5 transition-colors">
+                                            <td className="px-3 py-2 text-cyan-300 font-medium">{item.label}</td>
+                                            <td className="px-3 py-2 text-gray-400 line-through truncate max-w-[80px]">{item.old}</td>
+                                            <td className="px-3 py-2 text-white font-bold truncate max-w-[100px]">{item.new}</td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div className="flex justify-end gap-3 mt-4">
+                        <Button
+                            variant="outline"
+                            onClick={() => setShowConfirmDialog(false)}
+                            className="border-cyan-700 text-cyan-300 hover:bg-cyan-700/20"
+                        >
+                            취소
+                        </Button>
+                        <Button
+                            onClick={handleConfirmSave}
+                            className="bg-cyan-600 hover:bg-cyan-500 text-white shadow-[0_0_15px_rgba(6,182,212,0.4)]"
+                        >
+                            최종 업데이트
+                        </Button>
+                    </div>
+                </DialogContent>
+            </Dialog>
         </Dialog >
     );
 }

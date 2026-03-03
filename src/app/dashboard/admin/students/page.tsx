@@ -35,10 +35,12 @@ interface Student {
     sub_subject?: string;
     enrollment_date?: string;
     memo?: string;
+    tuition_fee?: number;
     classSchedules?: ClassSchedule[];
     assignedTeacherId?: string;
     assignedTeacherName?: string;
     assignedTeachers?: Array<{ id: string, name: string }>;
+    academy: string;
 }
 
 interface ClassSchedule {
@@ -184,6 +186,7 @@ export default function AdminStudentsPage() {
                 main_subject,
                 sub_subject,
                 memo,
+                tuition_fee,
                 users!students_user_id_fkey ( 
                     id, 
                     name, 
@@ -238,6 +241,7 @@ export default function AdminStudentsPage() {
                 sub_subject: item.sub_subject || '',
                 enrollment_date: item.enrollment_start_date || '',
                 memo: item.memo || '',
+                tuition_fee: item.tuition_fee || 0,
                 assignedTeacherId: assignedTeacherId,
                 assignedTeacherName: assignedTeacherName,
                 assignedTeachers: assignedTeachers,
@@ -251,7 +255,8 @@ export default function AdminStudentsPage() {
                         endTime: schedule.endTime || '',
                         teacherId: schedule.teacherId || ''
                     };
-                }) : []
+                }) : [],
+                academy: item.users?.academy || '코딩메이커'
             };
         });
 
@@ -283,6 +288,10 @@ export default function AdminStudentsPage() {
             formData.append('enrollment_date', studentData.enrollment_date || '');
             formData.append('memo', studentData.memo || '');
             formData.append('classSchedules', JSON.stringify(studentData.classSchedules));
+            formData.append('academy', studentData.academy || '코딩메이커');
+            // 쉼표 제거 후 숫자만 전송
+            const tuitionFee = studentData.tuition_fee?.toString().replace(/,/g, '') || '0';
+            formData.append('tuition_fee', tuitionFee);
 
             const result = await addStudent(formData);
 
@@ -435,7 +444,11 @@ export default function AdminStudentsPage() {
             formData.append('sub_subject', studentData.sub_subject || '');
             formData.append('enrollment_date', studentData.enrollment_date || '');
             formData.append('memo', studentData.memo || '');
+            formData.append('academy', studentData.academy || '코딩메이커');
             formData.append('classSchedules', JSON.stringify(studentData.classSchedules));
+            // 쉼표 제거 후 숫자만 전송
+            const tuitionFee = studentData.tuition_fee?.toString().replace(/,/g, '') || '0';
+            formData.append('tuition_fee', tuitionFee);
 
             const result = await updateStudent(formData);
 
@@ -484,7 +497,11 @@ export default function AdminStudentsPage() {
                 <div>
                     <h1 className="text-3xl font-bold text-cyan-100 drop-shadow-[0_0_6px_#00fff7]">학생 관리</h1>
                 </div>
-                <StudentModal mode="add" onSave={handleAddStudent} />
+                <StudentModal
+                    mode="add"
+                    onSave={handleAddStudent}
+                    academies={Array.from(new Set(students.map(s => s.academy).filter(Boolean).concat(["코딩메이커", "광양 코딩"])))}
+                />
             </div>
 
             <Card className="bg-gradient-to-br from-cyan-900/20 to-blue-900/20 border-cyan-500/30">
@@ -704,6 +721,7 @@ export default function AdminStudentsPage() {
                 }}
                 onSave={handleSaveStudent}
                 teachers={teachers}
+                academies={Array.from(new Set(students.map(s => s.academy).filter(Boolean).concat(["코딩메이커", "광양 코딩"])))}
             />
 
             {/* 삭제 확인 다이얼로그 */}

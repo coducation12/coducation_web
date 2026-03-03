@@ -22,6 +22,7 @@ CREATE TABLE public.users (
   academy TEXT NOT NULL,
   assigned_teacher_id UUID REFERENCES users(id),
   status TEXT DEFAULT 'active',
+  can_manage_all_payments BOOLEAN DEFAULT false,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 ```
@@ -56,6 +57,7 @@ CREATE TABLE public.students (
   enrollment_start_date DATE NOT NULL,
   enrollment_end_date DATE,
   attendance_schedule JSONB,
+  memo TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 ```
@@ -322,6 +324,38 @@ CREATE TABLE public.consultations (
 - `response`: 답변 내용
 - `responded_by`: 답변자 ID
 - `responded_at`: 답변 시간
+
+---
+
+### 11. tuition_payments (학원비 수납 내역)
+
+학생별 월별 학원비 수납 정보를 관리하는 테이블입니다.
+
+```sql
+CREATE TABLE public.tuition_payments (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    student_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
+    payment_month DATE NOT NULL,
+    base_amount INTEGER NOT NULL DEFAULT 0,
+    total_paid_amount INTEGER DEFAULT 0,
+    payment_details JSONB DEFAULT '[]',
+    status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'partial', 'paid', 'excluded')),
+    recorded_by UUID REFERENCES public.users(id),
+    memo TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    UNIQUE(student_id, payment_month)
+);
+```
+
+#### 주요 필드
+- `student_id`: 학생 ID
+- `payment_month`: 수납 대상 월 (매월 1일 기준)
+- `base_amount`: 해당 월의 기준 학원비
+- `total_paid_amount`: 해당 월에 수납된 총액
+- `payment_details`: 상세 수납 항목 (배열)
+- `status`: 수납 상태 (미납, 부분납, 완납, 제외)
+- `recorded_by`: 기록자 (강사/관리자)
 
 ---
 

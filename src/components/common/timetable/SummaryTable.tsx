@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { getTeacherColorSet } from '@/lib/colors';
-import { getStudentRegistrationUnit } from '@/lib/timetable-utils';
+import { getStudentRegistrationUnit, getAcademyColor } from '@/lib/timetable-utils';
 import { TimetableStudent } from '@/hooks/use-timetable';
 
 interface SummaryTableProps {
@@ -40,11 +40,11 @@ export function SummaryTable({
                 <table className="w-full border-collapse bg-[#0a1837]/50 backdrop-blur-md">
                     <thead>
                         <tr className="bg-cyan-950/80">
-                            <th className="p-1.5 text-cyan-100 font-semibold border border-cyan-900/40 w-20 text-xs">강사</th>
-                            <th className="p-1.5 text-cyan-100 font-semibold border border-cyan-900/40 w-28 text-xs">분원</th>
-                            <th className="p-1.5 text-cyan-100 font-semibold border border-cyan-900/40 text-xs text-left px-4">학생 명단</th>
-                            <th className="p-1.5 text-cyan-100 font-semibold border border-cyan-900/40 w-16 text-xs">인원</th>
-                            <th className="p-1.5 text-cyan-100 font-semibold border border-cyan-900/40 w-16 text-xs">단위계</th>
+                            <th className="p-1.5 text-cyan-100 font-semibold border border-cyan-900/40 w-20 text-sm">강사</th>
+                            <th className="p-1.5 text-cyan-100 font-semibold border border-cyan-900/40 w-28 text-sm">분원</th>
+                            <th className="p-1.5 text-cyan-100 font-semibold border border-cyan-900/40 text-sm text-left px-4">학생 명단</th>
+                            <th className="p-1.5 text-cyan-100 font-semibold border border-cyan-900/40 w-16 text-sm">인원</th>
+                            <th className="p-1.5 text-cyan-100 font-semibold border border-cyan-900/40 w-16 text-sm">단위계</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -53,8 +53,17 @@ export function SummaryTable({
                                 .filter(s => s.assignedTeachers.includes(teacherId))
                                 .map(s => ({
                                     ...s,
-                                    unit: getStudentRegistrationUnit(currentYear, currentMonth, s.schedule, teacherId, s.teacherId, s.enrollmentDate, threshold)
-                                }));
+                                    unit: getStudentRegistrationUnit(currentYear, currentMonth, s.schedule, teacherId, s.teacherId, s.enrollmentDate)
+                                }))
+                                .sort((a, b) => {
+                                    // 1. 지정된 학원 순서 (코딩메이커 -> 광양 코딩)
+                                    const academyOrder: Record<string, number> = { '코딩메이커': 1, '광양 코딩': 2 };
+                                    const orderA = academyOrder[a.academy] || 99;
+                                    const orderB = academyOrder[b.academy] || 99;
+                                    if (orderA !== orderB) return orderA - orderB;
+                                    // 2. 이름순 정렬
+                                    return a.name.localeCompare(b.name);
+                                });
 
                             if (teacherStudentsWithUnit.length === 0) return null;
 
@@ -71,20 +80,20 @@ export function SummaryTable({
                                                 className={`w-3 h-3 rounded-full ${colorSet.bg} shadow-[0_0_8px_rgba(0,0,0,0.5)]`}
                                                 style={colorSet.style}
                                             ></div>
-                                            <span className="text-cyan-100 text-[13px] font-bold">{teacherData.name || teacherId}</span>
+                                            <span className="text-cyan-100 text-[14px] font-bold">{teacherData.name || teacherId}</span>
                                         </div>
                                     </td>
                                     <td className="p-2 px-3 text-center border border-cyan-900/40 text-cyan-300">
                                         <div className="flex flex-col gap-1 items-center">
                                             {academies.map(acc => (
-                                                <Badge key={acc} variant="outline" className="text-[11px] py-0.5 px-2 border-cyan-800/40 text-cyan-400 backdrop-blur-sm">
+                                                <Badge key={acc} variant="outline" className="text-[12px] py-0.5 px-2 border-cyan-800/40 text-cyan-400 backdrop-blur-sm">
                                                     {acc}
                                                 </Badge>
                                             ))}
                                         </div>
                                     </td>
-                                    <td className="p-4 px-4 border border-cyan-900/40">
-                                        <div className="space-y-4">
+                                    <td className="p-2 px-4 border border-cyan-900/40">
+                                        <div className="space-y-2">
                                             {/* 1.0단위 학생들 */}
                                             {teacherStudentsWithUnit.filter(s => s.unit === 1.0).length > 0 && (
                                                 <div className="flex flex-wrap gap-2 items-center">
@@ -94,19 +103,21 @@ export function SummaryTable({
                                                         const isNewStudent = enrollmentDate &&
                                                             enrollmentDate.getFullYear() === currentYear &&
                                                             (enrollmentDate.getMonth() + 1) === currentMonth;
+                                                        const academyColor = getAcademyColor(student.academy);
 
                                                         return (
                                                             <div
                                                                 key={student.id}
                                                                 onMouseEnter={() => onHover(student.id)}
                                                                 onMouseLeave={() => onHover(null)}
-                                                                className={`px-2 py-0.5 rounded text-[11px] font-medium transition-all duration-200 cursor-pointer border
+                                                                className={`px-2 py-0.5 rounded text-[12px] font-medium transition-all duration-200 cursor-pointer border
                                   ${isNewStudent
                                                                         ? 'text-cyan-100 bg-amber-500/20 border-amber-500/40 shadow-[0_0_8px_rgba(245,158,11,0.2)]'
                                                                         : 'text-cyan-200 bg-cyan-900/40 border-cyan-800/50 hover:bg-cyan-800/60'}
                                   ${isHovered ? 'border-cyan-200 ring-2 ring-cyan-400 z-10 scale-105' : ''}
                                 `}
-                                                                title={isNewStudent ? `신규 등록 학생: ${student.enrollmentDate}` : undefined}
+                                                                style={{ borderBottom: `2.5px solid ${academyColor}` }}
+                                                                title={isNewStudent ? `신규 등록 학생: ${student.enrollmentDate} (${student.academy})` : `학원: ${student.academy}`}
                                                             >
                                                                 {student.name}
                                                             </div>
@@ -117,26 +128,28 @@ export function SummaryTable({
 
                                             {/* 1.0단위가 아닌 학생들 */}
                                             {teacherStudentsWithUnit.filter(s => s.unit !== 1.0).length > 0 && (
-                                                <div className="flex flex-wrap gap-2 items-center pt-3 border-t border-cyan-500/10">
+                                                <div className="flex flex-wrap gap-2 items-center pt-1.5 border-t border-cyan-500/10">
                                                     {teacherStudentsWithUnit.filter(s => s.unit !== 1.0).map((student) => {
                                                         const isHovered = hoveredStudentId === student.id;
                                                         const enrollmentDate = student.enrollmentDate ? new Date(student.enrollmentDate) : null;
                                                         const isNewStudent = enrollmentDate &&
                                                             enrollmentDate.getFullYear() === currentYear &&
                                                             (enrollmentDate.getMonth() + 1) === currentMonth;
+                                                        const academyColor = getAcademyColor(student.academy);
 
                                                         return (
                                                             <div
                                                                 key={student.id}
                                                                 onMouseEnter={() => onHover(student.id)}
                                                                 onMouseLeave={() => onHover(null)}
-                                                                className={`px-2 py-0.5 rounded text-[11px] font-medium transition-all duration-200 cursor-pointer border
+                                                                className={`px-2 py-0.5 rounded text-[12px] font-medium transition-all duration-200 cursor-pointer border
                                   ${isNewStudent
                                                                         ? 'text-cyan-100 bg-amber-500/20 border-amber-500/40 shadow-[0_0_8px_rgba(245,158,11,0.2)]'
                                                                         : 'text-cyan-200 bg-cyan-900/40 border-cyan-800/50 hover:bg-cyan-800/60'}
                                   ${isHovered ? 'border-cyan-200 ring-2 ring-cyan-400 z-10 scale-105' : ''}
                                 `}
-                                                                title={isNewStudent ? `신규 등록 학생: ${student.enrollmentDate}` : undefined}
+                                                                style={{ borderBottom: `2.5px solid ${academyColor}` }}
+                                                                title={isNewStudent ? `신규 등록 학생: ${student.enrollmentDate} (${student.academy})` : `학원: ${student.academy}`}
                                                             >
                                                                 {student.name}<span className="ml-1 text-[10px] font-black text-cyan-400 opacity-80">({student.unit})</span>
                                                             </div>
@@ -146,10 +159,10 @@ export function SummaryTable({
                                             )}
                                         </div>
                                     </td>
-                                    <td className="p-2 text-center border border-cyan-900/40 text-cyan-100 font-bold text-xs">
+                                    <td className="p-2 text-center border border-cyan-900/40 text-cyan-100 font-bold text-sm">
                                         {totalInwon}
                                     </td>
-                                    <td className="p-2 text-center border border-cyan-900/40 text-cyan-300 font-black text-xs">
+                                    <td className="p-2 text-center border border-cyan-900/40 text-cyan-300 font-black text-sm">
                                         {totalUnitCount.toFixed(1)}
                                     </td>
                                 </tr>

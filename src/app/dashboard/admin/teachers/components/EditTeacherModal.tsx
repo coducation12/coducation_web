@@ -86,8 +86,8 @@ export default function EditTeacherModal({ teacher, isOpen, onClose, onUpdate }:
                 bio: "",
                 certs: "",
                 career: "",
-                image: "",
-                subject: teacher.subject || "", // 빈 값으로 시작
+                image: teacher.image || "",
+                subject: teacher.subject || "",
                 position: teacher.position || "",
                 label_color: teacher.labelColor || "#00fff7"
             });
@@ -108,7 +108,7 @@ export default function EditTeacherModal({ teacher, isOpen, onClose, onUpdate }:
                     bio: details.bio || "",
                     certs: Array.isArray(details.certs) ? JSON.stringify(details.certs, null, 2) : (details.certs || ""),
                     career: Array.isArray(details.career) ? JSON.stringify(details.career, null, 2) : (details.career || ""),
-                    image: details.image || "",
+                    image: details.image || prev.image || "",
                     subject: details.subject || prev.subject || "",
                     position: details.position || "",
                     label_color: details.label_color || prev.label_color || "#00fff7"
@@ -119,11 +119,23 @@ export default function EditTeacherModal({ teacher, isOpen, onClose, onUpdate }:
         }
     };
 
+    // 휴대폰 번호 자동 하이픈 생성 함수
+    const formatPhoneNumber = (value: string) => {
+        const number = value.replace(/[^\d]/g, "");
+        if (number.length <= 3) return number;
+        if (number.length <= 7) return `${number.slice(0, 3)}-${number.slice(3)}`;
+        return `${number.slice(0, 3)}-${number.slice(3, 7)}-${number.slice(7, 11)}`;
+    };
+
     const handleInputChange = (field: keyof EditTeacherFormData, value: string) => {
         console.log('handleInputChange 호출:', { field, value });
+        let finalValue = value;
+        if (field === "phone") {
+            finalValue = formatPhoneNumber(value);
+        }
         setFormData(prev => ({
             ...prev,
-            [field]: value
+            [field]: finalValue
         }));
     };
 
@@ -267,72 +279,76 @@ export default function EditTeacherModal({ teacher, isOpen, onClose, onUpdate }:
                             </div>
                         </div>
 
-                        <div className="space-y-2">
-                            <Label htmlFor="email" className="text-cyan-200">이메일 (로그인 ID) *</Label>
-                            <Input
-                                id="email"
-                                type="email"
-                                value={formData.email}
-                                onChange={(e) => handleInputChange("email", e.target.value)}
-                                placeholder="example@email.com"
-                                className="bg-background/40 border-cyan-400/40 text-cyan-100 placeholder:text-cyan-400/60 focus:border-cyan-400/80"
-                            />
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="email" className="text-cyan-200">이메일 (로그인 ID) *</Label>
+                                <Input
+                                    id="email"
+                                    type="email"
+                                    value={formData.email}
+                                    onChange={(e) => handleInputChange("email", e.target.value)}
+                                    placeholder="example@email.com"
+                                    className="bg-background/40 border-cyan-400/40 text-cyan-100 placeholder:text-cyan-400/60 focus:border-cyan-400/80"
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="password" className="text-cyan-200">비밀번호 <span className="text-cyan-400 text-[10px]">(변경 시 입력)</span></Label>
+                                <Input
+                                    id="password"
+                                    type="password"
+                                    value={formData.password}
+                                    onChange={(e) => handleInputChange("password", e.target.value)}
+                                    placeholder="새 비밀번호 (6자 이상)"
+                                    className="bg-background/40 border-cyan-400/40 text-cyan-100 placeholder:text-cyan-400/60 focus:border-cyan-400/80"
+                                />
+                            </div>
                         </div>
 
-                        <div className="space-y-2">
-                            <Label htmlFor="name" className="text-cyan-200">이름 *</Label>
-                            <Input
-                                id="name"
-                                value={formData.name}
-                                onChange={(e) => handleInputChange("name", e.target.value)}
-                                placeholder="강사 이름을 입력하세요"
-                                className="bg-background/40 border-cyan-400/40 text-cyan-100 placeholder:text-cyan-400/60 focus:border-cyan-400/80"
-                            />
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="name" className="text-cyan-200">이름 *</Label>
+                                <Input
+                                    id="name"
+                                    value={formData.name}
+                                    onChange={(e) => handleInputChange("name", e.target.value)}
+                                    placeholder="강사 이름"
+                                    className="bg-background/40 border-cyan-400/40 text-cyan-100 placeholder:text-cyan-400/60 focus:border-cyan-400/80"
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="phone" className="text-cyan-200">연락처 *</Label>
+                                <Input
+                                    id="phone"
+                                    value={formData.phone}
+                                    onChange={(e) => handleInputChange("phone", e.target.value)}
+                                    maxLength={13}
+                                    placeholder="010-1234-5678"
+                                    className="bg-background/40 border-cyan-400/40 text-cyan-100 placeholder:text-cyan-400/60 focus:border-cyan-400/80"
+                                />
+                            </div>
                         </div>
 
-                        <div className="space-y-2">
-                            <Label htmlFor="phone" className="text-cyan-200">연락처 *</Label>
-                            <Input
-                                id="phone"
-                                value={formData.phone}
-                                onChange={(e) => handleInputChange("phone", e.target.value)}
-                                placeholder="예: 010-1234-5678"
-                                className="bg-background/40 border-cyan-400/40 text-cyan-100 placeholder:text-cyan-400/60 focus:border-cyan-400/80"
-                            />
-                        </div>
-
-                        <div className="space-y-2">
-                            <Label htmlFor="password" className="text-cyan-200">비밀번호 <span className="text-cyan-400 text-xs">(변경할 경우에만 입력)</span></Label>
-                            <Input
-                                id="password"
-                                type="password"
-                                value={formData.password}
-                                onChange={(e) => handleInputChange("password", e.target.value)}
-                                placeholder="새 비밀번호 (최소 6자)"
-                                className="bg-background/40 border-cyan-400/40 text-cyan-100 placeholder:text-cyan-400/60 focus:border-cyan-400/80"
-                            />
-                        </div>
-
-                        <div className="space-y-2">
-                            <Label htmlFor="subject" className="text-cyan-200">담당 과목 *</Label>
-                            <Input
-                                id="subject"
-                                value={formData.subject}
-                                onChange={(e) => handleInputChange("subject", e.target.value)}
-                                placeholder="담당 과목을 입력하세요 (예: React, Python, 웹 개발)"
-                                className="bg-background/40 border-cyan-400/40 text-cyan-100 placeholder:text-cyan-400/60 focus:border-cyan-400/80"
-                            />
-                        </div>
-
-                        <div className="space-y-2">
-                            <Label htmlFor="position" className="text-cyan-200">직위 / 직책</Label>
-                            <Input
-                                id="position"
-                                value={formData.position}
-                                onChange={(e) => handleInputChange("position", e.target.value)}
-                                placeholder="예: 선임강사, 실장, 대표"
-                                className="bg-background/40 border-cyan-400/40 text-cyan-100 placeholder:text-cyan-400/60 focus:border-cyan-400/80"
-                            />
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="subject" className="text-cyan-200">담당 과목 *</Label>
+                                <Input
+                                    id="subject"
+                                    value={formData.subject}
+                                    onChange={(e) => handleInputChange("subject", e.target.value)}
+                                    placeholder="예: React, Python"
+                                    className="bg-background/40 border-cyan-400/40 text-cyan-100 placeholder:text-cyan-400/60 focus:border-cyan-400/80"
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="position" className="text-cyan-200">직위 / 직책</Label>
+                                <Input
+                                    id="position"
+                                    value={formData.position}
+                                    onChange={(e) => handleInputChange("position", e.target.value)}
+                                    placeholder="예: 전임강사, 실장"
+                                    className="bg-background/40 border-cyan-400/40 text-cyan-100 placeholder:text-cyan-400/60 focus:border-cyan-400/80"
+                                />
+                            </div>
                         </div>
 
                     </div>

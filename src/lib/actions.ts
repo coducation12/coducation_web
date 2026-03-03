@@ -265,7 +265,8 @@ export async function addStudent(formData: FormData, isSignup: boolean = false) 
       assignedTeacherId: formData.get('assignedTeacherId') as string,
       sub_subject: formData.get('sub_subject') as string,
       enrollment_date: formData.get('enrollment_date') as string,
-      memo: formData.get('memo') as string
+      memo: formData.get('memo') as string,
+      tuition_fee: formData.get('tuition_fee') ? parseInt(formData.get('tuition_fee')?.toString().replace(/,/g, '') || '0') : 0
     };
 
     // 회원가입인 경우 새로운 시스템 사용
@@ -306,7 +307,7 @@ export async function addStudent(formData: FormData, isSignup: boolean = false) 
     const parentUsername = `${studentData.studentId}p`;
     const parentPasswordHash = await bcrypt.hash(studentData.password, 10);
 
-    const { data: parentData, error: parentError } = await supabase
+    const { data: parentData, error: parentError } = await supabaseAdmin
       .from('users')
       .insert({
         username: parentUsername,
@@ -328,7 +329,7 @@ export async function addStudent(formData: FormData, isSignup: boolean = false) 
     // 2. users 테이블에 학생 정보 등록
     const studentPasswordHash = await bcrypt.hash(studentData.password, 10);
 
-    const { data: userData, error: userError } = await supabase
+    const { data: userData, error: userError } = await supabaseAdmin
       .from('users')
       .insert({
         username: studentData.studentId,
@@ -409,18 +410,19 @@ export async function addStudent(formData: FormData, isSignup: boolean = false) 
       main_subject: studentData.subject || null,
       sub_subject: studentData.sub_subject || null,
       memo: studentData.memo || null,
+      tuition_fee: studentData.tuition_fee || 0,
       enrollment_start_date: studentData.enrollment_date || new Date().toISOString().split('T')[0],
       created_at: new Date().toISOString()
     };
 
-    const { error: studentError } = await supabase
+    const { error: studentError } = await supabaseAdmin
       .from('students')
       .insert(studentInsertData);
 
     if (studentError) {
       // 롤백: users 테이블에서 학생과 학부모 계정 삭제
-      await supabase.from('users').delete().eq('id', userData.id);
-      await supabase.from('users').delete().eq('id', parentData.id);
+      await supabaseAdmin.from('users').delete().eq('id', userData.id);
+      await supabaseAdmin.from('users').delete().eq('id', parentData.id);
       return { success: false, error: studentError.message };
     }
 
@@ -461,6 +463,8 @@ export async function updateStudent(formData: FormData) {
       sub_subject: formData.get('sub_subject') as string,
       enrollment_date: formData.get('enrollment_date') as string,
       memo: formData.get('memo') as string,
+      academy: formData.get('academy') as string,
+      tuition_fee: formData.get('tuition_fee') ? parseInt(formData.get('tuition_fee')?.toString().replace(/,/g, '') || '0') : 0,
       classSchedules: formData.get('classSchedules') ? JSON.parse(formData.get('classSchedules') as string) : []
     };
 
@@ -580,6 +584,7 @@ export async function updateStudent(formData: FormData) {
       name: studentData.name,
       phone: studentData.phone,
       birth_year: birthYearInt,
+      academy: studentData.academy || null,
       status: studentData.status === '휴강' ? 'suspended' :
         studentData.status === '종료' ? 'inactive' : 'active'
     };
@@ -613,6 +618,7 @@ export async function updateStudent(formData: FormData) {
       main_subject: studentData.subject || null,
       sub_subject: studentData.sub_subject || null,
       memo: studentData.memo || null,
+      tuition_fee: studentData.tuition_fee || 0,
       enrollment_start_date: studentData.enrollment_date || null
     };
 
@@ -1447,7 +1453,7 @@ export async function addTeacher(formData: FormData) {
     const passwordHash = await bcrypt.hash(teacherData.password, 10);
 
     // 3. users 테이블에 강사 정보 등록 (이메일을 username으로 사용)
-    const { data: userData, error: userError } = await supabase
+    const { data: userData, error: userError } = await supabaseAdmin
       .from('users')
       .insert({
         username: teacherData.email, // 이메일을 username으로 사용
@@ -1468,7 +1474,7 @@ export async function addTeacher(formData: FormData) {
     }
 
     // 4. teachers 테이블에 강사 상세 정보 등록
-    const { error: teacherError } = await supabase
+    const { error: teacherError } = await supabaseAdmin
       .from('teachers')
       .insert({
         user_id: userData.id,
@@ -1483,7 +1489,7 @@ export async function addTeacher(formData: FormData) {
 
     if (teacherError) {
       // users 테이블 롤백
-      await supabase.from('users').delete().eq('id', userData.id);
+      await supabaseAdmin.from('users').delete().eq('id', userData.id);
       return { success: false, error: `강사 상세 정보 등록 실패: ${teacherError.message}` };
     }
 
@@ -1702,6 +1708,33 @@ export async function getTeacherDetails(teacherId: string) {
   } catch (error) {
     console.error('강사 상세 정보 조회 중 오류:', error);
     return { success: false, error: '강사 상세 정보 조회 중 오류가 발생했습니다.' };
+  }
+}
+
+// 강사 수납 관리 권한 토글 서버 액션
+export async function toggleTeacherTuitionPermission(teacherId: string, canManage: boolean) {
+  try {
+    const cookieStore = await cookies();
+    const currentUserRole = cookieStore.get('user_role')?.value;
+
+    if (currentUserRole !== 'admin') {
+      return { success: false, error: '관리자만 권한을 변경할 수 있습니다.' };
+    }
+
+    const { error } = await supabaseAdmin
+      .from('users')
+      .update({ can_manage_all_payments: canManage })
+      .eq('id', teacherId);
+
+    if (error) {
+      console.error('수납 관리 권한 변경 실패:', error);
+      return { success: false, error: '권한 변경에 실패했습니다.' };
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error('수납 관리 권한 변경 오류:', error);
+    return { success: false, error: '권한 변경 중 오류가 발생했습니다.' };
   }
 }
 

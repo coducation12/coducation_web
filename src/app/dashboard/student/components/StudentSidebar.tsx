@@ -2,6 +2,7 @@
 import React, { useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { LayoutDashboard, BookOpen, Keyboard, Users, Menu, LogOut, User } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
@@ -43,7 +44,13 @@ export function StudentSidebar({ user }: StudentSidebarProps) {
   const SidebarContent = (
     <>
       <nav className="flex flex-col gap-2 p-4">
-        <div className="text-xl font-bold text-cyan-100 mb-6 drop-shadow-[0_0_6px_#00fff7] text-center">Coducation</div>
+        <div className="relative h-12 w-full mb-6 mx-auto">
+          <img
+            src="/logo.png"
+            alt="Coducation Logo"
+            className="h-full w-full object-contain"
+          />
+        </div>
         {navItems.map((item) => (
           <Link
             key={item.href}
@@ -66,7 +73,7 @@ export function StudentSidebar({ user }: StudentSidebarProps) {
           </Avatar>
           <span>{user.name} ({user.role})</span>
         </Link>
-        <button 
+        <button
           onClick={handleLogout}
           className="flex items-center gap-2 text-sm text-red-400 hover:underline"
         >
@@ -94,7 +101,13 @@ export function StudentSidebar({ user }: StudentSidebarProps) {
             {SidebarContent}
           </SheetContent>
         </Sheet>
-        <span className="text-xl font-bold text-cyan-100 ml-2 drop-shadow-[0_0_6px_#00fff7]">Coducation</span>
+        <div className="relative h-6 w-32 ml-2">
+          <img
+            src="/logo.png"
+            alt="Coducation Logo"
+            className="h-full w-full object-contain"
+          />
+        </div>
       </div>
       {/* 데스크톱: 기존 사이드바 */}
       <aside className="hidden lg:flex w-56 min-w-[180px] h-full bg-gradient-to-b from-[#0a1837] to-[#0a1a2f] border-r border-cyan-900/40 flex-col justify-between">

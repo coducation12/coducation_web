@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, Trash2, User, Users, Calendar, BookOpen, MessageSquare } from "lucide-react";
+import { Plus, Trash2, User, Users, Calendar, BookOpen, MessageSquare, CreditCard } from "lucide-react";
 import { getTeacherColorSet } from "@/lib/colors";
 import { deleteStudent } from "@/lib/actions";
 
@@ -31,6 +31,8 @@ interface Student {
     status: string;
     enrollment_date?: string;
     memo?: string;
+    academy: string;
+    tuition_fee?: number; // 추가됨
     classSchedules?: ClassSchedule[];
     assignedTeachers?: Array<{ id: string, name: string }>; // 객체 배열로 복구
 }
@@ -43,6 +45,7 @@ interface StudentModalProps {
     onSave: (formData: any) => Promise<void>;
     triggerText?: string;
     teachers?: { id: string, name: string, label_color?: string }[]; // 강사 목록 추가
+    academies?: string[]; // 학원 목록 추가
 }
 
 const subjects = [
@@ -87,7 +90,14 @@ const formatTime = (value: string): string => {
     return numbers;
 };
 
-export default function StudentModal({ mode, student, isOpen, onClose, onSave, triggerText, teachers = [] }: StudentModalProps) {
+// 금액 포맷팅 함수 (3자리 쉼표)
+const formatAmount = (value: string | number): string => {
+    const num = String(value).replace(/[^0-9]/g, '');
+    if (!num) return "";
+    return Number(num).toLocaleString();
+};
+
+export default function StudentModal({ mode, student, isOpen, onClose, onSave, triggerText, teachers = [], academies = ["코딩메이커", "광양 코딩"] }: StudentModalProps) {
     const [internalOpen, setInternalOpen] = useState(false);
     const [showConfirmDialog, setShowConfirmDialog] = useState(false);
     const [originalData, setOriginalData] = useState<any>(null);
@@ -104,6 +114,8 @@ export default function StudentModal({ mode, student, isOpen, onClose, onSave, t
         enrollment_date: new Date().toISOString().split('T')[0],
         status: "수강",
         memo: "",
+        academy: academies[0] || "",
+        tuition_fee: 0, // 숫자로 저장
         classSchedules: [{ day: "", startTime: "", endTime: "", teacherId: "" }] as ClassSchedule[]
     });
 
@@ -126,6 +138,8 @@ export default function StudentModal({ mode, student, isOpen, onClose, onSave, t
                 enrollment_date: student.enrollment_date || new Date().toISOString().split('T')[0],
                 status: student.status || "수강",
                 memo: student.memo || "",
+                academy: student.academy || academies[0] || "",
+                tuition_fee: student.tuition_fee || 0, // 숫자로 설정
                 classSchedules: student.classSchedules && student.classSchedules.length > 0
                     ? student.classSchedules.map(s => ({
                         ...s,
@@ -149,6 +163,8 @@ export default function StudentModal({ mode, student, isOpen, onClose, onSave, t
                 enrollment_date: new Date().toISOString().split('T')[0],
                 status: "수강",
                 memo: "",
+                academy: academies[0] || "",
+                tuition_fee: 0, // 0으로 초기화
                 classSchedules: [{ day: "", startTime: "", endTime: "", teacherId: teachers.length === 1 ? teachers[0].id : "" }]
             });
         }
@@ -173,6 +189,12 @@ export default function StudentModal({ mode, student, isOpen, onClose, onSave, t
 
     const handlePhoneChange = (field: 'phone' | 'parentPhone', value: string) => {
         setFormData(prev => ({ ...prev, [field]: formatPhoneNumber(value) }));
+    };
+
+    const handleAmountChange = (field: string, value: string) => {
+        // 숫자 부분만 추출하여 숫자로 저장
+        const num = Number(value.replace(/[^0-9]/g, '')) || 0;
+        setFormData(prev => ({ ...prev, [field]: num }));
     };
 
     const handleScheduleChange = (index: number, field: keyof ClassSchedule, value: string) => {
@@ -236,6 +258,8 @@ export default function StudentModal({ mode, student, isOpen, onClose, onSave, t
             status: "상태",
             enrollment_date: "수강 시작일",
             memo: "메모",
+            academy: "소속 학원",
+            tuition_fee: "기준 학원비",
             password: "비밀번호"
         };
 
@@ -350,8 +374,8 @@ export default function StudentModal({ mode, student, isOpen, onClose, onSave, t
                         </div>
                     </div>
 
-                    {/* 2행: 아이디, 비밀번호 */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border-t border-cyan-500/10 pt-4">
+                    {/* 2행: 아이디, 비밀번호, 학원 */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 border-t border-cyan-500/10 pt-4">
                         <div className="space-y-2">
                             <Label className="text-cyan-300 flex items-center gap-2 text-sm">아이디 (ID)</Label>
                             <Input
@@ -374,10 +398,23 @@ export default function StudentModal({ mode, student, isOpen, onClose, onSave, t
                                 placeholder={mode === "add" ? "비밀번호 입력" : "변경 시에만 입력"}
                             />
                         </div>
+                        <div className="space-y-2">
+                            <Label className="text-cyan-300 flex items-center gap-2 text-sm">소속 학원</Label>
+                            <Select value={formData.academy} onValueChange={(v) => handleInputChange("academy", v)}>
+                                <SelectTrigger className="bg-cyan-950/30 border-cyan-500/30">
+                                    <SelectValue placeholder="학원 선택" />
+                                </SelectTrigger>
+                                <SelectContent className="bg-[#0f172a] border-cyan-500/30 text-cyan-50">
+                                    {academies.map(a => (
+                                        <SelectItem key={a} value={a}>{a}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
                     </div>
 
-                    {/* 3행: 학생 연락처, 학부모 연락처 */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border-t border-cyan-500/10 pt-4">
+                    {/* 3행: 학생 연락처, 학부모 연락처, 학원비 */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 border-t border-cyan-500/10 pt-4">
                         <div className="space-y-2">
                             <Label className="text-cyan-300 flex items-center gap-2 text-sm">
                                 <User className="w-4 h-4" /> 학생 연락처
@@ -398,6 +435,18 @@ export default function StudentModal({ mode, student, isOpen, onClose, onSave, t
                                 onChange={(e) => handlePhoneChange("parentPhone", e.target.value)}
                                 className="bg-cyan-950/30 border-cyan-500/30 focus:border-cyan-400"
                                 placeholder="부모님 연락처"
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label className="text-cyan-300 flex items-center gap-2 text-sm">
+                                <CreditCard className="w-4 h-4 text-cyan-400" /> 학원비
+                            </Label>
+                            <Input
+                                type="text"
+                                value={formData.tuition_fee ? formData.tuition_fee.toLocaleString() : ""}
+                                onChange={(e) => handleAmountChange("tuition_fee", e.target.value)}
+                                className="bg-cyan-950/30 border-cyan-500/30 focus:border-cyan-400 font-bold"
+                                placeholder="0"
                             />
                         </div>
                     </div>

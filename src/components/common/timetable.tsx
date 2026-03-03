@@ -7,6 +7,7 @@ import { useTimetable } from '@/hooks/use-timetable';
 import { SummaryTable } from './timetable/SummaryTable';
 import { StudentTag } from './timetable/StudentTag';
 import { days, timeSlots, getStudentsForTimeSlot } from './timetable/utils';
+import { getAcademyColor } from '@/lib/timetable-utils';
 
 interface TimetableProps {
   title?: string;
@@ -23,6 +24,8 @@ export function Timetable({ title = "학원 시간표", className = "" }: Timeta
     unitThreshold
   } = useTimetable();
 
+  const [hoveredAcademy, setHoveredAcademy] = React.useState<string | null>(null);
+
   if (isLoading) {
     return (
       <div className={`p-6 pt-20 lg:pt-6 flex items-center justify-center h-96 ${className}`}>
@@ -34,13 +37,36 @@ export function Timetable({ title = "학원 시간표", className = "" }: Timeta
     );
   }
 
+  // 고유 학원 목록 추출
+  const academies = Array.from(new Set(students.map(s => s.academy))).filter(Boolean);
+
   return (
     <div className={`p-6 pt-20 lg:pt-6 space-y-8 animate-in fade-in duration-700 ${className}`}>
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-black text-cyan-100 drop-shadow-[0_0_12px_rgba(0,255,247,0.5)] italic tracking-tighter">
+        <div className="flex flex-col md:flex-row md:items-center gap-6 w-full">
+          <h1 className="text-3xl font-black text-cyan-100 drop-shadow-[0_0_12px_rgba(0,255,247,0.5)] italic tracking-tighter shrink-0">
             {title}
           </h1>
+
+          {/* 학원 범례 (Legend) */}
+          <div className="flex flex-wrap items-center gap-3 bg-cyan-950/30 px-4 py-2 rounded-full border border-cyan-800/30 backdrop-blur-sm self-start md:self-auto">
+            {academies.map((academy) => (
+              <div
+                key={academy}
+                onMouseEnter={() => setHoveredAcademy(academy)}
+                onMouseLeave={() => setHoveredAcademy(null)}
+                className={`flex items-center gap-2 px-2 py-0.5 rounded-md cursor-help transition-all duration-300
+                  ${hoveredAcademy === academy ? 'bg-cyan-800/40 scale-105' : 'opacity-80 hover:opacity-100'}
+                `}
+              >
+                <div
+                  className="w-2.5 h-2.5 rounded-full shadow-[0_0_8px_rgba(0,0,0,0.5)]"
+                  style={{ backgroundColor: getAcademyColor(academy) }}
+                ></div>
+                <span className="text-sm font-bold text-cyan-100">{academy}</span>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -50,16 +76,16 @@ export function Timetable({ title = "학원 시간표", className = "" }: Timeta
             <table className="w-full border-collapse">
               <thead>
                 <tr className="bg-cyan-950/60 transition-colors">
-                  <th className="w-24 p-4 text-cyan-100 font-bold border border-cyan-900/30 text-xs uppercase tracking-widest">TIME</th>
+                  <th className="w-24 p-4 text-cyan-100 font-bold border border-cyan-900/30 text-sm uppercase tracking-widest">TIME</th>
                   {days.map((day) => (
-                    <th key={day} className="w-32 p-4 text-cyan-100 font-bold border border-cyan-900/30 text-xs">{day}</th>
+                    <th key={day} className="w-32 p-4 text-cyan-100 font-bold border border-cyan-900/30 text-sm">{day}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
                 {timeSlots.map((timeSlot) => (
                   <tr key={timeSlot} className="group hover:bg-cyan-500/5 transition-all duration-300">
-                    <td className="p-4 text-cyan-200 font-black border border-cyan-900/30 text-center text-[11px] bg-cyan-950/40">
+                    <td className="p-4 text-cyan-200 font-black border border-cyan-900/30 text-center text-[13px] bg-cyan-950/40">
                       {timeSlot}
                     </td>
                     {days.map((day) => {
@@ -74,6 +100,7 @@ export function Timetable({ title = "학원 시간표", className = "" }: Timeta
                                   student={student}
                                   teacherColor={teacherNames[student.teacherId]?.color || '#00fff7'}
                                   isHovered={hoveredStudentId === student.id}
+                                  hoveredAcademy={hoveredAcademy}
                                   onMouseEnter={() => setHoveredStudentId(student.id)}
                                   onMouseLeave={() => setHoveredStudentId(null)}
                                 />

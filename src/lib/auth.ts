@@ -9,7 +9,7 @@ export async function getAuthenticatedUser(): Promise<User | null> {
     const userId = cookieStore.get('user_id')?.value;
     const userRole = cookieStore.get('user_role')?.value;
     const authToken = cookieStore.get('auth_token')?.value;
-    
+
     if (!userId || !userRole) {
       return null;
     }
@@ -19,14 +19,24 @@ export async function getAuthenticatedUser(): Promise<User | null> {
       try {
         // Auth 토큰으로 사용자 검증
         const { data: { user: authUser }, error: authError } = await supabase.auth.getUser(authToken);
-        
+
         if (authError || !authUser) {
+          // 토큰이 만료되었거나 유효하지 않은 경우
+          if (authError?.message?.includes('expired') || authError?.status === 401) {
+            console.warn('인증 세션이 만료되었습니다.');
+            return null; // 만료 시 자동으로 null 반환하여 리다이렉트 유도
+          }
           console.error('Auth 토큰 검증 실패:', authError);
           return null;
         }
-      } catch (authError) {
-        console.error('Auth 검증 중 오류:', authError);
-        // Auth 검증 실패해도 DB에서 사용자 정보는 조회
+      } catch (err: any) {
+        // AuthApiError 등 예외 발생 시 (특히 토큰 만료)
+        if (err.message?.includes('expired')) {
+          console.warn('세션 만료 (Exception caught)');
+        } else {
+          console.error('Auth 검증 중 예외 발생:', err);
+        }
+        return null;
       }
     }
 
@@ -38,7 +48,7 @@ export async function getAuthenticatedUser(): Promise<User | null> {
       .single();
 
     if (error || !data) return null;
-    
+
     return data as User;
   } catch (error) {
     console.error('Authentication error:', error);
@@ -51,7 +61,7 @@ export async function logout() {
   const cookieStore = await cookies();
   const userRole = cookieStore.get('user_role')?.value;
   const authToken = cookieStore.get('auth_token')?.value;
-  
+
   // 강사/관리자인 경우 Auth 로그아웃
   if ((userRole === 'teacher' || userRole === 'admin') && authToken) {
     try {
@@ -60,7 +70,7 @@ export async function logout() {
       console.error('Auth 로그아웃 실패:', error);
     }
   }
-  
+
   // 쿠키 삭제
   cookieStore.delete('user_id');
   cookieStore.delete('user_role');

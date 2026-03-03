@@ -26,7 +26,7 @@ const iconSizes = {
 export function UserAvatar({ src, name, role, size = 'md', className = '' }: UserAvatarProps) {
   // 관리자인 경우 로고 이미지 사용
   const avatarSrc = role === 'admin' ? '/logo.png' : src;
-  
+
   return (
     <Avatar className={`${sizeClasses[size]} ${className}`}>
       <AvatarImage src={avatarSrc} alt={`${name}의 프로필`} />

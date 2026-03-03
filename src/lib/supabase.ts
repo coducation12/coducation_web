@@ -54,6 +54,7 @@ export interface Database {
           academy: string;
           assigned_teacher_id?: string;
           status: string;
+          can_manage_all_payments?: boolean;
           created_at: string;
         };
         Insert: {
@@ -66,6 +67,7 @@ export interface Database {
           academy: string;
           assigned_teacher_id?: string;
           status?: string;
+          can_manage_all_payments?: boolean;
           created_at?: string;
         };
         Update: {
@@ -78,6 +80,7 @@ export interface Database {
           academy?: string;
           assigned_teacher_id?: string;
           status?: string;
+          can_manage_all_payments?: boolean;
           created_at?: string;
         };
       };
@@ -277,6 +280,47 @@ export interface Database {
           content?: string;
           is_deleted?: boolean;
           created_at?: string;
+        };
+      };
+      tuition_payments: {
+        Row: {
+          id: string;
+          student_id: string;
+          payment_month: string;
+          base_amount: number;
+          total_paid_amount: number;
+          payment_details: any;
+          status: 'pending' | 'partial' | 'paid' | 'excluded';
+          recorded_by?: string;
+          memo?: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          student_id: string;
+          payment_month: string;
+          base_amount: number;
+          total_paid_amount?: number;
+          payment_details?: any;
+          status?: 'pending' | 'partial' | 'paid' | 'excluded';
+          recorded_by?: string;
+          memo?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          student_id?: string;
+          payment_month?: string;
+          base_amount?: number;
+          total_paid_amount?: number;
+          payment_details?: any;
+          status?: 'pending' | 'partial' | 'paid' | 'excluded';
+          recorded_by?: string;
+          memo?: string;
+          created_at?: string;
+          updated_at?: string;
         };
       };
     };

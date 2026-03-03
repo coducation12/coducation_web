@@ -32,6 +32,7 @@ interface Student {
     sub_subject?: string;
     enrollment_date?: string;
     memo?: string;
+    tuition_fee?: number;
     classSchedules?: ClassSchedule[];
     assignedTeachers?: Array<{ id: string, name: string }>;
     type?: string;
@@ -148,6 +149,7 @@ export default function TeacherStudentsPage() {
                     main_subject,
                     sub_subject,
                     memo,
+                    tuition_fee,
                     users!students_user_id_fkey ( 
                         id, 
                         name, 
@@ -206,6 +208,7 @@ export default function TeacherStudentsPage() {
                     sub_subject: item.sub_subject || '',
                     enrollment_date: item.enrollment_start_date || '',
                     memo: item.memo || '',
+                    tuition_fee: item.tuition_fee || 0,
                     assignedTeachers: assignedTeachers,
                     classSchedules: item.attendance_schedule ? Object.entries(item.attendance_schedule)
                         .map(([day, schedule]: [string, any]) => {
@@ -289,6 +292,7 @@ export default function TeacherStudentsPage() {
             formData.append('enrollment_date', studentData.enrollment_date || '');
             formData.append('memo', studentData.memo || '');
             formData.append('classSchedules', JSON.stringify(studentData.classSchedules));
+            formData.append('tuition_fee', studentData.tuition_fee?.toString() || '0');
 
             const result = await addStudent(formData);
 
@@ -338,6 +342,7 @@ export default function TeacherStudentsPage() {
             formData.append('enrollment_date', studentData.enrollment_date || '');
             formData.append('memo', studentData.memo || '');
             formData.append('classSchedules', JSON.stringify(studentData.classSchedules));
+            formData.append('tuition_fee', studentData.tuition_fee?.toString() || '0');
 
             const result = await updateStudent(formData);
 

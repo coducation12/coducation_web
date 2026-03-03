@@ -2,6 +2,7 @@
 import React, { useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { LayoutDashboard, BookOpen, Users, Menu, LogOut, ChevronDown, User } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
@@ -57,8 +58,14 @@ export function ParentSidebar({ user }: ParentSidebarProps) {
   const SidebarContent = (
     <>
       <nav className="flex flex-col gap-4 p-4">
-        <div className="text-xl font-bold text-cyan-100 mb-2 drop-shadow-[0_0_6px_#00fff7] text-center">Coducation</div>
-        
+        <div className="relative h-12 w-full mb-2 mx-auto">
+          <img
+            src="/logo.png"
+            alt="Coducation Logo"
+            className="h-full w-full object-contain"
+          />
+        </div>
+
         {/* 학생 선택 드롭다운 */}
         <div className="space-y-2">
           <label className="text-sm text-cyan-300 font-medium">학생 선택</label>
@@ -68,8 +75,8 @@ export function ParentSidebar({ user }: ParentSidebarProps) {
             </SelectTrigger>
             <SelectContent className="bg-cyan-950 border-cyan-400/20">
               {mockStudents.map((student) => (
-                <SelectItem 
-                  key={student.id} 
+                <SelectItem
+                  key={student.id}
                   value={student.id}
                   className="text-cyan-100 hover:bg-cyan-900/50"
                 >
@@ -95,13 +102,13 @@ export function ParentSidebar({ user }: ParentSidebarProps) {
           ))}
         </div>
       </nav>
-      
+
       <div className="p-4 border-t border-cyan-900/20 text-cyan-200 text-sm flex flex-col gap-4">
         <Link href="/dashboard/parent/profile" className="flex items-center gap-3 hover:underline cursor-pointer">
           <User className="w-5 h-5" />
           <span>{user.name} ({user.role})</span>
         </Link>
-        <button 
+        <button
           onClick={handleLogout}
           className="flex items-center gap-2 text-sm text-red-400 hover:underline"
         >
@@ -126,7 +133,13 @@ export function ParentSidebar({ user }: ParentSidebarProps) {
             {SidebarContent}
           </SheetContent>
         </Sheet>
-        <span className="text-xl font-bold text-cyan-100 ml-2 drop-shadow-[0_0_6px_#00fff7]">Coducation</span>
+        <div className="relative h-6 w-32 ml-2">
+          <img
+            src="/logo.png"
+            alt="Coducation Logo"
+            className="h-full w-full object-contain"
+          />
+        </div>
       </div>
       {/* 데스크톱: 기존 사이드바 */}
       <aside className="hidden lg:flex w-56 min-w-[180px] h-full bg-gradient-to-b from-[#0a1837] to-[#0a1a2f] border-r border-cyan-900/40 flex-col justify-between">

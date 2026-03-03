@@ -41,31 +41,30 @@ export const calculateMonthlySessions = (
 };
 
 /**
- * 수업 횟수에 따른 등록 단위(Unit) 계산
- * @param sessionCount 수업 횟수
- * @param threshold 기준 횟수 (기본값 8)
- * @returns 0.5 또는 1.0
+ * 수업 시간(분)에 따른 등록 단위(Unit) 계산 (주 단위 방식)
+ * @param totalMinutes 총 수업 시간(분)
+ * @returns 0.25 단위 기반 등록 단위
  */
-export const calculateRegistrationUnit = (sessionCount: number, threshold: number = 8): number => {
-    if (sessionCount === 0) return 0;
+export const calculateRegistrationUnit = (totalMinutes: number): number => {
+    // 표준 수업 시간(90분)으로 환산하여 '표준 세션 횟수' 계산
+    const standardSessions = Math.floor(totalMinutes / 90);
 
-    // 주 2회 기준(threshold 8), 절반(4회) 단위를 한 스텝(0.5)으로 계산
-    // Math.floor를 사용하여 8회 미만(1~7회)은 전체 1.0이 되지 못하고 0.5에 머물게 함
-    const halfThreshold = threshold / 2;
-    const unit = Math.floor(sessionCount / halfThreshold) * 0.5;
+    if (standardSessions < 2) return 0;
 
-    // 최소 0.5 보장 (수업이 1회라도 있으면)
-    return Math.max(0.5, unit);
+    // 2세션당 0.25 단위 (8세션 = 1.0 단위)
+    // 홀수 세션(예: 7회)은 내림 처리하여 6회(0.75)로 계산
+    return Math.floor(standardSessions / 2) * 0.25;
 };
 
 /**
- * 학생의 특정 월 등록 단위 계산
+ * 학생의 특정 월 등록 단위(Unit) 계산 (주 단위 방식 - 시간 기반)
  * @param year 연도
  * @param month 월
  * @param schedule attendance_schedule 형태의 데이터
+ * @param targetTeacherId 대상 강사 ID
+ * @param studentDefaultTeacherId 학생의 전담 강사 ID
  * @param enrollmentDate 최초 등록일
- * @param threshold 기준 횟수 (기본값 8)
- * @returns 0.5 또는 1.0
+ * @returns 0.25 단위 기반 등록 단위
  */
 export const getStudentRegistrationUnit = (
     year: number,
@@ -74,7 +73,6 @@ export const getStudentRegistrationUnit = (
     targetTeacherId: string,
     studentDefaultTeacherId: string,
     enrollmentDate?: string,
-    threshold: number = 8
 ): number => {
     if (!schedule) return 0;
 
@@ -114,10 +112,30 @@ export const getStudentRegistrationUnit = (
         current.setDate(current.getDate() + 1);
     }
 
-    if (totalMinutes === 0) return 0;
+    return calculateRegistrationUnit(totalMinutes);
+};
 
-    // 표준 수업 시간(1.5시간 = 90분)으로 환산하여 단위 계산
-    // 예: 주 3회 1시간(총 180분) = 주 2회 1.5시간(총 180분)과 동일한 8회분(720분) 가중치 부여
-    const effectiveSessions = totalMinutes / 90;
-    return calculateRegistrationUnit(effectiveSessions, threshold);
+/**
+ * 학원 이름에 따른 색상 매핑
+ * @param academyName 학원 이름
+ * @returns HEX 색상 코드
+ */
+export const getAcademyColor = (academyName: string): string => {
+    // 학원 이름별 고정 색상 매핑 (순서대로 1~5번)
+    const academyColors: Record<string, string> = {
+        '코딩메이커': '#00fff7', // 1번: 진한 하늘색 (사이트 테마)
+        '광양 코딩': '#ff00ff',   // 2번: 마젠타
+        '본점': '#00fff7',       // 1번과 동일한 경우 대응
+        // 추가 학원이 있을 경우 아래에 마젠타 이외의 색상들(Amber, Lime, Purple 등) 매핑
+    };
+
+    // 기본적으로 등록된 학원이면 해당 색상, 없으면 학원 이름 문자열을 기반으로 결정
+    if (academyColors[academyName]) {
+        return academyColors[academyName];
+    }
+
+    // 이름에 따른 동적 할당 (3~5번 색상 후보)
+    const dynamicColors = ['#ffaa00', '#00ff00', '#9d50bb'];
+    const charSum = academyName.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+    return dynamicColors[charSum % dynamicColors.length];
 };

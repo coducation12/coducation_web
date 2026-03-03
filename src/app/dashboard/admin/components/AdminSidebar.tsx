@@ -3,7 +3,8 @@
 import React, { useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
-import { LayoutDashboard, BookOpen, Users, Menu, LogOut, GraduationCap, User, CalendarDays, UserCheck, Settings, MessageSquare, Home } from "lucide-react";
+import { LayoutDashboard, BookOpen, Users, Menu, LogOut, GraduationCap, User, CalendarDays, UserCheck, Settings, MessageSquare, Home, CreditCard } from "lucide-react";
+import Image from "next/image";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { logout } from "@/lib/actions";
@@ -12,6 +13,7 @@ const navItems = [
   { href: "/dashboard/admin", label: "대시보드", icon: <LayoutDashboard className="w-5 h-5" /> },
   { href: "/dashboard/admin/students", label: "학생관리", icon: <GraduationCap className="w-5 h-5" /> },
   { href: "/dashboard/admin/teachers", label: "강사관리", icon: <UserCheck className="w-5 h-5" /> },
+  { href: "/dashboard/admin/payments", label: "수납관리", icon: <CreditCard className="w-5 h-5" /> },
   { href: "/dashboard/admin/timetable", label: "학원시간표", icon: <CalendarDays className="w-5 h-5" /> },
   { href: "/dashboard/admin/curriculum", label: "커리큘럼", icon: <BookOpen className="w-5 h-5" /> },
   { href: "/dashboard/admin/consultations", label: "상담문의", icon: <MessageSquare className="w-5 h-5" /> },
@@ -73,7 +75,13 @@ export function AdminSidebar() {
   const SidebarContent = (
     <>
       <nav className="flex flex-col gap-2 p-4">
-        <div className="text-xl font-bold text-cyan-100 mb-6 drop-shadow-[0_0_6px_#00fff7] text-center">Coducation</div>
+        <div className="relative h-12 w-full mb-6 mx-auto">
+          <img
+            src="/logo.png"
+            alt="Coducation Logo"
+            className="h-full w-full object-contain"
+          />
+        </div>
         {navItems.map((item) => (
           <Link
             key={item.href}
@@ -126,7 +134,13 @@ export function AdminSidebar() {
             {SidebarContent}
           </SheetContent>
         </Sheet>
-        <span className="text-xl font-bold text-cyan-100 ml-2 drop-shadow-[0_0_6px_#00fff7]">Coducation</span>
+        <div className="relative h-6 w-32 ml-2">
+          <img
+            src="/logo.png"
+            alt="Coducation Logo"
+            className="h-full w-full object-contain"
+          />
+        </div>
       </div>
       {/* 데스크톱: 기존 사이드바 */}
       <aside className="hidden lg:flex w-56 min-w-[180px] h-full bg-gradient-to-b from-[#0a1837] to-[#0a1a2f] border-r border-cyan-900/40 flex-col justify-between">

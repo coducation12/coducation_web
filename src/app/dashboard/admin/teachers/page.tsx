@@ -10,7 +10,8 @@ import Image from "next/image";
 import { supabase } from "@/lib/supabase";
 import AddTeacherModal from "./components/AddTeacherModal";
 import EditTeacherModal from "./components/EditTeacherModal";
-import { deleteTeacher, updateTeacherLabelColor } from "@/lib/actions";
+import { deleteTeacher, updateTeacherLabelColor, toggleTeacherTuitionPermission } from "@/lib/actions";
+import { Checkbox } from "@/components/ui/checkbox";
 
 export const dynamic = 'force-dynamic';
 
@@ -25,6 +26,7 @@ interface Teacher {
     createdAt: string;
     image?: string;
     labelColor?: string;
+    canManageAllPayments: boolean;
 }
 
 export default function AdminTeachersPage() {
@@ -90,6 +92,7 @@ export default function AdminTeachersPage() {
                 .from('users')
                 .select(`
                     id, name, email, phone, username, created_at, profile_image_url,
+                    can_manage_all_payments,
                     teachers (
                         bio, certs, career, subject, position, label_color
                     )
@@ -115,7 +118,8 @@ export default function AdminTeachersPage() {
                     status: '활성' as const,
                     createdAt: teacher.created_at,
                     image: teacher.profile_image_url || '',
-                    labelColor: t?.label_color || '#00fff7'
+                    labelColor: t?.label_color || '#00fff7',
+                    canManageAllPayments: teacher.can_manage_all_payments || false
                 };
             });
 
@@ -177,6 +181,18 @@ export default function AdminTeachersPage() {
             alert('색상 업데이트 중 오류가 발생했습니다.');
         }
     };
+    const handleTuitionPermissionToggle = async (teacherId: string, checked: boolean) => {
+        try {
+            const result = await toggleTeacherTuitionPermission(teacherId, checked);
+            if (result.success) {
+                setTeachers(prev => prev.map(t => t.id === teacherId ? { ...t, canManageAllPayments: checked } : t));
+            } else {
+                alert(result.error);
+            }
+        } catch (error) {
+            alert('권한 변경 중 오류가 발생했습니다.');
+        }
+    };
 
     if (loading) {
         return (
@@ -223,6 +239,7 @@ export default function AdminTeachersPage() {
                                     </div>
                                 </TableHead>
                                 <TableHead className="text-cyan-200 text-center">담당 과목 {getSortIcon('subject')}</TableHead>
+                                <TableHead className="text-cyan-200 text-center">수납 관리자</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -283,6 +300,16 @@ export default function AdminTeachersPage() {
                                         </TableCell>
                                         <TableCell className="text-center text-cyan-200/80">
                                             {teacher.subject}
+                                        </TableCell>
+                                        <TableCell className="py-4">
+                                            <div className="flex justify-center items-center">
+                                                <Checkbox
+                                                    checked={teacher.canManageAllPayments}
+                                                    onCheckedChange={(checked) => handleTuitionPermissionToggle(teacher.id, !!checked)}
+                                                    onClick={(e) => e.stopPropagation()}
+                                                    className="border-cyan-500/50 data-[state=checked]:bg-cyan-600 data-[state=checked]:text-white"
+                                                />
+                                            </div>
                                         </TableCell>
                                     </TableRow>
                                 ))

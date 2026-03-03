@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { login } from '@/lib/actions'
+import Image from 'next/image'
 
 function LoginForm() {
   const [userType, setUserType] = useState<'teacher' | 'student'>('student')
@@ -54,28 +55,28 @@ function LoginForm() {
     setError('')
     setSuccess('')
     setIsLoading(true)
-    
+
     try {
       const formData = new FormData()
       // 관리자 모드가 아닐 때는 항상 학생 로그인으로 처리
       const actualUserType = isAdminMode ? userType : 'student'
       formData.append('userType', actualUserType)
       formData.append('password', password)
-      
+
       if (actualUserType === 'teacher') {
         formData.append('email', email)
       } else {
         formData.append('username', username)
       }
-      
+
       const result = await login(formData)
-      
+
       // result가 undefined인 경우 처리
       if (!result) {
         setError('서버와의 통신에 실패했습니다. 다시 시도해주세요.')
         return
       }
-      
+
       if (result.success) {
         setSuccess('로그인 성공! 잠시 후 이동합니다...')
         // 성공 메시지를 잠시 보여준 후 리다이렉트
@@ -103,12 +104,16 @@ function LoginForm() {
         <form onSubmit={handleLogin} className="bg-black/40 rounded-lg shadow-xl p-8" autoComplete="off">
           {/* 로고 - 더블클릭으로 탭 전환 */}
           <div className="text-center mb-6">
-            <div 
+            <div
               onDoubleClick={handleLogoDoubleClick}
               className="inline-block cursor-pointer select-none"
             >
-              <div className="text-2xl font-bold text-sky-400 mb-1 drop-shadow-[0_0_8px_rgba(56,189,248,0.3)]">
-                Coducation
+              <div className="relative h-5 w-32 md:h-7 md:w-44 flex-shrink-0">
+                <img
+                  src="/logo.png"
+                  alt="Coducation Logo"
+                  className="h-full w-full object-contain"
+                />
               </div>
             </div>
           </div>
@@ -116,8 +121,8 @@ function LoginForm() {
           <div className="text-center">
             <h1 className="text-3xl font-bold text-white mb-2">로그인</h1>
             <p className="text-gray-400 mb-2">
-              {!isAdminMode 
-                ? '학생/학부모 계정으로 로그인하세요' 
+              {!isAdminMode
+                ? '학생/학부모 계정으로 로그인하세요'
                 : '강사/관리자 계정으로 로그인하세요'
               }
             </p>
@@ -135,17 +140,17 @@ function LoginForm() {
               )}
             </div>
           </div>
-          
+
           {!isAdminMode ? (
             <div className="mb-4">
               <Label htmlFor="username" className="text-white text-sm font-medium">아이디</Label>
-              <Input 
-                id="username" 
-                type="text" 
-                value={username} 
-                onChange={e => setUsername(e.target.value)} 
-                required 
-                autoComplete="off" 
+              <Input
+                id="username"
+                type="text"
+                value={username}
+                onChange={e => setUsername(e.target.value)}
+                required
+                autoComplete="off"
                 placeholder="학생/학부모 아이디를 입력하세요"
                 disabled={isLoading}
                 className="mt-1 bg-gray-800/50 border-gray-600 text-white placeholder-gray-400 focus:border-sky-500 focus:ring-sky-500"
@@ -154,43 +159,43 @@ function LoginForm() {
           ) : (
             <div className="mb-4">
               <Label htmlFor="email" className="text-white text-sm font-medium">이메일</Label>
-              <Input 
-                id="email" 
-                type="email" 
-                value={email} 
-                onChange={e => setEmail(e.target.value)} 
-                required 
-                autoComplete="off" 
+              <Input
+                id="email"
+                type="email"
+                value={email}
+                onChange={e => setEmail(e.target.value)}
+                required
+                autoComplete="off"
                 placeholder="강사/관리자 이메일을 입력하세요"
                 disabled={isLoading}
                 className="mt-1 bg-gray-800/50 border-gray-600 text-white placeholder-gray-400 focus:border-sky-500 focus:ring-sky-500"
               />
             </div>
           )}
-          
+
           <div className="mb-4">
             <Label htmlFor="password" className="text-white text-sm font-medium">비밀번호</Label>
-            <Input 
-              id="password" 
-              type="password" 
-              value={password} 
-              onChange={e => setPassword(e.target.value)} 
-              autoComplete="new-password" 
+            <Input
+              id="password"
+              type="password"
+              value={password}
+              onChange={e => setPassword(e.target.value)}
+              autoComplete="new-password"
               placeholder="비밀번호를 입력하세요"
               disabled={isLoading}
               className="mt-1 bg-gray-800/50 border-gray-600 text-white placeholder-gray-400 focus:border-sky-500 focus:ring-sky-500"
             />
           </div>
-          
-          
-          <Button 
-            type="submit" 
+
+
+          <Button
+            type="submit"
             className="w-full bg-sky-500 hover:bg-sky-600 text-white font-bold py-3 rounded-lg transition-all duration-200 transform hover:scale-105"
             disabled={isLoading}
           >
             {isLoading ? '로그인 중...' : '로그인'}
           </Button>
-          
+
           {/* 회원가입 버튼 - 관리자 모드에서는 비활성화 */}
           <div className="mt-4 text-center">
             {isAdminMode ? (

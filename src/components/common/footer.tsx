@@ -1,5 +1,6 @@
 
 import Link from 'next/link';
+import Image from 'next/image';
 
 export function Footer() {
   return (
@@ -11,12 +12,12 @@ export function Footer() {
             <div className="text-sm leading-tight">
               <div className="flex items-center gap-2">
                 <span className="font-semibold text-sm">코딩메이커(중마)</span>
-                <span className="text-muted-foreground text-sm">061-745-3355</span>
+                <span className="text-muted-foreground text-sm">061-745-3355 (본원)</span>
               </div>
             </div>
             <div className="text-sm leading-tight">
               <div className="flex items-center gap-2">
-                <span className="font-semibold text-sm">광양코딩(창덕)</span>
+                <span className="font-semibold text-sm">광양 코딩⠀(창덕)</span>
                 <span className="text-muted-foreground text-sm">061-911-1101</span>
               </div>
             </div>
@@ -27,8 +28,14 @@ export function Footer() {
           </div>
 
           {/* 중앙: Coducation 및 정책 */}
-          <div className="text-center space-y-1">
-            <div className="font-bold text-lg text-primary">Coducation</div>
+          <div className="text-center space-y-2 flex flex-col items-center">
+            <div className="relative h-6 w-38">
+              <img
+                src="/logo.png"
+                alt="Coducation Logo"
+                className="h-full w-full object-contain opacity-80"
+              />
+            </div>
             <div className="flex justify-center gap-4 text-xs text-muted-foreground">
               <Link href="/privacy-policy" className="hover:text-cyan-400 transition-colors">
                 정보보호방침

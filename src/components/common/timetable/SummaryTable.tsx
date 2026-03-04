@@ -32,7 +32,7 @@ export function SummaryTable({
             <div className="flex items-center justify-between">
                 <h2 className="text-xl font-bold text-cyan-100 italic flex items-center gap-2">
                     <span className="w-1 h-6 bg-cyan-400 rounded-full"></span>
-                    상세 요약 표
+                    상세 요약표
                 </h2>
             </div>
 

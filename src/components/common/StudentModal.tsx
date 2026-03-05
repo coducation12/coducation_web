@@ -97,7 +97,7 @@ const formatAmount = (value: string | number): string => {
     return Number(num).toLocaleString();
 };
 
-export default function StudentModal({ mode, student, isOpen, onClose, onSave, triggerText, teachers = [], academies = ["코딩메이커", "광양 코딩"] }: StudentModalProps) {
+export default function StudentModal({ mode, student, isOpen, onClose, onSave, triggerText, teachers = [], academies = ["코딩메이커", "광양코딩"] }: StudentModalProps) {
     const [internalOpen, setInternalOpen] = useState(false);
     const [showConfirmDialog, setShowConfirmDialog] = useState(false);
     const [originalData, setOriginalData] = useState<any>(null);

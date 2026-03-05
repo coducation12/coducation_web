@@ -661,7 +661,7 @@ export default function WordPage() {
   }, [language, setIMELanguage]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 relative overflow-hidden">
+    <div className="h-screen overflow-y-auto scrollbar-hide bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 relative overflow-hidden">
       {/* 사이버틱한 기하학적 패턴 배경 */}
       <div className="absolute inset-0 opacity-20">
         <div className="absolute top-0 left-0 w-32 h-32 border-2 border-cyan-400 transform rotate-45 animate-pulse"></div>

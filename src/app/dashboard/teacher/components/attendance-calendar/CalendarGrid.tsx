@@ -63,11 +63,6 @@ export function CalendarGrid({
                                 {record.memo}
                             </div>
                         )}
-                        {record.is_makeup && (
-                            <div className="text-[8px] text-yellow-400 font-black tracking-widest uppercase opacity-80 decoration-yellow-500/50 underline-offset-2 underline">
-                                MAKEUP
-                            </div>
-                        )}
                     </div>
                 )}
             </div>

@@ -19,7 +19,7 @@ export default async function StudentDashboardPage() {
     }
 
     return (
-        <div className="student-dashboard-content w-full h-full flex-1 min-h-0 px-4 py-4 lg:px-12 lg:py-10 box-border pt-16 lg:pt-2 flex flex-col">
+        <div className="student-dashboard-content w-full h-screen overflow-y-auto scrollbar-hide flex-1 min-h-0 px-4 py-4 lg:px-12 lg:py-10 box-border pt-16 lg:pt-2 flex flex-col">
             <StudentHeading size="h1" className="mb-6">학생 대시보드</StudentHeading>
             <div className="grid sm:grid-cols-1 md:grid-cols-2 gap-6 flex-1 min-h-0">
                 {/* 왼쪽: 학습진행률+완료된학습 (세로로 긴 카드) */}

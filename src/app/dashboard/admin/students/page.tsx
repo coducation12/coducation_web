@@ -59,7 +59,7 @@ export default function AdminStudentsPage() {
     const [studentToDelete, setStudentToDelete] = useState<Student | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
     const [teachers, setTeachers] = useState<{ id: string, name: string, label_color?: string }[]>([]);
-    const [sortField, setSortField] = useState<string | null>(null);
+    const [sortField, setSortField] = useState<string | null>("name");
     const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
     const { toast } = useToast();
 
@@ -507,7 +507,7 @@ export default function AdminStudentsPage() {
                 <StudentModal
                     mode="add"
                     onSave={handleAddStudent}
-                    academies={Array.from(new Set(students.map(s => s.academy).filter(Boolean).concat(["코딩메이커", "광양 코딩"])))}
+                    academies={Array.from(new Set(students.map(s => s.academy).filter(Boolean).concat(["코딩메이커", "광양코딩"])))}
                 />
             </div>
 
@@ -537,6 +537,15 @@ export default function AdminStudentsPage() {
                                     <div className="flex items-center gap-2">
                                         학생
                                         {getSortIcon('name')}
+                                    </div>
+                                </TableHead>
+                                <TableHead
+                                    className="text-cyan-200 cursor-pointer hover:text-cyan-100 transition-colors select-none"
+                                    onClick={() => handleSort('academy')}
+                                >
+                                    <div className="flex items-center gap-2">
+                                        소속 학원
+                                        {getSortIcon('academy')}
                                     </div>
                                 </TableHead>
                                 <TableHead
@@ -604,6 +613,9 @@ export default function AdminStudentsPage() {
                                         <button className="text-cyan-100 hover:text-cyan-300 transition-colors cursor-pointer">
                                             {student.name}
                                         </button>
+                                    </TableCell>
+                                    <TableCell className="text-cyan-300">
+                                        {student.academy || '-'}
                                     </TableCell>
                                     <TableCell className="text-cyan-300">
                                         <div className="flex items-center space-x-2">
@@ -724,7 +736,6 @@ export default function AdminStudentsPage() {
                 </CardContent>
             </Card>
 
-
             <StudentModal
                 mode="edit"
                 student={selectedStudent}
@@ -735,7 +746,7 @@ export default function AdminStudentsPage() {
                 }}
                 onSave={handleSaveStudent}
                 teachers={teachers}
-                academies={Array.from(new Set(students.map(s => s.academy).filter(Boolean).concat(["코딩메이커", "광양 코딩"])))}
+                academies={Array.from(new Set(students.map(s => s.academy).filter(Boolean).concat(["코딩메이커", "광양코딩"])))}
             />
 
             {/* 삭제 확인 다이얼로그 */}
@@ -784,7 +795,6 @@ export default function AdminStudentsPage() {
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
-
         </div>
     );
-} 
+}

@@ -61,7 +61,7 @@ export default function TeacherStudentsPage() {
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [teachers, setTeachers] = useState<{ id: string, name: string }[]>([]);
     const [currentUserId, setCurrentUserId] = useState<string | null>(null);
-    const [sortField, setSortField] = useState<string | null>(null);
+    const [sortField, setSortField] = useState<string | null>("name");
     const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
     const { toast } = useToast();
 
@@ -407,7 +407,7 @@ export default function TeacherStudentsPage() {
     let activeNoCounter = 0;
 
     return (
-        <div className="p-6 pt-20 lg:pt-6 space-y-6">
+        <div className="p-6 pt-20 lg:pt-6 space-y-6 h-screen overflow-y-auto scrollbar-hide">
             <div className="flex items-center justify-between">
                 <div>
                     <h1 className="text-3xl font-bold text-cyan-100 drop-shadow-[0_0_6px_#00fff7]">학생 관리</h1>
@@ -446,6 +446,15 @@ export default function TeacherStudentsPage() {
                                     <div className="flex items-center gap-2">
                                         학생
                                         {getSortIcon('name')}
+                                    </div>
+                                </TableHead>
+                                <TableHead
+                                    className="text-cyan-200 cursor-pointer hover:text-cyan-100 transition-colors select-none"
+                                    onClick={() => handleSort('academy')}
+                                >
+                                    <div className="flex items-center gap-2">
+                                        소속 학원
+                                        {getSortIcon('academy')}
                                     </div>
                                 </TableHead>
                                 <TableHead
@@ -520,6 +529,9 @@ export default function TeacherStudentsPage() {
                                                 {student.name}
                                             </span>
                                         )}
+                                    </TableCell>
+                                    <TableCell className="text-cyan-300">
+                                        {student.academy || '-'}
                                     </TableCell>
                                     <TableCell className="text-cyan-300">
                                         {student.type === 'signup_request' ? (
@@ -607,7 +619,6 @@ export default function TeacherStudentsPage() {
                 onSave={handleSaveStudent}
                 teachers={teachers.filter(t => t.id === currentUserId)} // 본인만 선택 가능하도록 제한
             />
-
-        </div >
+        </div>
     );
 }

@@ -24,26 +24,25 @@ export const PostCard = memo(function PostCard({ post, currentUserId, currentUse
 
   return (
     <Card
-      className={`mb-3 cursor-pointer transition-all duration-200 hover:shadow-lg hover:scale-[1.02] ${
-        isCurrentUser 
-          ? 'border border-cyan-400/30 border-l-4 border-l-cyan-400' 
+      className={`mb-3 cursor-pointer transition-all duration-200 hover:shadow-lg hover:scale-[1.02] ${isCurrentUser
+          ? 'border border-cyan-400/30 border-l-4 border-l-cyan-400'
           : post.author.role === 'admin'
-          ? 'border border-cyan-400/30 border-l-4 border-l-red-400'
-          : 'border border-cyan-400/30'
-      }`}
+            ? 'border border-cyan-400/30 border-l-4 border-l-red-400'
+            : 'border border-cyan-400/30'
+        }`}
       onClick={() => onClick(post.id)}
     >
       <CardContent className="py-2 px-4 flex items-center min-h-[56px] gap-3 whitespace-nowrap overflow-x-auto">
         {/* 1열: 아바타 */}
         <div className="flex items-center justify-center min-w-[44px] max-w-[44px] flex-shrink-0">
-          <UserAvatar 
-            src={post.author.profile_image_url || post.author.avatar} 
+          <UserAvatar
+            src={post.author.role === 'admin' ? '/android-chrome-512x512.png' : (post.author.profile_image_url || post.author.avatar)}
             name={post.author.name}
             role={post.author.role}
             size="md"
           />
         </div>
-        
+
         {/* 2열: 작성자(분류)/작성일 */}
         <div className="flex flex-col justify-center min-w-[120px] max-w-[120px] flex-shrink-0">
           <span className="font-semibold text-xs text-cyan-100 leading-tight flex items-center gap-1">
@@ -56,21 +55,21 @@ export const PostCard = memo(function PostCard({ post, currentUserId, currentUse
             {formatDate(post.created_at)}
           </span>
         </div>
-        
+
         {/* 3열: 제목 */}
         <div className="flex-1 min-w-0 flex items-center">
           <h3 className="text-sm font-medium text-cyan-100 truncate">
             {post.title}
           </h3>
         </div>
-        
+
         {/* 4열: 이미지 아이콘 */}
         <div className="flex items-center justify-center min-w-[20px] max-w-[20px] flex-shrink-0">
           {post.images && post.images.length > 0 && (
             <ImageIcon className="h-4 w-4 text-cyan-400" />
           )}
         </div>
-        
+
         {/* 5열: 댓글 수 */}
         <div className="flex items-center justify-center min-w-[40px] max-w-[40px] flex-shrink-0">
           <div className="flex items-center gap-1 text-xs text-cyan-300">

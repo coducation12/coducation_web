@@ -250,14 +250,14 @@ export default function PostDetailPage() {
       </div>
 
       <Card className={`mb-6 bg-transparent text-cyan-100 ${post.author.role === 'admin'
-          ? 'border border-cyan-400/30 border-b-4 border-b-red-400'
-          : 'border border-cyan-400/30'
+        ? 'border border-cyan-400/30 border-b-4 border-b-red-400'
+        : 'border border-cyan-400/30'
         }`}>
         <CardHeader className="pb-3">
           <div className="flex items-start justify-between">
             <div className="flex items-center space-x-3">
               <UserAvatar
-                src={post.author.profile_image_url || post.author.avatar}
+                src={post.author.role === 'admin' ? '/android-chrome-512x512.png' : (post.author.profile_image_url || post.author.avatar)}
                 name={post.author.name}
                 role={post.author.role}
                 size="lg"
@@ -365,7 +365,7 @@ export default function PostDetailPage() {
               {comments.map((comment) => (
                 <div key={comment.id} className="flex space-x-3 p-4 border border-cyan-400/30 rounded-lg bg-transparent">
                   <UserAvatar
-                    src={comment.author.profile_image_url || comment.author.avatar}
+                    src={comment.author.role === 'admin' ? '/android-chrome-512x512.png' : (comment.author.profile_image_url || comment.author.avatar)}
                     name={comment.author.name}
                     role={comment.author.role}
                     size="md"

@@ -585,8 +585,8 @@ export async function updateStudent(formData: FormData) {
       phone: studentData.phone,
       birth_year: birthYearInt,
       academy: studentData.academy || '코딩메이커',
-      status: studentData.status === '휴강' ? '휴강' :
-        studentData.status === '종료' ? '종료' : 'active'
+      status: studentData.status === '휴강' ? 'suspended' :
+        studentData.status === '종료' ? 'terminated' : 'active'
     };
     if (studentData.password) {
       userUpdateData.password = await bcrypt.hash(studentData.password, 10);

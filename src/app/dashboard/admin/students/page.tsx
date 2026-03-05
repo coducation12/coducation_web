@@ -85,25 +85,31 @@ export default function AdminStudentsPage() {
 
     // 정렬된 학생 목록 생성
     const getSortedStudents = (students: Student[]) => {
-        if (!sortField) return students;
+        // 1. 상태별 가중치 부여 (수강/승인대기 우선)
+        const getStatusWeight = (status: string) => {
+            if (status === '수강' || status === '승인대기') return 0;
+            return 1; // 휴강, 종료 등
+        };
 
         return [...students].sort((a, b) => {
+            const weightA = getStatusWeight(a.status);
+            const weightB = getStatusWeight(b.status);
+
+            if (weightA !== weightB) return weightA - weightB;
+
+            // 2. 같은 그룹 내에서 선택한 필드로 정렬
+            if (!sortField) return 0;
+
             let aValue: any = a[sortField as keyof Student];
             let bValue: any = b[sortField as keyof Student];
 
-
-            // 문자열 필드 처리
             if (typeof aValue === 'string') {
                 aValue = aValue.toLowerCase();
                 bValue = bValue.toLowerCase();
             }
 
-            if (aValue < bValue) {
-                return sortDirection === 'asc' ? -1 : 1;
-            }
-            if (aValue > bValue) {
-                return sortDirection === 'asc' ? 1 : -1;
-            }
+            if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1;
+            if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1;
             return 0;
         });
     };

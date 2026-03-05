@@ -588,7 +588,10 @@ export default function AdminStudentsPage() {
                                     onClick={() => handleEditStudent(student)}
                                 >
                                     <TableCell className="text-cyan-300 font-medium">
-                                        {index + 1}
+                                        {(student.status === '수강' || student.status === '승인대기')
+                                            ? ++activeNoCounter
+                                            : '-'
+                                        }
                                     </TableCell>
                                     <TableCell className="font-medium text-cyan-100">
                                         <button className="text-cyan-100 hover:text-cyan-300 transition-colors cursor-pointer">

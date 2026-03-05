@@ -499,7 +499,10 @@ export default function TeacherStudentsPage() {
                                     }}
                                 >
                                     <TableCell className="text-cyan-300 font-medium">
-                                        {index + 1}
+                                        {(student.status === '수강' || student.status === '승인대기')
+                                            ? ++activeNoCounter
+                                            : '-'
+                                        }
                                     </TableCell>
                                     <TableCell className="font-medium text-cyan-100">
                                         {student.type === 'signup_request' ? (

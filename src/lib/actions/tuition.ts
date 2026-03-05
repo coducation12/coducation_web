@@ -112,37 +112,76 @@ export async function getTuitionDashboardData(month: string, currentUserId: stri
 }
 
 /**
- * 납부 정보 업데이트 (전체 덮어쓰기 또는 신규 생성)
+ * 납부 정보 업데이트 (다중 월 지원 및 등록년월 기반 처리)
  */
 export async function saveTuitionPayment(data: {
     student_id: string;
-    payment_month: string;
-    base_amount: number;
-    payment_details: any[];
-    status: string;
-    memo?: string;
+    payment_details: any[]; // 각 항목에 targetMonth가 포함됨
     recorded_by: string;
 }) {
     try {
-        const total_paid_amount = data.payment_details.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
+        // 1. 등록년월(targetMonth)별로 항목 그룹화
+        const monthlyData: Record<string, any[]> = {};
+        data.payment_details.forEach(item => {
+            const month = item.targetMonth;
+            if (!monthlyData[month]) monthlyData[month] = [];
+            monthlyData[month].push(item);
+        });
 
-        const { error } = await supabaseAdmin
+        // 2. 학생의 기존 수납 기록이 있는 모든 월 조회
+        const { data: existingRecords } = await supabaseAdmin
             .from('tuition_payments')
-            .upsert({
-                student_id: data.student_id,
-                payment_month: data.payment_month,
-                base_amount: data.base_amount,
-                total_paid_amount,
-                payment_details: data.payment_details,
-                status: data.status,
-                memo: data.memo,
-                recorded_by: data.recorded_by,
-                updated_at: new Date().toISOString()
-            }, {
-                onConflict: 'student_id,payment_month'
-            });
+            .select('payment_month')
+            .eq('student_id', data.student_id);
 
-        if (error) throw error;
+        const existingMonths = existingRecords?.map((r: any) => r.payment_month) || [];
+
+        // 3. 입력 데이터에 있는 월 + 기존에 데이터가 있던 월의 합집합 구성
+        const allAffectedMonths = Array.from(new Set([...existingMonths, ...Object.keys(monthlyData)]));
+
+        // 4. 학생의 기본 수강료(base_amount) 조회
+        const { data: student } = await supabaseAdmin
+            .from('students')
+            .select('tuition_fee')
+            .eq('user_id', data.student_id)
+            .maybeSingle();
+
+        const baseFee = student?.tuition_fee || 0;
+
+        // 5. 각 월별로 DB 업데이트 (병렬 처리)
+        const updatePromises = allAffectedMonths.map(async (month) => {
+            const details = monthlyData[month] || [];
+            const total_paid_amount = details.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
+
+            // 상태 결정: 항목이 없으면 'pending', 전액 이상이면 'paid', 그 외 'partial'
+            let status = 'pending';
+            if (details.length > 0) {
+                status = total_paid_amount >= baseFee ? 'paid' : 'partial';
+            }
+
+            return supabaseAdmin
+                .from('tuition_payments')
+                .upsert({
+                    student_id: data.student_id,
+                    payment_month: month,
+                    base_amount: baseFee,
+                    total_paid_amount,
+                    payment_details: details,
+                    status,
+                    recorded_by: data.recorded_by,
+                    updated_at: new Date().toISOString()
+                }, {
+                    onConflict: 'student_id,payment_month'
+                });
+        });
+
+        const results = await Promise.all(updatePromises);
+        const errors = results.filter(r => r.error).map(r => r.error);
+
+        if (errors.length > 0) {
+            console.error('Save tuition errors:', errors);
+            throw new Error('데이터 저장 중 오류가 발생했습니다.');
+        }
 
         revalidatePath('/dashboard/admin/payments');
         revalidatePath('/dashboard/teacher/payments');
@@ -158,7 +197,8 @@ export async function saveTuitionPayment(data: {
  */
 export async function getStudentPaymentHistory(studentId: string) {
     try {
-        const { data, error } = await supabase
+        // 관리자/강사 권한으로 조회하기 위해 supabaseAdmin 사용 (RLS 우회)
+        const { data, error } = await supabaseAdmin
             .from('tuition_payments')
             .select('*')
             .eq('student_id', studentId)

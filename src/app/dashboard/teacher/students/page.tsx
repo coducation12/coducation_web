@@ -398,6 +398,7 @@ export default function TeacherStudentsPage() {
 
     // 정렬 적용
     const sortedStudents = getSortedStudents(filteredStudents);
+    let activeNoCounter = 0;
 
     return (
         <div className="p-6 pt-20 lg:pt-6 space-y-6">

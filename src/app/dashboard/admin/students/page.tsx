@@ -488,35 +488,7 @@ export default function AdminStudentsPage() {
         student.studentId?.toLowerCase().includes(search.toLowerCase())
     );
 
-    // 정렬 적용 로직 수정
-    const getSortedStudents = (list: any[]) => {
-        return [...list].sort((a, b) => {
-            const getStatusWeight = (status: string) => {
-                if (status === '수강' || status === '승인대기') return 0;
-                return 1;
-            };
-
-            const weightA = getStatusWeight(a.status);
-            const weightB = getStatusWeight(b.status);
-
-            if (weightA !== weightB) {
-                return weightA - weightB;
-            }
-
-            if (sortConfig.key === 'name') {
-                return sortConfig.direction === 'asc'
-                    ? a.name.localeCompare(b.name)
-                    : b.name.localeCompare(a.name);
-            }
-            if (sortConfig.key === 'joinDate') {
-                return sortConfig.direction === 'asc'
-                    ? new Date(a.joinDate).getTime() - new Date(b.joinDate).getTime()
-                    : new Date(b.joinDate).getTime() - new Date(a.joinDate).getTime();
-            }
-            return 0;
-        });
-    };
-
+    // 정렬 적용
     const sortedStudents = getSortedStudents(filteredStudents);
     let activeNoCounter = 0;
 

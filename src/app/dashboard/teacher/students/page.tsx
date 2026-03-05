@@ -41,6 +41,7 @@ interface Student {
     progress?: any;
     attendance?: any;
     monthlyAttendanceCount?: number;
+    academy?: string;
 }
 
 interface ClassSchedule {
@@ -209,6 +210,7 @@ export default function TeacherStudentsPage() {
                     enrollment_date: item.enrollment_start_date || '',
                     memo: item.memo || '',
                     tuition_fee: item.tuition_fee || 0,
+                    academy: item.users?.academy || '코딩메이커',
                     assignedTeachers: assignedTeachers,
                     classSchedules: item.attendance_schedule ? Object.entries(item.attendance_schedule)
                         .map(([day, schedule]: [string, any]) => {
@@ -341,6 +343,7 @@ export default function TeacherStudentsPage() {
             formData.append('status', studentData.status || 'active');
             formData.append('enrollment_date', studentData.enrollment_date || '');
             formData.append('memo', studentData.memo || '');
+            formData.append('academy', studentData.academy || '코딩메이커');
             formData.append('classSchedules', JSON.stringify(studentData.classSchedules));
             formData.append('tuition_fee', studentData.tuition_fee?.toString() || '0');
 

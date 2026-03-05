@@ -157,6 +157,7 @@ export default function TeacherStudentsPage() {
                         username, 
                         phone, 
                         birth_year, 
+                        academy,
                         created_at, 
                         email, 
                         status 

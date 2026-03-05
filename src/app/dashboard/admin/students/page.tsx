@@ -233,8 +233,8 @@ export default function AdminStudentsPage() {
                 course: item.main_subject || '프로그래밍',
                 curriculum: '기초 프로그래밍', // 기본값, 나중에 실제 커리큘럼 데이터로 교체
                 status: item.users?.status === 'pending' ? '승인대기' :
-                    item.users?.status === 'suspended' ? '휴강' :
-                        item.users?.status === 'inactive' ? '종료' : '수강',
+                    (item.users?.status === 'suspended' || item.users?.status === '휴강') ? '휴강' :
+                        (item.users?.status === 'inactive' || item.users?.status === '종료') ? '종료' : '수강',
                 joinDate: item.users?.created_at ? new Date(item.users.created_at).toLocaleDateString() : '-',
                 lastLogin: '2024-01-15', // 기본값
                 studentId: item.users?.username || '-',

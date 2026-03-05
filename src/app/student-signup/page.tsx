@@ -81,10 +81,32 @@ export default function StudentSignupPage() {
   const [success, setSuccess] = useState(false)
   const router = useRouter()
 
-  // 자동 생성된 아이디 계산
-  const generatedUsername = formData.name && formData.birthYear
-    ? `${formData.name}${formData.birthYear.slice(-2)}`
-    : '';
+  // 자동 생성된 아이디 상태
+  const [generatedUsername, setGeneratedUsername] = useState('')
+
+  // 이름과 출생년도 입력 시 유니크한 아이디 자동 생성
+  useEffect(() => {
+    const updateUsername = async () => {
+      if (formData.name && formData.birthYear && formData.birthYear.length >= 2) {
+        // 이름 유효성 검사 (한글만)
+        const nameRegex = /^[가-힣]+$/;
+        if (!nameRegex.test(formData.name)) return;
+
+        const baseId = `${formData.name}${formData.birthYear.slice(-2)}`
+        try {
+          const { getUniqueUsername } = await import('@/lib/actions')
+          const uniqueId = await getUniqueUsername(baseId)
+          setGeneratedUsername(uniqueId)
+        } catch (error) {
+          setGeneratedUsername(baseId)
+        }
+      } else {
+        setGeneratedUsername('')
+      }
+    }
+    const timer = setTimeout(updateUsername, 500)
+    return () => clearTimeout(timer)
+  }, [formData.name, formData.birthYear])
 
   // 교사 목록 상태 추가
   const [teachers, setTeachers] = useState<Teacher[]>([])

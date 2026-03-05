@@ -197,6 +197,44 @@ export async function createCommunityPost(title: string, content: string, images
   return data;
 }
 
+// 게시글 수정
+export async function updateCommunityPost(postId: string, title: string, content: string, images?: string[]) {
+  const { userId, userRole } = await getCurrentUser();
+
+  if (!userId) {
+    throw new Error('로그인이 필요합니다.');
+  }
+
+  // 게시글 소유자 또는 관리자 확인
+  const { data: post } = await supabaseAdmin
+    .from('community_posts')
+    .select('user_id')
+    .eq('id', postId)
+    .single();
+
+  if (!post || (post.user_id !== userId && userRole !== 'admin')) {
+    throw new Error('게시글을 수정할 권한이 없습니다.');
+  }
+
+  const { data, error } = await supabaseAdmin
+    .from('community_posts')
+    .update({
+      title,
+      content,
+      images: images || []
+    })
+    .eq('id', postId)
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Error updating post:', error);
+    throw new Error('게시글 수정에 실패했습니다.');
+  }
+
+  return data;
+}
+
 // 게시글의 댓글 가져오기
 export async function getCommunityComments(postId: string): Promise<CommunityComment[]> {
   const { data: comments, error } = await supabase
@@ -271,20 +309,20 @@ export async function createCommunityComment(postId: string, content: string) {
 
 // 게시글 삭제 (소프트 삭제)
 export async function deleteCommunityPost(postId: string) {
-  const { userId } = await getCurrentUser();
+  const { userId, userRole } = await getCurrentUser();
 
   if (!userId) {
     throw new Error('로그인이 필요합니다.');
   }
 
-  // 게시글 소유자 확인
+  // 게시글 소유자 또는 관리자 확인
   const { data: post } = await supabaseAdmin
     .from('community_posts')
     .select('user_id')
     .eq('id', postId)
     .single();
 
-  if (!post || post.user_id !== userId) {
+  if (!post || (post.user_id !== userId && userRole !== 'admin')) {
     throw new Error('게시글을 삭제할 권한이 없습니다.');
   }
 
@@ -301,20 +339,20 @@ export async function deleteCommunityPost(postId: string) {
 
 // 댓글 삭제 (소프트 삭제)
 export async function deleteCommunityComment(commentId: string) {
-  const { userId } = await getCurrentUser();
+  const { userId, userRole } = await getCurrentUser();
 
   if (!userId) {
     throw new Error('로그인이 필요합니다.');
   }
 
-  // 댓글 소유자 확인
+  // 댓글 소유자 또는 관리자 확인
   const { data: comment } = await supabaseAdmin
     .from('community_comments')
     .select('user_id')
     .eq('id', commentId)
     .single();
 
-  if (!comment || comment.user_id !== userId) {
+  if (!comment || (comment.user_id !== userId && userRole !== 'admin')) {
     throw new Error('댓글을 삭제할 권한이 없습니다.');
   }
 

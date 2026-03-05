@@ -14,8 +14,12 @@ import {
   getCommunityComments,
   createCommunityComment,
   deleteCommunityPost,
-  deleteCommunityComment
+  deleteCommunityComment,
+  updateCommunityPost
 } from '@/lib/community';
+import { PostForm } from '@/components/community/PostForm';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Edit2 } from 'lucide-react';
 import { CommunityPost, CommunityComment } from '@/types/community';
 import { formatDate, roleLabels } from '@/lib/community-utils';
 import { getCurrentUserClient } from '@/lib/client-auth';
@@ -41,6 +45,8 @@ export default function PostDetailPage() {
   const [currentUserRole, setCurrentUserRole] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [deletingComment, setDeletingComment] = useState<string | null>(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [updating, setUpdating] = useState(false);
 
   useEffect(() => {
     loadPostAndComments();
@@ -141,6 +147,21 @@ export default function PostDetailPage() {
       alert('댓글 작성에 실패했습니다.');
     } finally {
       setCommenting(false);
+    }
+  };
+
+  const handleUpdatePost = async (title: string, content: string, images: string[]) => {
+    if (!post) return;
+
+    try {
+      setUpdating(true);
+      await updateCommunityPost(post.id, title, content, images);
+      setIsEditModalOpen(false);
+      await loadPostAndComments();
+    } catch (error) {
+      alert('게시글 수정에 실패했습니다.');
+    } finally {
+      setUpdating(false);
     }
   };
 
@@ -275,18 +296,31 @@ export default function PostDetailPage() {
                 </div>
               </div>
             </div>
-            {(currentUserId === post.user_id || currentUserRole === 'admin') && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleDeletePost}
-                disabled={deleting}
-                className="text-red-400 hover:text-red-300 hover:bg-red-400/10"
-              >
-                <Trash2 className="h-4 w-4 mr-1" />
-                {deleting ? '삭제 중...' : '삭제'}
-              </Button>
-            )}
+            <div className="flex items-center space-x-2">
+              {(currentUserId === post.user_id || currentUserRole === 'admin') && (
+                <>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setIsEditModalOpen(true)}
+                    className="text-cyan-400 hover:text-cyan-300 hover:bg-cyan-400/10"
+                  >
+                    <Edit2 className="h-4 w-4 mr-1" />
+                    수정
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleDeletePost}
+                    disabled={deleting}
+                    className="text-red-400 hover:text-red-300 hover:bg-red-400/10"
+                  >
+                    <Trash2 className="h-4 w-4 mr-1" />
+                    {deleting ? '삭제 중...' : '삭제'}
+                  </Button>
+                </>
+              )}
+            </div>
           </div>
         </CardHeader>
         <CardContent>
@@ -399,6 +433,24 @@ export default function PostDetailPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* 수정 모달 */}
+      <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
+        <DialogContent className="bg-[#183c5a] border-cyan-400/30 text-cyan-100 max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold text-cyan-100">게시글 수정</DialogTitle>
+          </DialogHeader>
+          {post && (
+            <PostForm
+              onSubmit={handleUpdatePost}
+              loading={updating}
+              initialTitle={post.title}
+              initialContent={post.content}
+              initialImages={post.images}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 } 

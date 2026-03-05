@@ -243,6 +243,52 @@ export async function logout() {
   return { success: true, redirect: '/login' };
 }
 
+// 중복되지 않는 유니크한 아이디 생성 (s, t, f 접미사 규칙)
+export async function getUniqueUsername(baseUsername: string) {
+  try {
+    // 1. 기본 아이디 확인
+    const { data: user } = await supabaseAdmin
+      .from('users')
+      .select('id')
+      .eq('username', baseUsername)
+      .maybeSingle();
+
+    if (!user) return baseUsername;
+
+    // 2. 접미사 순회 (s, t, f)
+    const suffixes = ['s', 't', 'f'];
+    for (const suffix of suffixes) {
+      const candidate = `${baseUsername}${suffix}`;
+      const { data: existingUser } = await supabaseAdmin
+        .from('users')
+        .select('id')
+        .eq('username', candidate)
+        .maybeSingle();
+
+      if (!existingUser) return candidate;
+    }
+
+    // 3. 그 이상의 경우 숫자 접미사 (혹시 모를 대비)
+    let counter = 2;
+    while (counter < 20) {
+      const candidate = `${baseUsername}-${counter}`;
+      const { data: existingUser } = await supabaseAdmin
+        .from('users')
+        .select('id')
+        .eq('username', candidate)
+        .maybeSingle();
+
+      if (!existingUser) return candidate;
+      counter++;
+    }
+
+    return `${baseUsername}-${Math.floor(Math.random() * 1000)}`;
+  } catch (error) {
+    console.error('getUniqueUsername error:', error);
+    return baseUsername;
+  }
+}
+
 // 학생 추가 서버 액션
 export async function addStudent(formData: FormData, isSignup: boolean = false) {
   try {
@@ -260,7 +306,7 @@ export async function addStudent(formData: FormData, isSignup: boolean = false) 
       phone: formData.get('phone') as string,
       parentPhone: formData.get('parentPhone') as string,
       email: formData.get('email') as string,
-      classSchedules: JSON.parse(formData.get('classSchedules') as string),
+      classSchedules: formData.get('classSchedules') ? JSON.parse(formData.get('classSchedules') as string) : [],
       academy: formData.get('academy') as string,
       assignedTeacherId: formData.get('assignedTeacherId') as string,
       sub_subject: formData.get('sub_subject') as string,
@@ -269,17 +315,26 @@ export async function addStudent(formData: FormData, isSignup: boolean = false) 
       tuition_fee: formData.get('tuition_fee') ? parseInt(formData.get('tuition_fee')?.toString().replace(/,/g, '') || '0') : 0
     };
 
+    // 이름과 출생년도로 기본 아이디 생성 및 중복 시 접미사 부여
+    const baseStudentId = studentData.studentId || (studentData.name + (studentData.birthYear?.slice(-2) || ''));
+    const uniqueStudentId = await getUniqueUsername(baseStudentId);
+
+    const studentDataFinal = {
+      ...studentData,
+      studentId: uniqueStudentId
+    };
+
     // 회원가입인 경우 새로운 시스템 사용
     if (isSignup) {
       return await createStudentSignupRequest({
-        studentId: studentData.studentId,
-        name: studentData.name,
-        birthYear: studentData.birthYear,
-        password: studentData.password,
-        phone: studentData.phone,
-        parentPhone: studentData.parentPhone,
-        academy: studentData.academy,
-        assignedTeacherId: studentData.assignedTeacherId
+        studentId: studentDataFinal.studentId,
+        name: studentDataFinal.name,
+        birthYear: studentDataFinal.birthYear,
+        password: studentDataFinal.password,
+        phone: studentDataFinal.phone,
+        parentPhone: studentDataFinal.parentPhone,
+        academy: studentDataFinal.academy,
+        assignedTeacherId: studentDataFinal.assignedTeacherId
       });
     }
 
@@ -304,8 +359,8 @@ export async function addStudent(formData: FormData, isSignup: boolean = false) 
     }
 
     // 1. 학생 ID에 'p'를 붙여서 학부모 계정 자동 생성
-    const parentUsername = `${studentData.studentId}p`;
-    const parentPasswordHash = await bcrypt.hash(studentData.password, 10);
+    const parentUsername = `${studentDataFinal.studentId}p`;
+    const parentPasswordHash = await bcrypt.hash(studentDataFinal.password, 10);
 
     const { data: parentData, error: parentError } = await supabaseAdmin
       .from('users')
@@ -327,19 +382,19 @@ export async function addStudent(formData: FormData, isSignup: boolean = false) 
     }
 
     // 2. users 테이블에 학생 정보 등록
-    const studentPasswordHash = await bcrypt.hash(studentData.password, 10);
+    const studentPasswordHash = await bcrypt.hash(studentDataFinal.password, 10);
 
     const { data: userData, error: userError } = await supabaseAdmin
       .from('users')
       .insert({
-        username: studentData.studentId,
-        name: studentData.name,
+        username: studentDataFinal.studentId,
+        name: studentDataFinal.name,
         role: 'student',
         password: studentPasswordHash,
-        phone: studentData.phone,
-        birth_year: studentData.birthYear ? parseInt(studentData.birthYear) : null,
-        academy: studentData.academy || '코딩메이커',
-        assigned_teacher_id: studentData.assignedTeacherId || null,
+        phone: studentDataFinal.phone,
+        birth_year: studentDataFinal.birthYear ? parseInt(studentDataFinal.birthYear) : null,
+        academy: studentDataFinal.academy || '코딩메이커',
+        assigned_teacher_id: studentDataFinal.assignedTeacherId || null,
         status: 'active', // 관리자 추가 시에는 바로 active
         created_at: new Date().toISOString()
       })
@@ -355,8 +410,8 @@ export async function addStudent(formData: FormData, isSignup: boolean = false) 
     // 3. 수업 일정을 attendance_schedule 형식으로 변환
     const attendanceSchedule: any = {};
 
-    if (studentData.classSchedules) {
-      studentData.classSchedules.forEach((schedule: any) => {
+    if (studentDataFinal.classSchedules) {
+      studentDataFinal.classSchedules.forEach((schedule: any) => {
         if (schedule.day && schedule.startTime) {
           const dayMap: { [key: string]: string } = {
             'monday': '1', 'tuesday': '2', 'wednesday': '3',
@@ -407,11 +462,11 @@ export async function addStudent(formData: FormData, isSignup: boolean = false) 
       parent_id: parentData.id,
       current_curriculum_id: null,
       attendance_schedule: Object.keys(attendanceSchedule).length > 0 ? attendanceSchedule : null,
-      main_subject: studentData.subject || null,
-      sub_subject: studentData.sub_subject || null,
-      memo: studentData.memo || null,
-      tuition_fee: studentData.tuition_fee || 0,
-      enrollment_start_date: studentData.enrollment_date || new Date().toISOString().split('T')[0],
+      main_subject: studentDataFinal.subject || null,
+      sub_subject: studentDataFinal.sub_subject || null,
+      memo: studentDataFinal.memo || null,
+      tuition_fee: studentDataFinal.tuition_fee || 0,
+      enrollment_start_date: studentDataFinal.enrollment_date || new Date().toISOString().split('T')[0],
       created_at: new Date().toISOString()
     };
 
@@ -2258,21 +2313,28 @@ export async function createStudentSignupRequest(studentData: {
   assignedTeacherId: string;
 }) {
   try {
+    // 유니크한 학생 아이디 확보 (이미 존재할 경우 s, t, f 접미사 부여)
+    const uniqueStudentId = await getUniqueUsername(studentData.studentId);
+
+    const studentDataFinal = {
+      ...studentData,
+      studentId: uniqueStudentId
+    };
     // 서버 측 유효성 검증
     // 이름 검증 (한글만 허용, 2-10자)
     const nameRegex = /^[가-힣]{2,10}$/;
-    if (!nameRegex.test(studentData.name)) {
+    if (!nameRegex.test(studentDataFinal.name)) {
       return { success: false, error: '이름은 한글 2-10자로만 입력 가능합니다.' };
     }
 
     // 출생년도 검증 (4자리 숫자, 1900-현재년도)
     const yearRegex = /^\d{4}$/;
-    if (!yearRegex.test(studentData.birthYear)) {
+    if (!yearRegex.test(studentDataFinal.birthYear)) {
       return { success: false, error: '출생년도는 4자리 숫자로 입력해주세요.' };
     }
 
     const currentYear = new Date().getFullYear();
-    const birthYear = parseInt(studentData.birthYear);
+    const birthYear = parseInt(studentDataFinal.birthYear);
     if (birthYear < 1900 || birthYear > currentYear) {
       return { success: false, error: '올바른 출생년도를 입력해주세요. (1900년 ~ 현재년도)' };
     }
@@ -2281,18 +2343,18 @@ export async function createStudentSignupRequest(studentData: {
     const currentUserId = cookieStore.get('user_id')?.value;
 
     // 1. 학부모 계정 생성
-    const parentUsername = `${studentData.studentId}p`;
-    const parentPasswordHash = await bcrypt.hash(studentData.password, 10);
+    const parentUsername = `${studentDataFinal.studentId}p`;
+    const parentPasswordHash = await bcrypt.hash(studentDataFinal.password, 10);
 
     const { data: parentData, error: parentError } = await supabase
       .from('users')
       .insert({
         username: parentUsername,
-        name: `${studentData.name} 학부모`,
+        name: `${studentDataFinal.name} 학부모`,
         role: 'parent',
         password: parentPasswordHash,
-        phone: studentData.parentPhone || null,
-        academy: studentData.academy,
+        phone: studentDataFinal.parentPhone || null,
+        academy: studentDataFinal.academy,
         status: 'pending',
         created_at: new Date().toISOString()
       })
@@ -2304,29 +2366,14 @@ export async function createStudentSignupRequest(studentData: {
       return { success: false, error: '학부모 계정 생성에 실패했습니다.' };
     }
 
-    // 2. 중복 아이디 검사
-    const { data: existingUser } = await supabase
-      .from('users')
-      .select('id')
-      .eq('username', studentData.studentId)
-      .single();
-
-    if (existingUser) {
-      return { success: false, error: '이미 사용 중인 아이디입니다. 다른 이름이나 출생년도를 입력해주세요.' };
-    }
+    // 2. 중복 아이디 검사는 getUniqueUsername에서 이미 처리됨
 
     // 3. 학생 계정 생성
-    const studentPasswordHash = await bcrypt.hash(studentData.password, 10);
+    const studentPasswordHash = await bcrypt.hash(studentDataFinal.password, 10);
 
     const { data: studentUserData, error: studentUserError } = await supabase
       .from('users')
       .insert({
-        username: studentData.studentId,
-        name: studentData.name,
-        role: 'student',
-        password: studentPasswordHash,
-        phone: studentData.phone,
-        birth_year: studentData.birthYear ? parseInt(studentData.birthYear) : null,
         academy: studentData.academy,
         assigned_teacher_id: studentData.assignedTeacherId || null,
         status: 'pending',

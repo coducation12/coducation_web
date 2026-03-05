@@ -176,17 +176,31 @@ export default function StudentModal({ mode, student, isOpen, onClose, onSave, t
         }
     }, [mode, student, dialogOpen, teachers.length]);
 
-    // ID 자동 생성 로직
+    // ID 자동 생성 및 중복 체크 로직
     useEffect(() => {
-        if (mode === 'add') {
-            const yearSuffix = formData.birthYear.length >= 2
-                ? formData.birthYear.slice(-2)
-                : "";
+        const updateUniqueId = async () => {
+            if (mode === 'add') {
+                const yearSuffix = formData.birthYear.length >= 4
+                    ? formData.birthYear.slice(-2)
+                    : (formData.birthYear.length === 2 ? formData.birthYear : "");
 
-            if (formData.name && yearSuffix) {
-                setFormData(prev => ({ ...prev, studentId: formData.name + yearSuffix }));
+                if (formData.name && yearSuffix) {
+                    const baseId = formData.name + yearSuffix;
+                    try {
+                        // 서버 액션 호출하여 중복 없는 아이디 확보
+                        const { getUniqueUsername } = await import("@/lib/actions");
+                        const uniqueId = await getUniqueUsername(baseId);
+                        setFormData(prev => ({ ...prev, studentId: uniqueId }));
+                    } catch (error) {
+                        console.error("아이디 생성 오류:", error);
+                        setFormData(prev => ({ ...prev, studentId: baseId }));
+                    }
+                }
             }
-        }
+        };
+
+        const timer = setTimeout(updateUniqueId, 500); // 타이핑 중 잦은 호출 방지
+        return () => clearTimeout(timer);
     }, [formData.name, formData.birthYear, mode]);
 
     const handleInputChange = (field: string, value: string) => {

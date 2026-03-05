@@ -25,7 +25,7 @@ const iconSizes = {
 
 export function UserAvatar({ src, name, role, size = 'md', className = '' }: UserAvatarProps) {
   // 관리자인 경우 로고 이미지 사용
-  const avatarSrc = role === 'admin' ? '/logo.png' : src;
+  const avatarSrc = role === 'admin' ? '/android-chrome-512x512.png' : src;
 
   return (
     <Avatar className={`${sizeClasses[size]} ${className}`}>

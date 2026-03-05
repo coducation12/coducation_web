@@ -15,12 +15,12 @@ interface PostFormProps {
   initialImages?: string[];
 }
 
-export function PostForm({ 
-  onSubmit, 
-  loading = false, 
-  initialTitle = '', 
-  initialContent = '', 
-  initialImages = [] 
+export function PostForm({
+  onSubmit,
+  loading = false,
+  initialTitle = '',
+  initialContent = '',
+  initialImages = []
 }: PostFormProps) {
   const [title, setTitle] = useState(initialTitle);
   const [content, setContent] = useState(initialContent);
@@ -28,7 +28,7 @@ export function PostForm({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!title.trim() || !content.trim()) {
       alert('제목과 내용을 모두 입력해주세요.');
       return;
@@ -70,7 +70,7 @@ export function PostForm({
           disabled={loading}
         />
       </div>
-      
+
       <div>
         <label className="block text-sm font-medium text-cyan-200 mb-2">내용</label>
         <Textarea
@@ -81,7 +81,7 @@ export function PostForm({
           disabled={loading}
         />
       </div>
-      
+
       <div>
         <label className="block text-sm font-medium text-cyan-200 mb-2">이미지 (선택사항)</label>
         <ImageUploader
@@ -91,27 +91,14 @@ export function PostForm({
           disabled={loading}
         />
       </div>
-      
-      <div className="flex justify-end space-x-3">
-        <Button
-          type="button"
-          variant="outline"
-          onClick={() => {
-            setTitle('');
-            setContent('');
-            setImages([]);
-          }}
-          disabled={loading}
-          className="border-cyan-400/30 text-cyan-200 hover:bg-cyan-900/30"
-        >
-          취소
-        </Button>
+
+      <div className="flex justify-end">
         <Button
           type="submit"
           disabled={loading || !title.trim() || !content.trim()}
-          className="bg-cyan-600 hover:bg-cyan-700 text-white"
+          className="bg-cyan-600 hover:bg-cyan-700 text-white w-full"
         >
-          {loading ? '작성 중...' : '작성하기'}
+          {loading ? '저장 중...' : (initialTitle ? '수정 완료' : '작성 완료')}
         </Button>
       </div>
     </form>

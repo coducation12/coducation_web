@@ -522,6 +522,7 @@ export default function AdminStudentsPage() {
                     <Table>
                         <TableHeader>
                             <TableRow className="border-cyan-500/20">
+                                <TableHead className="text-cyan-200">No</TableHead>
                                 <TableHead
                                     className="text-cyan-200 cursor-pointer hover:text-cyan-100 transition-colors select-none"
                                     onClick={() => handleSort('name')}
@@ -580,12 +581,15 @@ export default function AdminStudentsPage() {
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {sortedStudents.map((student) => (
+                            {sortedStudents.map((student, index) => (
                                 <TableRow
                                     key={student.id}
                                     className="border-cyan-500/10 hover:bg-cyan-900/10 cursor-pointer"
                                     onClick={() => handleEditStudent(student)}
                                 >
+                                    <TableCell className="text-cyan-300 font-medium">
+                                        {index + 1}
+                                    </TableCell>
                                     <TableCell className="font-medium text-cyan-100">
                                         <button className="text-cyan-100 hover:text-cyan-300 transition-colors cursor-pointer">
                                             {student.name}

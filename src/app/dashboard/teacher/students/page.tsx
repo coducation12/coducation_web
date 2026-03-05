@@ -41,7 +41,7 @@ interface Student {
     progress?: any;
     attendance?: any;
     monthlyAttendanceCount?: number;
-    academy?: string;
+    academy: string;
 }
 
 interface ClassSchedule {
@@ -428,6 +428,7 @@ export default function TeacherStudentsPage() {
                     <Table>
                         <TableHeader>
                             <TableRow className="border-cyan-500/20">
+                                <TableHead className="text-cyan-200">No</TableHead>
                                 <TableHead
                                     className="text-cyan-200 cursor-pointer hover:text-cyan-100 transition-colors select-none"
                                     onClick={() => handleSort('name')}
@@ -485,7 +486,7 @@ export default function TeacherStudentsPage() {
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {sortedStudents.map((student) => (
+                            {sortedStudents.map((student, index) => (
                                 <TableRow
                                     key={student.uniqueKey}
                                     className="border-cyan-500/10 hover:bg-cyan-900/10 cursor-pointer"
@@ -495,6 +496,9 @@ export default function TeacherStudentsPage() {
                                         }
                                     }}
                                 >
+                                    <TableCell className="text-cyan-300 font-medium">
+                                        {index + 1}
+                                    </TableCell>
                                     <TableCell className="font-medium text-cyan-100">
                                         {student.type === 'signup_request' ? (
                                             <span className="text-cyan-100">{student.name}</span>

@@ -116,7 +116,10 @@ export default function StudentModal({ mode, student, isOpen, onClose, onSave, t
         memo: "",
         academy: academies[0] || "",
         tuition_fee: 0, // 숫자로 저장
-        classSchedules: [{ day: "", startTime: "", endTime: "", teacherId: "" }] as ClassSchedule[]
+        classSchedules: [
+            { day: "", startTime: "", endTime: "", teacherId: "" },
+            { day: "", startTime: "", endTime: "", teacherId: "" }
+        ] as ClassSchedule[]
     });
 
     const isControlled = isOpen !== undefined;
@@ -165,7 +168,10 @@ export default function StudentModal({ mode, student, isOpen, onClose, onSave, t
                 memo: "",
                 academy: academies[0] || "",
                 tuition_fee: 0, // 0으로 초기화
-                classSchedules: [{ day: "", startTime: "", endTime: "", teacherId: teachers.length === 1 ? teachers[0].id : "" }]
+                classSchedules: [
+                    { day: "", startTime: "", endTime: "", teacherId: teachers.length === 1 ? teachers[0].id : "" },
+                    { day: "", startTime: "", endTime: "", teacherId: teachers.length === 1 ? teachers[0].id : "" }
+                ]
             });
         }
     }, [mode, student, dialogOpen, teachers.length]);

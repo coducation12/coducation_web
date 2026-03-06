@@ -135,6 +135,14 @@ export const getAttendanceData = async (date: Date, teacherId?: string | null): 
             });
         });
 
+        // 5. 세션 정렬: 수업 시작 시간 순 -> 이름 순
+        sessions.sort((a, b) => {
+            if (a.attendanceTime.start !== b.attendanceTime.start) {
+                return a.attendanceTime.start.localeCompare(b.attendanceTime.start);
+            }
+            return a.name.localeCompare(b.name, 'ko-KR');
+        });
+
         return sessions;
     } catch (error) {
         console.error('getAttendanceData 처리 중 예기치 못한 오류:', error);

@@ -124,7 +124,7 @@ export const getAcademyColor = (academyName: string): string => {
     // 학원 이름별 고정 색상 매핑 (순서대로 1~5번)
     const academyColors: Record<string, string> = {
         '코딩메이커': '#00fff7', // 1번: 진한 하늘색 (사이트 테마)
-        '광양 코딩': '#ff00ff',   // 2번: 마젠타
+        '광양코딩': '#ff00ff',   // 2번: 마젠타
         '본점': '#00fff7',       // 1번과 동일한 경우 대응
         // 추가 학원이 있을 경우 아래에 마젠타 이외의 색상들(Amber, Lime, Purple 등) 매핑
     };

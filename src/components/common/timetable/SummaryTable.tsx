@@ -57,7 +57,7 @@ export function SummaryTable({
                                 }))
                                 .sort((a, b) => {
                                     // 1. 지정된 학원 순서 (코딩메이커 -> 광양 코딩)
-                                    const academyOrder: Record<string, number> = { '코딩메이커': 1, '광양 코딩': 2 };
+                                    const academyOrder: Record<string, number> = { '코딩메이커': 1, '광양코딩': 2 };
                                     const orderA = academyOrder[a.academy] || 99;
                                     const orderB = academyOrder[b.academy] || 99;
                                     if (orderA !== orderB) return orderA - orderB;

@@ -48,11 +48,11 @@ const subjectLabels: Record<string, string> = {
 
 const academyLabels: Record<string, string> = {
   '코딩메이커': '코딩메이커 (중마)',
-  '광양코딩': '광양코딩 (창덕)',
+  '광양코딩': '광양코딩 ',
   'codingmaker': '코딩메이커 (중마)',
   'coding-maker': '코딩메이커 (중마)',
   'coding_maker': '코딩메이커 (중마)',
-  'gwangyangcoding': '광양코딩 (창덕)',
+  'gwangyangcoding': '광양코딩 ',
   'gwangyang-coding': '광양코딩 (창덕)',
   'gwangyang_coding': '광양코딩 (창덕)'
 };

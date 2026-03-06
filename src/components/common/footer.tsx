@@ -17,7 +17,7 @@ export function Footer() {
             </div>
             <div className="text-sm leading-tight">
               <div className="flex items-center gap-2">
-                <span className="font-semibold text-sm">광양 코딩⠀(창덕)</span>
+                <span className="font-semibold text-sm">광양코딩⠀ (창덕)</span>
                 <span className="text-muted-foreground text-sm">061-911-1101</span>
               </div>
             </div>

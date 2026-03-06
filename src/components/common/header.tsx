@@ -5,7 +5,6 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState, useCallback } from 'react';
 import Image from 'next/image';
-import { LogIn } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -106,7 +105,7 @@ export function Header() {
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-14 max-w-screen-2xl items-center">
-        <Link href="/" className="mr-6 flex items-center">
+        <Link href="/" className="mr-4 md:mr-6 flex items-center">
           <div className="relative h-5 w-32 md:h-7 md:w-44 flex-shrink-0">
             <img
               src="/logo.png"
@@ -115,7 +114,7 @@ export function Header() {
             />
           </div>
         </Link>
-        <nav className="flex items-center gap-3 text-sm sm:gap-4 sm:text-base lg:gap-6 flex-1">
+        <nav className="hidden md:flex items-center gap-3 text-sm sm:gap-4 sm:text-base lg:gap-6 flex-1">
           {navLinks.map((link) => (
             <Link
               key={link.href}
@@ -132,14 +131,8 @@ export function Header() {
             </Link>
           ))}
         </nav>
-        <div className="flex items-center justify-end space-x-2">
-          <Button asChild size="icon" className="md:hidden">
-            <Link href="/login" className="flex items-center justify-center">
-              <LogIn className="h-4 w-4" />
-              <span className="sr-only">로그인</span>
-            </Link>
-          </Button>
-          <Button asChild className="hidden md:inline-flex">
+        <div className="flex items-center justify-end space-x-2 ml-auto md:ml-0">
+          <Button asChild>
             <Link href="/login">로그인</Link>
           </Button>
         </div>

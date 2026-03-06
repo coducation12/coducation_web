@@ -97,9 +97,6 @@ function CommunityPage() {
         <div className="flex justify-between items-center mb-6">
           <div>
             <h1 className="text-3xl font-bold text-cyan-100 drop-shadow-[0_0_6px_#00fff7]">커뮤니티</h1>
-            <p className="text-cyan-200 mt-2 font-medium drop-shadow">
-              {isSearching ? '검색 중...' : '학습에 대한 이야기를 나누고 정보를 공유해보세요'}
-            </p>
           </div>
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
@@ -150,9 +147,6 @@ function CommunityPage() {
       <div className="flex justify-between items-center mb-6">
         <div>
           <h1 className="text-3xl font-bold text-cyan-100 drop-shadow-[0_0_6px_#00fff7]">커뮤니티</h1>
-          <p className="text-cyan-200 mt-2 font-medium drop-shadow">
-            {isSearching ? '검색 중...' : '학습에 대한 이야기를 나누고 정보를 공유해보세요'}
-          </p>
         </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>

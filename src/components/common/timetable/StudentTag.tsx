@@ -43,7 +43,6 @@ export const StudentTag = React.memo(({
                 borderLeft: `4px solid ${academyColor}`, // 왼쪽 세로 포인트 바
                 paddingLeft: '5px' // 선과 이름 사이 간격 확보
             }}
-            title={`${student.name} - ${student.teacher} (${student.academy})`}
         >
             {student.name}
         </div>

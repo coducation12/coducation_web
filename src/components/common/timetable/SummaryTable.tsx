@@ -115,7 +115,6 @@ export function SummaryTable({
                                                                     ${isHovered ? 'ring-2 ring-cyan-400 z-10 scale-105' : ''}
                                                                 `}
                                                                 style={{ borderLeftColor: academyColor }}
-                                                                title={isNewStudent ? `신규 등록 학생: ${student.enrollmentDate} (${student.academy})` : `학원: ${student.academy}`}
                                                             >
                                                                 {student.name}
                                                             </div>
@@ -147,7 +146,6 @@ export function SummaryTable({
                                                                     ${isHovered ? 'ring-2 ring-cyan-400 z-10 scale-105' : ''}
                                                                 `}
                                                                 style={{ borderLeftColor: academyColor }}
-                                                                title={isNewStudent ? `신규 등록 학생: ${student.enrollmentDate} (${student.academy})` : `학원: ${student.academy}`}
                                                             >
                                                                 {student.name}<span className="ml-1 text-[10px] font-black text-cyan-400 opacity-80">({student.unit})</span>
                                                             </div>

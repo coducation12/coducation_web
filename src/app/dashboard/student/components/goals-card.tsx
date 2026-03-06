@@ -29,7 +29,7 @@ export function GoalsCard({ studentId, fixedInput, readOnly }: { studentId: stri
   const fetchGoals = async () => {
     try {
       setError(null);
-      
+
       // Students 테이블에서 todolist 컬럼을 조회
       const { data, error: supabaseError } = await supabase
         .from('students')
@@ -105,7 +105,7 @@ export function GoalsCard({ studentId, fixedInput, readOnly }: { studentId: stri
   const toggleGoal = async (goalIndex: number) => {
     try {
       setError(null);
-      
+
       // 기존 todolist 배열 조회
       const { data: currentData, error: fetchError } = await supabase
         .from('students')
@@ -151,7 +151,7 @@ export function GoalsCard({ studentId, fixedInput, readOnly }: { studentId: stri
   const deleteGoal = async (goalIndex: number) => {
     try {
       setError(null);
-      
+
       // 기존 todolist 배열 조회
       const { data: currentData, error: fetchError } = await supabase
         .from('students')
@@ -195,7 +195,7 @@ export function GoalsCard({ studentId, fixedInput, readOnly }: { studentId: stri
   const saveEdit = async (goalIndex: number) => {
     try {
       setError(null);
-      
+
       // 기존 todolist 배열 조회
       const { data: currentData, error: fetchError } = await supabase
         .from('students')
@@ -255,7 +255,7 @@ export function GoalsCard({ studentId, fixedInput, readOnly }: { studentId: stri
   return (
     <div className="h-full flex flex-col">
       <StudentSectionTitle icon={<Target className="w-5 h-5" />}>To-Do List</StudentSectionTitle>
-      
+
       {/* 에러 메시지 표시 */}
       {error && (
         <div className="mb-4 p-3 bg-red-400/10 border border-red-400/20 rounded-lg">
@@ -264,7 +264,7 @@ export function GoalsCard({ studentId, fixedInput, readOnly }: { studentId: stri
           </StudentText>
         </div>
       )}
-      
+
       <div className="space-y-4 flex-1 flex flex-col justify-between">
         {/* 할 일 추가 */}
         {!readOnly && !fixedInput && (
@@ -277,8 +277,8 @@ export function GoalsCard({ studentId, fixedInput, readOnly }: { studentId: stri
               disabled={isAdding}
               className={studentInputStyles}
             />
-            <Button 
-              onClick={addGoal} 
+            <Button
+              onClick={addGoal}
               disabled={isAdding || !newGoal.trim()}
               size="sm"
               className={studentButtonStyles.primary}
@@ -300,7 +300,7 @@ export function GoalsCard({ studentId, fixedInput, readOnly }: { studentId: stri
             <StudentText variant="muted">아직 등록된 할 일이 없습니다.</StudentText>
           </div>
         ) : (
-          <div className="space-y-4 flex-1 flex flex-col min-h-0">
+          <div className="space-y-4 flex-1 flex flex-col min-h-[200px] md:min-h-0">
             {/* 할 일 목록 */}
             <div className="space-y-2 flex-1 overflow-y-auto scrollbar-hide min-h-0">
               {allGoals.map((goal, index) => (
@@ -384,8 +384,8 @@ export function GoalsCard({ studentId, fixedInput, readOnly }: { studentId: stri
               disabled={isAdding}
               className={studentInputStyles}
             />
-            <Button 
-              onClick={addGoal} 
+            <Button
+              onClick={addGoal}
               disabled={isAdding || !newGoal.trim()}
               size="sm"
               className={studentButtonStyles.primary}

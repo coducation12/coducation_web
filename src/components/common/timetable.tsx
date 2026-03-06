@@ -41,7 +41,7 @@ export function Timetable({ title = "학원 시간표", className = "" }: Timeta
   const academies = Array.from(new Set(students.map(s => s.academy))).filter(Boolean);
 
   return (
-    <div className={`p-6 pt-20 lg:pt-6 space-y-8 animate-in fade-in duration-700 ${className}`}>
+    <div className={`p-6 pt-4 lg:pt-6 pb-24 space-y-8 animate-in fade-in duration-700 ${className}`}>
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="flex flex-col md:flex-row md:items-center gap-6 w-full">
           <h1 className="text-3xl font-black text-cyan-100 drop-shadow-[0_0_12px_rgba(0,255,247,0.5)] italic tracking-tighter shrink-0">

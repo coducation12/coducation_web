@@ -34,26 +34,24 @@ export default async function StudentDashboardPage() {
                     </div>
                 </DashboardCard>
                 {/* 오른쪽: 2행 2열 구조 */}
-                <div className="h-full grid grid-cols-1 md:grid-rows-2 gap-6">
+                <div className="md:h-full grid grid-cols-1 md:grid-rows-2 gap-6">
                     {/* 상단: 출석+캘린더(왼쪽) + 목표설정(오른쪽) */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 h-full">
-                        <DashboardCard className="student-card-container min-w-[180px]">
-                            <section className="min-h-0">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 md:h-full">
+                        <DashboardCard className="student-card-container min-w-[180px] flex flex-col">
+                            <section>
                                 <AttendanceCheckCard studentId={user.id} />
-                            </section>
-                            <section className="flex-1 mt-4 min-h-0">
                                 <AttendanceCalendar studentId={user.id} />
                             </section>
                         </DashboardCard>
-                        <DashboardCard className="student-card-container min-w-[180px]">
-                            <section className="student-card-content">
+                        <DashboardCard className="student-card-container min-w-[180px] flex flex-col">
+                            <section className="student-card-content flex-1">
                                 <GoalsCard studentId={user.id} fixedInput />
                             </section>
                         </DashboardCard>
                     </div>
                     {/* 하단: 타자 기록(오른쪽 전체) */}
-                    <DashboardCard className="student-card-container min-w-[180px]">
-                        <section className="student-card-content">
+                    <DashboardCard className="student-card-container min-w-[180px] flex flex-col">
+                        <section className="student-card-content flex-1 min-h-[300px] md:min-h-0">
                             <TypingChart studentId={user.id} />
                         </section>
                     </DashboardCard>

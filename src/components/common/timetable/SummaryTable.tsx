@@ -41,7 +41,7 @@ export function SummaryTable({
                     <thead>
                         <tr className="bg-cyan-950/80">
                             <th className="p-1.5 text-cyan-100 font-semibold border border-cyan-900/40 w-20 text-sm">강사</th>
-                            <th className="p-1.5 text-cyan-100 font-semibold border border-cyan-900/40 w-28 text-sm">분원</th>
+                            <th className="hidden md:table-cell p-1.5 text-cyan-100 font-semibold border border-cyan-900/40 w-28 text-sm">분원</th>
                             <th className="p-1.5 text-cyan-100 font-semibold border border-cyan-900/40 text-sm text-left px-4">학생 명단</th>
                             <th className="p-1.5 text-cyan-100 font-semibold border border-cyan-900/40 w-16 text-sm">인원</th>
                             <th className="p-1.5 text-cyan-100 font-semibold border border-cyan-900/40 w-16 text-sm">단위계</th>
@@ -81,7 +81,7 @@ export function SummaryTable({
                                             <span className="text-cyan-100 text-[14px] font-bold">{teacherData.name || teacherId}</span>
                                         </div>
                                     </td>
-                                    <td className="p-2 px-3 text-center border border-cyan-900/40 text-cyan-300">
+                                    <td className="hidden md:table-cell p-2 px-3 text-center border border-cyan-900/40 text-cyan-300">
                                         <div className="flex flex-col gap-1 items-center">
                                             {academies.map(acc => (
                                                 <Badge key={acc} variant="outline" className="text-[12px] py-0.5 px-2 border-cyan-800/40 text-cyan-400 backdrop-blur-sm">
@@ -94,7 +94,7 @@ export function SummaryTable({
                                         <div className="space-y-2">
                                             {/* 1.0단위 학생들 */}
                                             {teacherStudentsWithUnit.filter(s => s.unit === 1.0).length > 0 && (
-                                                <div className="flex flex-wrap gap-2 items-center">
+                                                <div className="grid grid-cols-3 sm:flex sm:flex-wrap gap-1 sm:gap-2 items-center">
                                                     {teacherStudentsWithUnit.filter(s => s.unit === 1.0).map((student) => {
                                                         const isHovered = hoveredStudentId === student.id;
                                                         const enrollmentDate = student.enrollmentDate ? new Date(student.enrollmentDate) : null;
@@ -108,7 +108,7 @@ export function SummaryTable({
                                                                 key={student.id}
                                                                 onMouseEnter={() => onHover(student.id)}
                                                                 onMouseLeave={() => onHover(null)}
-                                                                className={`pl-2 pr-2.5 py-[1px] rounded-r-[2px] text-[12px] font-bold transition-all duration-200 cursor-pointer border-l-[4px] border-y border-r border-y-transparent border-r-transparent
+                                                                className={`pl-1 pr-1.5 sm:pl-2 sm:pr-2.5 py-[1px] rounded-r-[2px] text-[11px] sm:text-[12px] font-bold transition-all duration-200 cursor-pointer border-l-[3px] sm:border-l-[4px] border-y border-r border-y-transparent border-r-transparent truncate
                                                                     ${isNewStudent
                                                                         ? 'text-amber-100 bg-amber-500/40 shadow-[0_0_12px_rgba(245,158,11,0.4)]'
                                                                         : 'text-cyan-200 bg-cyan-900/40 hover:bg-cyan-800/60'}
@@ -125,7 +125,7 @@ export function SummaryTable({
 
                                             {/* 1.0단위가 아닌 학생들 */}
                                             {teacherStudentsWithUnit.filter(s => s.unit !== 1.0).length > 0 && (
-                                                <div className="flex flex-wrap gap-2 items-center pt-1.5 border-t border-cyan-500/10">
+                                                <div className="grid grid-cols-3 sm:flex sm:flex-wrap gap-1 sm:gap-2 items-center pt-1.5 border-t border-cyan-500/10">
                                                     {teacherStudentsWithUnit.filter(s => s.unit !== 1.0).map((student) => {
                                                         const isHovered = hoveredStudentId === student.id;
                                                         const enrollmentDate = student.enrollmentDate ? new Date(student.enrollmentDate) : null;
@@ -139,7 +139,7 @@ export function SummaryTable({
                                                                 key={student.id}
                                                                 onMouseEnter={() => onHover(student.id)}
                                                                 onMouseLeave={() => onHover(null)}
-                                                                className={`pl-2 pr-2.5 py-[1px] rounded-r-[2px] text-[12px] font-bold transition-all duration-200 cursor-pointer border-l-[4px] border-y border-r border-y-transparent border-r-transparent
+                                                                className={`pl-1 pr-1.5 sm:pl-2 sm:pr-2.5 py-[1px] rounded-r-[2px] text-[11px] sm:text-[12px] font-bold transition-all duration-200 cursor-pointer border-l-[3px] sm:border-l-[4px] border-y border-r border-y-transparent border-r-transparent truncate
                                                                     ${isNewStudent
                                                                         ? 'text-amber-100 bg-amber-500/40 shadow-[0_0_12px_rgba(245,158,11,0.4)]'
                                                                         : 'text-cyan-200 bg-cyan-900/40 hover:bg-cyan-800/60'}

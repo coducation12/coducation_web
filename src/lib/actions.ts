@@ -1985,8 +1985,8 @@ export async function saveConsultation(formData: FormData) {
       return { success: false, error: '올바른 전화번호 형식을 입력해주세요. (예: 010-1234-5678)' };
     }
 
-    // Supabase에 상담 문의 저장
-    const { data, error } = await supabase
+    // Supabase에 상담 문의 저장 (관리자 권한으로 안정적 저장)
+    const { data, error } = await supabaseAdmin
       .from('consultations')
       .insert({
         name: consultationData.name,

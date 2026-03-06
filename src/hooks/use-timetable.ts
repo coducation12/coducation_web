@@ -37,7 +37,7 @@ export const useTimetable = () => {
           assigned_teachers,
           attendance_schedule,
           enrollment_start_date,
-          users!students_user_id_fkey(name, academy)
+          users!students_user_id_fkey(name, academy, status)
         `);
 
             if (studentsError) throw studentsError;
@@ -69,23 +69,25 @@ export const useTimetable = () => {
                 });
             });
 
-            const convertedStudents = (studentsData || []).map((student: any) => {
-                const assignedTeachers = student.assigned_teachers || [];
-                const tId = assignedTeachers[0] || '';
-                const tData = teacherMap.get(tId);
-                const tName = tData?.name || '미배정';
+            const convertedStudents = (studentsData || [])
+                .filter((student: any) => student.users?.status === 'active')
+                .map((student: any) => {
+                    const assignedTeachers = student.assigned_teachers || [];
+                    const tId = assignedTeachers[0] || '';
+                    const tData = teacherMap.get(tId);
+                    const tName = tData?.name || '미배정';
 
-                return {
-                    id: student.user_id,
-                    name: student.users?.name || '알 수 없음',
-                    teacher: tName,
-                    teacherId: tId,
-                    assignedTeachers: assignedTeachers,
-                    academy: student.users?.academy || '미지정',
-                    enrollmentDate: student.enrollment_start_date,
-                    schedule: student.attendance_schedule || {}
-                };
-            });
+                    return {
+                        id: student.user_id,
+                        name: student.users?.name || '알 수 없음',
+                        teacher: tName,
+                        teacherId: tId,
+                        assignedTeachers: assignedTeachers,
+                        academy: student.users?.academy || '미지정',
+                        enrollmentDate: student.enrollment_start_date,
+                        schedule: student.attendance_schedule || {}
+                    };
+                });
 
             setStudents(convertedStudents);
             setTeacherNames(Object.fromEntries(teacherMap.entries()));

@@ -11,7 +11,7 @@ import { supabase } from "@/lib/supabase";
 import { toast } from "@/hooks/use-toast";
 import { User, Save, Lock, Plus, X } from "lucide-react";
 import ImageUpload from "@/components/ui/image-upload";
-import { updateMyTeacherProfile } from "@/lib/actions";
+import { updateMyTeacherProfile, updateUserPassword } from "@/lib/actions";
 
 interface Certificate {
   name: string;
@@ -201,15 +201,13 @@ export default function TeacherProfileClient({ user }: TeacherProfileClientProps
 
     setChangingPassword(true);
     try {
-      const { error } = await supabase.auth.updateUser({
-        password: passwordData.newPassword
-      });
+      const result = await updateUserPassword(user.id, passwordData.newPassword);
 
-      if (error) {
-        console.error('비밀번호 변경 실패:', error);
+      if (!result.success) {
+        console.error('비밀번호 변경 실패:', result.error);
         toast({
           title: "오류",
-          description: `비밀번호 변경에 실패했습니다: ${error.message}`,
+          description: `비밀번호 변경에 실패했습니다: ${result.error}`,
           variant: "destructive",
         });
         return;

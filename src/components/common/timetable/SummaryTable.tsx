@@ -56,12 +56,10 @@ export function SummaryTable({
                                     unit: getStudentRegistrationUnit(currentYear, currentMonth, s.schedule, teacherId, s.teacherId, s.enrollmentDate)
                                 }))
                                 .sort((a, b) => {
-                                    // 1. 지정된 학원 순서 (코딩메이커 -> 광양 코딩)
                                     const academyOrder: Record<string, number> = { '코딩메이커': 1, '광양코딩': 2 };
                                     const orderA = academyOrder[a.academy] || 99;
                                     const orderB = academyOrder[b.academy] || 99;
                                     if (orderA !== orderB) return orderA - orderB;
-                                    // 2. 이름순 정렬
                                     return a.name.localeCompare(b.name);
                                 });
 
@@ -110,13 +108,13 @@ export function SummaryTable({
                                                                 key={student.id}
                                                                 onMouseEnter={() => onHover(student.id)}
                                                                 onMouseLeave={() => onHover(null)}
-                                                                className={`px-2 py-0.5 rounded text-[12px] font-medium transition-all duration-200 cursor-pointer border
-                                  ${isNewStudent
-                                                                        ? 'text-cyan-100 bg-amber-500/20 border-amber-500/40 shadow-[0_0_8px_rgba(245,158,11,0.2)]'
-                                                                        : 'text-cyan-200 bg-cyan-900/40 border-cyan-800/50 hover:bg-cyan-800/60'}
-                                  ${isHovered ? 'border-cyan-200 ring-2 ring-cyan-400 z-10 scale-105' : ''}
-                                `}
-                                                                style={{ borderBottom: `2.5px solid ${academyColor}` }}
+                                                                className={`pl-2 pr-2.5 py-[1px] rounded-r-[2px] text-[12px] font-bold transition-all duration-200 cursor-pointer border-l-[4px] border-y border-r border-y-transparent border-r-transparent
+                                                                    ${isNewStudent
+                                                                        ? 'text-amber-100 bg-amber-500/40 shadow-[0_0_12px_rgba(245,158,11,0.4)]'
+                                                                        : 'text-cyan-200 bg-cyan-900/40 hover:bg-cyan-800/60'}
+                                                                    ${isHovered ? 'ring-2 ring-cyan-400 z-10 scale-105' : ''}
+                                                                `}
+                                                                style={{ borderLeftColor: academyColor }}
                                                                 title={isNewStudent ? `신규 등록 학생: ${student.enrollmentDate} (${student.academy})` : `학원: ${student.academy}`}
                                                             >
                                                                 {student.name}
@@ -142,13 +140,13 @@ export function SummaryTable({
                                                                 key={student.id}
                                                                 onMouseEnter={() => onHover(student.id)}
                                                                 onMouseLeave={() => onHover(null)}
-                                                                className={`px-2 py-0.5 rounded text-[12px] font-medium transition-all duration-200 cursor-pointer border
-                                  ${isNewStudent
-                                                                        ? 'text-cyan-100 bg-amber-500/20 border-amber-500/40 shadow-[0_0_8px_rgba(245,158,11,0.2)]'
-                                                                        : 'text-cyan-200 bg-cyan-900/40 border-cyan-800/50 hover:bg-cyan-800/60'}
-                                  ${isHovered ? 'border-cyan-200 ring-2 ring-cyan-400 z-10 scale-105' : ''}
-                                `}
-                                                                style={{ borderBottom: `2.5px solid ${academyColor}` }}
+                                                                className={`pl-2 pr-2.5 py-[1px] rounded-r-[2px] text-[12px] font-bold transition-all duration-200 cursor-pointer border-l-[4px] border-y border-r border-y-transparent border-r-transparent
+                                                                    ${isNewStudent
+                                                                        ? 'text-amber-100 bg-amber-500/40 shadow-[0_0_12px_rgba(245,158,11,0.4)]'
+                                                                        : 'text-cyan-200 bg-cyan-900/40 hover:bg-cyan-800/60'}
+                                                                    ${isHovered ? 'ring-2 ring-cyan-400 z-10 scale-105' : ''}
+                                                                `}
+                                                                style={{ borderLeftColor: academyColor }}
                                                                 title={isNewStudent ? `신규 등록 학생: ${student.enrollmentDate} (${student.academy})` : `학원: ${student.academy}`}
                                                             >
                                                                 {student.name}<span className="ml-1 text-[10px] font-black text-cyan-400 opacity-80">({student.unit})</span>

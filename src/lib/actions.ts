@@ -80,6 +80,28 @@ export async function updateMyTeacherProfile(userId: string, data: any) {
   }
 }
 
+export async function updateUserPassword(userId: string, newPassword: string) {
+  try {
+    const authenticatedUser = await getAuthenticatedUser();
+
+    // 본인 확인: 토큰이 유효하고, 로그인된 사용자의 ID가 요청된 ID와 일치해야 함
+    if (!authenticatedUser || authenticatedUser.id !== userId) {
+      return { success: false, error: '권한이 없습니다.' };
+    }
+
+    const { error } = await supabaseAdmin.auth.admin.updateUserById(userId, {
+      password: newPassword
+    });
+
+    if (error) throw error;
+
+    return { success: true };
+  } catch (error: any) {
+    console.error('Password update error:', error);
+    return { success: false, error: error.message };
+  }
+}
+
 export async function login(formData: FormData) {
   try {
     const userType = formData.get('userType') as string;

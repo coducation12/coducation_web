@@ -30,7 +30,7 @@ export const StudentTag = React.memo(({
         <div
             onMouseEnter={onMouseEnter}
             onMouseLeave={onMouseLeave}
-            className={`rounded-[2px] px-1.5 py-[0.5px] text-white text-[9px] font-black 
+            className={`rounded-[2px] px-1.5 py-[0.5px] text-white text-[11px] font-black 
         transition-all duration-300 border-2 border-transparent cursor-pointer 
         text-center whitespace-nowrap shadow-[0_1px_3px_rgba(0,0,0,0.3)]
         ${isActive ? 'ring-2 ring-cyan-100 z-10 scale-110 shadow-[0_0_10px_rgba(0,255,247,0.4)]' : 'hover:scale-105'}
@@ -40,7 +40,8 @@ export const StudentTag = React.memo(({
                 ...colorSet.style,
                 color: 'white',
                 textShadow: '0px 0.5px 1.5px rgba(0,0,0,0.9), 0px 0px 1px rgba(0,0,0,1)',
-                borderBottom: `2.5px solid ${academyColor}` // 학원별 밑줄 추가
+                borderLeft: `4px solid ${academyColor}`, // 왼쪽 세로 포인트 바
+                paddingLeft: '5px' // 선과 이름 사이 간격 확보
             }}
             title={`${student.name} - ${student.teacher} (${student.academy})`}
         >

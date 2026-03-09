@@ -79,12 +79,11 @@ export function InstructorDetailModal({ instructor, isOpen, onClose }: Instructo
               <CardContent className="pt-6">
                 <h4 className="text-lg font-semibold mb-3 text-cyan-400 font-headline">자격증</h4>
                 {Array.isArray(instructor.certs) ? (
-                  <div className="grid grid-cols-[1.2fr_1fr_auto] gap-x-4 gap-y-3 items-baseline">
+                  <div className="grid grid-cols-[1fr_auto] gap-x-4 gap-y-3 items-baseline">
                     {instructor.certs.map((item: any, index: number) => (
                       <Fragment key={index}>
                         <span className="text-cyan-100 font-medium text-sm md:text-base line-clamp-1 pb-1 border-b border-cyan-500/5">{item.name}</span>
-                        <span className="text-cyan-200/80 text-xs md:text-sm line-clamp-1 pb-1 border-b border-cyan-500/5">{item.issuer}</span>
-                        <span className="text-cyan-200/50 text-xs md:text-sm font-mono whitespace-nowrap text-right pb-1 border-b border-cyan-500/5">{item.date}</span>
+                        <span className="text-cyan-200/80 text-xs md:text-sm line-clamp-1 pb-1 border-b border-cyan-500/5 text-right whitespace-nowrap">{item.issuer}</span>
                       </Fragment>
                     ))}
                   </div>
@@ -103,12 +102,11 @@ export function InstructorDetailModal({ instructor, isOpen, onClose }: Instructo
               <CardContent className="pt-6">
                 <h4 className="text-lg font-semibold mb-3 text-cyan-400 font-headline">경력</h4>
                 {Array.isArray(instructor.career) ? (
-                  <div className="grid grid-cols-[1.2fr_1fr_auto] gap-x-4 gap-y-3 items-baseline">
+                  <div className="grid grid-cols-[1fr_auto] gap-x-4 gap-y-3 items-baseline">
                     {instructor.career.map((item: any, index: number) => (
                       <Fragment key={index}>
                         <span className="text-cyan-100 font-medium text-sm md:text-base line-clamp-1 pb-1 border-b border-cyan-500/5">{item.company}</span>
-                        <span className="text-cyan-200/80 text-xs md:text-sm line-clamp-1 pb-1 border-b border-cyan-500/5">{item.position}</span>
-                        <span className="text-cyan-200/50 text-xs md:text-sm font-mono whitespace-nowrap text-right pb-1 border-b border-cyan-500/5">{item.period}</span>
+                        <span className="text-cyan-200/80 text-xs md:text-sm line-clamp-1 pb-1 border-b border-cyan-500/5 text-right whitespace-nowrap">{item.position}</span>
                       </Fragment>
                     ))}
                   </div>

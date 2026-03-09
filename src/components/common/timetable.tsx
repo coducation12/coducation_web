@@ -8,6 +8,7 @@ import { SummaryTable } from './timetable/SummaryTable';
 import { StudentTag } from './timetable/StudentTag';
 import { days, timeSlots, getStudentsForTimeSlot } from './timetable/utils';
 import { getAcademyColor } from '@/lib/timetable-utils';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface TimetableProps {
   title?: string;
@@ -15,6 +16,15 @@ interface TimetableProps {
 }
 
 export function Timetable({ title = "학원 시간표", className = "" }: TimetableProps) {
+  const now = new Date();
+  const [currentDate, setCurrentDate] = React.useState({
+    year: now.getFullYear(),
+    month: now.getMonth() + 1
+  });
+
+  // 현재 날짜인지 확인
+  const isCurrentMonth = currentDate.year === now.getFullYear() && currentDate.month === (now.getMonth() + 1);
+
   const {
     students,
     teacherNames,
@@ -22,9 +32,33 @@ export function Timetable({ title = "학원 시간표", className = "" }: Timeta
     hoveredStudentId,
     setHoveredStudentId,
     unitThreshold
-  } = useTimetable();
+  } = useTimetable(isCurrentMonth ? undefined : { year: currentDate.year, month: currentDate.month });
 
   const [hoveredAcademy, setHoveredAcademy] = React.useState<string | null>(null);
+
+  const handlePrevMonth = () => {
+    setCurrentDate(prev => {
+      let newMonth = prev.month - 1;
+      let newYear = prev.year;
+      if (newMonth < 1) {
+        newMonth = 12;
+        newYear -= 1;
+      }
+      return { year: newYear, month: newMonth };
+    });
+  };
+
+  const handleNextMonth = () => {
+    setCurrentDate(prev => {
+      let newMonth = prev.month + 1;
+      let newYear = prev.year;
+      if (newMonth > 12) {
+        newMonth = 1;
+        newYear += 1;
+      }
+      return { year: newYear, month: newMonth };
+    });
+  };
 
   if (isLoading) {
     return (
@@ -42,32 +76,61 @@ export function Timetable({ title = "학원 시간표", className = "" }: Timeta
 
   return (
     <div className={`p-6 pt-4 lg:pt-6 pb-24 space-y-8 animate-in fade-in duration-700 ${className}`}>
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div className="flex flex-col md:flex-row md:items-center gap-6 w-full">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 pb-2">
+        <div className="flex items-center gap-4">
           <h1 className="text-3xl font-black text-cyan-100 drop-shadow-[0_0_12px_rgba(0,255,247,0.5)] italic tracking-tighter shrink-0">
             {title}
           </h1>
 
           {/* 학원 범례 (Legend) */}
-          <div className="flex flex-wrap items-center gap-3 bg-cyan-950/30 px-4 py-2 rounded-full border border-cyan-800/30 backdrop-blur-sm self-start md:self-auto">
+          <div className="hidden md:flex flex-wrap items-center gap-2 bg-cyan-950/30 px-3 py-1.5 rounded-full border border-cyan-800/30 backdrop-blur-sm">
             {academies.map((academy) => (
               <div
                 key={academy}
                 onMouseEnter={() => setHoveredAcademy(academy)}
                 onMouseLeave={() => setHoveredAcademy(null)}
-                className={`flex items-center gap-2 px-2 py-0.5 rounded-md cursor-help transition-all duration-300
-                  ${hoveredAcademy === academy ? 'bg-cyan-800/40 scale-105' : 'opacity-80 hover:opacity-100'}
+                className={`flex items-center gap-1.5 px-2 py-0.5 rounded-md cursor-help transition-all duration-300
+                  ${hoveredAcademy === academy ? 'bg-cyan-800/40 scale-105' : 'opacity-70 hover:opacity-100'}
                 `}
               >
                 <div
-                  className="w-2.5 h-2.5 rounded-full shadow-[0_0_8px_rgba(0,0,0,0.5)]"
+                  className="w-2 h-2 rounded-full"
                   style={{ backgroundColor: getAcademyColor(academy) }}
                 ></div>
-                <span className="text-sm font-bold text-cyan-100">{academy}</span>
+                <span className="text-[11px] font-bold text-cyan-100/90 tracking-tight">{academy}</span>
               </div>
             ))}
           </div>
         </div>
+
+        {/* 중앙 월 네비게이션 */}
+        <div className="flex items-center justify-center gap-4 bg-cyan-950/40 border border-cyan-800/30 p-1.5 rounded-2xl backdrop-blur-md shadow-lg shadow-cyan-950/20">
+          <button
+            onClick={handlePrevMonth}
+            className="p-1.5 rounded-xl hover:bg-cyan-800/40 text-cyan-400 transition-all hover:scale-110 active:scale-95"
+          >
+            <ChevronLeft className="w-6 h-6" />
+          </button>
+
+          <div className="flex items-center gap-2.5 px-4">
+            <span className="text-xl font-black text-cyan-100 tracking-tight min-w-[120px] text-center">
+              {currentDate.year}년 {currentDate.month}월
+            </span>
+          </div>
+
+          <button
+            onClick={handleNextMonth}
+            disabled={isCurrentMonth}
+            className={`p-1.5 rounded-xl text-cyan-400 transition-all 
+              ${isCurrentMonth ? 'opacity-0 cursor-default' : 'hover:bg-cyan-800/40 hover:scale-110 active:scale-95'}
+            `}
+          >
+            <ChevronRight className="w-6 h-6" />
+          </button>
+        </div>
+
+        {/* 우측 공백 또는 추가 버튼용 공간 */}
+        <div className="hidden lg:block w-48"></div>
       </div>
 
       <Card className="bg-gradient-to-br from-[#0a1837]/80 to-[#0a1a2f]/80 border-cyan-900/40 overflow-hidden shadow-2xl shadow-cyan-950/50 backdrop-blur-xl">

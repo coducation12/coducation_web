@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import { getContent } from "@/lib/actions";
+import { getTimetableSnapshot } from "@/lib/actions/timetable-snapshot";
 
 export interface TimetableStudent {
     id: string;
@@ -19,7 +20,12 @@ export interface TimetableStudent {
     };
 }
 
-export const useTimetable = () => {
+export interface TimetableOptions {
+    year?: number;
+    month?: number;
+}
+
+export const useTimetable = (options?: TimetableOptions) => {
     const [students, setStudents] = useState<TimetableStudent[]>([]);
     const [teacherNames, setTeacherNames] = useState<Record<string, { name: string, color: string }>>({});
     const [isLoading, setIsLoading] = useState(true);
@@ -30,6 +36,28 @@ export const useTimetable = () => {
         try {
             setIsLoading(true);
 
+            // 스냅샷 데이터 조회 (연도/월 옵션이 있는 경우)
+            if (options?.year && options?.month) {
+                const { data: snapshotData, error: snapshotError } = await getTimetableSnapshot(options.year, options.month);
+
+                if (snapshotError) throw snapshotError;
+
+                if (snapshotData) {
+                    const { students: s, teacherNames: t, unitThreshold: u } = snapshotData;
+                    setStudents(s || []);
+                    setTeacherNames(t || {});
+                    setUnitThreshold(u || '8');
+                } else {
+                    // 데이터가 없는 경우 빈 상태 표시
+                    setStudents([]);
+                    setTeacherNames({});
+                    setUnitThreshold('8');
+                }
+                setIsLoading(false);
+                return;
+            }
+
+            // 실시간 데이터 로드 (기존 로직 - 옵션이 없는 경우)
             const { data: studentsData, error: studentsError } = await supabase
                 .from('students')
                 .select(`
@@ -98,6 +126,9 @@ export const useTimetable = () => {
             }
         } catch (error) {
             console.error('시간표 데이터 로드 실패:', error);
+            // 에러 발생 시에도 빈 상태로 초기화하여 로딩 종료
+            setStudents([]);
+            setTeacherNames({});
         } finally {
             setIsLoading(false);
         }
@@ -105,7 +136,7 @@ export const useTimetable = () => {
 
     useEffect(() => {
         fetchStudents();
-    }, []);
+    }, [options?.year, options?.month]);
 
     return {
         students,

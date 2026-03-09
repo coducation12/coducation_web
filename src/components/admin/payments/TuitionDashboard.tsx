@@ -98,6 +98,13 @@ export function TuitionDashboard({ currentUserId, currentUserRole }: TuitionDash
                         aValue = a.payment.total_paid_amount;
                         bValue = b.payment.total_paid_amount;
                         break;
+                    case 'payment_date':
+                        // 가장 최근 결제일 찾기
+                        const aDates = a.payment.payment_details?.map((p: any) => p.date).filter(Boolean).sort();
+                        const bDates = b.payment.payment_details?.map((p: any) => p.date).filter(Boolean).sort();
+                        aValue = aDates?.[aDates.length - 1] || "";
+                        bValue = bDates?.[bDates.length - 1] || "";
+                        break;
                     default:
                         return 0;
                 }
@@ -300,14 +307,14 @@ export function TuitionDashboard({ currentUserId, currentUserRole }: TuitionDash
                     <Table>
                         <TableHeader>
                             <TableRow className="border-cyan-500/20 hover:bg-transparent">
+                                <TableHead className="text-cyan-300 cursor-pointer hover:text-cyan-100 transition-colors" onClick={() => handleSort('status')}>
+                                    <div className="flex items-center">수납 상태 {renderSortIcon('status')}</div>
+                                </TableHead>
                                 <TableHead className="text-cyan-300 cursor-pointer hover:text-cyan-100 transition-colors" onClick={() => handleSort('name')}>
                                     <div className="flex items-center">학생 정보 {renderSortIcon('name')}</div>
                                 </TableHead>
                                 <TableHead className="text-cyan-300 cursor-pointer hover:text-cyan-100 transition-colors" onClick={() => handleSort('teacher')}>
                                     <div className="flex items-center">강사/과목 {renderSortIcon('teacher')}</div>
-                                </TableHead>
-                                <TableHead className="text-cyan-300 cursor-pointer hover:text-cyan-100 transition-colors" onClick={() => handleSort('status')}>
-                                    <div className="flex items-center">수납 상태 {renderSortIcon('status')}</div>
                                 </TableHead>
                                 <TableHead className="text-cyan-300 text-right cursor-pointer hover:text-cyan-100 transition-colors" onClick={() => handleSort('base_amount')}>
                                     <div className="flex items-center justify-end">기준 금액 {renderSortIcon('base_amount')}</div>
@@ -315,16 +322,19 @@ export function TuitionDashboard({ currentUserId, currentUserRole }: TuitionDash
                                 <TableHead className="text-cyan-300 text-right cursor-pointer hover:text-cyan-100 transition-colors" onClick={() => handleSort('total_paid_amount')}>
                                     <div className="flex items-center justify-end">수납 총액 {renderSortIcon('total_paid_amount')}</div>
                                 </TableHead>
+                                <TableHead className="text-cyan-300 text-right cursor-pointer hover:text-cyan-100 transition-colors" onClick={() => handleSort('payment_date')}>
+                                    <div className="flex items-center justify-end">수납일 {renderSortIcon('payment_date')}</div>
+                                </TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
                             {loading ? (
                                 <TableRow>
-                                    <TableCell colSpan={5} className="text-center py-20 text-cyan-400">데이터를 불러오는 중...</TableCell>
+                                    <TableCell colSpan={6} className="text-center py-20 text-cyan-400">데이터를 불러오는 중...</TableCell>
                                 </TableRow>
                             ) : filteredAndSortedData.length === 0 ? (
                                 <TableRow>
-                                    <TableCell colSpan={5} className="text-center py-20 text-cyan-600">조회된 내역이 없습니다.</TableCell>
+                                    <TableCell colSpan={6} className="text-center py-20 text-cyan-600">조회된 내역이 없습니다.</TableCell>
                                 </TableRow>
                             ) : (
                                 filteredAndSortedData.map((item) => (
@@ -333,6 +343,25 @@ export function TuitionDashboard({ currentUserId, currentUserRole }: TuitionDash
                                         className="border-cyan-500/10 hover:bg-cyan-900/20 transition-colors cursor-pointer group"
                                         onClick={() => openPaymentModal(item)}
                                     >
+                                        <TableCell>
+                                            <Badge
+                                                variant="outline"
+                                                className={`
+                                                  min-w-[70px] justify-center border-transparent
+                                                  ${item.payment.status === 'pending' ? 'bg-zinc-600/20 text-zinc-400' :
+                                                        item.payment.status === 'partial' ? 'bg-orange-600/20 text-orange-400' :
+                                                            item.payment.status === 'paid' ? 'bg-green-600/20 text-green-400' :
+                                                                'bg-red-600/10 text-red-400'}
+                                                `}
+                                            >
+                                                {item.payment.status === 'pending' ? '미납' : item.payment.status === 'partial' ? '부분납' : item.payment.status === 'paid' ? '완납' : '제외/휴강'}
+                                            </Badge>
+                                            {item.payment.memo && (
+                                                <div className="text-[10px] text-cyan-400 mt-1 max-w-[120px] truncate" title={item.payment.memo}>
+                                                    {item.payment.memo}
+                                                </div>
+                                            )}
+                                        </TableCell>
                                         <TableCell>
                                             <div className="flex flex-col">
                                                 <div className="flex items-center gap-2">
@@ -355,20 +384,6 @@ export function TuitionDashboard({ currentUserId, currentUserRole }: TuitionDash
                                                 <span className="text-[10px] text-cyan-500">{item.subject || "미지정"}</span>
                                             </div>
                                         </TableCell>
-                                        <TableCell>
-                                            <Badge
-                                                variant="outline"
-                                                className={`
-                                                  min-w-[70px] justify-center border-transparent
-                                                  ${item.payment.status === 'pending' ? 'bg-zinc-600/20 text-zinc-400' :
-                                                        item.payment.status === 'partial' ? 'bg-orange-600/20 text-orange-400' :
-                                                            item.payment.status === 'paid' ? 'bg-green-600/20 text-green-400' :
-                                                                'bg-red-600/10 text-red-400'}
-                                                `}
-                                            >
-                                                {item.payment.status === 'pending' ? '미납' : item.payment.status === 'partial' ? '부분납' : item.payment.status === 'paid' ? '완납' : '제외/휴강'}
-                                            </Badge>
-                                        </TableCell>
                                         <TableCell className="text-right text-cyan-300 font-mono">{item.base_amount.toLocaleString()}원</TableCell>
                                         <TableCell className="text-right text-green-400 font-bold font-mono">
                                             {item.payment.total_paid_amount.toLocaleString()}원
@@ -377,6 +392,13 @@ export function TuitionDashboard({ currentUserId, currentUserRole }: TuitionDash
                                                     미수: {(item.base_amount - item.payment.total_paid_amount).toLocaleString()}원
                                                 </div>
                                             )}
+                                        </TableCell>
+                                        <TableCell className="text-right text-cyan-400 font-mono text-xs">
+                                            {(() => {
+                                                const dates = item.payment.payment_details?.map((p: any) => p.date).filter(Boolean).sort();
+                                                const lastDate = dates?.[dates.length - 1];
+                                                return lastDate ? lastDate : "-";
+                                            })()}
                                         </TableCell>
                                     </TableRow>
                                 ))

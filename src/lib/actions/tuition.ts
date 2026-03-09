@@ -80,7 +80,9 @@ export async function getTuitionDashboardData(month: string, currentUserId: stri
             // 휴강, 종료, 비활성 학생은 목록에서 완전히 제외
             if (isEnded || isNotActive) return null;
 
-            let autoStatus = 'pending';
+            // 기준금액(tuition_fee)이 0원이면 기본 상태를 'paid'로 설정
+            const baseFee = student.tuition_fee || 0;
+            let autoStatus = baseFee === 0 ? 'paid' : 'pending';
 
             // 담당 강사 이름들
             const assignedTeacherIds = student.assigned_teachers || [];
@@ -96,7 +98,10 @@ export async function getTuitionDashboardData(month: string, currentUserId: stri
                 base_amount: payment ? (payment.base_amount || student.tuition_fee) : (student.tuition_fee || 0),
                 teacher_names: teacherNames,
                 teacher_ids: assignedTeacherIds,
-                payment: payment || {
+                payment: payment ? {
+                    ...payment,
+                    status: (payment.base_amount || student.tuition_fee) === 0 ? 'paid' : payment.status
+                } : {
                     status: autoStatus,
                     total_paid_amount: 0,
                     payment_details: []
@@ -116,7 +121,8 @@ export async function getTuitionDashboardData(month: string, currentUserId: stri
  */
 export async function saveTuitionPayment(data: {
     student_id: string;
-    payment_details: any[]; // 각 항목에 targetMonth가 포함됨
+    payment_details: any[];
+    memo: string;
     recorded_by: string;
 }) {
     try {
@@ -153,9 +159,11 @@ export async function saveTuitionPayment(data: {
             const details = monthlyData[month] || [];
             const total_paid_amount = details.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
 
-            // 상태 결정: 항목이 없으면 'pending', 전액 이상이면 'paid', 그 외 'partial'
+            // 상태 결정: 기준금액이 0원이면 'paid', 항목이 있으면 금액 비교, 그 외 'pending'
             let status = 'pending';
-            if (details.length > 0) {
+            if (baseFee === 0) {
+                status = 'paid';
+            } else if (details.length > 0) {
                 status = total_paid_amount >= baseFee ? 'paid' : 'partial';
             }
 
@@ -168,6 +176,7 @@ export async function saveTuitionPayment(data: {
                     total_paid_amount,
                     payment_details: details,
                     status,
+                    memo: data.memo,
                     recorded_by: data.recorded_by,
                     updated_at: new Date().toISOString()
                 }, {

@@ -55,6 +55,10 @@ export function PaymentEntryModal({ isOpen, onClose, student, currentMonth, curr
     useEffect(() => {
         const loadHistory = async () => {
             if (isOpen && student.student_id) {
+                // 모달을 열거나 학생이 바뀌면 이전 데이터를 초기화 (깜빡임 방지)
+                setItems([]);
+                setMemo("");
+
                 try {
                     setHistoryLoading(true);
                     const res = await getStudentPaymentHistory(student.student_id);
@@ -146,6 +150,7 @@ export function PaymentEntryModal({ isOpen, onClose, student, currentMonth, curr
             const res = await saveTuitionPayment({
                 student_id: student.student_id,
                 payment_details: cleanItems,
+                memo: memo,
                 recorded_by: currentUserId
             });
 
@@ -258,11 +263,10 @@ export function PaymentEntryModal({ isOpen, onClose, student, currentMonth, curr
                                                     onChange={(e) => updateItem(idx, 'method', e.target.value)}
                                                     className="h-7 w-full bg-[#0a203f] border border-cyan-500/20 text-[10px] rounded-md px-1 outline-none focus:ring-1 focus:ring-cyan-500"
                                                 >
+                                                    <option value="결제선생">결제선생</option>
+                                                    <option value="계좌이체">계좌이체</option>
                                                     <option value="카드">카드</option>
                                                     <option value="현금">현금</option>
-                                                    <option value="계좌이체">계좌이체</option>
-                                                    <option value="결제선생">결제선생</option>
-                                                    <option value="기존기록">기존기록</option>
                                                 </select>
                                             </TableCell>
                                             <TableCell className="px-1 py-1">

@@ -1529,18 +1529,19 @@ export async function addTeacher(formData: FormData) {
     // 2. 비밀번호 해시 처리
     const passwordHash = await bcrypt.hash(teacherData.password, 10);
 
-    // 3. users 테이블에 강사 정보 등록 (이메일을 username으로 사용)
+    // 3. users 테이블에 강사 정보 등록 (이메일을 username으로 사용하고 Auth ID를 id로 사용)
     const { data: userData, error: userError } = await supabaseAdmin
       .from('users')
       .insert({
-        username: teacherData.email, // 이메일을 username으로 사용
+        id: authData.user?.id, // Auth ID를 DB ID로 사용 (동기화)
+        username: teacherData.email,
         name: teacherData.name,
         role: 'teacher',
         password: passwordHash,
         email: teacherData.email,
         phone: teacherData.phone,
         academy: '코딩메이커',
-        profile_image_url: teacherData.image || null, // 프로필 이미지 추가
+        profile_image_url: teacherData.image || null,
         created_at: new Date().toISOString()
       })
       .select()

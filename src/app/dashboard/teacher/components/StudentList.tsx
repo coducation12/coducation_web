@@ -9,9 +9,10 @@ interface StudentListProps {
   teacherId?: string | null;
   allActiveStudents?: { id: string, name: string }[];
   onRefresh?: () => void;
+  onStudentClick: (userId: string) => void;
 }
 
-export function StudentList({ students, onAttendanceChange, teacherId, allActiveStudents = [], onRefresh }: StudentListProps) {
+export function StudentList({ students, onAttendanceChange, teacherId, allActiveStudents = [], onRefresh, onStudentClick }: StudentListProps) {
   return (
     <Card className="bg-gradient-to-br from-cyan-900/20 to-blue-900/20 border-cyan-500/30 mt-8">
       <CardHeader className="flex flex-row items-center justify-between py-4">
@@ -43,6 +44,7 @@ export function StudentList({ students, onAttendanceChange, teacherId, allActive
                   idx={idx}
                   onAttendanceChange={onAttendanceChange}
                   teacherId={teacherId}
+                  onStudentClick={onStudentClick}
                 />
               ))}
             </tbody>
@@ -52,3 +54,4 @@ export function StudentList({ students, onAttendanceChange, teacherId, allActive
     </Card>
   );
 }
+

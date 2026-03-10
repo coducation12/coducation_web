@@ -9,17 +9,26 @@ interface StudentRowProps {
     idx: number;
     onAttendanceChange: (id: string, value: AttendanceStatus) => void;
     teacherId?: string | null;
+    onStudentClick: (userId: string) => void;
 }
 
 export const StudentRow = React.memo(({
     student,
     idx,
     onAttendanceChange,
-    teacherId
+    teacherId,
+    onStudentClick
 }: StudentRowProps) => {
     return (
         <tr className={`${idx % 2 === 0 ? 'bg-cyan-900/10' : ''} border-b border-cyan-500/10`}>
-            <td className="px-2 py-3 text-center font-medium">{student.name}</td>
+            <td className="px-2 py-3 text-center font-medium">
+                <button
+                    onClick={() => onStudentClick(student.userId)}
+                    className="text-cyan-100 hover:text-cyan-300 hover:underline transition-colors font-bold"
+                >
+                    {student.name}
+                </button>
+            </td>
             <td className="px-2 py-3 text-center">{student.day}</td>
             <td className="px-2 py-3 text-center">{student.course}</td>
             <td className="px-2 py-3 text-center hidden sm:table-cell opacity-70">{student.curriculum}</td>
@@ -65,5 +74,6 @@ export const StudentRow = React.memo(({
         </tr>
     );
 });
+
 
 StudentRow.displayName = 'StudentRow';

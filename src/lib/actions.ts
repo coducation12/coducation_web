@@ -728,6 +728,134 @@ export async function updateStudent(formData: FormData) {
   }
 }
 
+// 학생 상세 정보 조회 (수합용)
+export async function getStudentDetailsForEdit(userId: string, requestingTeacherId?: string) {
+  try {
+    const { data: item, error } = await supabase
+      .from('students')
+      .select(`
+                user_id, 
+                parent_id, 
+                current_curriculum_id, 
+                enrollment_start_date, 
+                attendance_schedule,
+                assigned_teachers,
+                main_subject,
+                sub_subject,
+                memo,
+                tuition_fee,
+                users!students_user_id_fkey ( 
+                    id, 
+                    name, 
+                    username, 
+                    phone, 
+                    birth_year, 
+                    academy, 
+                    created_at, 
+                    email, 
+                    status,
+                    assigned_teacher_id
+                ), 
+                parent:users!students_parent_id_fkey ( phone )
+            `)
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    if (error || !item) {
+      return { success: false, error: '학생 정보를 찾을 수 없습니다.' };
+    }
+
+    // StudentModal에서 기대하는 Student 타입으로 변환
+    const student = {
+      id: item.user_id,
+      name: item.users?.name || '-',
+      email: item.users?.email || '-',
+      phone: item.users?.phone || '-',
+      parentPhone: item.parent?.phone || '-',
+      birthDate: item.users?.birth_year ? String(item.users.birth_year) : '-',
+      course: item.main_subject || '프로그래밍',
+      status: item.users?.status === 'pending' ? '승인대기' :
+        (item.users?.status === 'suspended' || item.users?.status === '휴강') ? '휴강' :
+          (item.users?.status === 'inactive' || item.users?.status === '종료') ? '종료' : '수강',
+      studentId: item.users?.username || '-',
+      sub_subject: item.sub_subject || '',
+      enrollment_date: item.enrollment_start_date || '',
+      memo: item.memo || '',
+      tuition_fee: item.tuition_fee || 0,
+      academy: item.users?.academy || '코딩메이커',
+      classSchedules: item.attendance_schedule ? Object.entries(item.attendance_schedule)
+        .filter(([day, schedule]: [string, any]) => {
+          // 요청한 강사가 있는 경우, 해당 강사의 스케줄만 필터링
+          if (requestingTeacherId) {
+            return schedule.teacherId === requestingTeacherId;
+          }
+          return true;
+        })
+        .map(([day, schedule]: [string, any]) => {
+          const dayMap: { [key: string]: string } = {
+            '0': 'sunday', '1': 'monday', '2': 'tuesday', '3': 'wednesday', '4': 'thursday', '5': 'friday', '6': 'saturday'
+          };
+          return {
+            day: dayMap[day] || day,
+            startTime: schedule.startTime || '',
+            endTime: schedule.endTime || '',
+            teacherId: schedule.teacherId || ''
+          };
+        }) : []
+    };
+
+    return { success: true, data: student };
+  } catch (error: any) {
+    console.error('getStudentDetailsForEdit error:', error);
+    return { success: false, error: '정보 조회 중 오류가 발생했습니다.' };
+  }
+}
+
+// 강사 및 학원 목록 조회
+export async function getTeachersAndAcademies() {
+  try {
+    // 1. 강사 목록 조회
+    const { data: teachersData, error: teachersError } = await supabase
+      .from('users')
+      .select(`
+                id, 
+                name,
+                teachers(label_color)
+            `)
+      .eq('role', 'teacher')
+      .eq('status', 'active');
+
+    if (teachersError) throw teachersError;
+
+    const teachers = (teachersData || []).map((t: any) => {
+      const detail = Array.isArray(t.teachers) ? t.teachers[0] : t.teachers;
+      return {
+        id: t.id,
+        name: t.name,
+        label_color: detail?.label_color || '#00fff7'
+      };
+    });
+
+    // 2. 학원 목록 조회 (중복 제거)
+    const { data: academyData, error: academyError } = await supabase
+      .from('users')
+      .select('academy')
+      .not('academy', 'is', null);
+
+    if (academyError) throw academyError;
+
+    const academies = Array.from(new Set(
+      (academyData || []).map((a: any) => a.academy).concat(["코딩메이커", "광양코딩"])
+    )).filter(Boolean) as string[];
+
+    return { success: true, teachers, academies };
+  } catch (error: any) {
+    console.error('getTeachersAndAcademies error:', error);
+    return { success: false, error: '목록 조회 중 오류가 발생했습니다.' };
+  }
+}
+
+
 // 커리큘럼 추가 서버 액션
 export async function addCurriculum(formData: FormData) {
   try {

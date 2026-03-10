@@ -81,9 +81,18 @@ export const getAttendanceData = async (date: Date, teacherId?: string | null): 
             const studentLogs = logMap.get(student.user_id) || [];
             const teacherName = teacherMap.get(assignedTeachers[0]) || '미배정';
 
-            // 요일 라벨 생성
+            // 요일 라벨 생성 (해당 강사가 담당하는 요일만 표시)
             const daysLabel = Object.keys(schedule)
-                .filter(k => !isNaN(parseInt(k)))
+                .filter(k => {
+                    const dayNum = parseInt(k);
+                    if (isNaN(dayNum)) return false;
+
+                    // teacherId 필터가 있는 경우, 해당 요일의 담당 강사가 일치하는지 확인
+                    if (teacherId) {
+                        return schedule[k]?.teacherId === teacherId;
+                    }
+                    return true;
+                })
                 .map(k => dayNames[parseInt(k)])
                 .join('/');
 

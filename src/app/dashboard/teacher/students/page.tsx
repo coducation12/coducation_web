@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Mail, Phone, CheckCircle, XCircle, Clock, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/lib/supabase";
-import { addStudent, updateStudent } from "@/lib/actions";
+import { addStudent, updateStudent, getTeachersAndAcademies } from "@/lib/actions";
 import StudentModal from "@/components/common/StudentModal";
 import { AttendanceCalendarModal } from "../components/AttendanceCalendarModal";
 import { useToast } from "@/hooks/use-toast";
@@ -134,14 +134,9 @@ export default function TeacherStudentsPage() {
             const currentUserId = userData.id;
             setCurrentUserId(currentUserId);
 
-            // 강사 목록 조회 추가 (요일별 강사 배정 위해 필요)
-            const { data: teachersData, error: teachersError } = await supabase
-                .from('users')
-                .select('id, name')
-                .eq('role', 'teacher')
-                .eq('status', 'active');
-
-            const currentTeachers = teachersData || [];
+            // 강사 및 학원 목록 조회 (서버 액션 활용)
+            const metaResult = await getTeachersAndAcademies();
+            const currentTeachers = metaResult.success ? (metaResult.teachers || []) : [];
             setTeachers(currentTeachers);
 
             // 모든 학생 데이터 조회

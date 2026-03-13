@@ -52,7 +52,8 @@ export const useAttendanceScheduler = (teacherId?: string) => {
                     .map((s: any) => ({
                         id: s.user_id,
                         name: s.users?.name || '알 수 없음'
-                    }));
+                    }))
+                    .sort((a: any, b: any) => a.name.localeCompare(b.name, 'ko-KR'));
                 setAllActiveStudents(activeList);
             } catch (err) {
                 console.error("Failed to fetch all active students via secure API", err);

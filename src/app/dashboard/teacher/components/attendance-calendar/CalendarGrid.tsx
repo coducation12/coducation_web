@@ -66,8 +66,13 @@ export function CalendarGrid({
                             className="group/record"
                         >
                             <div className={`text-[8px] sm:text-[10px] font-bold px-1 sm:px-1.5 py-0.5 rounded-md flex items-center gap-1 mb-0.5
-                                ${record.session_type === 'makeup' ? 'border border-yellow-500/50 bg-yellow-500/10 text-yellow-200' : `${STATUS_CONFIG[record.status].color} bg-black/20`}
-                                backdrop-blur-sm border border-white/5 whitespace-nowrap overflow-hidden
+                                ${record.session_type === 'makeup'
+                                    ? record.status === 'makeup'
+                                        ? 'border border-yellow-500/50 bg-yellow-500/10 text-yellow-200'
+                                        : 'border border-yellow-400 bg-yellow-400/80 text-yellow-900'
+                                    : `${STATUS_CONFIG[record.status].color} bg-black/20`
+                                }
+                                backdrop-blur-sm whitespace-nowrap overflow-hidden
                             `}>
                                 <span className="truncate">
                                     {record.session_type === 'makeup' 

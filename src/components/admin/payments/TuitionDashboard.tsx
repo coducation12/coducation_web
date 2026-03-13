@@ -213,11 +213,11 @@ export function TuitionDashboard({ currentUserId, currentUserRole }: TuitionDash
                         <TabsList className="grid w-full grid-cols-2 bg-cyan-900/20 border border-cyan-500/20">
                             <TabsTrigger value="monthly" className="data-[state=active]:bg-cyan-500/20 data-[state=active]:text-cyan-100">
                                 <TableIcon className="w-3.5 h-3.5 mr-1.5" />
-                                월별
+                                월간
                             </TabsTrigger>
                             <TabsTrigger value="yearly" className="data-[state=active]:bg-cyan-500/20 data-[state=active]:text-cyan-100">
                                 <LayoutGrid className="w-3.5 h-3.5 mr-1.5" />
-                                연별
+                                연간
                             </TabsTrigger>
                         </TabsList>
                     </Tabs>

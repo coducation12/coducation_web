@@ -58,18 +58,24 @@ export async function GET(request: NextRequest) {
             return NextResponse.json({ error: 'Database error' }, { status: 500 });
         }
 
-        // 3. 당월 출석 횟수 계산
+        // 2. 당월 출석 횟수 계산 (로그인한 강사의 수업만)
         const now = new Date();
-        const currentYear = now.getFullYear();
-        const currentMonth = now.getMonth() + 1;
-        const currentMonthStr = `${currentYear}-${String(currentMonth).padStart(2, '0')}`;
+        const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toLocaleDateString('en-CA');
+        const lastDayOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).toLocaleDateString('en-CA');
 
-        const { data: sessions, error: sessionsError } = await supabaseAdmin
+        let attendanceQuery = supabaseAdmin
             .from('attendance_sessions')
             .select('student_id')
             .eq('status', 'present')
-            .gte('date', `${currentMonthStr}-01`)
-            .lte('date', `${currentMonthStr}-31`);
+            .gte('date', firstDayOfMonth)
+            .lte('date', lastDayOfMonth);
+
+        // 강사인 경우 본인이 담당한(체크한) 수업만 카운트
+        if (userRole === 'teacher') {
+            attendanceQuery = attendanceQuery.eq('teacher_id', userId);
+        }
+
+        const { data: sessions, error: sessionsError } = await attendanceQuery;
 
         const attendanceCounts: Record<string, number> = {};
         if (sessions) {

@@ -369,7 +369,7 @@ export function TuitionDashboard({ currentUserId, currentUserRole }: TuitionDash
                                     filteredMonthlyData.map((item) => (
                                         <TableRow
                                             key={item.student_id}
-                                            className={`border-cyan-500/10 cursor-pointer group ${item.payment.status === 'paid' ? 'bg-green-500/15' : item.payment.status === 'partial' ? 'bg-orange-500/15' : 'hover:bg-cyan-900/20'}`}
+                                            className={`border-cyan-500/10 cursor-pointer group hover:bg-white/5 transition-all ${item.payment.status === 'paid' ? 'bg-green-500/15' : item.payment.status === 'partial' ? 'bg-orange-500/15' : ''}`}
                                             onClick={() => openPaymentModal(item)}
                                         >
                                             <TableCell className="py-1.5">

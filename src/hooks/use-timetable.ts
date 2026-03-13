@@ -23,6 +23,8 @@ export interface TimetableStudent {
 export interface TimetableOptions {
     year?: number;
     month?: number;
+    teacherId?: string;
+    userRole?: string;
 }
 
 export const useTimetable = (options?: TimetableOptions) => {
@@ -58,35 +60,19 @@ export const useTimetable = (options?: TimetableOptions) => {
             }
 
             // 실시간 데이터 로드 (기존 로직 - 옵션이 없는 경우)
-            const { data: studentsData, error: studentsError } = await supabase
-                .from('students')
-                .select(`
-          user_id,
-          assigned_teachers,
-          attendance_schedule,
-          enrollment_start_date,
-          users!students_user_id_fkey(name, academy, status)
-        `);
+            const response = await fetch('/api/dashboard/students?all=true');
+            if (!response.ok) {
+                console.error('Failed to fetch students for timetable');
+                setStudents([]);
+                setIsLoading(false);
+                return;
+            }
 
-            if (studentsError) throw studentsError;
-
-            const teacherIds = new Set<string>();
-            (studentsData || []).forEach((student: any) => {
-                if (student.assigned_teachers && Array.isArray(student.assigned_teachers)) {
-                    student.assigned_teachers.forEach((id: string) => teacherIds.add(id));
-                }
-            });
-
-            const { data: teachersData, error: teachersError } = await supabase
-                .from('users')
-                .select(`
-          id, 
-          name,
-          teachers(label_color)
-        `)
-                .in('id', Array.from(teacherIds));
-
-            if (teachersError) throw teachersError;
+            const json = await response.json();
+            const studentsData = json.data || [];
+            const teachersData = json.teachers || [];
+            const currentUserId = json.userId;
+            const currentUserRole = json.userRole || options?.userRole;
 
             const teacherMap = new Map();
             (teachersData || []).forEach((t: any) => {
@@ -97,13 +83,28 @@ export const useTimetable = (options?: TimetableOptions) => {
                 });
             });
 
+            const activeTeacherId = (currentUserRole?.toLowerCase() === 'teacher' && currentUserId)
+                ? currentUserId
+                : (options?.teacherId || '');
+
             const convertedStudents = (studentsData || [])
-                .filter((student: any) => student.users?.status === 'active')
+                .filter((student: any) => {
+                    const status = student.users?.status;
+                    return status === 'active' || status === '수강';
+                })
                 .map((student: any) => {
                     const assignedTeachers = student.assigned_teachers || [];
                     const tId = assignedTeachers[0] || '';
                     const tData = teacherMap.get(tId);
                     const tName = tData?.name || '미배정';
+
+                    // 각 요일별 스케줄 - 학원 전체 시간표이므로 필터링 없이 모든 스케줄 표시
+                    const filteredSchedule: any = {};
+                    const rawSchedule = student.attendance_schedule || {};
+
+                    Object.entries(rawSchedule).forEach(([day, schedule]: [string, any]) => {
+                        filteredSchedule[day] = schedule;
+                    });
 
                     return {
                         id: student.user_id,
@@ -113,7 +114,7 @@ export const useTimetable = (options?: TimetableOptions) => {
                         assignedTeachers: assignedTeachers,
                         academy: student.users?.academy || '미지정',
                         enrollmentDate: student.enrollment_start_date,
-                        schedule: student.attendance_schedule || {}
+                        schedule: filteredSchedule
                     };
                 });
 

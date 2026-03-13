@@ -6,6 +6,7 @@ export interface AttendanceRecord {
     status: AttendanceStatus;
     memo?: string;
     is_makeup?: boolean;
+    session_type?: string;
     start_time?: string;
     end_time?: string;
 }

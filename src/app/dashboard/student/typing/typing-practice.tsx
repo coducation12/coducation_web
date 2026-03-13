@@ -30,26 +30,25 @@ export function TypingPractice({ exercise }: TypingPracticeProps) {
     const isFinished = userInput.length === textToType.length;
 
     // 타이핑 결과를 데이터베이스에 저장
-    const saveTypingResult = async (result: Result) => {
+    const saveTypingResultInternal = async (result: Result) => {
         setIsSaving(true);
         try {
-            const { data: { user } } = await supabase.auth.getUser();
-            if (!user) return;
+            const isKorean = exercise.language === 'Korean';
+            const isEnglish = exercise.language === 'English';
 
-            const { error } = await supabase
-                .from('student_activity_logs')
-                .insert({
-                    student_id: user.id,
-                    activity_type: 'typing',
-                    date: new Date().toISOString().split('T')[0],
-                    typing_score: result.accuracy,
-                    typing_speed: result.wpm,
-                    typing_exercise_id: exercise.id,
-                    attended: true
-                });
+            if (!isKorean && !isEnglish) return;
 
-            if (error) {
-                console.error('타이핑 결과 저장 실패:', error);
+            const { saveTypingResult } = await import('@/lib/actions');
+            const res = await saveTypingResult({
+                accuracy: result.accuracy,
+                speed: result.wpm,
+                wpm: result.wpm,
+                time: Math.round(result.duration),
+                language: isKorean ? 'korean' : 'english'
+            });
+
+            if (!res.success) {
+                console.error('타이핑 결과 저장 실패:', res.error);
             }
         } catch (error) {
             console.error('타이핑 결과 저장 중 오류:', error);
@@ -77,7 +76,7 @@ export function TypingPractice({ exercise }: TypingPracticeProps) {
             setResult(newResult);
             
             // 결과를 데이터베이스에 저장
-            saveTypingResult(newResult);
+            saveTypingResultInternal(newResult);
         }
     }, [isFinished, startTime, textToType, userInput, exercise.id]);
 

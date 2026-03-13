@@ -10,6 +10,7 @@ interface StudentRowProps {
     onAttendanceChange: (id: string, value: AttendanceStatus) => void;
     teacherId?: string | null;
     onStudentClick: (userId: string) => void;
+    onRefresh?: () => void;
 }
 
 export const StudentRow = React.memo(({
@@ -17,7 +18,8 @@ export const StudentRow = React.memo(({
     idx,
     onAttendanceChange,
     teacherId,
-    onStudentClick
+    onStudentClick,
+    onRefresh
 }: StudentRowProps) => {
     return (
         <tr className={`${idx % 2 === 0 ? 'bg-cyan-900/10' : ''} border-b border-cyan-500/10`}>
@@ -34,15 +36,36 @@ export const StudentRow = React.memo(({
             <td className="px-2 py-3 text-center hidden sm:table-cell opacity-70">{student.curriculum}</td>
             <td className="px-2 py-3 text-center">
                 <button
-                    className={`w-20 py-1.5 rounded-md border text-xs font-bold transition-all duration-200 shadow-sm hover:scale-105 active:scale-95 ${STATUS_CONFIG[student.attendanceTime.status].fullClass}`}
+                    className={`w-20 py-1.5 rounded-md border text-xs font-bold transition-all duration-200 shadow-sm hover:scale-105 active:scale-95 
+                        ${(() => {
+                            const isMakeupRow = student.id.includes('-makeup-');
+                            const status = student.attendanceTime.status;
+                            
+                            if (isMakeupRow) {
+                                if (status === 'makeup') {
+                                    return 'bg-transparent border-yellow-500 text-yellow-500 shadow-[0_0_10px_rgba(234,179,8,0.2)]';
+                                }
+                                if (status === 'present') {
+                                    return 'bg-yellow-500 border-yellow-400 text-black shadow-[0_0_15px_rgba(234,179,8,0.4)]';
+                                }
+                            }
+                            return STATUS_CONFIG[status].fullClass;
+                        })()}
+                    `}
                     onClick={() => {
-                        const statusCycle: AttendanceStatus[] = ['unregistered', 'present', 'absent', 'makeup'];
+                        const isMakeupRow = student.id.includes('-makeup-');
+                        const statusCycle: AttendanceStatus[] = isMakeupRow 
+                            ? ['present', 'absent', 'makeup'] // 보강 로우는 보강 내에서 순환
+                            : ['unregistered', 'present', 'absent']; // 일반 로우는 보강 옵션 제외
+
                         const currentIndex = statusCycle.indexOf(student.attendanceTime.status);
                         const nextIndex = (currentIndex + 1) % statusCycle.length;
                         onAttendanceChange(student.id, statusCycle[nextIndex]);
                     }}
                 >
-                    {STATUS_CONFIG[student.attendanceTime.status].text}
+                    {student.id.includes('-makeup-') && student.attendanceTime.status === 'present' 
+                        ? '보강출석' 
+                        : STATUS_CONFIG[student.attendanceTime.status].text}
                 </button>
             </td>
             <td className="px-2 py-3 text-center">
@@ -51,6 +74,7 @@ export const StudentRow = React.memo(({
                         studentId={student.userId}
                         studentName={student.name}
                         teacherId={teacherId}
+                        onRefresh={onRefresh}
                         mode="calendar"
                         customTrigger={
                             <Button variant="ghost" size="icon" className="h-8 w-8 text-cyan-400 hover:bg-cyan-500/10" title="전체 캘린더">
@@ -62,6 +86,7 @@ export const StudentRow = React.memo(({
                         studentId={student.userId}
                         studentName={student.name}
                         teacherId={teacherId}
+                        onRefresh={onRefresh}
                         mode="detail"
                         customTrigger={
                             <Button variant="ghost" size="icon" className="h-8 w-8 text-yellow-400 hover:bg-yellow-500/10" title="오늘 기록 상세">

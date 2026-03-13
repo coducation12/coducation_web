@@ -14,51 +14,30 @@ import { supabase } from "@/lib/supabase";
 import { addStudent, updateStudent, getCurrentUser, deleteStudent } from "@/lib/actions";
 import StudentModal from "@/components/common/StudentModal";
 import { useToast } from "@/hooks/use-toast";
+import { DashboardPageWrapper } from "@/components/common/DashboardPageWrapper";
 import { getTeacherColorSet } from "@/lib/colors";
+import { useStudentsData, Student, ClassSchedule } from "@/hooks/useStudentsData";
 
 export const dynamic = 'force-dynamic';
 
-interface Student {
-    id: string;
-    name: string;
-    email: string;
-    phone: string;
-    parentPhone: string;
-    birthDate: string;
-    avatar: string;
-    course: string;
-    curriculum: string;
-    status: string;
-    joinDate: string;
-    lastLogin: string;
-    studentId?: string;
-    sub_subject?: string;
-    enrollment_date?: string;
-    memo?: string;
-    tuition_fee?: number;
-    classSchedules?: ClassSchedule[];
-    assignedTeacherId?: string;
-    assignedTeacherName?: string;
-    assignedTeachers?: Array<{ id: string, name: string }>;
-    academy: string;
-}
-
-interface ClassSchedule {
-    day: string;
-    startTime: string;
-    endTime: string;
-}
-
 
 export default function AdminStudentsPage() {
-    const [students, setStudents] = useState<Student[]>([]);
+    const {
+        students,
+        teachers,
+        handleAddStudent,
+        handleSaveStudent,
+        handleTeacherChange,
+        confirmDeleteStudent,
+        fetchStudents
+    } = useStudentsData();
+
     const [search, setSearch] = useState("");
     const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
     const [studentToDelete, setStudentToDelete] = useState<Student | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
-    const [teachers, setTeachers] = useState<{ id: string, name: string, label_color?: string }[]>([]);
     const [sortField, setSortField] = useState<string | null>("name");
     const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
     const { toast } = useToast();
@@ -114,215 +93,6 @@ export default function AdminStudentsPage() {
         });
     };
 
-
-    useEffect(() => {
-        const loadData = async () => {
-            await fetchTeachers();
-            await fetchStudents();
-        };
-        loadData();
-    }, []);
-
-    const fetchTeachers = async () => {
-        try {
-            const { data, error } = await supabase
-                .from('users')
-                .select(`
-                    id, 
-                    name,
-                    teachers(label_color)
-                `)
-                .eq('role', 'teacher')
-                .eq('status', 'active');
-
-            if (error) {
-                return;
-            }
-
-            const teachersWithColor = (data || []).map((t: any) => ({
-                id: t.id,
-                name: t.name,
-                label_color: t.teachers?.[0]?.label_color
-            }));
-
-            setTeachers(teachersWithColor);
-        } catch (error: any) { // Added type annotation for catch error
-            // The original request included `reader.onerror` and `img.onerror` here,
-            // but they are not defined in this scope and would cause syntax errors.
-            // Assuming the intent was to add type to the catch block's error parameter.
-            // If `reader` or `img` are meant to be used, they need to be defined elsewhere.
-        }
-    };
-
-    const fetchStudents = async () => {
-        // 먼저 강사 목록을 다시 조회
-        const { data: teachersData, error: teachersError } = await supabase
-            .from('users')
-            .select(`
-                id, 
-                name,
-                teachers(label_color)
-            `)
-            .eq('role', 'teacher')
-            .eq('status', 'active');
-
-        if (teachersError) {
-        }
-
-        const currentTeachers = (teachersData || []).map((t: any) => {
-            const detail = Array.isArray(t.teachers) ? t.teachers[0] : t.teachers;
-            return {
-                id: t.id,
-                name: t.name,
-                label_color: detail?.label_color || '#00fff7'
-            };
-        });
-
-        setTeachers(currentTeachers);
-
-        const { data, error } = await supabase
-            .from('students')
-            .select(`
-                user_id, 
-                parent_id, 
-                current_curriculum_id, 
-                enrollment_start_date, 
-                attendance_schedule,
-                assigned_teachers,
-                main_subject,
-                sub_subject,
-                memo,
-                tuition_fee,
-                users!students_user_id_fkey ( 
-                    id, 
-                    name, 
-                    username, 
-                    phone, 
-                    birth_year, 
-                    academy, 
-                    created_at, 
-                    email, 
-                    status,
-                    assigned_teacher_id
-                ), 
-                parent:users!students_parent_id_fkey ( phone )
-            `)
-        // 모든 상태의 학생 포함 (active, pending)
-
-        if (error) {
-            setStudents([]);
-            return;
-        }
-
-        // Student 타입에 맞게 매핑
-        const mapped = (data || []).map((item: any) => {
-            // 담당강사 정보 찾기 (students 테이블의 assigned_teachers 배열에서 최대 2명)
-            const assignedTeacherIds = item.assigned_teachers || [];
-            const assignedTeachers = assignedTeacherIds.map((teacherId: string) => {
-                const teacher = currentTeachers.find((t: any) => t.id === teacherId);
-                return teacher || { id: teacherId, name: `강사 ${teacherId.slice(-4)}` };
-            });
-
-            // 기존 호환성을 위한 첫 번째 강사 정보
-            const assignedTeacherId = assignedTeacherIds.length > 0 ? assignedTeacherIds[0] : null;
-            const assignedTeacherName = assignedTeachers.length > 0 ? assignedTeachers[0].name : '미지정';
-
-
-            return {
-                id: item.user_id,
-                name: item.users?.name || '-',
-                email: item.users?.email || '-',
-                phone: item.users?.phone || '-',
-                parentPhone: item.parent?.phone || '-',
-                birthDate: item.users?.birth_year ? String(item.users.birth_year) : '-',
-                avatar: '/default-avatar.png',
-                course: item.main_subject || '프로그래밍',
-                curriculum: '기초 프로그래밍', // 기본값, 나중에 실제 커리큘럼 데이터로 교체
-                status: item.users?.status === 'pending' ? '승인대기' :
-                    (item.users?.status === 'suspended' || item.users?.status === '휴강') ? '휴강' :
-                        (item.users?.status === 'inactive' || item.users?.status === '종료') ? '종료' : '수강',
-                joinDate: item.users?.created_at ? new Date(item.users.created_at).toLocaleDateString() : '-',
-                lastLogin: '2024-01-15', // 기본값
-                studentId: item.users?.username || '-',
-                sub_subject: item.sub_subject || '',
-                enrollment_date: item.enrollment_start_date || '',
-                memo: item.memo || '',
-                tuition_fee: item.tuition_fee || 0,
-                assignedTeacherId: assignedTeacherId,
-                assignedTeacherName: assignedTeacherName,
-                assignedTeachers: assignedTeachers,
-                classSchedules: item.attendance_schedule ? Object.entries(item.attendance_schedule).map(([day, schedule]: [string, any]) => {
-                    const dayMap: { [key: string]: string } = {
-                        '0': 'sunday', '1': 'monday', '2': 'tuesday', '3': 'wednesday', '4': 'thursday', '5': 'friday', '6': 'saturday'
-                    };
-                    return {
-                        day: dayMap[day] || day,
-                        startTime: schedule.startTime || '',
-                        endTime: schedule.endTime || '',
-                        teacherId: schedule.teacherId || ''
-                    };
-                }) : [],
-                academy: item.users?.academy || '코딩메이커'
-            };
-        });
-
-        setStudents(mapped);
-    };
-
-
-
-    // 쿠키에서 사용자 ID 가져오기
-    const getCurrentUserId = (): string | null => {
-        if (typeof document === 'undefined') return null;
-        const cookies = document.cookie.split(';');
-        const userCookie = cookies.find(cookie => cookie.trim().startsWith('user_id='));
-        return userCookie ? userCookie.split('=')[1] : null;
-    };
-
-    const handleAddStudent = async (studentData: any) => {
-        try {
-            const formData = new FormData();
-            formData.append('studentId', studentData.studentId);
-            formData.append('password', studentData.password);
-            formData.append('name', studentData.name);
-            formData.append('birthYear', studentData.birthYear);
-            formData.append('subject', studentData.subject);
-            formData.append('sub_subject', studentData.sub_subject || '');
-            formData.append('phone', studentData.phone);
-            formData.append('parentPhone', studentData.parentPhone);
-            formData.append('email', studentData.email);
-            formData.append('enrollment_date', studentData.enrollment_date || '');
-            formData.append('memo', studentData.memo || '');
-            formData.append('classSchedules', JSON.stringify(studentData.classSchedules));
-            formData.append('academy', studentData.academy || '코딩메이커');
-            // 쉼표 제거 후 숫자만 전송
-            const tuitionFee = studentData.tuition_fee?.toString().replace(/,/g, '') || '0';
-            formData.append('tuition_fee', tuitionFee);
-
-            const result = await addStudent(formData);
-
-            if (result.success) {
-                toast({
-                    title: "학생 등록 완료",
-                    description: `${studentData.name} 학생이 성공적으로 등록되었습니다.`,
-                });
-                fetchStudents();
-            } else {
-                toast({
-                    title: "학생 등록 실패",
-                    description: result.error || "알 수 없는 오류가 발생했습니다.",
-                    variant: "destructive",
-                });
-            }
-        } catch (error) {
-            toast({
-                title: "오류 발생",
-                description: "학생 등록 중 오류가 발생했습니다.",
-                variant: "destructive",
-            });
-        }
-    };
-
     const handleEditStudent = (student: Student) => {
         setSelectedStudent(student);
         setIsEditModalOpen(true);
@@ -334,161 +104,20 @@ export default function AdminStudentsPage() {
         setIsDeleteDialogOpen(true);
     };
 
-    const confirmDeleteStudent = async () => {
+    const handleConfirmDelete = async () => {
         if (!studentToDelete) return;
-
         setIsDeleting(true);
-        try {
-            const result = await deleteStudent(studentToDelete.id);
-            if (result.success) {
-                toast({
-                    title: "성공",
-                    description: result.message || "학생이 성공적으로 삭제되었습니다.",
-                });
-                fetchStudents(); // 목록 새로고침
-            } else {
-                toast({
-                    title: "오류",
-                    description: result.error || "학생 삭제에 실패했습니다.",
-                    variant: "destructive",
-                });
-            }
-        } catch (error) {
-            toast({
-                title: "오류",
-                description: "학생 삭제 중 오류가 발생했습니다.",
-                variant: "destructive",
-            });
-        } finally {
-            setIsDeleting(false);
+        const success = await confirmDeleteStudent(studentToDelete.id);
+        if (success) {
             setIsDeleteDialogOpen(false);
             setStudentToDelete(null);
         }
+        setIsDeleting(false);
     };
 
-    const handleTeacherChange = async (studentId: string, teacherId: string, teacherIndex: number) => {
-        try {
-            const student = students.find(s => s.id === studentId);
-            if (!student) return;
-
-            // 현재 담당강사 목록 복사
-            const currentTeachers = student.assignedTeachers || [];
-            let newTeachers = [...currentTeachers];
-
-            if (teacherId === 'none') {
-                // 해당 인덱스의 강사 제거
-                newTeachers.splice(teacherIndex, 1);
-            } else {
-                // 해당 인덱스에 강사 설정 (최대 2명)
-                const teacher = teachers.find(t => t.id === teacherId);
-                if (teacher) {
-                    if (teacherIndex >= newTeachers.length) {
-                        // 새로 추가
-                        if (newTeachers.length < 2) {
-                            newTeachers.push({ id: teacherId, name: teacher.name });
-                        }
-                    } else {
-                        // 기존 강사 교체
-                        newTeachers[teacherIndex] = { id: teacherId, name: teacher.name };
-                    }
-                }
-            }
-
-            // students 테이블의 assigned_teachers 배열 업데이트
-            const assignedTeacherIds = newTeachers.map(t => t.id);
-            const { error } = await supabase
-                .from('students')
-                .update({ assigned_teachers: assignedTeacherIds })
-                .eq('user_id', studentId);
-
-            if (error) {
-                toast({
-                    title: "오류",
-                    description: "담당강사 변경에 실패했습니다.",
-                    variant: "destructive",
-                });
-                return;
-            }
-
-            // 로컬 상태 업데이트
-            setStudents(prev => prev.map(student =>
-                student.id === studentId
-                    ? {
-                        ...student,
-                        assignedTeachers: newTeachers,
-                        assignedTeacherId: newTeachers.length > 0 ? newTeachers[0].id : undefined,
-                        assignedTeacherName: newTeachers.length > 0 ? newTeachers[0].name : '미지정'
-                    }
-                    : student
-            ));
-
-            toast({
-                title: "성공",
-                description: "담당강사가 변경되었습니다.",
-            });
-        } catch (error) {
-            toast({
-                title: "오류",
-                description: "담당강사 변경 중 오류가 발생했습니다.",
-                variant: "destructive",
-            });
-        }
-    };
-
-    const handleSaveStudent = async (studentData: any) => {
-        try {
-            const formData = new FormData();
-            formData.append('studentId', studentData.studentId);
-            formData.append('name', studentData.name);
-            formData.append('birthYear', studentData.birthYear);
-            formData.append('password', studentData.password);
-            formData.append('subject', studentData.subject);
-            formData.append('phone', studentData.phone);
-            formData.append('parentPhone', studentData.parentPhone);
-            formData.append('email', studentData.email);
-            formData.append('status', studentData.status);
-            formData.append('sub_subject', studentData.sub_subject || '');
-            formData.append('enrollment_date', studentData.enrollment_date || '');
-            formData.append('memo', studentData.memo || '');
-            formData.append('academy', studentData.academy || '코딩메이커');
-            formData.append('classSchedules', JSON.stringify(studentData.classSchedules));
-            // 쉼표 제거 후 숫자만 전송
-            const tuitionFee = studentData.tuition_fee?.toString().replace(/,/g, '') || '0';
-            formData.append('tuition_fee', tuitionFee);
-
-            const result = await updateStudent(formData);
-
-            if (result.success) {
-                toast({
-                    title: "학생 정보 수정 완료",
-                    description: `${studentData.name} 학생의 정보가 성공적으로 수정되었습니다.`,
-                    variant: "default",
-                });
-
-                // 학생 목록 새로고침
-                fetchStudents();
-
-                // 모달 닫기 및 상태 초기화
-                setIsEditModalOpen(false);
-                setSelectedStudent(null);
-            } else {
-                toast({
-                    title: "학생 정보 수정 실패",
-                    description: result.error || "알 수 없는 오류가 발생했습니다.",
-                    variant: "destructive",
-                });
-            }
-        } catch (error) {
-            toast({
-                title: "오류 발생",
-                description: "학생 정보 수정 중 오류가 발생했습니다.",
-                variant: "destructive",
-            });
-        }
-    };
 
     // 학생 목록 필터링
-    const filteredStudents = students.filter(student =>
+    const filteredStudents = students.filter((student: Student) =>
         student.name?.toLowerCase().includes(search.toLowerCase()) ||
         student.email?.toLowerCase().includes(search.toLowerCase()) ||
         student.studentId?.toLowerCase().includes(search.toLowerCase())
@@ -499,15 +128,16 @@ export default function AdminStudentsPage() {
     let activeNoCounter = 0;
 
     return (
-        <div className="p-6 space-y-6 pt-16 lg:pt-2 h-screen overflow-y-auto scrollbar-hide">
+        <DashboardPageWrapper>
             <div className="flex items-center justify-between">
                 <div>
                     <h1 className="text-3xl font-bold text-cyan-100 drop-shadow-[0_0_6px_#00fff7]">학생 관리</h1>
                 </div>
                 <StudentModal
                     mode="add"
-                    onSave={handleAddStudent}
-                    academies={Array.from(new Set(students.map(s => s.academy).filter(Boolean).concat(["코딩메이커", "광양코딩"])))}
+                    onSave={async (formData) => { await handleAddStudent(formData); }}
+                    teachers={teachers as any}
+                    academies={Array.from(new Set(students.map((s: Student) => s.academy).filter(Boolean).concat(["코딩메이커", "광양코딩"])))}
                 />
             </div>
 
@@ -744,9 +374,9 @@ export default function AdminStudentsPage() {
                     setIsEditModalOpen(false);
                     setSelectedStudent(null);
                 }}
-                onSave={handleSaveStudent}
-                teachers={teachers}
-                academies={Array.from(new Set(students.map(s => s.academy).filter(Boolean).concat(["코딩메이커", "광양코딩"])))}
+                onSave={async (formData) => { await handleSaveStudent(formData); }}
+                teachers={teachers as any} // Temporary cast if type doesn't perfectly match StudentModal's expectation
+                academies={Array.from(new Set(students.map((s: Student) => s.academy).filter(Boolean).concat(["코딩메이커", "광양코딩"])))}
             />
 
             {/* 삭제 확인 다이얼로그 */}
@@ -776,7 +406,7 @@ export default function AdminStudentsPage() {
                         </Button>
                         <Button
                             variant="destructive"
-                            onClick={confirmDeleteStudent}
+                            onClick={() => handleConfirmDelete()}
                             disabled={isDeleting}
                             className="bg-red-600 hover:bg-red-700"
                         >
@@ -795,6 +425,6 @@ export default function AdminStudentsPage() {
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
-        </div>
+        </DashboardPageWrapper>
     );
 }

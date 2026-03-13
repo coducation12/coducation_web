@@ -225,17 +225,25 @@ export async function getCurrentUser() {
     const userId = cookieStore.get('user_id')?.value;
     const userRole = cookieStore.get('user_role')?.value;
 
+    console.log("[DEBUG API] getCurrentUser invoked. Cookie user_id:", userId, "user_role:", userRole);
+
     if (!userId || !userRole) {
       return null;
     }
 
-    const { data, error } = await supabase
+    const { data, error } = await supabaseAdmin
       .from('users')
       .select('id, name, role, email, grade, phone, academy, birth_year, profile_image_url')
       .eq('id', userId)
       .single();
 
-    if (error || !data) {
+    if (error) {
+      console.log("[DEBUG API] getCurrentUser db error:", error);
+      return null;
+    }
+
+    if (!data) {
+      console.log("[DEBUG API] getCurrentUser no data found for ID");
       return null;
     }
 
@@ -546,7 +554,7 @@ export async function updateStudent(formData: FormData) {
     };
 
     // 1. 학생 계정 정보 및 ID 확인
-    const { data: existingUser, error: userFetchError } = await supabase
+    const { data: existingUser, error: userFetchError } = await supabaseAdmin
       .from('users')
       .select('id')
       .eq('username', studentData.studentId)
@@ -558,7 +566,7 @@ export async function updateStudent(formData: FormData) {
 
     // 2. 권한 확인 (강사의 경우 본인 담당 요일만 수정 가능)
     let finalAttendanceSchedule: any = {};
-    const { data: currentStudent, error: studentFetchError } = await supabase
+    const { data: currentStudent, error: studentFetchError } = await supabaseAdmin
       .from('students')
       .select('attendance_schedule, assigned_teachers')
       .eq('user_id', existingUser.id)
@@ -731,7 +739,17 @@ export async function updateStudent(formData: FormData) {
 // 학생 상세 정보 조회 (수합용)
 export async function getStudentDetailsForEdit(userId: string, requestingTeacherId?: string) {
   try {
-    const { data: item, error } = await supabase
+    const cookieStore = await cookies();
+    const currentUserId = cookieStore.get('user_id')?.value;
+    const currentUserRole = cookieStore.get('user_role')?.value;
+
+    // 만약 넘어온 requestingTeacherId가 없거나 빈 값이더라도, 
+    // 실제 로그인한 사용자가 강사인 경우 강사 본인의 ID로 필터링하도록 보완 (대소문자 무관)
+    const activeTeacherId = (currentUserRole?.toLowerCase() === 'teacher' && currentUserId) 
+      ? currentUserId 
+      : (requestingTeacherId || '');
+
+    const { data: item, error } = await supabaseAdmin
       .from('students')
       .select(`
                 user_id, 
@@ -786,8 +804,10 @@ export async function getStudentDetailsForEdit(userId: string, requestingTeacher
       classSchedules: item.attendance_schedule ? Object.entries(item.attendance_schedule)
         .filter(([day, schedule]: [string, any]) => {
           // 요청한 강사가 있는 경우, 해당 강사의 스케줄만 필터링
-          if (requestingTeacherId) {
-            return schedule.teacherId === requestingTeacherId;
+          // teacherId가 ''(빈 문자열)인 경우도 필터링을 수행하도록 수정
+          if (activeTeacherId && activeTeacherId.trim() !== '') {
+            const scheduleTeacherId = schedule.teacherId || schedule.teacher_id;
+            return scheduleTeacherId?.toLowerCase() === activeTeacherId.toLowerCase();
           }
           return true;
         })
@@ -814,8 +834,8 @@ export async function getStudentDetailsForEdit(userId: string, requestingTeacher
 // 강사 및 학원 목록 조회
 export async function getTeachersAndAcademies() {
   try {
-    // 1. 강사 목록 조회
-    const { data: teachersData, error: teachersError } = await supabase
+    // 1. 강사 목록 조회 (RLS 문제 회피를 위해 admin 권한 사용)
+    const { data: teachersData, error: teachersError } = await supabaseAdmin
       .from('users')
       .select(`
                 id, 
@@ -837,7 +857,7 @@ export async function getTeachersAndAcademies() {
     });
 
     // 2. 학원 목록 조회 (중복 제거)
-    const { data: academyData, error: academyError } = await supabase
+    const { data: academyData, error: academyError } = await supabaseAdmin
       .from('users')
       .select('academy')
       .not('academy', 'is', null);
@@ -924,6 +944,163 @@ export async function addCurriculum(formData: FormData) {
   }
 }
 
+// ======= 출결 캘린더 전용 서버 액션 (Server Actions for useAttendanceCalendar) =======
+
+export async function getMonthlyAttendance(studentId: string, startDateStr: string, endDateStr: string, teacherId?: string | null) {
+  try {
+    let query = supabaseAdmin
+      .from('attendance_sessions')
+      .select('id, date, status, memo, session_type, start_time, end_time, teacher_id')
+      .eq('student_id', studentId)
+      .gte('date', startDateStr)
+      .lte('date', endDateStr);
+
+    if (teacherId) {
+      query = query.eq('teacher_id', teacherId);
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+      console.error('getMonthlyAttendance db error:', error);
+      return { success: false, error: '출석 데이터를 불러오는데 실패했습니다.' };
+    }
+
+    return { success: true, data };
+  } catch (error) {
+    console.error('getMonthlyAttendance error:', error);
+    return { success: false, error: '서버 오류가 발생했습니다.' };
+  }
+}
+
+export async function getDailyAttendance(studentId: string, dateStr: string) {
+  try {
+    const { data, error } = await supabaseAdmin
+      .from('attendance_sessions')
+      .select('id, date, status, memo, session_type, start_time, end_time')
+      .eq('student_id', studentId)
+      .eq('date', dateStr)
+      .eq('session_type', 'regular') // 기본적으로 정규 수업 조회
+      .maybeSingle();
+
+    if (error) {
+      console.error('getDailyAttendance db error:', error);
+      return { success: false, error: '일일 출석 데이터를 불러오는데 실패했습니다.' };
+    }
+
+    return { success: true, data };
+  } catch (error) {
+    console.error('getDailyAttendance error:', error);
+    return { success: false, error: '서버 오류가 발생했습니다.' };
+  }
+}
+
+export async function saveDailyAttendance(attendanceData: any) {
+  try {
+    // 신규 시스템(attendance_sessions) 저장 로직 호출
+    // attendanceData에 session_type이 없으면 기본 regular로 처리하거나 상태값에 따라 판단
+    const sessionType = attendanceData.session_type || (attendanceData.status === 'makeup' ? 'makeup' : 'regular');
+    
+    return await saveAttendanceSessionAction({
+      ...attendanceData,
+      session_type: sessionType
+    });
+  } catch (error) {
+    console.error('saveDailyAttendance error:', error);
+    return { success: false, error: '서버 오류가 발생했습니다.' };
+  }
+}
+
+// 신규 출결 시스템(attendance_sessions)용 저장 서버 액션
+export async function saveAttendanceSessionAction(attendanceData: any) {
+  try {
+    const cookieStore = await cookies();
+    const userRole = cookieStore.get('user_role')?.value;
+    const userId = cookieStore.get('user_id')?.value;
+
+    if (!userId || (userRole !== 'teacher' && userRole !== 'admin')) {
+      return { success: false, error: '권한이 없습니다.' };
+    }
+
+    // RPC 호출 (supabaseAdmin을 사용하여 RLS 완전 우회 - Double Lock)
+    const { data, error } = await supabaseAdmin.rpc('upsert_attendance_session_rpc', {
+      p_student_id: attendanceData.student_id,
+      p_date: attendanceData.date,
+      p_status: attendanceData.status,
+      p_session_type: attendanceData.session_type,
+      p_teacher_id: attendanceData.teacher_id || userId,
+      p_start_time: attendanceData.start_time || null,
+      p_end_time: attendanceData.end_time || null,
+      p_memo: attendanceData.memo || null
+    });
+
+    if (error) {
+      console.error('saveAttendanceSessionAction rpc error:', error);
+      return { success: false, error: error.message };
+    }
+
+    if (data && data.success === false) {
+      return { success: false, error: data.error };
+    }
+
+    return { success: true };
+  } catch (error: any) {
+    console.error('saveAttendanceSessionAction exception:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+// 신규 출결 시스템(attendance_sessions)용 삭제 서버 액션
+export async function deleteAttendanceSessionAction(studentId: string, date: string, sessionType: string) {
+  try {
+    const cookieStore = await cookies();
+    const userRole = cookieStore.get('user_role')?.value;
+    const userId = cookieStore.get('user_id')?.value;
+
+    if (!userId || (userRole !== 'teacher' && userRole !== 'admin')) {
+      return { success: false, error: '권한이 없습니다.' };
+    }
+
+    // RPC가 없거나 오류 시 직접 처리할 수 있도록 DELETE 쿼리 사용 (supabaseAdmin으로 RLS 우회)
+    const { error } = await supabaseAdmin
+      .from('attendance_sessions')
+      .delete()
+      .eq('student_id', studentId)
+      .eq('date', date)
+      .eq('session_type', sessionType);
+
+    if (error) {
+      console.error('deleteAttendanceSessionAction error:', error);
+      return { success: false, error: error.message };
+    }
+
+    return { success: true };
+  } catch (error: any) {
+    console.error('deleteAttendanceSessionAction exception:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+export async function deleteDailyAttendance(id: string) {
+  try {
+    // ID 기반 삭제 (주로 예전 로그 테이블용이나 호환성 유지)
+    const { error } = await supabaseAdmin
+      .from('attendance_sessions')
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      console.error('deleteDailyAttendance db error:', error);
+      return { success: false, error: '출결 기록 삭제에 실패했습니다.' };
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error('deleteDailyAttendance error:', error);
+    return { success: false, error: '서버 오류가 발생했습니다.' };
+  }
+}
+
 // 커리큘럼 수정 서버 액션
 export async function updateCurriculum(formData: FormData) {
   try {
@@ -1005,61 +1182,86 @@ export async function saveTypingResult(data: {
 
     const today = new Date().toISOString().split('T')[0];
 
-    // 같은 날짜, 같은 언어의 기존 기록 확인
-    const { data: existingRecord, error: selectError } = await supabaseAdmin
-      .from('student_activity_logs')
-      .select('id, typing_score, typing_speed')
-      .eq('student_id', userId)
-      .eq('activity_type', 'typing')
-      .eq('date', today)
-      .eq('typing_language', data.language)
+    // 1. 학생의 출석 스케줄 및 담당 강사 정보 조회
+    const { data: student, error: studentError } = await supabaseAdmin
+      .from('students')
+      .select('attendance_schedule')
+      .eq('user_id', userId)
       .single();
 
-    if (selectError && selectError.code !== 'PGRST116') {
-      // PGRST116은 "not found" 에러이므로 정상, 다른 에러는 처리
-      console.error('기존 기록 조회 실패:', selectError);
+    if (studentError) {
+      console.error('학생 정보 조회 실패:', studentError);
+    }
+
+    // 2. 오늘 요일에 해당하는 담당 강사 찾기
+    const dayOfWeek = new Date().getDay(); // 0: 일요일, 1: 월요일, ...
+    const dayNames = ['일', '월', '화', '수', '목', '금', '토'];
+    const todayName = dayNames[dayOfWeek];
+    
+    let teacherId = null;
+    if (student?.attendance_schedule && student.attendance_schedule[todayName]) {
+      teacherId = student.attendance_schedule[todayName].teacherId;
+    }
+
+    const isKorean = data.language === 'korean';
+    const speedColumn = isKorean ? 'korean_typing_speed' : 'english_typing_speed';
+
+    // 3. 기존 기록 확인
+    const { data: existingSession, error: selectError } = await supabaseAdmin
+      .from('attendance_sessions')
+      .select(`id, ${speedColumn}, teacher_id`)
+      .eq('student_id', userId)
+      .eq('date', today)
+      .eq('session_type', 'regular')
+      .maybeSingle();
+
+    if (selectError) {
+      console.error('기존 세션 조회 실패:', selectError);
       return { success: false, error: selectError.message };
     }
 
-    if (existingRecord) {
-      // 기존 기록이 있으면 더 좋은 점수로만 업데이트
-      const shouldUpdate = data.accuracy > existingRecord.typing_score ||
-        (data.accuracy === existingRecord.typing_score && data.speed > existingRecord.typing_speed);
+    if (existingSession) {
+      // 기존 기록이 있으면 속도가 더 빠를 때만 업데이트
+      const existingSpeed = existingSession[speedColumn] || 0;
+      if (data.speed > existingSpeed) {
+        const updateData: any = {
+          [speedColumn]: data.speed,
+          updated_at: new Date().toISOString()
+        };
+        
+        // 기존 세션에 강사가 없는데 오늘 스케줄상 강사가 있다면 업데이트
+        if (!existingSession.teacher_id && teacherId) {
+          updateData.teacher_id = teacherId;
+        }
 
-      if (shouldUpdate) {
-        const { error } = await supabaseAdmin
-          .from('student_activity_logs')
-          .update({
-            typing_score: data.accuracy,
-            typing_speed: data.speed,
-            attended: true,
-            created_at: new Date().toISOString()
-          })
-          .eq('id', existingRecord.id);
+        const { error: updateError } = await supabaseAdmin
+          .from('attendance_sessions')
+          .update(updateData)
+          .eq('id', existingSession.id);
 
-        if (error) {
-          console.error('타자연습 결과 업데이트 실패:', error);
-          return { success: false, error: error.message };
+        if (updateError) {
+          console.error('타자연습 결과 업데이트 실패:', updateError);
+          return { success: false, error: updateError.message };
         }
       }
-      // 기존 기록이 더 좋으면 업데이트하지 않음
     } else {
-      // 새로운 기록 생성
-      const { error } = await supabaseAdmin
-        .from('student_activity_logs')
+      // 새로운 세션 생성
+      const { error: insertError } = await supabaseAdmin
+        .from('attendance_sessions')
         .insert({
           student_id: userId,
-          activity_type: 'typing',
           date: today,
-          typing_score: data.accuracy,
-          typing_speed: data.speed,
-          typing_language: data.language,
-          attended: true
+          session_type: 'regular',
+          status: 'present',
+          [speedColumn]: data.speed,
+          teacher_id: teacherId,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
         });
 
-      if (error) {
-        console.error('타자연습 결과 저장 실패:', error);
-        return { success: false, error: error.message };
+      if (insertError) {
+        console.error('타자연습 결과 저장 실패:', insertError);
+        return { success: false, error: insertError.message };
       }
     }
 
@@ -1085,11 +1287,9 @@ export async function getTypingRecords(studentId: string, daysBack: number = 90)
     console.log('getTypingRecords - 쿼리 실행:', { studentId, fromDateString });
 
     const { data, error } = await supabaseAdmin
-      .from('student_activity_logs')
-      .select('date, typing_score, typing_speed, typing_language, created_at')
+      .from('attendance_sessions')
+      .select('date, korean_typing_speed, english_typing_speed, created_at')
       .eq('student_id', studentId)
-      .eq('activity_type', 'typing')
-      .not('typing_score', 'is', null)
       .gte('date', fromDateString)
       .order('date', { ascending: true });
 

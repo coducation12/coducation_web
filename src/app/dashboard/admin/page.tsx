@@ -9,6 +9,8 @@ import { Activity, ArrowUpRight, BookUser, Users, GraduationCap, Calendar, BookO
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 
+import { DashboardPageWrapper } from "@/components/common/DashboardPageWrapper";
+
 export const dynamic = 'force-dynamic';
 
 interface ActivityItem {
@@ -113,18 +115,18 @@ export default function AdminDashboardPage() {
 
     if (loading) {
         return (
-            <div className="p-6 space-y-6 pt-16 lg:pt-2 h-screen overflow-y-auto scrollbar-hide">
+            <DashboardPageWrapper>
                 <div className="text-cyan-100">로딩 중...</div>
-            </div>
+            </DashboardPageWrapper>
         );
     }
 
     return (
-        <div className="p-6 space-y-6 pt-16 lg:pt-2 h-screen overflow-y-auto scrollbar-hide">
-            <h1 className="text-3xl font-bold text-cyan-100 drop-shadow-[0_0_6px_#00fff7]">관리자 대시보드</h1>
+        <DashboardPageWrapper>
+            <h1 className="text-3xl font-bold text-cyan-100 drop-shadow-[0_0_6px_#00fff7] mb-6">관리자 대시보드</h1>
 
             {/* 통계 카드 */}
-            <div className="grid gap-4 md:grid-cols-3 md:gap-8">
+            <div className="grid gap-4 md:grid-cols-3 md:gap-8 mb-6">
                 <Card className="bg-gradient-to-br from-cyan-900/20 to-blue-900/20 border-cyan-500/30">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium text-cyan-200">총 학생수</CardTitle>
@@ -211,6 +213,6 @@ export default function AdminDashboardPage() {
                     </CardContent>
                 </Card>
             </div>
-        </div>
+        </DashboardPageWrapper>
     );
 }

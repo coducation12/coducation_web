@@ -3,7 +3,7 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Target, Plus, Trash2, Edit3, Calendar } from "lucide-react";
+import { Target, Plus, Trash2, Calendar } from "lucide-react";
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import { StudentSectionTitle, StudentText, studentButtonStyles, studentInputStyles } from "./StudentThemeProvider";
@@ -18,8 +18,6 @@ export function GoalsCard({ studentId, fixedInput, readOnly }: { studentId: stri
   const [newGoal, setNewGoal] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [isAdding, setIsAdding] = useState(false);
-  const [editingGoalIndex, setEditingGoalIndex] = useState<number | null>(null);
-  const [editingTitle, setEditingTitle] = useState('');
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -186,65 +184,6 @@ export function GoalsCard({ studentId, fixedInput, readOnly }: { studentId: stri
     }
   };
 
-  const startEditing = (goalIndex: number) => {
-    setEditingGoalIndex(goalIndex);
-    setEditingTitle(goals[goalIndex].title);
-    setError(null);
-  };
-
-  const saveEdit = async (goalIndex: number) => {
-    try {
-      setError(null);
-
-      // 기존 todolist 배열 조회
-      const { data: currentData, error: fetchError } = await supabase
-        .from('students')
-        .select('todolist')
-        .eq('user_id', studentId)
-        .maybeSingle();
-
-      if (fetchError) {
-        console.error('기존 할 일 조회 에러:', JSON.stringify(fetchError, null, 2));
-        throw new Error(`기존 할 일 조회 실패: ${fetchError.message || '알 수 없는 오류'}`);
-      }
-
-      const currentTodolist = currentData?.todolist || [];
-      const updatedTodolist = currentTodolist.map((goal: any, index: number) => {
-        if (index === goalIndex) {
-          return {
-            ...goal,
-            title: editingTitle.trim()
-          };
-        }
-        return goal;
-      });
-
-      // Students 테이블의 todolist 컬럼 업데이트
-      const { error: updateError } = await supabase
-        .from('students')
-        .update({ todolist: updatedTodolist })
-        .eq('user_id', studentId);
-
-      if (updateError) {
-        console.error('할 일 제목 수정 에러:', JSON.stringify(updateError, null, 2));
-        throw new Error(`할 일 제목 수정 실패: ${updateError.message || '알 수 없는 오류'}`);
-      }
-
-      setEditingGoalIndex(null);
-      setEditingTitle('');
-      await fetchGoals();
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : '알 수 없는 오류가 발생했습니다.';
-      console.error('할 일 제목 수정 실패:', error);
-      setError(errorMessage);
-    }
-  };
-
-  const cancelEdit = () => {
-    setEditingGoalIndex(null);
-    setEditingTitle('');
-    setError(null);
-  };
 
   const completedGoals = goals.filter(goal => goal.isCompleted).length;
   const totalGoals = goals.length;
@@ -313,49 +252,11 @@ export function GoalsCard({ studentId, fixedInput, readOnly }: { studentId: stri
                     />
                   )}
                   <div className="flex-1">
-                    {editingGoalIndex === index ? (
-                      <div className="flex gap-2">
-                        <Input
-                          value={editingTitle}
-                          onChange={(e) => setEditingTitle(e.target.value)}
-                          className="h-7 text-sm"
-                          onKeyPress={(e) => e.key === 'Enter' && saveEdit(index)}
-                          onKeyDown={(e) => e.key === 'Escape' && cancelEdit()}
-                          autoFocus
-                        />
-                        <Button
-                          size="sm"
-                          onClick={() => saveEdit(index)}
-                          className="h-7 px-2 text-xs"
-                        >
-                          저장
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={cancelEdit}
-                          className="h-7 px-2 text-xs"
-                        >
-                          취소
-                        </Button>
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-2">
-                        <span className={`text-sm ${goal.isCompleted ? 'text-cyan-400 line-through' : 'text-cyan-100'}`}>
-                          {goal.title}
-                        </span>
-                        {!readOnly && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => startEditing(index)}
-                            className="h-5 w-5 p-0 text-cyan-400/60 hover:text-cyan-400"
-                          >
-                            <Edit3 className="w-3 h-3" />
-                          </Button>
-                        )}
-                      </div>
-                    )}
+                    <div className="flex items-center gap-2">
+                      <span className={`text-sm ${goal.isCompleted ? 'text-cyan-400 line-through' : 'text-cyan-100'}`}>
+                        {goal.title}
+                      </span>
+                    </div>
                   </div>
                   {!readOnly && (
                     <Button

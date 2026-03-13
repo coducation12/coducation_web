@@ -13,9 +13,11 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 interface TimetableProps {
   title?: string;
   className?: string;
+  teacherId?: string;
+  userRole?: string;
 }
 
-export function Timetable({ title = "학원 시간표", className = "" }: TimetableProps) {
+export function Timetable({ title = "학원 시간표", className = "", teacherId, userRole }: TimetableProps) {
   const now = new Date();
   const [currentDate, setCurrentDate] = React.useState({
     year: now.getFullYear(),
@@ -32,7 +34,9 @@ export function Timetable({ title = "학원 시간표", className = "" }: Timeta
     hoveredStudentId,
     setHoveredStudentId,
     unitThreshold
-  } = useTimetable(isCurrentMonth ? undefined : { year: currentDate.year, month: currentDate.month });
+  } = useTimetable(
+    isCurrentMonth ? { teacherId, userRole } : { year: currentDate.year, month: currentDate.month, teacherId, userRole }
+  );
 
   const [hoveredAcademy, setHoveredAcademy] = React.useState<string | null>(null);
 
@@ -62,7 +66,7 @@ export function Timetable({ title = "학원 시간표", className = "" }: Timeta
 
   if (isLoading) {
     return (
-      <div className={`p-6 pt-20 lg:pt-6 flex items-center justify-center h-96 ${className}`}>
+      <div className={`flex items-center justify-center h-96 ${className}`}>
         <div className="flex flex-col items-center gap-4">
           <Loader2 className="w-10 h-10 text-cyan-400 animate-spin" />
           <div className="text-cyan-200 font-bold animate-pulse">시간표 데이터를 불러오는 중...</div>
@@ -75,7 +79,7 @@ export function Timetable({ title = "학원 시간표", className = "" }: Timeta
   const academies = Array.from(new Set(students.map(s => s.academy))).filter(Boolean);
 
   return (
-    <div className={`p-6 pt-4 lg:pt-6 pb-24 space-y-8 animate-in fade-in duration-700 ${className}`}>
+    <div className={`pb-24 space-y-8 animate-in fade-in duration-700 ${className}`}>
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 pb-2">
         <div className="flex items-center gap-4">
           <h1 className="text-3xl font-black text-cyan-100 drop-shadow-[0_0_12px_rgba(0,255,247,0.5)] italic tracking-tighter shrink-0">

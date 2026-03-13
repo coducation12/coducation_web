@@ -4,9 +4,9 @@ import { AttendanceStatus } from '../components/types';
 import { useToast } from '@/hooks/use-toast';
 import { AttendanceRecord } from '../components/attendance-calendar/types';
 
-export function useAttendanceCalendar(studentId: string) {
+export function useAttendanceCalendar(studentId: string, teacherId?: string | null, onRefresh?: () => void) {
     const [currentMonth, setCurrentMonth] = useState(new Date());
-    const [attendanceRecords, setAttendanceRecords] = useState<Record<string, AttendanceRecord>>({});
+    const [attendanceRecords, setAttendanceRecords] = useState<Record<string, AttendanceRecord[]>>({});
     const [loading, setLoading] = useState(false);
     const [editingDay, setEditingDay] = useState<AttendanceRecord | null>(null);
     const [isSaving, setIsSaving] = useState(false);
@@ -23,38 +23,30 @@ export function useAttendanceCalendar(studentId: string) {
             const startDateStr = `${year}-${String(month + 1).padStart(2, '0')}-01`;
             const endDateStr = `${year}-${String(month + 1).padStart(2, '0')}-${new Date(year, month + 1, 0).getDate()}`;
 
-            const { data, error } = await supabase
-                .from('student_activity_logs')
-                .select('id, date, attended, status, memo, is_makeup, activity_type, start_time, end_time')
-                .eq('student_id', studentId)
-                .gte('date', startDateStr)
-                .lte('date', endDateStr);
+            const { getMonthlyAttendance } = await import('@/lib/actions');
+            const result = await getMonthlyAttendance(studentId, startDateStr, endDateStr, teacherId);
 
-            if (error) throw error;
+            if (!result.success) throw new Error(result.error);
+            const data = result.data;
 
-            const recordMap: Record<string, AttendanceRecord> = {};
+            const recordMap: Record<string, AttendanceRecord[]> = {};
             data?.forEach((item: any) => {
-                let status: AttendanceStatus;
-                if (item.status) {
-                    status = item.status as AttendanceStatus;
-                } else if (item.activity_type === 'typing' || item.attended) {
-                    status = 'present';
-                } else {
-                    status = 'absent';
+                const status = (item.status || (item.attended ? 'present' : 'absent')) as AttendanceStatus;
+                
+                if (!recordMap[item.date]) {
+                    recordMap[item.date] = [];
                 }
 
-                // 가장 최근의 attendance 타입 기록 우선 (혹은 typing 기록 포함)
-                if (item.activity_type === 'attendance' || !recordMap[item.date]) {
-                    recordMap[item.date] = {
-                        id: item.id,
-                        date: item.date,
-                        status: status,
-                        memo: item.memo,
-                        is_makeup: item.is_makeup,
-                        start_time: item.start_time,
-                        end_time: item.end_time
-                    };
-                }
+                recordMap[item.date].push({
+                    id: item.id,
+                    date: item.date,
+                    status: status,
+                    memo: item.memo,
+                    is_makeup: item.session_type === 'makeup',
+                    session_type: item.session_type,
+                    start_time: item.start_time,
+                    end_time: item.end_time
+                });
             });
             setAttendanceRecords(recordMap);
         } catch (error: any) {
@@ -66,7 +58,7 @@ export function useAttendanceCalendar(studentId: string) {
 
     useEffect(() => {
         loadMonthlyAttendance();
-    }, [studentId, currentMonth]);
+    }, [studentId, currentMonth, teacherId]);
 
     const handleSaveDay = async (teacherId?: string | null) => {
         if (!editingDay) return;
@@ -75,48 +67,17 @@ export function useAttendanceCalendar(studentId: string) {
             setIsSaving(true);
             const attendanceData: any = {
                 student_id: studentId,
-                activity_type: 'attendance',
                 date: editingDay.date,
-                attended: editingDay.status === 'present' || editingDay.status === 'makeup',
                 status: editingDay.status,
                 memo: editingDay.memo,
+                session_type: editingDay.session_type || 'regular',
                 teacher_id: teacherId || null,
             };
 
-            let query;
-            if (editingDay.id) {
-                query = supabase
-                    .from('student_activity_logs')
-                    .update(attendanceData)
-                    .eq('id', editingDay.id);
-            } else {
-                // ID가 없는 경우 같은 날짜/타입의 기록이 있는지 먼저 확인
-                const { data: existing } = await supabase
-                    .from('student_activity_logs')
-                    .select('id, is_makeup, start_time, end_time')
-                    .eq('student_id', studentId)
-                    .eq('date', editingDay.date)
-                    .eq('activity_type', 'attendance')
-                    .maybeSingle();
+            const { saveDailyAttendance } = await import('@/lib/actions');
+            const result = await saveDailyAttendance(attendanceData);
 
-                if (existing) {
-                    if (existing.is_makeup) attendanceData.is_makeup = true;
-                    if (existing.start_time && !attendanceData.start_time) attendanceData.start_time = existing.start_time;
-                    if (existing.end_time && !attendanceData.end_time) attendanceData.end_time = existing.end_time;
-
-                    query = supabase
-                        .from('student_activity_logs')
-                        .update(attendanceData)
-                        .eq('id', existing.id);
-                } else {
-                    query = supabase
-                        .from('student_activity_logs')
-                        .insert(attendanceData);
-                }
-            }
-
-            const { error } = await query;
-            if (error) throw error;
+            if (!result.success) throw new Error(result.error);
 
             toast({
                 title: "변경사항 저장 완료",
@@ -125,6 +86,7 @@ export function useAttendanceCalendar(studentId: string) {
 
             setEditingDay(null);
             loadMonthlyAttendance();
+            if (onRefresh) onRefresh();
         } catch (error: any) {
             console.error('저장 실패:', JSON.stringify(error, null, 2));
             toast({
@@ -143,12 +105,14 @@ export function useAttendanceCalendar(studentId: string) {
 
         try {
             setIsSaving(true);
-            const { error } = await supabase
-                .from('student_activity_logs')
-                .delete()
-                .eq('id', editingDay.id);
+            const { deleteAttendanceSessionAction } = await import('@/lib/actions');
+            const result = await deleteAttendanceSessionAction(
+                studentId,
+                editingDay.date,
+                editingDay.session_type || 'regular'
+            );
 
-            if (error) throw error;
+            if (!result.success) throw new Error(result.error);
 
             toast({
                 title: "삭제 완료",
@@ -157,6 +121,7 @@ export function useAttendanceCalendar(studentId: string) {
 
             setEditingDay(null);
             loadMonthlyAttendance();
+            if (onRefresh) onRefresh();
         } catch (error: any) {
             console.error('삭제 실패:', JSON.stringify(error, null, 2));
             toast({
@@ -175,24 +140,25 @@ export function useAttendanceCalendar(studentId: string) {
     const openTodayDetail = async () => {
         const todayStr = new Date().toLocaleDateString('en-CA');
         // 임시 데이터로 먼저 열기
-        setEditingDay({ date: todayStr, status: 'present', memo: '' });
+        setEditingDay({ date: todayStr, status: 'present', memo: '', session_type: 'regular' });
 
         try {
-            const { data } = await supabase
-                .from('student_activity_logs')
-                .select('id, date, status, memo, is_makeup, start_time, end_time')
-                .eq('student_id', studentId)
-                .eq('date', todayStr)
-                .eq('activity_type', 'attendance')
-                .maybeSingle();
+            const { getDailyAttendance } = await import('@/lib/actions');
+            const result = await getDailyAttendance(studentId, todayStr);
+            const data = result.data;
 
             if (data) {
+                setAttendanceRecords(prev => ({
+                    ...prev,
+                    [todayStr]: data ? [data] : []
+                }));
                 setEditingDay({
                     id: data.id,
                     date: data.date,
                     status: data.status as AttendanceStatus,
                     memo: data.memo,
-                    is_makeup: data.is_makeup,
+                    session_type: data.session_type,
+                    is_makeup: data.session_type === 'makeup',
                     start_time: data.start_time,
                     end_time: data.end_time
                 });

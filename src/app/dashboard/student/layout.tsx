@@ -7,7 +7,9 @@ export const dynamic = 'force-dynamic';
 
 export default async function StudentDashboardLayout({ children }: { children: React.ReactNode }) {
   const user = await getAuthenticatedUser();
-  if (!user) redirect("/login");
+  if (!user || (user.role !== 'student' && user.role !== 'admin')) {
+    redirect("/login");
+  }
 
   return (
     <div className="flex min-h-screen w-full bg-gradient-to-br from-[#0a1837] to-[#0a1a2f] student-page">

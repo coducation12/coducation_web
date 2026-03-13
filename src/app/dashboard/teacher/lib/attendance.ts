@@ -1,95 +1,55 @@
-import { supabase } from "@/lib/supabase";
 import { Student, AttendanceStatus } from "../components/types";
 
 /**
  * 특정 날짜의 학생 출결 및 스케줄 데이터를 통합하여 가져오는 함수
  * @param date 조회할 날짜
- * @param teacherId 강사 ID (선택 사항, 필터링용)
+ * @param teacherId 강사 ID (선택 사항, 클라이언트 필터링 보조용)
  * @returns 통합된 학생 세션 리스트
  */
 export const getAttendanceData = async (date: Date, teacherId?: string | null): Promise<Student[]> => {
     try {
-        // 1. 모든 학생 기본 정보 및 요일별 스케줄 로드
-        const { data: studentsData, error: studentsError } = await supabase
-            .from('students')
-            .select(`
-        user_id,
-        assigned_teachers,
-        attendance_schedule,
-        main_subject,
-        sub_subject,
-        users:users!students_user_id_fkey(name, status)
-      `);
+        const dateStr = date.toLocaleDateString('en-CA');
+        const response = await fetch(`/api/dashboard/attendance?date=${dateStr}`);
 
-        if (studentsError) {
-            console.error('학생 데이터 로드 실패:', studentsError);
+        if (!response.ok) {
+            console.error('API에서 출결 데이터 조회 실패', response.status);
             return [];
         }
 
-        // 활성 학생 필터링
-        const activeStudents = (studentsData || []).filter((s: any) =>
-            s.users?.status === 'active' || !s.users?.status
-        );
+        const { students, sessions, teachers } = await response.json();
 
-        // 2. 해당 날짜의 출결 로그(정규+보강) 로드
-        const dateStr = date.toLocaleDateString('en-CA');
-        const { data: logData, error: logError } = await supabase
-            .from('student_activity_logs')
-            .select('id, student_id, status, is_makeup, start_time, end_time')
-            .eq('date', dateStr)
-            .eq('activity_type', 'attendance');
-
-        if (logError) {
-            console.error('출결 로그 로드 실패:', logError);
-        }
-
-        const logMap = new Map<string, any[]>();
-        (logData || []).forEach((log: any) => {
-            const logs = logMap.get(log.student_id) || [];
-            logs.push(log);
-            logMap.set(log.student_id, logs);
+        const sessionMap = new Map<string, any[]>();
+        (sessions || []).forEach((session: any) => {
+            const studentSessions = sessionMap.get(session.student_id) || [];
+            studentSessions.push(session);
+            sessionMap.set(session.student_id, studentSessions);
         });
-
-        // 3. 관련 강사 이름 맵핑 정보 로드
-        const teacherIds = new Set<string>();
-        activeStudents.forEach((s: any) => {
-            if (Array.isArray(s.assigned_teachers)) {
-                s.assigned_teachers.forEach((id: string) => teacherIds.add(id));
-            }
-        });
-
-        const { data: teachersData } = await supabase
-            .from('users')
-            .select('id, name')
-            .in('id', Array.from(teacherIds));
 
         const teacherMap = new Map<string, string>();
-        (teachersData || []).forEach((t: any) => teacherMap.set(t.id, t.name));
+        (teachers || []).forEach((t: any) => teacherMap.set(t.id, t.name));
 
-        // 4. 데이터 가공 및 병합
         const dayOfWeek = date.getDay();
         const dayNames = ['일', '월', '화', '수', '목', '금', '토'];
-        const sessions: Student[] = [];
+        const resultSessions: Student[] = [];
 
-        activeStudents.forEach((student: any) => {
+        (students || []).forEach((student: any) => {
             const schedule = student.attendance_schedule || {};
             const assignedTeachers = student.assigned_teachers || [];
 
-            // 강사 ID 필터링 (학생의 배정 강사 목록에 포함되어 있는지 확인)
+            // 강사 ID 필터링
             if (teacherId && !assignedTeachers.includes(teacherId)) return;
 
-            const studentLogs = logMap.get(student.user_id) || [];
+            const studentSessions = sessionMap.get(student.user_id) || [];
             const teacherName = teacherMap.get(assignedTeachers[0]) || '미배정';
 
-            // 요일 라벨 생성 (해당 강사가 담당하는 요일만 표시)
+            // 요일 라벨 생성
             const daysLabel = Object.keys(schedule)
                 .filter(k => {
                     const dayNum = parseInt(k);
                     if (isNaN(dayNum)) return false;
-
-                    // teacherId 필터가 있는 경우, 해당 요일의 담당 강사가 일치하는지 확인
                     if (teacherId) {
-                        return schedule[k]?.teacherId === teacherId;
+                        const slotTeacherId = schedule[k]?.teacherId || schedule[k]?.teacher_id;
+                        return slotTeacherId?.toLowerCase() === teacherId.toLowerCase();
                     }
                     return true;
                 })
@@ -99,13 +59,12 @@ export const getAttendanceData = async (date: Date, teacherId?: string | null): 
             // A. 정규 수업 추가
             const daySchedule = schedule[dayOfWeek] || schedule[dayOfWeek.toString()];
             if (daySchedule) {
-                // 특정 교시 강사가 본인이 아닌 경우 필터링
-                if (teacherId && daySchedule.teacherId && daySchedule.teacherId !== teacherId) return;
+                const slotTeacherId = daySchedule.teacherId || daySchedule.teacher_id;
+                if (teacherId && slotTeacherId?.toLowerCase() !== teacherId.toLowerCase()) return;
 
-                // 해당 요일의 로그 중 보강이 아닌 일반 출석 로그 찾기
-                const regularLog = studentLogs.find(l => !l.is_makeup);
+                const regularSession = studentSessions.find(s => s.session_type === 'regular');
 
-                sessions.push({
+                resultSessions.push({
                     id: `${student.user_id}-regular`,
                     userId: student.user_id,
                     name: student.users?.name || '알 수 없음',
@@ -117,16 +76,19 @@ export const getAttendanceData = async (date: Date, teacherId?: string | null): 
                     attendanceTime: {
                         start: daySchedule.startTime || '10:00',
                         end: daySchedule.endTime || '11:30',
-                        status: (regularLog?.status || 'unregistered') as AttendanceStatus
+                        status: (regularSession?.status || 'unregistered') as AttendanceStatus
                     },
-                    isMakeup: false
+                    isMakeup: false,
+                    koreanSpeed: regularSession?.korean_typing_speed || 0,
+                    englishSpeed: regularSession?.english_typing_speed || 0,
+                    memo: regularSession?.memo || ''
                 });
             }
 
             // B. 보강 수업 추가
-            studentLogs.filter(l => l.is_makeup).forEach(log => {
-                sessions.push({
-                    id: `${student.user_id}-makeup-${log.id}`,
+            studentSessions.filter((s: any) => s.session_type === 'makeup').forEach((session: any) => {
+                resultSessions.push({
+                    id: `${student.user_id}-makeup-${session.id}`,
                     userId: student.user_id,
                     name: student.users?.name || '알 수 없음',
                     teacher: teacherName,
@@ -135,24 +97,27 @@ export const getAttendanceData = async (date: Date, teacherId?: string | null): 
                     curriculum: student.sub_subject || '미설정',
                     phone: '',
                     attendanceTime: {
-                        start: log.start_time || '14:00',
-                        end: log.end_time || '15:30',
-                        status: (log.status || 'makeup') as AttendanceStatus
+                        start: session.start_time || '14:00',
+                        end: session.end_time || '15:30',
+                        status: (session.status || 'makeup') as AttendanceStatus
                     },
-                    isMakeup: true
+                    isMakeup: true,
+                    koreanSpeed: session.korean_typing_speed || 0,
+                    englishSpeed: session.english_typing_speed || 0,
+                    memo: session.memo || ''
                 });
             });
         });
 
-        // 5. 세션 정렬: 수업 시작 시간 순 -> 이름 순
-        sessions.sort((a, b) => {
+        // 세션 정렬
+        resultSessions.sort((a, b) => {
             if (a.attendanceTime.start !== b.attendanceTime.start) {
                 return a.attendanceTime.start.localeCompare(b.attendanceTime.start);
             }
             return a.name.localeCompare(b.name, 'ko-KR');
         });
 
-        return sessions;
+        return resultSessions;
     } catch (error) {
         console.error('getAttendanceData 처리 중 예기치 못한 오류:', error);
         return [];

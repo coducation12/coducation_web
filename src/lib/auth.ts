@@ -14,8 +14,12 @@ export async function getAuthenticatedUser(): Promise<User | null> {
       return null;
     }
 
-    // 강사/관리자인 경우 Auth 토큰 검증
-    if ((userRole === 'teacher' || userRole === 'admin') && authToken) {
+    if (userRole === 'teacher' || userRole === 'admin') {
+      if (!authToken) {
+        console.warn(`보안 경고: ${userRole} 권한 요청이나 auth_token이 없습니다. 접근을 차단합니다.`);
+        return null;
+      }
+
       try {
         // Auth 토큰으로 사용자 검증
         const { data: { user: authUser }, error: authError } = await supabase.auth.getUser(authToken);
@@ -24,10 +28,10 @@ export async function getAuthenticatedUser(): Promise<User | null> {
           // 토큰이 만료되었거나 유효하지 않은 경우
           if (authError?.message?.includes('expired') || authError?.status === 401) {
             console.warn('인증 세션이 만료되었습니다.');
-            return null; // 만료 시 자동으로 null 반환하여 리다이렉트 유도
+          } else {
+            console.error('Auth 토큰 검증 실패:', authError);
           }
-          console.error('Auth 토큰 검증 실패:', authError);
-          return null;
+          return null; // 검증 실패 시 즉시 리턴하여 권한 탈취 차단
         }
       } catch (err: any) {
         // AuthApiError 등 예외 발생 시 (특히 토큰 만료)
@@ -36,11 +40,11 @@ export async function getAuthenticatedUser(): Promise<User | null> {
         } else {
           console.error('Auth 검증 중 예외 발생:', err);
         }
-        return null;
+        return null; // 예외 발생 시에도 즉각 차단
       }
     }
 
-    // DB에서 사용자 정보 조회
+    // DB에서 사용자 정보 조회 (학생이거나, Admin/Teacher 토큰 검증이 성공한 경우만 여기까지 도달)
     const { data, error } = await supabase
       .from('users')
       .select('*')

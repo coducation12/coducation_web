@@ -27,6 +27,7 @@ interface AttendanceCalendarModalProps {
     teacherId?: string | null;
     mode?: 'calendar' | 'detail';
     customTrigger?: React.ReactNode;
+    onRefresh?: () => void;
 }
 
 export function AttendanceCalendarModal({
@@ -34,7 +35,8 @@ export function AttendanceCalendarModal({
     studentName,
     teacherId,
     mode = 'calendar',
-    customTrigger
+    customTrigger,
+    onRefresh
 }: AttendanceCalendarModalProps) {
     const [open, setOpen] = useState(false);
     const {
@@ -49,7 +51,7 @@ export function AttendanceCalendarModal({
         nextMonth,
         prevMonth,
         openTodayDetail
-    } = useAttendanceCalendar(studentId);
+    } = useAttendanceCalendar(studentId, teacherId, onRefresh);
 
     const onEditDay = (dateStr: string, record?: AttendanceRecord) => {
         setEditingDay(record || { date: dateStr, status: 'present', memo: '' });

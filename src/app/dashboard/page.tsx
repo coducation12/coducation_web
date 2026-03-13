@@ -13,6 +13,10 @@ export default async function DashboardPage() {
         console.log('Dashboard - User data:', user);
     }
 
+    if (!user) {
+        redirect('/login?clear=true');
+    }
+
     if (user && user.role) {
         // 역할별 리다이렉트
         switch (user.role) {

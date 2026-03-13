@@ -16,7 +16,7 @@ export const ScheduleRow = React.memo(({ student, rowIdx }: ScheduleRowProps) =>
             >
                 {student.name}
             </div>
-            {Array.from({ length: 16 }).map((_, colIdx) => {
+            {Array.from({ length: 32 }).map((_, colIdx) => {
                 const startIdx = timeToIndex(student.attendanceTime.start);
                 const endIdx = timeToIndex(student.attendanceTime.end);
 
@@ -28,8 +28,23 @@ export const ScheduleRow = React.memo(({ student, rowIdx }: ScheduleRowProps) =>
                             className={`relative h-8 flex items-center justify-center border-b border-cyan-500/20 ${rowIdx % 2 === 0 ? 'bg-cyan-900/10' : ''}`}
                             style={{ gridColumn: `span ${colSpan}`, zIndex: 1 }}
                         >
-                            <div className={`w-full h-6 rounded border-2 ${STATUS_CONFIG[student.attendanceTime.status].color} flex items-center justify-center transition-colors duration-300`}>
-                                <span className="text-[8px] sm:text-[10px] md:text-xs opacity-80 leading-tight w-full text-center select-none truncate px-1">
+                            <div className={`w-full h-6 rounded border-2 flex items-center justify-center transition-colors duration-300 
+                                ${(() => {
+                                    const isMakeupRow = student.id.includes('-makeup-');
+                                    const status = student.attendanceTime.status;
+                                    
+                                    if (isMakeupRow) {
+                                        if (status === 'makeup') {
+                                            return 'bg-transparent border-yellow-500 text-yellow-500';
+                                        }
+                                        if (status === 'present') {
+                                            return 'bg-yellow-500 border-yellow-400 text-black';
+                                        }
+                                    }
+                                    return STATUS_CONFIG[status].color;
+                                })()}
+                            `}>
+                                <span className="text-[8px] sm:text-[10px] md:text-xs opacity-80 leading-tight w-full text-center select-none truncate px-1 font-bold">
                                     <span className="hidden sm:inline">{student.attendanceTime.start}~{student.attendanceTime.end}</span>
                                     <span className="sm:hidden">{student.attendanceTime.start}</span>
                                 </span>
@@ -47,7 +62,7 @@ export const ScheduleRow = React.memo(({ student, rowIdx }: ScheduleRowProps) =>
                         key={student.id + '-empty-' + colIdx}
                         className={`h-8 border-b border-cyan-500/20 ${rowIdx % 2 === 0 ? 'bg-cyan-900/10' : ''}`}
                         style={{
-                            borderLeft: colIdx % 2 === 0 ? '1px dashed #67e8f9' : undefined,
+                            borderLeft: colIdx % 4 === 0 ? '1px dashed #67e8f9' : undefined,
                         }}
                     />
                 );

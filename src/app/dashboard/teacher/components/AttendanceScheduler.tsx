@@ -108,7 +108,8 @@ export function AttendanceScheduler({ teacherId }: { teacherId?: string }) {
         isOpen={isEditModalOpen}
         onClose={() => setIsEditModalOpen(false)}
         onSave={handleSaveStudent}
-        teachers={teacherId ? teachers.filter(t => t.id === teacherId) : teachers}
+        teachers={teachers}
+        currentUserId={teacherId || undefined}
         academies={academies}
       />
     </>

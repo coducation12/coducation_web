@@ -15,6 +15,9 @@ export interface Student {
     checkedAt?: Date;
   };
   isMakeup?: boolean;
+  koreanSpeed?: number;
+  englishSpeed?: number;
+  memo?: string;
 }
 
 // 출석 상태 타입

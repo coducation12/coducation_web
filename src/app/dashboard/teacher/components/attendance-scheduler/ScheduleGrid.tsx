@@ -23,7 +23,7 @@ export const ScheduleGrid = ({ students, isLoading }: ScheduleGridProps) => {
                 className="w-full"
                 style={{
                     display: 'grid',
-                    gridTemplateColumns: `minmax(72px, max-content) repeat(16, 1fr)`
+                    gridTemplateColumns: `minmax(72px, max-content) repeat(32, 1fr)`
                 }}
             >
                 {/* 헤더 */}
@@ -33,13 +33,13 @@ export const ScheduleGrid = ({ students, isLoading }: ScheduleGridProps) => {
                 {TIME_SLOTS.slice(0, -1).map((time, idx) => (
                     <div
                         key={time}
-                        className="relative border-b border-cyan-500/30 flex items-center justify-center h-8 text-cyan-200 text-xs font-medium"
+                        className="relative border-b border-cyan-500/30 flex items-center justify-center h-8 text-cyan-200 text-[10px] font-medium"
                         style={{
-                            borderLeft: idx % 2 === 0 ? '1px dashed #67e8f9' : undefined,
+                            borderLeft: idx % 4 === 0 ? '1px dashed #67e8f9' : undefined,
                             background: 'rgba(8,40,80,0.10)'
                         }}
                     >
-                        {idx % 2 === 0 ? time : ''}
+                        {idx % 4 === 0 ? time : ''}
                     </div>
                 ))}
 

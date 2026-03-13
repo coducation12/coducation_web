@@ -15,6 +15,7 @@ import { getCurrentUserClient } from '@/lib/client-auth';
 import { PostCard } from '@/components/community/PostCard';
 import { PostForm } from '@/components/community/PostForm';
 import { Pagination } from '@/components/community/Pagination';
+import { DashboardPageWrapper } from '@/components/common/DashboardPageWrapper';
 
 export const dynamic = 'force-dynamic';
 
@@ -93,7 +94,7 @@ function CommunityPage() {
 
   if (loading) {
     return (
-      <div className="container mx-auto p-6 max-w-4xl pt-16 lg:pt-2 h-screen overflow-y-auto scrollbar-hide">
+      <DashboardPageWrapper>
         <div className="flex justify-between items-center mb-6">
           <div>
             <h1 className="text-3xl font-bold text-cyan-100 drop-shadow-[0_0_6px_#00fff7]">커뮤니티</h1>
@@ -138,12 +139,12 @@ function CommunityPage() {
             </div>
           ))}
         </div>
-      </div>
+      </DashboardPageWrapper>
     );
   }
 
   return (
-    <div className="container mx-auto p-6 max-w-4xl pt-16 lg:pt-2 h-screen overflow-y-auto scrollbar-hide">
+    <DashboardPageWrapper>
       <div className="flex justify-between items-center mb-6">
         <div>
           <h1 className="text-3xl font-bold text-cyan-100 drop-shadow-[0_0_6px_#00fff7]">커뮤니티</h1>
@@ -221,7 +222,7 @@ function CommunityPage() {
       <div className="text-center mt-6 text-cyan-300/70 text-sm">
         총 {totalCount}개의 게시글
       </div>
-    </div>
+    </DashboardPageWrapper>
   );
 }
 

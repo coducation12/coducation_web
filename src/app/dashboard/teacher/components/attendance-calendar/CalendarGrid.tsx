@@ -4,7 +4,7 @@ import { AttendanceStatus, STATUS_CONFIG } from '../types';
 
 interface CalendarGridProps {
     currentMonth: Date;
-    attendanceRecords: Record<string, AttendanceRecord>;
+    attendanceRecords: Record<string, AttendanceRecord[]>;
     onEditDay: (dateStr: string, record?: AttendanceRecord) => void;
 }
 
@@ -29,14 +29,14 @@ export function CalendarGrid({
     // 실제 날짜들
     for (let d = 1; d <= daysInMonth; d++) {
         const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-        const record = attendanceRecords[dateStr];
+        const records = attendanceRecords[dateStr] || [];
         const isToday = dateStr === todayStr;
 
         days.push(
             <div
                 key={d}
-                onClick={() => onEditDay(dateStr, record)}
-                className={`h-20 sm:h-28 p-2 border border-cyan-500/10 cursor-pointer transition-all duration-300 relative group overflow-hidden
+                onClick={() => onEditDay(dateStr, records[0])} // 기본적으로 첫 번째 기록 혹은 빈 상태로 에디터 열기
+                className={`h-20 sm:h-28 p-1 sm:p-2 border border-cyan-500/10 cursor-pointer transition-all duration-300 relative group overflow-hidden
                     ${isToday ? 'bg-cyan-500/10' : 'hover:bg-cyan-500/5'}
                 `}
             >
@@ -45,26 +45,46 @@ export function CalendarGrid({
                 )}
 
                 <div className="flex justify-between items-start relative z-10">
-                    <span className={`text-[11px] font-black tracking-tighter ${isToday ? 'text-cyan-100' : 'text-cyan-500/40 opacity-70 group-hover:opacity-100 transition-opacity'}`}>
+                    <span className={`text-[10px] sm:text-[11px] font-black tracking-tighter ${isToday ? 'text-cyan-100' : 'text-cyan-500/40 opacity-70 group-hover:opacity-100 transition-opacity'}`}>
                         {String(d).padStart(2, '0')}
                     </span>
-                    {record && (
-                        <div className={`w-2 h-2 rounded-full ${STATUS_CONFIG[record.status].color} shadow-lg shadow-black/50`}></div>
-                    )}
+                    <div className="flex gap-1">
+                        {records.map((r, idx) => (
+                            <div key={idx} className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full ${STATUS_CONFIG[r.status].color} shadow-lg shadow-black/50`}></div>
+                        ))}
+                    </div>
                 </div>
 
-                {record && (
-                    <div className="mt-2 space-y-1 relative z-10">
-                        <div className={`text-[10px] font-bold px-1.5 py-0.5 rounded-md inline-block ${STATUS_CONFIG[record.status].color} bg-black/20 backdrop-blur-sm border border-white/5`}>
-                            {STATUS_CONFIG[record.status].text}
-                        </div>
-                        {record.memo && (
-                            <div className="text-[9px] text-cyan-200/50 truncate bg-cyan-900/40 px-1 rounded border border-white/5">
-                                {record.memo}
+                <div className="mt-1 sm:mt-2 space-y-1 relative z-10 overflow-hidden">
+                    {records.map((record, idx) => (
+                        <div 
+                            key={idx} 
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                onEditDay(dateStr, record);
+                            }}
+                            className="group/record"
+                        >
+                            <div className={`text-[8px] sm:text-[10px] font-bold px-1 sm:px-1.5 py-0.5 rounded-md flex items-center gap-1 mb-0.5
+                                ${record.session_type === 'makeup' ? 'border border-yellow-500/50 bg-yellow-500/10 text-yellow-200' : `${STATUS_CONFIG[record.status].color} bg-black/20`}
+                                backdrop-blur-sm border border-white/5 whitespace-nowrap overflow-hidden
+                            `}>
+                                <span className="truncate">
+                                    {record.session_type === 'makeup' 
+                                        ? (record.status === 'makeup' ? '보강 예정' : `보강 ${STATUS_CONFIG[record.status].text}`)
+                                        : STATUS_CONFIG[record.status].text
+                                    }
+                                </span>
                             </div>
-                        )}
-                    </div>
-                )}
+                        </div>
+                    ))}
+                    
+                    {records.length > 0 && records[0].memo && (
+                        <div className="text-[8px] sm:text-[9px] text-cyan-200/50 truncate bg-cyan-900/40 px-1 rounded border border-white/5">
+                            {records[0].memo}
+                        </div>
+                    )}
+                </div>
             </div>
         );
     }

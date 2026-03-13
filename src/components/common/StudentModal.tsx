@@ -45,6 +45,7 @@ interface StudentModalProps {
     onSave: (formData: any) => Promise<void>;
     triggerText?: string;
     teachers?: { id: string, name: string, label_color?: string }[]; // 강사 목록 추가
+    currentUserId?: string; // 새 스케줄 생성 시 기본값으로 사용할 로그인된 강사 ID
     academies?: string[]; // 학원 목록 추가
 }
 
@@ -97,7 +98,9 @@ const formatAmount = (value: string | number): string => {
     return Number(num).toLocaleString();
 };
 
-export default function StudentModal({ mode, student, isOpen, onClose, onSave, triggerText, teachers = [], academies = ["코딩메이커", "광양코딩"] }: StudentModalProps) {
+export default function StudentModal({ mode, student, isOpen, onClose, onSave, triggerText, teachers = [], currentUserId, academies = ["코딩메이커", "광양코딩"] }: StudentModalProps) {
+    const defaultTeacherId = currentUserId || (teachers.length === 1 ? teachers[0].id : "");
+
     const [internalOpen, setInternalOpen] = useState(false);
     const [showConfirmDialog, setShowConfirmDialog] = useState(false);
     const [originalData, setOriginalData] = useState<any>(null);
@@ -146,9 +149,9 @@ export default function StudentModal({ mode, student, isOpen, onClose, onSave, t
                 classSchedules: student.classSchedules && student.classSchedules.length > 0
                     ? student.classSchedules.map(s => ({
                         ...s,
-                        teacherId: s.teacherId || (teachers.length === 1 ? teachers[0].id : "")
+                        teacherId: s.teacherId || defaultTeacherId
                     }))
-                    : [{ day: "", startTime: "", endTime: "", teacherId: teachers.length === 1 ? teachers[0].id : "" }]
+                    : [{ day: "", startTime: "", endTime: "", teacherId: defaultTeacherId }]
             };
             setFormData(initialData);
             setOriginalData(initialData);
@@ -169,8 +172,8 @@ export default function StudentModal({ mode, student, isOpen, onClose, onSave, t
                 academy: academies[0] || "",
                 tuition_fee: 0, // 0으로 초기화
                 classSchedules: [
-                    { day: "", startTime: "", endTime: "", teacherId: teachers.length === 1 ? teachers[0].id : "" },
-                    { day: "", startTime: "", endTime: "", teacherId: teachers.length === 1 ? teachers[0].id : "" }
+                    { day: "", startTime: "", endTime: "", teacherId: defaultTeacherId },
+                    { day: "", startTime: "", endTime: "", teacherId: defaultTeacherId }
                 ]
             });
         }
@@ -253,7 +256,7 @@ export default function StudentModal({ mode, student, isOpen, onClose, onSave, t
                 day: "",
                 startTime: "",
                 endTime: "",
-                teacherId: teachers.length === 1 ? teachers[0].id : ""
+                teacherId: defaultTeacherId
             }]
         }));
     };

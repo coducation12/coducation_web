@@ -15,7 +15,7 @@ export default async function ParentLayout({
     redirect("/login");
   }
 
-  if (user.role !== "parent") {
+  if (user.role !== "parent" && user.role !== "admin") {
     redirect("/dashboard");
   }
 

@@ -20,7 +20,7 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { PlusCircle } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
+import { saveAttendanceSessionAction } from '@/lib/actions';
 
 interface StudentInfo {
     id: string;
@@ -50,22 +50,20 @@ export function MakeupSessionModal({ students, teacherId, onSuccess }: MakeupSes
 
         try {
             setLoading(true);
-            const { error } = await supabase
-                .from('student_activity_logs')
-                .insert({
-                    student_id: selectedStudent,
-                    activity_type: 'attendance',
-                    date: date,
-                    attended: true,
-                    status: 'makeup',
-                    is_makeup: true,
-                    start_time: startTime,
-                    end_time: endTime,
-                    teacher_id: teacherId || null,
-                    memo: memo
-                });
+            
+            // 서버 액션 사용 (RLS 우회)
+            const result = await saveAttendanceSessionAction({
+                student_id: selectedStudent,
+                date: date,
+                status: 'makeup',
+                session_type: 'makeup',
+                start_time: startTime,
+                end_time: endTime,
+                teacher_id: teacherId || null,
+                memo: memo
+            });
 
-            if (error) throw error;
+            if (!result.success) throw new Error(result.error);
 
             alert('보강 수업이 성공적으로 등록되었습니다.');
             setOpen(false);

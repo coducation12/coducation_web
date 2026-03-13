@@ -23,6 +23,7 @@ import { Edit2 } from 'lucide-react';
 import { CommunityPost, CommunityComment } from '@/types/community';
 import { formatDate, roleLabels } from '@/lib/community-utils';
 import { getCurrentUserClient } from '@/lib/client-auth';
+import { DashboardPageWrapper } from '@/components/common/DashboardPageWrapper';
 
 const badgeColorMap = {
   student: 'bg-cyan-700 text-white',
@@ -169,7 +170,7 @@ export default function PostDetailPage() {
 
   if (loading) {
     return (
-      <div className="container mx-auto p-6 max-w-4xl h-screen overflow-y-auto scrollbar-hide">
+      <DashboardPageWrapper>
         <div className="mb-6 pt-16 lg:pt-0">
           <Button
             variant="ghost"
@@ -233,13 +234,13 @@ export default function PostDetailPage() {
             </div>
           </CardContent>
         </Card>
-      </div>
+      </DashboardPageWrapper>
     );
   }
 
   if (!post) {
     return (
-      <div className="container mx-auto p-6 max-w-4xl">
+      <DashboardPageWrapper>
         <div className="mb-6 pt-16 lg:pt-0">
           <Button
             variant="ghost"
@@ -253,12 +254,12 @@ export default function PostDetailPage() {
         <div className="text-center py-12">
           <p className="text-cyan-200">게시글을 찾을 수 없습니다.</p>
         </div>
-      </div>
+      </DashboardPageWrapper>
     );
   }
 
   return (
-    <div className="container mx-auto p-6 max-w-4xl h-screen overflow-y-auto scrollbar-hide">
+    <DashboardPageWrapper>
       <div className="mb-6 pt-16 lg:pt-0">
         <Button
           variant="ghost"
@@ -451,6 +452,6 @@ export default function PostDetailPage() {
           )}
         </DialogContent>
       </Dialog>
-    </div>
+    </DashboardPageWrapper>
   );
 } 

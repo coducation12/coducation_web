@@ -41,7 +41,7 @@ export const DayCard = React.memo(({
                     <div className="text-xs text-center opacity-70 mb-2">
                         {students.length}명
                     </div>
-                    <div className="grid grid-cols-[repeat(auto-fill,minmax(48px,1fr))] gap-1 max-h-24 overflow-y-auto custom-scrollbar">
+                    <div className="grid grid-cols-[repeat(auto-fill,minmax(42px,1fr))] gap-1 max-h-24 overflow-y-auto custom-scrollbar">
                         {students.map(student => {
                             const isMakeup = student.isMakeup;
                             return (

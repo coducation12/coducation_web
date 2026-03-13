@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import { Student, AttendanceStatus } from "../components/types";
 import { getAttendanceData } from "../lib/attendance";
+import { saveAttendanceSessionAction, deleteAttendanceSessionAction } from "@/lib/actions";
 
 // 자동 결석 처리 함수
 const processAutoAbsence = (students: Student[], currentDate: Date): Student[] => {
@@ -40,20 +41,22 @@ export const useAttendanceScheduler = (teacherId?: string) => {
     // 모든 활성 학생 목록 가져오기 (보강 등록용)
     useEffect(() => {
         const fetchAllStudents = async () => {
-            const { data } = await supabase
-                .from('students')
-                .select(`
-          user_id,
-          users:users!students_user_id_fkey(name, status)
-        `);
+            try {
+                const today = new Date().toLocaleDateString('en-CA');
+                const res = await fetch(`/api/dashboard/attendance?date=${today}`);
+                if (!res.ok) return;
 
-            const activeList = (data || [])
-                .filter((s: any) => s.users?.status === 'active' || !s.users?.status)
-                .map((s: any) => ({
-                    id: s.user_id,
-                    name: s.users?.name || '알 수 없음'
-                }));
-            setAllActiveStudents(activeList);
+                const { students } = await res.json();
+
+                const activeList = (students || [])
+                    .map((s: any) => ({
+                        id: s.user_id,
+                        name: s.users?.name || '알 수 없음'
+                    }));
+                setAllActiveStudents(activeList);
+            } catch (err) {
+                console.error("Failed to fetch all active students via secure API", err);
+            }
         };
         fetchAllStudents();
     }, []);
@@ -101,6 +104,7 @@ export const useAttendanceScheduler = (teacherId?: string) => {
     }, []);
 
     const handleAttendanceChange = useCallback(async (id: string, value: AttendanceStatus) => {
+        console.log(`[Attendance] Updating ${id} to ${value} via Server Action`);
         // 로컬 상태 업데이트
         setStudents(prev => prev.map(s =>
             s.id === id ? {
@@ -113,69 +117,40 @@ export const useAttendanceScheduler = (teacherId?: string) => {
             } : s
         ));
 
-        // 데이터베이스에 출석 기록 저장
+        // 데이터베이스에 출석 기록 저장 (서버 액션을 통해 RLS 우회)
         try {
             const today = currentDate.toLocaleDateString('en-CA');
-            // ID에서 순수 UUID만 추출 (uuid-regular 또는 uuid-makeup-logid 형식 대응)
             const realUserId = id.split('-').slice(0, 5).join('-');
 
             // 1. 'unregistered'인 경우 기록 삭제
             if (value === 'unregistered') {
-                const { error: deleteError } = await supabase
-                    .from('student_activity_logs')
-                    .delete()
-                    .eq('student_id', realUserId)
-                    .eq('activity_type', 'attendance')
-                    .eq('date', today);
+                const sessionType = id.includes('-makeup-') ? 'makeup' : 'regular';
+                const result = await deleteAttendanceSessionAction(
+                    realUserId,
+                    today,
+                    sessionType
+                );
 
-                if (deleteError) console.error('출석 기록 삭제 실패:', JSON.stringify(deleteError, null, 2));
+                if (!result.success) {
+                    console.error('출석 기록 삭제 실패:', result.error);
+                }
                 return;
             }
 
-            // 2. 기존 출석 기록 확인
-            const { data: existing, error: checkError } = await supabase
-                .from('student_activity_logs')
-                .select('id, is_makeup, start_time, end_time')
-                .eq('student_id', realUserId)
-                .eq('activity_type', 'attendance')
-                .eq('date', today)
-                .maybeSingle();
-
-            if (checkError) {
-                console.error('출석 기록 확인 중 오류:', JSON.stringify(checkError, null, 2));
-                return;
-            }
-
+            // 2. 출석 데이터 준비
+            const sessionType = id.includes('-makeup-') ? 'makeup' : (value === 'makeup' ? 'makeup' : 'regular');
             const attendanceData: any = {
                 student_id: realUserId,
-                activity_type: 'attendance',
                 date: today,
-                attended: value === 'present' || value === 'makeup',
                 status: value,
-                teacher_id: teacherId || null,
+                session_type: sessionType,
+                teacher_id: teacherId || null
             };
 
-            // 보강 기록인 경우 해당 속성 유지
-            if (existing?.is_makeup || value === 'makeup') {
-                attendanceData.is_makeup = true;
-                if (existing?.start_time) attendanceData.start_time = existing.start_time;
-                if (existing?.end_time) attendanceData.end_time = existing.end_time;
-            }
+            const result = await saveAttendanceSessionAction(attendanceData);
 
-            if (existing) {
-                const { error } = await supabase
-                    .from('student_activity_logs')
-                    .update(attendanceData)
-                    .eq('id', existing.id);
-
-                if (error) console.error('출석 업데이트 실패:', JSON.stringify(error, null, 2));
-            } else {
-                attendanceData.created_at = new Date().toISOString();
-                const { error } = await supabase
-                    .from('student_activity_logs')
-                    .insert(attendanceData);
-
-                if (error) console.error('출석 기록 생성 실패:', JSON.stringify(error, null, 2));
+            if (!result.success) {
+                console.error('출석 기록 저장 실패:', result.error);
             }
         } catch (error) {
             console.error('출석 상태 저장 중 오류:', error);

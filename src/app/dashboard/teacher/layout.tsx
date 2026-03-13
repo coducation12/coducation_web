@@ -15,7 +15,7 @@ export default async function TeacherLayout({
     redirect("/login");
   }
 
-  if (user.role !== "teacher") {
+  if (user.role !== "teacher" && user.role !== "admin") {
     redirect("/dashboard");
   }
 

@@ -45,6 +45,7 @@ export function StudentList({ students, onAttendanceChange, teacherId, allActive
                   onAttendanceChange={onAttendanceChange}
                   teacherId={teacherId}
                   onStudentClick={onStudentClick}
+                  onRefresh={onRefresh}
                 />
               ))}
             </tbody>

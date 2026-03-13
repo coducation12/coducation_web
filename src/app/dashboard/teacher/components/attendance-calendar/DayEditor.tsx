@@ -50,7 +50,12 @@ export function DayEditor({
                 </DialogHeader>
                 <div className="grid gap-6 py-4">
                     <div className="space-y-3">
-                        <label className="text-sm font-bold text-cyan-200/70 ml-1">상태 선택</label>
+                        <div className="flex justify-between items-center">
+                            <label className="text-sm font-bold text-cyan-200/70 ml-1">상태 선택</label>
+                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded border ${editingDay.session_type === 'makeup' ? 'border-yellow-500/50 text-yellow-500 bg-yellow-500/10' : 'border-cyan-500/30 text-cyan-400 bg-cyan-950'}`}>
+                                {editingDay.session_type === 'makeup' ? '보강 수업' : '정규 수업'}
+                            </span>
+                        </div>
                         <div className="grid grid-cols-3 gap-2">
                             {[
                                 { value: 'present', label: '출석', icon: CheckCircle2, activeClass: 'bg-green-500/20 border-green-500/50 text-green-300 shadow-[0_0_15px_rgba(34,197,94,0.2)]' },
@@ -63,7 +68,16 @@ export function DayEditor({
                                     <button
                                         key={status.value}
                                         type="button"
-                                        onClick={() => setEditingDay(prev => prev ? { ...prev, status: status.value as AttendanceStatus } : null)}
+                                        onClick={() => setEditingDay(prev => {
+                                            if (!prev) return null;
+                                            const newSessionType = status.value === 'makeup' ? 'makeup' : prev.session_type;
+                                            return { 
+                                                ...prev, 
+                                                status: status.value as AttendanceStatus,
+                                                session_type: newSessionType,
+                                                is_makeup: newSessionType === 'makeup'
+                                            };
+                                        })}
                                         className={`flex flex-col items-center justify-center p-3 rounded-xl border-2 transition-all duration-200 gap-1.5
                                             ${isActive
                                                 ? status.activeClass

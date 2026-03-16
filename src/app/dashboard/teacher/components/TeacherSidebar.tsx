@@ -8,6 +8,7 @@ import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from "@/co
 import { Button } from "@/components/ui/button";
 import { logout } from "@/lib/actions";
 import { getCurrentUserClient } from "@/lib/client-auth";
+import { supabase } from "@/lib/supabase";
 
 const navItems = [
   { href: "/dashboard/teacher", label: "대시보드", icon: <LayoutDashboard className="w-5 h-5" /> },
@@ -30,11 +31,31 @@ export function TeacherSidebar() {
   useEffect(() => {
     fetchUserInfo();
     fetchPendingCount();
+
+    // 실시간 구독 설정
+    const channel = supabase
+      .channel('teacher_consultations_changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*', // INSERT, UPDATE, DELETE 모두 감지
+          schema: 'public',
+          table: 'consultations'
+        },
+        (payload: any) => {
+          console.log('상담문의 데이터 변경 감지:', payload);
+          fetchPendingCount();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const fetchPendingCount = async () => {
     try {
-      const { supabase } = await import("@/lib/supabase");
       const { count, error } = await supabase
         .from('consultations')
         .select('*', { count: 'exact', head: true })

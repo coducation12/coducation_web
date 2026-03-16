@@ -8,6 +8,7 @@ import Image from "next/image";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { logout } from "@/lib/actions";
+import { supabase } from "@/lib/supabase";
 
 const navItems = [
   { href: "/dashboard/admin", label: "대시보드", icon: <LayoutDashboard className="w-5 h-5" /> },
@@ -29,29 +30,38 @@ export function AdminSidebar() {
 
   React.useEffect(() => {
     fetchPendingCount();
+
+    // 실시간 구독 설정
+    const channel = supabase
+      .channel('admin_consultations_changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*', // INSERT, UPDATE, DELETE 모두 감지
+          schema: 'public',
+          table: 'consultations'
+        },
+        (payload: any) => {
+          console.log('상담문의 데이터 변경 감지:', payload);
+          fetchPendingCount();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const fetchPendingCount = async () => {
     try {
-      const { supabase } = await import("@/lib/supabase");
-      const { data, error } = await supabase
+      const { count, error } = await supabase
         .from('consultations')
-        .select('id', { count: 'exact', head: true })
+        .select('*', { count: 'exact', head: true })
         .eq('status', 'pending');
 
       if (!error) {
-        setPendingCount(data?.length || 0);
-        // Supabase select with count: 'exact' and head: true returns count in 'count' property if using specific return type, 
-        // but here we can just use length if we select 'id' or use the count metadata.
-        // Let's use simpler query for count.
-        const { count, error: countError } = await supabase
-          .from('consultations')
-          .select('*', { count: 'exact', head: true })
-          .eq('status', 'pending');
-
-        if (!countError) {
-          setPendingCount(count || 0);
-        }
+        setPendingCount(count || 0);
       }
     } catch (error) {
       console.error("상담문의 건수 조회 실패:", error);

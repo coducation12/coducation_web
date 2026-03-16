@@ -115,7 +115,7 @@ export default function StudentModal({ mode, student, isOpen, onClose, onSave, t
         parentPhone: "",
         email: "",
         enrollment_date: new Date().toISOString().split('T')[0],
-        status: "수강",
+        status: "상담",
         memo: "",
         academy: academies[0] || "",
         tuition_fee: 0, // 숫자로 저장
@@ -142,7 +142,7 @@ export default function StudentModal({ mode, student, isOpen, onClose, onSave, t
                 parentPhone: student.parentPhone || "",
                 email: student.email || "",
                 enrollment_date: student.enrollment_date || new Date().toISOString().split('T')[0],
-                status: student.status || "수강",
+                status: student.status || "상담",
                 memo: student.memo || "",
                 academy: student.academy || academies[0] || "",
                 tuition_fee: student.tuition_fee || 0, // 숫자로 설정
@@ -167,7 +167,7 @@ export default function StudentModal({ mode, student, isOpen, onClose, onSave, t
                 parentPhone: "",
                 email: "",
                 enrollment_date: new Date().toISOString().split('T')[0],
-                status: "수강",
+                status: "상담",
                 memo: "",
                 academy: academies[0] || "",
                 tuition_fee: 0, // 0으로 초기화
@@ -505,6 +505,7 @@ export default function StudentModal({ mode, student, isOpen, onClose, onSave, t
                                     <SelectValue placeholder="상태 선택" />
                                 </SelectTrigger>
                                 <SelectContent className="bg-[#0f172a] border-cyan-500/30">
+                                    <SelectItem value="상담">상담</SelectItem>
                                     <SelectItem value="수강">수강</SelectItem>
                                     <SelectItem value="휴강">휴강</SelectItem>
                                     <SelectItem value="종료">종료</SelectItem>

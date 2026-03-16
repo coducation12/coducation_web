@@ -79,7 +79,9 @@ export async function getTuitionDashboardData(month: string, currentUserId: stri
 
             const studentStatus = user.status;
             const isEnded = student.enrollment_end_date && new Date(student.enrollment_end_date) < new Date(month);
-            const isNotActive = studentStatus === 'suspended' || studentStatus === 'inactive' || studentStatus === '휴강' || studentStatus === '종료';
+            const isNotActive = studentStatus === 'suspended' || studentStatus === 'inactive' || 
+                                studentStatus === '휴강' || studentStatus === '종료' || 
+                                studentStatus === 'consulting' || studentStatus === '상담';
 
             if (isEnded || isNotActive) return null;
 
@@ -326,7 +328,9 @@ export async function getTuitionYearlySummary(year: number, currentUserId: strin
             const annualRecord = annualRecordMap.get(user.id) as any;
             const monthlyData = annualRecord?.monthly_data || {};
 
-            const isInactive = user.status === 'suspended' || user.status === 'inactive' || user.status === '휴강' || user.status === '종료';
+            const isInactive = user.status === 'suspended' || user.status === 'inactive' || 
+                               user.status === '휴강' || user.status === '종료' || 
+                               user.status === 'consulting' || user.status === '상담';
 
             // [추가] 휴강/종료생 중 해당 연도에 결제 내역이 하나도 없으면 제외
             if (isInactive && Object.keys(monthlyData).length === 0) {

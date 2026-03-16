@@ -177,13 +177,15 @@ export async function login(formData: FormData) {
         // 사용자 상태 확인 (학생의 경우 수강 상태도 확인)
         if (user.role === 'student') {
           // 학생: active이면서 수강 중이어야 로그인 가능
-          if (user.status !== 'active' || user.status === '휴강' || user.status === '종료') {
+          if (user.status !== 'active') {
             if (user.status === 'pending') {
               return { success: false, error: '계정이 아직 승인되지 않았습니다.' };
-            } else if (user.status === '휴강') {
+            } else if (user.status === 'suspended' || user.status === '휴강') {
               return { success: false, error: '휴강 중인 계정입니다.' };
-            } else if (user.status === '종료') {
+            } else if (user.status === 'inactive' || user.status === '종료') {
               return { success: false, error: '수강이 종료된 계정입니다.' };
+            } else if (user.status === 'consulting' || user.status === '상담') {
+              return { success: false, error: '상담 신청 중인 계정입니다. 수강 등록 후 로그인이 가능합니다.' };
             } else {
               return { success: false, error: '비활성화된 계정입니다.' };
             }
@@ -342,6 +344,7 @@ export async function addStudent(formData: FormData, isSignup: boolean = false) 
       sub_subject: formData.get('sub_subject') as string,
       enrollment_date: formData.get('enrollment_date') as string,
       memo: formData.get('memo') as string,
+      status: formData.get('status') as string,
       tuition_fee: formData.get('tuition_fee') ? parseInt(formData.get('tuition_fee')?.toString().replace(/,/g, '') || '0') : 0
     };
 
@@ -425,7 +428,7 @@ export async function addStudent(formData: FormData, isSignup: boolean = false) 
         birth_year: studentDataFinal.birthYear ? parseInt(studentDataFinal.birthYear) : null,
         academy: studentDataFinal.academy || '코딩메이커',
         assigned_teacher_id: studentDataFinal.assignedTeacherId || null,
-        status: 'active', // 관리자 추가 시에는 바로 active
+        status: studentDataFinal.status === '상담' ? 'consulting' : 'active', // '상담'인 경우 consulting, 그 외는 active
         created_at: new Date().toISOString()
       })
       .select()
@@ -671,7 +674,8 @@ export async function updateStudent(formData: FormData) {
       birth_year: birthYearInt,
       academy: studentData.academy || '코딩메이커',
       status: studentData.status === '휴강' ? 'suspended' :
-        studentData.status === '종료' ? 'terminated' : 'active'
+        studentData.status === '종료' ? 'terminated' : 
+        studentData.status === '상담' ? 'consulting' : 'active'
     };
     if (studentData.password) {
       userUpdateData.password = await bcrypt.hash(studentData.password, 10);
@@ -794,7 +798,8 @@ export async function getStudentDetailsForEdit(userId: string, requestingTeacher
       course: item.main_subject || '프로그래밍',
       status: item.users?.status === 'pending' ? '승인대기' :
         (item.users?.status === 'suspended' || item.users?.status === '휴강') ? '휴강' :
-          (item.users?.status === 'inactive' || item.users?.status === '종료') ? '종료' : '수강',
+          (item.users?.status === 'inactive' || item.users?.status === '종료') ? '종료' : 
+            (item.users?.status === 'consulting' || item.users?.status === '상담') ? '상담' : '수강',
       studentId: item.users?.username || '-',
       sub_subject: item.sub_subject || '',
       enrollment_date: item.enrollment_start_date || '',

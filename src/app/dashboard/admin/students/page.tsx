@@ -38,6 +38,7 @@ export default function AdminStudentsPage() {
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
     const [studentToDelete, setStudentToDelete] = useState<Student | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
+    const [statusFilter, setStatusFilter] = useState("전체");
     const [sortField, setSortField] = useState<string | null>("name");
     const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
     const { toast } = useToast();
@@ -67,7 +68,8 @@ export default function AdminStudentsPage() {
         // 1. 상태별 가중치 부여 (수강/승인대기 우선)
         const getStatusWeight = (status: string) => {
             if (status === '수강' || status === '승인대기') return 0;
-            return 1; // 휴강, 종료 등
+            if (status === '상담') return 1;
+            return 2; // 휴강, 종료 등
         };
 
         return [...students].sort((a, b) => {
@@ -116,12 +118,16 @@ export default function AdminStudentsPage() {
     };
 
 
-    // 학생 목록 필터링
-    const filteredStudents = students.filter((student: Student) =>
-        student.name?.toLowerCase().includes(search.toLowerCase()) ||
-        student.email?.toLowerCase().includes(search.toLowerCase()) ||
-        student.studentId?.toLowerCase().includes(search.toLowerCase())
-    );
+    // 학생 목록 필터링 (상태 필터 + 검색어)
+    const filteredStudents = students.filter((student: Student) => {
+        const matchesStatus = statusFilter === "전체" || student.status === statusFilter;
+        const matchesSearch = 
+            student.name?.toLowerCase().includes(search.toLowerCase()) ||
+            student.email?.toLowerCase().includes(search.toLowerCase()) ||
+            student.studentId?.toLowerCase().includes(search.toLowerCase());
+        
+        return matchesStatus && matchesSearch;
+    });
 
     // 정렬 적용
     const sortedStudents = getSortedStudents(filteredStudents);
@@ -146,6 +152,24 @@ export default function AdminStudentsPage() {
                     <div className="flex items-center justify-between">
                         <CardTitle className="text-cyan-100">학생 목록</CardTitle>
                         <div className="flex items-center space-x-2">
+                            <Select value={statusFilter} onValueChange={setStatusFilter}>
+                                <SelectTrigger className={`w-[120px] bg-background/40 border-cyan-400/40 ${
+                                    statusFilter === '수강' ? 'text-green-400' :
+                                    statusFilter === '상담' ? 'text-yellow-400' :
+                                    statusFilter === '휴강' ? 'text-orange-400' :
+                                    statusFilter === '종료' ? 'text-red-400' :
+                                    'text-cyan-100'
+                                }`}>
+                                    <SelectValue placeholder="상태 필터" />
+                                </SelectTrigger>
+                                <SelectContent className="bg-[#0f172a] border-cyan-500/30">
+                                    <SelectItem value="전체" className="text-cyan-100">전체</SelectItem>
+                                    <SelectItem value="수강" className="text-green-400">수강</SelectItem>
+                                    <SelectItem value="상담" className="text-yellow-400 font-medium">상담</SelectItem>
+                                    <SelectItem value="휴강" className="text-orange-400">휴강</SelectItem>
+                                    <SelectItem value="종료" className="text-red-400">종료</SelectItem>
+                                </SelectContent>
+                            </Select>
                             <Input
                                 placeholder="학생 검색..."
                                 value={search}
@@ -335,18 +359,23 @@ export default function AdminStudentsPage() {
                                     <TableCell>
                                         <Badge
                                             variant="outline"
-                                            className={
-                                                student.status === '승인대기'
-                                                    ? "border-yellow-500/50 text-yellow-400"
-                                                    : student.status === '휴강'
-                                                        ? "border-orange-500/50 text-orange-400"
-                                                        : "border-green-500/50 text-green-400"
-                                            }
+                                                className={
+                                                    (student.status === '승인대기' || student.status === '상담')
+                                                        ? "border-yellow-500/50 text-yellow-400"
+                                                        : student.status === '휴강'
+                                                            ? "border-orange-500/50 text-orange-400"
+                                                            : "border-green-500/50 text-green-400"
+                                                }
                                         >
                                             {student.status === '승인대기' ? (
                                                 <>
                                                     <Clock className="w-3 h-3 mr-1" />
                                                     승인대기
+                                                </>
+                                            ) : student.status === '상담' ? (
+                                                <>
+                                                    <Clock className="w-3 h-3 mr-1" />
+                                                    상담
                                                 </>
                                             ) : (
                                                 <>

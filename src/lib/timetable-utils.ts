@@ -76,43 +76,67 @@ export const getStudentRegistrationUnit = (
 ): number => {
     if (!schedule) return 0;
 
-    const start = enrollmentDate ? new Date(enrollmentDate) : new Date(year, month - 1, 1);
-    const end = new Date(year, month, 0);
+    // 신규 학생 여부 확인 (등록일이 조회 중인 월과 같은 경우)
+    const enrollment = enrollmentDate ? new Date(enrollmentDate) : null;
+    const isNewStudent = enrollment &&
+        enrollment.getFullYear() === year &&
+        (enrollment.getMonth() + 1) === month;
 
-    if (start > end) return 0;
+    if (isNewStudent) {
+        // [신규 학생] 기존 로직: 해당 월의 실제 총 수업 시간 기반 계산
+        const start = enrollment;
+        const end = new Date(year, month, 0);
+        const effectiveStart = start; // 신규 학생은 등록일부터 시작
 
-    const effectiveStart = (start.getMonth() + 1 === month && start.getFullYear() === year)
-        ? start
-        : new Date(year, month - 1, 1);
+        let totalMinutes = 0;
+        const current = new Date(effectiveStart);
 
-    let totalMinutes = 0;
-    const current = new Date(effectiveStart);
+        while (current <= end) {
+            const dayNum = current.getDay();
+            const slot = schedule[dayNum.toString()];
 
-    while (current <= end) {
-        const dayNum = current.getDay();
-        const slot = schedule[dayNum.toString()];
-
-        if (slot) {
-            const assignedTeacherId = slot.teacherId || studentDefaultTeacherId;
-            if (assignedTeacherId === targetTeacherId && slot.startTime && slot.endTime) {
-                try {
-                    const [startH, startM] = slot.startTime.split(':').map(Number);
-                    const [endH, endM] = slot.endTime.split(':').map(Number);
-                    if (!isNaN(startH) && !isNaN(startM) && !isNaN(endH) && !isNaN(endM)) {
-                        const duration = (endH * 60 + endM) - (startH * 60 + startM);
-                        if (duration > 0) {
-                            totalMinutes += duration;
+            if (slot) {
+                const assignedTeacherId = slot.teacherId || studentDefaultTeacherId;
+                if (assignedTeacherId === targetTeacherId && slot.startTime && slot.endTime) {
+                    try {
+                        const [startH, startM] = slot.startTime.split(':').map(Number);
+                        const [endH, endM] = slot.endTime.split(':').map(Number);
+                        if (!isNaN(startH) && !isNaN(startM) && !isNaN(endH) && !isNaN(endM)) {
+                            const duration = (endH * 60 + endM) - (startH * 60 + startM);
+                            if (duration > 0) totalMinutes += duration;
                         }
-                    }
-                } catch (e) {
-                    console.error('시간 계산 중 오류:', e);
+                    } catch (e) {}
+                }
+            }
+            current.setDate(current.getDate() + 1);
+        }
+        return calculateRegistrationUnit(totalMinutes);
+    } else {
+        // [기존 학생] 신규 로직: 주간 시간표 패턴 기반 고정 계산 (주 180분 = 1.0 단위)
+        let totalWeeklyMinutes = 0;
+
+        // 주간 시간표(day 0-6)를 순회하며 해당 강사의 수업 시간 합산
+        for (let day = 0; day <= 6; day++) {
+            const slot = schedule[day.toString()];
+            if (slot) {
+                const assignedTeacherId = slot.teacherId || studentDefaultTeacherId;
+                if (assignedTeacherId === targetTeacherId && slot.startTime && slot.endTime) {
+                    try {
+                        const [startH, startM] = slot.startTime.split(':').map(Number);
+                        const [endH, endM] = slot.endTime.split(':').map(Number);
+                        if (!isNaN(startH) && !isNaN(startM) && !isNaN(endH) && !isNaN(endM)) {
+                            const duration = (endH * 60 + endM) - (startH * 60 + startM);
+                            if (duration > 0) totalWeeklyMinutes += duration;
+                        }
+                    } catch (e) {}
                 }
             }
         }
-        current.setDate(current.getDate() + 1);
-    }
 
-    return calculateRegistrationUnit(totalMinutes);
+        // 주 180분 기준 단위계 계산 및 소수점 둘째자리에서 반올림 (소수점 첫째자리까지 표시)
+        const unit = totalWeeklyMinutes / 180;
+        return Math.round(unit * 10) / 10;
+    }
 };
 
 /**

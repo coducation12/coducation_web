@@ -1325,12 +1325,12 @@ export async function getAttendanceRecords(studentId: string, year: number, mont
     });
 
     const { data, error } = await supabaseAdmin
-      .from('student_activity_logs')
-      .select('date, attended, activity_type')
+      .from('attendance_sessions')
+      .select('date, status, session_type')
       .eq('student_id', studentId)
       .gte('date', startOfMonth.toISOString().split('T')[0])
       .lte('date', endOfMonth.toISOString().split('T')[0])
-      .eq('attended', true);
+      .in('status', ['attended', 'makeup']);
 
     console.log('getAttendanceRecords - 쿼리 결과:', { data: data?.length || 0, error: error?.message });
 
@@ -1339,7 +1339,14 @@ export async function getAttendanceRecords(studentId: string, year: number, mont
       return { success: false, error: error.message };
     }
 
-    return { success: true, data: data || [] };
+    // 기존 데이터 형식(date, attended, activity_type)으로 변환하여 반환
+    const mappedData = data?.map((row: any) => ({
+      date: row.date,
+      attended: true,
+      activity_type: row.session_type === 'makeup' ? 'makeup' : 'attendance'
+    })) || [];
+
+    return { success: true, data: mappedData };
   } catch (error) {
     console.error('출석 기록 조회 중 오류:', error);
     return { success: false, error: '출석 기록 조회 중 오류가 발생했습니다.' };
@@ -2534,14 +2541,14 @@ export async function deleteStudent(studentId: string) {
 
     // 3. 관련 데이터 삭제 (CASCADE로 자동 삭제되지만 명시적으로 처리)
 
-    // 3-1. 학생 활동 로그 삭제
-    const { error: activityLogsError } = await supabase
-      .from('student_activity_logs')
+    // 3-1. 학생 출결 세션 삭제 (attendance_sessions)
+    const { error: attendanceError } = await supabase
+      .from('attendance_sessions')
       .delete()
       .eq('student_id', studentId);
 
-    if (activityLogsError) {
-      console.warn('학생 활동 로그 삭제 실패:', activityLogsError);
+    if (attendanceError) {
+      console.warn('학생 출결 세션 삭제 실패:', attendanceError);
     }
 
     // 3-2. 학생 학습 로그 삭제
@@ -2554,15 +2561,7 @@ export async function deleteStudent(studentId: string) {
       console.warn('학생 학습 로그 삭제 실패:', learningLogsError);
     }
 
-    // 3-3. 수업료 결제 기록 삭제
-    const { error: tuitionError } = await supabase
-      .from('tuition_payments')
-      .delete()
-      .eq('student_id', studentId);
-
-    if (tuitionError) {
-      console.warn('수업료 결제 기록 삭제 실패:', tuitionError);
-    }
+    // 3-3. 수납 기록 삭제 (tuition_annual_records 삭제는 CASCADE 정책에 따라 자동 처리됨)
 
     // 3-4. 커뮤니티 게시글 삭제 (soft delete)
     const { error: postsError } = await supabase

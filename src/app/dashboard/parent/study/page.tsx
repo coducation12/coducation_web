@@ -78,18 +78,20 @@ export default function ParentStudyPage() {
     // TODO: 실제 선택된 학생 ID로 대체 필요
     const studentId = selectedStudent.id;
     const newProgressList = await Promise.all(curriculums.map(async (cur: any) => {
+      // student_learning_logs 테이블에서 완료된 단계 조회 (레거시 student_activity_logs 대체)
       const { data: logs } = await supabase
-        .from('student_activity_logs')
-        .select('memo, date, uploads, feedbacks')
+        .from('student_learning_logs')
+        .select('step_title, completed_at')
         .eq('student_id', studentId)
         .eq('curriculum_id', cur.id);
+
       return (cur.checklist || []).map((step: any) => {
-        const log = (logs || []).find((l: any) => l.memo?.includes(step.title));
+        const log = (logs || []).find((l: any) => l.step_title === step.title);
         return {
           done: !!log,
-          date: log?.date || '',
-          uploads: log?.uploads || [],
-          feedbacks: log?.feedbacks || []
+          date: log?.completed_at ? new Date(log.completed_at).toISOString().split('T')[0] : '',
+          uploads: [], // 신규 시스템에서는 uploads/feedbacks가 별도로 관리될 예정이거나 현재 미지원
+          feedbacks: []
         };
       });
     }));

@@ -74,31 +74,9 @@ export interface TypingExercise {
   created_at: string;
 }
 
-export interface StudentActivityLog {
-  id: string;
-  student_id: string;
-  date: string;
-  attended: boolean;
-  status: 'present' | 'absent' | 'makeup';
-  teacher_id?: string;
-  is_makeup?: boolean;
-  typing_score?: number;
-  typing_speed?: number;
-  typing_language?: 'korean' | 'english';
-  result_image?: string;
-  result_url?: string;
-  result_file?: string;
-  memo?: string;
-  created_at: string;
-}
 
-export interface TuitionPayment {
-  id: string;
-  student_id: string;
-  amount: number;
-  paid_at: string;
-  note?: string;
-}
+
+
 
 export interface CommunityPost {
   id: string;

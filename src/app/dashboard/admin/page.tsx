@@ -44,13 +44,12 @@ export default function AdminDashboardPage() {
                 .select('*', { count: 'exact', head: true })
                 .eq('role', 'student');
 
-            // 금일 출석 조회 (오늘 날짜의 출석 기록)
+            // 금일 출석 조회 (오늘 날짜의 출석 기록 - 세션 기반)
             const today = new Date().toISOString().split('T')[0];
             const { count: attendanceCount } = await supabase
-                .from('student_activity_logs')
+                .from('attendance_sessions')
                 .select('*', { count: 'exact', head: true })
-                .eq('activity_type', 'attendance')
-                .eq('attended', true)
+                .in('status', ['attended', 'makeup'])
                 .eq('date', today);
 
             // 커리큘럼 수 조회

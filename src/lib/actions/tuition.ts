@@ -368,3 +368,169 @@ export async function getTuitionYearlySummary(year: number, currentUserId: strin
         return { success: false, error: error.message };
     }
 }
+
+/**
+ * 엑셀 수출용 수납 데이터 조회
+ */
+export async function getTuitionExportData(startMonth: string, endMonth: string, currentUserId: string, currentUserRole: string) {
+    try {
+        const startYear = parseInt(startMonth.split('-')[0]);
+        const endYear = parseInt(endMonth.split('-')[0]);
+        const years = Array.from({ length: endYear - startYear + 1 }, (_, i) => startYear + i);
+
+        // 1. 권한 확인
+        let canManageAll = currentUserRole === 'admin';
+        if (!canManageAll && currentUserRole === 'teacher') {
+            const { data: userData } = await supabase
+                .from('users')
+                .select('can_manage_all_payments')
+                .eq('id', currentUserId)
+                .single();
+            canManageAll = userData?.can_manage_all_payments || false;
+        }
+
+        // 2. 학생 목록 조회
+        let studentsQuery = supabaseAdmin
+            .from('users')
+            .select(`
+                id, 
+                name, 
+                phone, 
+                status,
+                students!students_user_id_fkey!inner (
+                    tuition_fee,
+                    assigned_teachers,
+                    sub_subject,
+                    main_subject,
+                    parent:users!students_parent_id_fkey (
+                        name,
+                        phone
+                    )
+                )
+            `)
+            .eq('role', 'student');
+
+        if (!canManageAll && currentUserRole === 'teacher') {
+            studentsQuery = studentsQuery.filter('students.assigned_teachers', 'cs', `{"${currentUserId}"}`);
+        }
+
+        const { data: students, error: studentError } = await studentsQuery;
+        if (studentError) throw studentError;
+
+        // 3. 해당 기간 연도별 수납 기록 조회
+        const { data: annualRecords, error: paymentError } = await supabaseAdmin
+            .from('tuition_annual_records')
+            .select('*')
+            .in('year', years);
+        if (paymentError) throw paymentError;
+
+        // 4. 강사 목록 조회
+        const { data: allTeachers } = await supabaseAdmin
+            .from('users')
+            .select('id, name')
+            .eq('role', 'teacher');
+        const teacherMap = new Map(allTeachers?.map((t: any) => [t.id as string, t.name as string]) || []);
+
+        const annualRecordMap = new Map(); // studentId-year -> record
+        annualRecords?.forEach((r: any) => {
+            annualRecordMap.set(`${r.student_id}-${r.year}`, r);
+        });
+
+        // 5. 데이터 가공
+        const detailedData: any[] = [];
+        const yearlySummaries: Record<number, any[]> = {};
+        
+        const [sYear, sMonth] = startMonth.split('-').map(Number);
+        const [eYear, eMonth] = endMonth.split('-').map(Number);
+
+        years.forEach(year => {
+            yearlySummaries[year] = [];
+        });
+
+        (students || []).forEach((user: any) => {
+            const student = Array.isArray(user.students) ? user.students[0] : user.students;
+            if (!student) return;
+
+            const teacherNames = (student.assigned_teachers || []).map((tid: string) => teacherMap.get(tid) || tid).join(', ');
+            const parentName = student.parent && (Array.isArray(student.parent) ? student.parent[0]?.name : student.parent?.name);
+            const parentPhone = student.parent && (Array.isArray(student.parent) ? student.parent[0]?.phone : student.parent?.phone);
+
+            // 연도별 요약 데이터 구조 초기화
+            years.forEach(year => {
+                const annualRecord = annualRecordMap.get(`${user.id}-${year}`);
+                const monthlyData = annualRecord?.monthly_data || {};
+                
+                const yearlyRow: any = {
+                    '학생명': user.name,
+                    '상태': user.status,
+                    '과목': student.sub_subject || student.main_subject || '-',
+                    '담당강사': teacherNames,
+                };
+
+                for (let m = 1; m <= 12; m++) {
+                    const monthKey = m.toString().padStart(2, '0');
+                    const payment = monthlyData[monthKey];
+                    let displayValue = '-';
+                    if (payment && payment.payment_details?.length > 0) {
+                        // 납부일 추출 (MM/DD) - 여러 번에 걸쳐 납부한 경우 모두 표시
+                        const dates = payment.payment_details
+                            .map((p: any) => p.date ? p.date.slice(5, 10).replace('-', '/') : null)
+                            .filter(Boolean);
+                        
+                        // 중복 제거 및 정렬
+                        const uniqueDates = Array.from(new Set(dates)).sort();
+                        
+                        if (uniqueDates.length > 0) {
+                            displayValue = uniqueDates.join(', ');
+                        }
+                    } else if (payment && (payment.status === 'paid' || payment.status === 'partial')) {
+                        displayValue = '납부(날짜없음)';
+                    }
+                    yearlyRow[`${m}월`] = displayValue;
+                }
+                
+                yearlyRow['비고'] = annualRecord?.memo || '-';
+                yearlySummaries[year].push(yearlyRow);
+            });
+
+            // 상세 내역 데이터 생성 (지정된 기간 내)
+            for (let year = startYear; year <= endYear; year++) {
+                const startM = year === startYear ? sMonth : 1;
+                const endM = year === endYear ? eMonth : 12;
+
+                const annualRecord = annualRecordMap.get(`${user.id}-${year}`);
+                const monthlyData = annualRecord?.monthly_data || {};
+
+                for (let m = startM; m <= endM; m++) {
+                    const monthKey = m.toString().padStart(2, '0');
+                    const payment = monthlyData[monthKey];
+                    const standardFee = student.tuition_fee || 0;
+
+                    detailedData.push({
+                        '연도': year,
+                        '월': m,
+                        '학생명': user.name,
+                        '상태': user.status,
+                        '과목': student.sub_subject || student.main_subject || '-',
+                        '담당강사': teacherNames,
+                        '기준 수강료': standardFee,
+                        '조정 수납액': payment?.base_amount ?? standardFee,
+                        '실제 수납액': payment?.total_paid_amount || 0,
+                        '미납액': (payment?.base_amount ?? standardFee) - (payment?.total_paid_amount || 0),
+                        '결제상태': payment?.status === 'paid' ? '완납' : (payment?.status === 'partial' ? '부분납' : '미납'),
+                        '비고': annualRecord?.memo || '-'
+                    });
+                }
+            }
+        });
+
+        return { 
+            success: true, 
+            detailedData, 
+            yearlySummaries 
+        };
+    } catch (error: any) {
+        console.error('Export data error:', error);
+        return { success: false, error: error.message };
+    }
+}

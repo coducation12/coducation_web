@@ -29,6 +29,7 @@ import {
     getTuitionYearlySummary
 } from "@/lib/actions/tuition";
 import { PaymentEntryModal } from "./PaymentEntryModal";
+import { ExportExcelModal } from "./ExportExcelModal";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { format, addMonths, subMonths } from "date-fns";
 import { ko } from "date-fns/locale";
@@ -52,6 +53,8 @@ export function TuitionDashboard({ currentUserId, currentUserRole }: TuitionDash
     const [sortConfig, setSortConfig] = useState<{ key: string, direction: 'asc' | 'desc' } | null>({ key: 'name', direction: 'asc' });
     const [selectedStudent, setSelectedStudent] = useState<any>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+    const [canExport, setCanExport] = useState(false);
 
     const fetchData = async () => {
         try {
@@ -78,6 +81,25 @@ export function TuitionDashboard({ currentUserId, currentUserRole }: TuitionDash
     useEffect(() => {
         fetchData();
     }, [selectedMonth, viewMode, currentUserId, currentUserRole]);
+
+    useEffect(() => {
+        const checkPermission = async () => {
+            if (currentUserRole === 'admin') {
+                setCanExport(true);
+                return;
+            }
+            
+            // 일반 강사인 경우 권한 확인
+            const { supabase } = await import("@/lib/supabase");
+            const { data } = await supabase
+                .from('users')
+                .select('can_manage_all_payments')
+                .eq('id', currentUserId)
+                .single();
+            setCanExport(data?.can_manage_all_payments || false);
+        };
+        checkPermission();
+    }, [currentUserId, currentUserRole]);
 
     const handleMonthChange = (step: number) => {
         const date = new Date(selectedMonth);
@@ -208,7 +230,19 @@ export function TuitionDashboard({ currentUserId, currentUserRole }: TuitionDash
                     <h1 className="text-3xl font-bold text-cyan-100 drop-shadow-[0_0_8px_#00fff7] mb-1">수납 관리</h1>
                 </div>
 
+
                 <div className="flex items-center gap-3">
+                    {canExport && (
+                        <Button
+                            onClick={() => setIsExportModalOpen(true)}
+                            className="bg-cyan-600/20 hover:bg-cyan-600/40 text-cyan-100 border border-cyan-500/30 h-9"
+                            size="sm"
+                        >
+                            <Download className="w-4 h-4 mr-2" />
+                            엑셀 다운로드
+                        </Button>
+                    )}
+
                     <Tabs value={viewMode} onValueChange={(v: any) => setViewMode(v)} className="w-[200px]">
                         <TabsList className="grid w-full grid-cols-2 bg-cyan-900/20 border border-cyan-500/20">
                             <TabsTrigger value="monthly" className="data-[state=active]:bg-cyan-500/20 data-[state=active]:text-cyan-100">
@@ -480,6 +514,13 @@ export function TuitionDashboard({ currentUserId, currentUserRole }: TuitionDash
                     onSuccess={handlePaymentSaved}
                 />
             )}
+
+            <ExportExcelModal
+                isOpen={isExportModalOpen}
+                onClose={() => setIsExportModalOpen(false)}
+                currentUserId={currentUserId}
+                currentUserRole={currentUserRole}
+            />
         </div>
     );
 }

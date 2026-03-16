@@ -48,7 +48,7 @@ export function ExportExcelModal({ isOpen, onClose, currentUserId, currentUserRo
                 const detailedWs = XLSX.utils.json_to_sheet(res.detailedData);
                 XLSX.utils.book_append_sheet(workbook, detailedWs, "상세수납내역");
 
-                // 상세 시트 셀 너비 조정
+                // 상세 시트 셀 너비 및 필터 설정
                 const detailedCols = [
                     { wch: 6 },  // 연도
                     { wch: 4 },  // 월
@@ -64,6 +64,10 @@ export function ExportExcelModal({ isOpen, onClose, currentUserId, currentUserRo
                     { wch: 30 }  // 비고
                 ];
                 detailedWs['!cols'] = detailedCols;
+                if (res.detailedData.length > 0) {
+                    const range = XLSX.utils.decode_range(detailedWs['!ref'] || 'A1');
+                    detailedWs['!autofilter'] = { ref: XLSX.utils.encode_range(range) };
+                }
 
                 // 2. 연도별 요약 시트들 생성
                 const years = Object.keys(res.yearlySummaries).map(Number).sort((a, b) => b - a);
@@ -71,19 +75,21 @@ export function ExportExcelModal({ isOpen, onClose, currentUserId, currentUserRo
                     const yearData = res.yearlySummaries[year];
                     if (yearData && yearData.length > 0) {
                         const yearWs = XLSX.utils.json_to_sheet(yearData);
-                        XLSX.utils.book_new(); // Dummy call
                         XLSX.utils.book_append_sheet(workbook, yearWs, `${year}년 요약`);
 
-                        // 요약 시트 셀 너비 조정
+                        // 요약 시트 셀 너비 및 필터 설정
                         const summaryCols = [
                             { wch: 12 }, // 학생명
                             { wch: 8 },  // 상태
                             { wch: 15 }, // 과목
                             { wch: 15 }, // 담당강사
-                            ...Array(12).fill({ wch: 10 }), // 1월~12월 (날짜만 나오므로 좁게)
+                            ...Array(12).fill({ wch: 14 }), // 1월~12월 (날짜 표시 - 넉넉하게)
                             { wch: 30 }  // 비고
                         ];
                         yearWs['!cols'] = summaryCols;
+                        
+                        const range = XLSX.utils.decode_range(yearWs['!ref'] || 'A1');
+                        yearWs['!autofilter'] = { ref: XLSX.utils.encode_range(range) };
                     }
                 });
 

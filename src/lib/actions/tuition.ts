@@ -504,6 +504,13 @@ export async function getTuitionExportData(startMonth: string, endMonth: string,
                 for (let m = startM; m <= endM; m++) {
                     const monthKey = m.toString().padStart(2, '0');
                     const payment = monthlyData[monthKey];
+                    
+                    // 수납 기록이 전혀 없거나, 미납 상태이면서 상세 내역(결제 상세)이 없는 경우는 목록에서 제외
+                    // (사용자가 직접 입력하거나 수납을 진행한 건만 상세 내역에 표시)
+                    if (!payment || (payment.status === 'pending' && (!payment.payment_details || payment.payment_details.length === 0))) {
+                        continue;
+                    }
+
                     const standardFee = student.tuition_fee || 0;
 
                     detailedData.push({
@@ -521,6 +528,20 @@ export async function getTuitionExportData(startMonth: string, endMonth: string,
                         '비고': annualRecord?.memo || '-'
                     });
                 }
+            }
+        });
+
+        // 결과 정렬 (최신순)
+        detailedData.sort((a, b) => {
+            if (a.연도 !== b.연도) return b.연도 - a.연도;
+            if (a.월 !== b.월) return b.월 - a.월;
+            return a.학생명.localeCompare(b.학생명);
+        });
+
+        // 각 연도별 요약 데이터 이름순 정렬
+        years.forEach(year => {
+            if (yearlySummaries[year]) {
+                yearlySummaries[year].sort((a, b) => a.학생명.localeCompare(b.학생명));
             }
         });
 

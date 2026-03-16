@@ -402,6 +402,7 @@ export async function getTuitionExportData(startMonth: string, endMonth: string,
                     assigned_teachers,
                     sub_subject,
                     main_subject,
+                    enrollment_end_date,
                     parent:users!students_parent_id_fkey (
                         name,
                         phone
@@ -504,14 +505,15 @@ export async function getTuitionExportData(startMonth: string, endMonth: string,
                 for (let m = startM; m <= endM; m++) {
                     const monthKey = m.toString().padStart(2, '0');
                     const payment = monthlyData[monthKey];
+                    const standardFee = student.tuition_fee || 0;
                     
-                    // 수납 기록이 전혀 없거나, 미납 상태이면서 상세 내역(결제 상세)이 없는 경우는 목록에서 제외
-                    // (사용자가 직접 입력하거나 수납을 진행한 건만 상세 내역에 표시)
-                    if (!payment || (payment.status === 'pending' && (!payment.payment_details || payment.payment_details.length === 0))) {
+                    // 사용자의 요청: "DB에 기록이 있는것만 넣도록 해줘" 
+                    // monthlyData[monthKey]가 존재한다는 것은 해당 학생/월에 대해 
+                    // 최소한 수납 정보 저장(액션)이 한 번이라도 일어났음을 의미합니다.
+                    // 액션이 없었던 월은 '미납'으로 자동 생성하지 않고 건너뜁니다.
+                    if (!payment) {
                         continue;
                     }
-
-                    const standardFee = student.tuition_fee || 0;
 
                     detailedData.push({
                         '연도': year,

@@ -53,12 +53,13 @@ export default function TeacherStudentsPage() {
 
     // 정렬 아이콘 렌더링 함수
     const getSortIcon = (field: string) => {
-        if (sortField !== field) {
-            return <ArrowUpDown className="w-4 h-4" />;
-        }
-        return sortDirection === 'asc' ?
-            <ArrowUp className="w-4 h-4" /> :
-            <ArrowDown className="w-4 h-4" />;
+        const icon = sortField !== field ? 
+            <ArrowUpDown className="w-3 h-3 sm:w-4 sm:h-4" /> : 
+            sortDirection === 'asc' ?
+            <ArrowUp className="w-3 h-3 sm:w-4 sm:h-4" /> : 
+            <ArrowDown className="w-3 h-3 sm:w-4 sm:h-4" />;
+            
+        return <span className="hidden sm:inline-block ml-1">{icon}</span>;
     };
 
     // 정렬된 학생 목록 생성
@@ -175,66 +176,67 @@ export default function TeacherStudentsPage() {
                             <TableHeader>
                                 <TableRow className="border-cyan-500/20">
                                     <TableHead className="text-cyan-200 px-2 w-10 sm:w-16 text-center">No</TableHead>
+                                    <TableHead className="text-cyan-200 text-[10px] sm:text-xs md:text-sm px-1 sm:px-2 text-center">No</TableHead>
                                     <TableHead
-                                        className="text-cyan-200 cursor-pointer hover:text-cyan-100 transition-colors select-none px-2"
+                                        className="text-cyan-200 cursor-pointer hover:text-cyan-100 transition-colors select-none px-1 sm:px-2 text-[10px] sm:text-xs md:text-sm"
                                         onClick={() => handleSort('name')}
                                     >
-                                        <div className="flex items-center gap-1">
+                                        <div className="flex items-center gap-0.5 sm:gap-1 whitespace-nowrap">
                                             <span className="md:hidden">성명</span>
                                             <span className="hidden md:inline">학생명</span>
                                             {getSortIcon('name')}
                                         </div>
                                     </TableHead>
                                     <TableHead
-                                        className="text-cyan-200 cursor-pointer hover:text-cyan-100 transition-colors select-none px-2 hidden lg:table-cell"
+                                        className="text-cyan-200 cursor-pointer hover:text-cyan-100 transition-colors select-none px-1 sm:px-2 hidden lg:table-cell text-[10px] sm:text-xs md:text-sm"
                                         onClick={() => handleSort('academy')}
                                     >
-                                        <div className="flex items-center gap-1">
+                                        <div className="flex items-center gap-0.5 sm:gap-1 whitespace-nowrap">
                                             소속 학원
                                             {getSortIcon('academy')}
                                         </div>
                                     </TableHead>
                                     <TableHead
-                                        className="text-cyan-200 cursor-pointer hover:text-cyan-100 transition-colors select-none px-2"
+                                        className="text-cyan-200 cursor-pointer hover:text-cyan-100 transition-colors select-none px-1 sm:px-2 text-[10px] sm:text-xs md:text-sm"
                                         onClick={() => handleSort('phone')}
                                     >
-                                        <div className="flex items-center gap-1">
+                                        <div className="flex items-center gap-0.5 sm:gap-1 whitespace-nowrap">
                                             연락처
                                             {getSortIcon('phone')}
                                         </div>
                                     </TableHead>
                                     <TableHead
-                                        className="text-cyan-200 cursor-pointer hover:text-cyan-100 transition-colors select-none px-2 hidden sm:table-cell"
+                                        className="text-cyan-200 cursor-pointer hover:text-cyan-100 transition-colors select-none px-1 sm:px-2 hidden sm:table-cell text-[10px] sm:text-xs md:text-sm"
                                         onClick={() => handleSort('course')}
                                     >
-                                        <div className="flex items-center gap-1">
+                                        <div className="flex items-center gap-0.5 sm:gap-1 whitespace-nowrap">
                                             과목
                                             {getSortIcon('course')}
                                         </div>
                                     </TableHead>
                                     <TableHead
-                                        className="text-cyan-200 cursor-pointer hover:text-cyan-100 transition-colors select-none px-2 text-center"
+                                        className="text-cyan-200 cursor-pointer hover:text-cyan-100 transition-colors select-none px-1 sm:px-2 text-center text-[10px] sm:text-xs md:text-sm"
                                         onClick={() => handleSort('status')}
                                     >
-                                        <div className="flex items-center justify-center gap-1">
+                                        <div className="flex items-center justify-center gap-0.5 sm:gap-1 whitespace-nowrap">
                                             상태
                                             {getSortIcon('status')}
                                         </div>
                                     </TableHead>
                                     <TableHead
-                                        className="text-cyan-200 cursor-pointer hover:text-cyan-100 transition-colors select-none px-2 text-center"
+                                        className="text-cyan-200 cursor-pointer hover:text-cyan-100 transition-colors select-none px-1 sm:px-2 text-center text-[10px] sm:text-xs md:text-sm"
                                         onClick={() => handleSort('monthlyAttendanceCount')}
                                     >
-                                        <div className="flex items-center justify-center gap-1">
+                                        <div className="flex items-center justify-center gap-0.5 sm:gap-1 whitespace-nowrap">
                                             출석
                                             {getSortIcon('monthlyAttendanceCount')}
                                         </div>
                                     </TableHead>
                                     <TableHead
-                                        className="text-cyan-200 cursor-pointer hover:text-cyan-100 transition-colors select-none px-2 hidden xl:table-cell"
+                                        className="text-cyan-200 cursor-pointer hover:text-cyan-100 transition-colors select-none px-1 sm:px-2 hidden xl:table-cell text-[10px] sm:text-xs md:text-sm"
                                         onClick={() => handleSort('joinDate')}
                                     >
-                                        <div className="flex items-center gap-2">
+                                        <div className="flex items-center gap-0.5 sm:gap-2 whitespace-nowrap">
                                             가입일
                                             {getSortIcon('joinDate')}
                                         </div>

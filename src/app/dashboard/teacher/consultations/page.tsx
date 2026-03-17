@@ -1,9 +1,14 @@
 'use client';
 
 import ConsultationsView from '@/components/common/ConsultationsView';
+import { DashboardPageWrapper } from '@/components/common/DashboardPageWrapper';
 
 export const dynamic = 'force-dynamic';
 
 export default function TeacherConsultationsPage() {
-  return <ConsultationsView role="teacher" />;
+  return (
+    <DashboardPageWrapper>
+      <ConsultationsView role="teacher" />
+    </DashboardPageWrapper>
+  );
 }

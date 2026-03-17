@@ -42,10 +42,10 @@ export function SummaryTable({
                         <tr className="bg-cyan-950/80">
                             <th className="p-1.5 text-cyan-100 font-semibold border border-cyan-900/40 w-16 sm:w-20 text-[11px] sm:text-sm">강사</th>
                             <th className="hidden md:table-cell p-1.5 text-cyan-100 font-semibold border border-cyan-900/40 w-28 text-sm">분원</th>
-                            <th className="p-1.5 text-cyan-100 font-semibold border border-cyan-900/40 text-[11px] sm:text-sm text-left px-3 sm:px-4">학생 명단</th>
+                            <th className="p-1.5 text-cyan-100 font-semibold border border-cyan-900/40 text-[10px] sm:text-sm text-left px-2 sm:px-4">학생 명단</th>
                             <th className="hidden sm:table-cell p-1.5 text-cyan-100 font-semibold border border-cyan-900/40 w-16 text-sm">인원</th>
                             <th className="hidden sm:table-cell p-1.5 text-cyan-100 font-semibold border border-cyan-900/40 w-16 text-sm">단위계</th>
-                            <th className="table-cell sm:hidden p-1.5 text-cyan-100 font-semibold border border-cyan-900/40 w-16 text-[11px]">인원/단위</th>
+                            <th className="table-cell sm:hidden p-1.5 text-cyan-100 font-semibold border border-cyan-900/40 w-20 text-[11px]">인원/단위</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -109,7 +109,7 @@ export function SummaryTable({
                                                                 key={student.id}
                                                                 onMouseEnter={() => onHover(student.id)}
                                                                 onMouseLeave={() => onHover(null)}
-                                                                className={`shrink-0 pl-1 pr-1.5 sm:pl-2 sm:pr-2.5 py-[1px] rounded-r-[2px] text-[10px] sm:text-[12px] font-bold transition-all duration-200 cursor-pointer border-l-[3px] sm:border-l-[4px] border-y border-r border-y-transparent border-r-transparent whitespace-nowrap
+                                                                className={`shrink-0 pl-1 pr-1.5 sm:pl-2 sm:pr-2.5 py-[1px] rounded-r-[2px] text-[9px] sm:text-[12px] font-bold transition-all duration-200 cursor-pointer border-l-[3px] sm:border-l-[4px] border-y border-r border-y-transparent border-r-transparent whitespace-nowrap
                                                                     ${isNewStudent
                                                                         ? 'text-amber-100 bg-amber-500/40 shadow-[0_0_12px_rgba(245,158,11,0.4)]'
                                                                         : 'text-cyan-200 bg-cyan-900/40 hover:bg-cyan-800/60'}
@@ -140,7 +140,7 @@ export function SummaryTable({
                                                                 key={student.id}
                                                                 onMouseEnter={() => onHover(student.id)}
                                                                 onMouseLeave={() => onHover(null)}
-                                                                className={`shrink-0 pl-1 pr-1.5 sm:pl-2 sm:pr-2.5 py-[1px] rounded-r-[2px] text-[10px] sm:text-[12px] font-bold transition-all duration-200 cursor-pointer border-l-[3px] sm:border-l-[4px] border-y border-r border-y-transparent border-r-transparent whitespace-nowrap
+                                                                className={`shrink-0 pl-1 pr-1.5 sm:pl-2 sm:pr-2.5 py-[1px] rounded-r-[2px] text-[9px] sm:text-[12px] font-bold transition-all duration-200 cursor-pointer border-l-[3px] sm:border-l-[4px] border-y border-r border-y-transparent border-r-transparent whitespace-nowrap
                                                                     ${isNewStudent
                                                                         ? 'text-amber-100 bg-amber-500/40 shadow-[0_0_12px_rgba(245,158,11,0.4)]'
                                                                         : 'text-cyan-200 bg-cyan-900/40 hover:bg-cyan-800/60'}
@@ -148,7 +148,7 @@ export function SummaryTable({
                                                                 `}
                                                                 style={{ borderLeftColor: academyColor }}
                                                             >
-                                                                {student.name}<span className="ml-1 text-[9px] sm:text-[10px] font-black text-cyan-400 opacity-80">({student.unit})</span>
+                                                                {student.name}<span className="ml-0.5 text-[8px] sm:text-[10px] font-black text-cyan-400 opacity-80">({student.unit})</span>
                                                             </div>
                                                         );
                                                     })}

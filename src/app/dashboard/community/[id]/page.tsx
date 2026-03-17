@@ -275,38 +275,38 @@ export default function PostDetailPage() {
         ? 'border border-cyan-400/30 border-b-4 border-b-red-400'
         : 'border border-cyan-400/30'
         }`}>
-        <CardHeader className="pb-3">
-          <div className="flex items-start justify-between">
-            <div className="flex items-center space-x-3">
+        <CardHeader className="p-4 sm:p-6 pb-3">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="flex items-center space-x-3 w-full sm:w-auto">
               <UserAvatar
                 src={post.author.role === 'admin' ? '/android-chrome-512x512.png' : (post.author.profile_image_url || post.author.avatar)}
                 name={post.author.name}
                 role={post.author.role}
-                size="lg"
+                size="md"
               />
-              <div>
-                <div className="flex items-center space-x-2">
-                  <span className="font-bold text-cyan-200 text-lg">{post.author.name}</span>
-                  <Badge className={`w-[48px] min-w-[48px] max-w-[48px] text-xs font-bold px-0 py-0.5 flex items-center justify-center text-center ${badgeColorMap[post.author.role]} hover:bg-opacity-100`}>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="font-bold text-cyan-200 text-base sm:text-lg whitespace-nowrap">{post.author.name}</span>
+                  <Badge className={`w-fit min-w-[40px] text-[10px] font-bold px-1.5 py-0.5 flex items-center justify-center text-center ${badgeColorMap[post.author.role]} hover:bg-opacity-100`}>
                     {roleLabels[post.author.role]}
                   </Badge>
                 </div>
-                <div className="flex items-center text-sm text-cyan-300 mt-1">
-                  <Calendar className="h-4 w-4 mr-1" />
+                <div className="flex items-center text-xs sm:text-sm text-cyan-300/70 mt-0.5">
+                  <Calendar className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
                   {formatDate(post.created_at)}
                 </div>
               </div>
             </div>
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-2 self-end sm:self-auto">
               {(currentUserId === post.user_id || currentUserRole === 'admin') && (
                 <>
                   <Button
                     variant="ghost"
                     size="sm"
                     onClick={() => setIsEditModalOpen(true)}
-                    className="text-cyan-400 hover:text-cyan-300 hover:bg-cyan-400/10"
+                    className="text-cyan-400 hover:text-cyan-300 hover:bg-cyan-400/10 h-8 text-xs sm:text-sm"
                   >
-                    <Edit2 className="h-4 w-4 mr-1" />
+                    <Edit2 className="h-3.5 w-3.5 mr-1" />
                     수정
                   </Button>
                   <Button
@@ -314,9 +314,9 @@ export default function PostDetailPage() {
                     size="sm"
                     onClick={handleDeletePost}
                     disabled={deleting}
-                    className="text-red-400 hover:text-red-300 hover:bg-red-400/10"
+                    className="text-red-400 hover:text-red-300 hover:bg-red-400/10 h-8 text-xs sm:text-sm"
                   >
-                    <Trash2 className="h-4 w-4 mr-1" />
+                    <Trash2 className="h-3.5 w-3.5 mr-1" />
                     {deleting ? '삭제 중...' : '삭제'}
                   </Button>
                 </>
@@ -324,12 +324,12 @@ export default function PostDetailPage() {
             </div>
           </div>
         </CardHeader>
-        <CardContent>
-          <CardTitle className="text-2xl mb-4 text-cyan-100 font-bold text-center">
+        <CardContent className="px-4 sm:px-6">
+          <CardTitle className="text-xl sm:text-2xl mb-4 text-cyan-100 font-bold text-center leading-tight">
             {post.title}
           </CardTitle>
           <div className="mb-6">
-            <div className="whitespace-pre-wrap text-cyan-100 leading-relaxed text-base font-medium">
+            <div className="whitespace-pre-wrap text-cyan-100 leading-relaxed text-sm sm:text-base font-medium">
               {post.content}
             </div>
           </div>
@@ -398,21 +398,21 @@ export default function PostDetailPage() {
             {/* 댓글 목록 */}
             <div className="space-y-4">
               {comments.map((comment) => (
-                <div key={comment.id} className="flex space-x-3 p-4 border border-cyan-400/30 rounded-lg bg-transparent">
+                <div key={comment.id} className="flex space-x-2 sm:space-x-3 p-3 sm:p-4 border border-cyan-400/30 rounded-lg bg-transparent">
                   <UserAvatar
                     src={comment.author.role === 'admin' ? '/android-chrome-512x512.png' : (comment.author.profile_image_url || comment.author.avatar)}
                     name={comment.author.name}
                     role={comment.author.role}
-                    size="md"
+                    size="sm"
                   />
-                  <div className="flex-1">
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center space-x-2">
-                        <span className="font-semibold text-sm text-cyan-200">{comment.author.name}</span>
-                        <Badge className={`w-[48px] min-w-[48px] max-w-[48px] text-xs font-bold px-0 py-0.5 flex items-center justify-center text-center ${badgeColorMap[comment.author.role]} hover:bg-opacity-100`}>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between mb-1 sm:mb-2">
+                      <div className="flex items-center gap-1.5 sm:space-x-2 flex-wrap min-w-0">
+                        <span className="font-semibold text-xs sm:text-sm text-cyan-200 truncate max-w-[80px] sm:max-w-none">{comment.author.name}</span>
+                        <Badge className={`w-fit min-w-[36px] text-[9px] sm:text-xs font-bold px-1 py-0 flex items-center justify-center text-center ${badgeColorMap[comment.author.role]} hover:bg-opacity-100`}>
                           {roleLabels[comment.author.role]}
                         </Badge>
-                        <span className="text-xs text-cyan-300">{formatDate(comment.created_at)}</span>
+                        <span className="text-[10px] sm:text-xs text-cyan-300/60 whitespace-nowrap">{formatDate(comment.created_at)}</span>
                       </div>
                       {(currentUserId === comment.user_id || currentUserRole === 'admin') && (
                         <Button
@@ -420,13 +420,13 @@ export default function PostDetailPage() {
                           size="sm"
                           onClick={() => handleDeleteComment(comment.id)}
                           disabled={deletingComment === comment.id}
-                          className="text-red-400 hover:text-red-300 hover:bg-red-400/10 h-6 w-6 p-0"
+                          className="text-red-400 hover:text-red-300 hover:bg-red-400/10 h-6 w-6 p-0 shrink-0"
                         >
                           <Trash2 className="h-3 w-3" />
                         </Button>
                       )}
                     </div>
-                    <p className="text-sm text-cyan-100 leading-relaxed font-medium">{comment.content}</p>
+                    <p className="text-xs sm:text-sm text-cyan-100 leading-relaxed font-medium break-words">{comment.content}</p>
                   </div>
                 </div>
               ))}

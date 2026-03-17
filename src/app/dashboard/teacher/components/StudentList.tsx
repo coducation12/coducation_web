@@ -23,17 +23,29 @@ export function StudentList({ students, onAttendanceChange, teacherId, allActive
           onSuccess={onRefresh || (() => { })}
         />
       </CardHeader>
-      <CardContent>
+      <CardContent className="p-2 sm:p-6">
         <div className="overflow-x-auto">
-          <table className="w-full text-sm text-cyan-100 table-auto">
+          <table className="w-full text-[13px] sm:text-sm text-cyan-100 table-auto">
             <thead>
               <tr className="bg-cyan-900/30">
-                <th className="px-2 py-2 text-center min-w-[60px]">학생 이름</th>
-                <th className="px-2 py-2 text-center min-w-[48px]">수강 요일</th>
-                <th className="px-2 py-2 text-center min-w-[80px]">과목</th>
-                <th className="px-2 py-2 text-center min-w-[120px] hidden sm:table-cell">수업 과정</th>
-                <th className="px-2 py-2 text-center min-w-[70px]">출결</th>
-                <th className="px-2 py-2 text-center min-w-[100px]">상세 관리</th>
+                <th className="px-2 py-2 text-center min-w-[50px]">
+                    <span className="md:hidden">이름</span>
+                    <span className="hidden md:inline">학생 이름</span>
+                </th>
+                <th className="px-2 py-2 text-center min-w-[40px]">
+                    <span className="md:hidden">요일</span>
+                    <span className="hidden md:inline">수강 요일</span>
+                </th>
+                <th className="px-2 py-2 text-center min-w-[80px] hidden sm:table-cell">과목</th>
+                <th className="px-2 py-2 text-center min-w-[120px] hidden lg:table-cell">수업 과정</th>
+                <th className="px-2 py-2 text-center min-w-[60px]">
+                    <span className="md:hidden">출결</span>
+                    <span className="hidden md:inline">출결 상태</span>
+                </th>
+                <th className="px-2 py-2 text-center min-w-[80px]">
+                    <span className="md:hidden">상세</span>
+                    <span className="hidden md:inline">상세 관리</span>
+                </th>
               </tr>
             </thead>
             <tbody>

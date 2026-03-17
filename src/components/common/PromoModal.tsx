@@ -53,8 +53,8 @@ export default function PromoModal({ active, imageUrl, onClose }: PromoModalProp
     return (
         <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
             <DialogContent
-                className="fixed left-4 top-20 translate-x-0 translate-y-0 sm:max-w-xl p-0 overflow-hidden bg-transparent border-none shadow-none z-[100]"
-                overlayClassName="bg-transparent"
+                className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 sm:left-4 sm:top-20 sm:translate-x-0 sm:translate-y-0 w-[92vw] sm:max-w-xl p-0 overflow-hidden bg-transparent border-none shadow-none z-[100] outline-none"
+                overlayClassName="bg-black/60 sm:bg-transparent"
             >
                 <div className="relative bg-white rounded-lg overflow-hidden shadow-2xl flex flex-col w-full">
                     <DialogHeader className="sr-only">

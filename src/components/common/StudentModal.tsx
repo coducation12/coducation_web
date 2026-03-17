@@ -524,12 +524,12 @@ export default function StudentModal({ mode, student, isOpen, onClose, onSave, t
                                 <Plus className="w-3 h-3 mr-1" /> 일정 추가
                             </Button>
                         </div>
-                        <div className="space-y-2 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+                        <div className="space-y-1.5 max-h-[400px] overflow-y-auto pr-1 custom-scrollbar">
                             {formData.classSchedules.map((schedule, index) => (
-                                <div key={index} className="flex flex-col md:flex-row gap-3 items-start md:items-center w-full bg-cyan-950/20 p-3 rounded-lg border border-cyan-500/10 mb-2">
-                                    <div className="flex gap-2 w-full md:w-auto">
+                                <div key={index} className="flex flex-row items-center gap-1.5 w-full bg-cyan-950/20 p-2 sm:p-3 rounded-lg border border-cyan-500/10 mb-1">
+                                    <div className="flex gap-1 flex-shrink-0">
                                         <Select value={schedule.day} onValueChange={(v) => handleScheduleChange(index, "day", v)}>
-                                            <SelectTrigger className="w-[110px] bg-cyan-950/30 border-cyan-500/30 text-xs">
+                                            <SelectTrigger className="w-[65px] sm:w-[110px] bg-cyan-950/30 border-cyan-500/30 text-[11px] sm:text-xs h-8 sm:h-9 px-1.5 sm:px-3 [&>svg]:hidden sm:[&>svg]:block">
                                                 <SelectValue placeholder="요일" />
                                             </SelectTrigger>
                                             <SelectContent className="bg-[#0f172a] border-cyan-500/30">
@@ -538,9 +538,9 @@ export default function StudentModal({ mode, student, isOpen, onClose, onSave, t
                                         </Select>
 
                                         {teachers.length === 1 ? (
-                                            <div className="flex items-center px-3 bg-cyan-950/50 border border-cyan-500/20 rounded-md h-9 text-xs">
+                                            <div className="flex items-center px-1.5 sm:px-3 bg-cyan-950/50 border border-cyan-500/20 rounded-md h-8 sm:h-9 text-[11px] sm:text-xs">
                                                 <span
-                                                    className="font-medium"
+                                                    className="font-medium whitespace-nowrap"
                                                     style={{ color: getTeacherColorSet(teachers[0].label_color || teachers[0].id).style.color }}
                                                 >
                                                     {teachers[0].name}
@@ -548,8 +548,8 @@ export default function StudentModal({ mode, student, isOpen, onClose, onSave, t
                                             </div>
                                         ) : (
                                             <Select value={schedule.teacherId || ""} onValueChange={(v) => handleScheduleChange(index, "teacherId", v)}>
-                                                <SelectTrigger className="w-[110px] bg-cyan-950/30 border-cyan-500/30 text-xs text-white">
-                                                    <SelectValue placeholder="강사 선택">
+                                                <SelectTrigger className="w-[70px] sm:w-[110px] bg-cyan-950/30 border-cyan-500/30 text-[11px] sm:text-xs text-white h-8 sm:h-9 px-1.5 sm:px-3 [&>svg]:hidden sm:[&>svg]:block">
+                                                    <SelectValue placeholder="강사">
                                                         {schedule.teacherId && schedule.teacherId !== "none" ? (
                                                             <span
                                                                 className="font-medium"
@@ -558,7 +558,7 @@ export default function StudentModal({ mode, student, isOpen, onClose, onSave, t
                                                                 {teachers.find(t => t.id === schedule.teacherId)?.name}
                                                             </span>
                                                         ) : (
-                                                            <span className="text-gray-400">강사 선택</span>
+                                                            <span className="text-gray-400">강사</span>
                                                         )}
                                                     </SelectValue>
                                                 </SelectTrigger>
@@ -581,21 +581,21 @@ export default function StudentModal({ mode, student, isOpen, onClose, onSave, t
                                         )}
                                     </div>
 
-                                    <div className="flex flex-1 gap-2 items-center w-full">
+                                    <div className="flex flex-row flex-1 gap-1 items-center min-w-0">
                                         <Input
-                                            placeholder="시작(14:00)"
+                                            placeholder="시작"
                                             value={schedule.startTime}
                                             onChange={(e) => handleScheduleChange(index, "startTime", e.target.value)}
-                                            className="bg-cyan-950/30 border-cyan-500/30 h-8 flex-1 text-center text-xs"
+                                            className="bg-cyan-950/30 border-cyan-500/30 h-8 flex-1 text-center text-[11px] sm:text-xs px-1"
                                         />
-                                        <span className="text-cyan-700 flex-shrink-0 font-bold">~</span>
+                                        <span className="text-cyan-700 font-bold text-[10px] sm:text-xs">~</span>
                                         <Input
-                                            placeholder="종료(16:00)"
+                                            placeholder="종료"
                                             value={schedule.endTime}
                                             onChange={(e) => handleScheduleChange(index, "endTime", e.target.value)}
-                                            className="bg-cyan-950/30 border-cyan-500/30 h-8 flex-1 text-center text-xs"
+                                            className="bg-cyan-950/30 border-cyan-500/30 h-8 flex-1 text-center text-[11px] sm:text-xs px-1"
                                         />
-                                        <Button type="button" onClick={() => removeSchedule(index)} variant="ghost" size="icon" className="text-red-400 hover:text-red-300 hover:bg-red-400/10 h-8 w-8">
+                                        <Button type="button" onClick={() => removeSchedule(index)} variant="ghost" size="icon" className="text-red-400 hover:text-red-300 hover:bg-red-400/10 h-8 w-8 flex-shrink-0">
                                             <Trash2 className="w-4 h-4" />
                                         </Button>
                                     </div>

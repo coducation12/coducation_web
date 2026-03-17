@@ -18,12 +18,12 @@ export const ScheduleGrid = ({ students, isLoading }: ScheduleGridProps) => {
     }
 
     return (
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto md:overflow-visible">
+            {/* 데스크톱 전용 그리드 (md 이상) */}
             <div
-                className="w-full"
+                className="hidden md:grid w-full"
                 style={{
-                    display: 'grid',
-                    gridTemplateColumns: `minmax(72px, max-content) repeat(32, 1fr)`
+                    gridTemplateColumns: `minmax(100px, max-content) repeat(32, 1fr)`
                 }}
             >
                 {/* 헤더 */}
@@ -42,10 +42,21 @@ export const ScheduleGrid = ({ students, isLoading }: ScheduleGridProps) => {
                         {idx % 4 === 0 ? time : ''}
                     </div>
                 ))}
-
-                {/* 학생별 행 */}
+                
+                {/* 데스크톱 학생별 행 */}
                 {students.map((student, rowIdx) => (
                     <ScheduleRow key={student.id} student={student} rowIdx={rowIdx} />
+                ))}
+            </div>
+
+            {/* 모바일 전용 리스트 (md 미만) */}
+            <div className="md:hidden flex flex-col w-full">
+                <div className="flex items-center px-4 py-2 border-b border-cyan-500/30 bg-cyan-900/20 text-cyan-200 text-xs font-bold">
+                    <span className="w-24">학생</span>
+                    <span className="flex-1 text-center">시간 스케줄</span>
+                </div>
+                {students.map((student, rowIdx) => (
+                    <ScheduleRow key={student.id + '-mobile'} student={student} rowIdx={rowIdx} isMobile />
                 ))}
             </div>
         </div>

@@ -12,9 +12,9 @@ export default async function AdminDashboardLayout({ children }: { children: Rea
   }
 
   return (
-    <div className="flex h-screen w-screen bg-gradient-to-br from-[#0a1837] to-[#0a1a2f]">
+    <div className="flex flex-col lg:flex-row h-screen w-screen bg-gradient-to-br from-[#0a1837] to-[#0a1a2f]">
       <AdminSidebar />
-      <main className="flex-1 min-w-0 flex flex-col overflow-x-hidden">
+      <main className="flex-1 min-w-0 flex flex-col overflow-x-hidden min-h-0">
         {children}
       </main>
     </div>

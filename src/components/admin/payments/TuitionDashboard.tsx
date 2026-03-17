@@ -88,7 +88,7 @@ export function TuitionDashboard({ currentUserId, currentUserRole }: TuitionDash
                 setCanExport(true);
                 return;
             }
-            
+
             // 일반 강사인 경우 권한 확인
             const { supabase } = await import("@/lib/supabase");
             const { data } = await supabase
@@ -225,74 +225,73 @@ export function TuitionDashboard({ currentUserId, currentUserRole }: TuitionDash
     return (
         <div className="space-y-6">
             {/* 상단 헤더 */}
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                <div>
-                    <h1 className="text-3xl font-bold text-cyan-100 drop-shadow-[0_0_8px_#00fff7] mb-1">수납 관리</h1>
+            <div className="flex flex-col gap-4">
+                <div className="flex items-center justify-between w-full">
+                    <h1 className="text-2xl sm:text-3xl font-bold text-cyan-100 drop-shadow-[0_0_8px_#00fff7]">수납 관리</h1>
+
+                    <div className="flex items-center bg-[#0a1837] border border-cyan-500/20 rounded-lg p-0.5 sm:p-1">
+                        <Button variant="ghost" size="icon" onClick={() => handleMonthChange(-1)} className="text-cyan-100 h-7 w-7 sm:h-8 sm:w-8">
+                            <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5" />
+                        </Button>
+                        <span className="text-sm sm:text-lg font-mono font-bold text-cyan-200 min-w-[80px] sm:min-w-[100px] text-center">
+                            {viewMode === 'monthly' ? selectedMonth.slice(0, 7) : selectedMonth.slice(0, 4) + '년'}
+                        </span>
+                        <Button variant="ghost" size="icon" onClick={() => handleMonthChange(1)} className="text-cyan-100 h-7 w-7 sm:h-8 sm:w-8">
+                            <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5" />
+                        </Button>
+                    </div>
                 </div>
 
-
-                <div className="flex items-center gap-3">
+                <div className="flex flex-wrap items-center gap-2 sm:gap-3 w-full lg:w-auto">
                     {canExport && (
                         <Button
                             onClick={() => setIsExportModalOpen(true)}
-                            className="bg-cyan-600/20 hover:bg-cyan-600/40 text-cyan-100 border border-cyan-500/30 h-9"
+                            className="bg-cyan-600/20 hover:bg-cyan-600/40 text-cyan-100 border border-cyan-500/30 h-8 sm:h-9 flex-1 sm:flex-initial"
                             size="sm"
                         >
-                            <Download className="w-4 h-4 mr-2" />
-                            엑셀 다운로드
+                            <Download className="w-3.5 h-3.5 mr-2" />
+                            엑셀
                         </Button>
                     )}
 
-                    <Tabs value={viewMode} onValueChange={(v: any) => setViewMode(v)} className="w-[200px]">
-                        <TabsList className="grid w-full grid-cols-2 bg-cyan-900/20 border border-cyan-500/20">
-                            <TabsTrigger value="monthly" className="data-[state=active]:bg-cyan-500/20 data-[state=active]:text-cyan-100">
-                                <TableIcon className="w-3.5 h-3.5 mr-1.5" />
+                    <Tabs value={viewMode} onValueChange={(v: any) => setViewMode(v)} className="w-full sm:w-[180px]">
+                        <TabsList className="grid w-full grid-cols-2 bg-cyan-900/20 border border-cyan-500/20 h-8 sm:h-9">
+                            <TabsTrigger value="monthly" className="text-xs data-[state=active]:bg-cyan-500/20 data-[state=active]:text-cyan-100">
+                                <TableIcon className="w-3 h-3 mr-1" />
                                 월간
                             </TabsTrigger>
-                            <TabsTrigger value="yearly" className="data-[state=active]:bg-cyan-500/20 data-[state=active]:text-cyan-100">
-                                <LayoutGrid className="w-3.5 h-3.5 mr-1.5" />
+                            <TabsTrigger value="yearly" className="text-xs data-[state=active]:bg-cyan-500/20 data-[state=active]:text-cyan-100">
+                                <LayoutGrid className="w-3 h-3 mr-1" />
                                 연간
                             </TabsTrigger>
                         </TabsList>
                     </Tabs>
-
-                    <div className="flex items-center bg-[#0a1837] border border-cyan-500/20 rounded-lg p-1">
-                        <Button variant="ghost" size="icon" onClick={() => handleMonthChange(-1)} className="text-cyan-100 h-8 w-8">
-                            <ChevronLeft className="w-5 h-5" />
-                        </Button>
-                        <span className="text-lg font-mono font-bold text-cyan-200 min-w-[100px] text-center">
-                            {viewMode === 'monthly' ? selectedMonth.slice(0, 7) : selectedMonth.slice(0, 4) + '년'}
-                        </span>
-                        <Button variant="ghost" size="icon" onClick={() => handleMonthChange(1)} className="text-cyan-100 h-8 w-8">
-                            <ChevronRight className="w-5 h-5" />
-                        </Button>
-                    </div>
                 </div>
             </div>
 
             {/* 통계 배너 (월별 뷰 전용) */}
             {viewMode === 'monthly' && (
                 <div className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
                         <Card className="bg-[#0a203f]/40 border-cyan-500/30 overflow-hidden relative">
-                            <div className="absolute top-0 right-0 p-3 opacity-10"><CreditCard className="w-12 h-12" /></div>
-                            <CardHeader className="pb-2"><CardTitle className="text-xs font-medium text-cyan-300">목표 수납액</CardTitle></CardHeader>
-                            <CardContent><div className="text-2xl font-bold text-cyan-100">{stats.totalTarget.toLocaleString()}원</div></CardContent>
+                            <div className="absolute top-0 right-0 p-2 sm:p-3 opacity-10"><CreditCard className="w-8 h-8 sm:w-12 sm:h-12" /></div>
+                            <CardHeader className="p-3 sm:pb-2 sm:pt-6"><CardTitle className="text-[10px] sm:text-xs font-medium text-cyan-300">목표 수납액</CardTitle></CardHeader>
+                            <CardContent className="p-3 pt-0 sm:pt-0"><div className="text-base sm:text-2xl font-bold text-cyan-100">{stats.totalTarget.toLocaleString()}원</div></CardContent>
                         </Card>
                         <Card className="bg-[#0a203f]/40 border-green-500/30 overflow-hidden relative">
-                            <div className="absolute top-0 right-0 p-3 opacity-10"><TrendingUp className="w-12 h-12" /></div>
-                            <CardHeader className="pb-2"><CardTitle className="text-xs font-medium text-green-300">현 수납 실적</CardTitle></CardHeader>
-                            <CardContent><div className="text-2xl font-bold text-green-400">{stats.totalCollected.toLocaleString()}원</div></CardContent>
+                            <div className="absolute top-0 right-0 p-2 sm:p-3 opacity-10"><TrendingUp className="w-8 h-8 sm:w-12 sm:h-12" /></div>
+                            <CardHeader className="p-3 sm:pb-2 sm:pt-6"><CardTitle className="text-[10px] sm:text-xs font-medium text-green-300">현 수납 실적</CardTitle></CardHeader>
+                            <CardContent className="p-3 pt-0 sm:pt-0"><div className="text-base sm:text-2xl font-bold text-green-400">{stats.totalCollected.toLocaleString()}원</div></CardContent>
                         </Card>
                         <Card className="bg-[#0a203f]/40 border-orange-500/30 overflow-hidden relative">
-                            <div className="absolute top-0 right-0 p-3 opacity-10"><AlertCircle className="w-12 h-12" /></div>
-                            <CardHeader className="pb-2"><CardTitle className="text-xs font-medium text-orange-300">미납/부분납 인원</CardTitle></CardHeader>
-                            <CardContent><div className="text-2xl font-bold text-orange-400">{stats.unpaidCount}명</div></CardContent>
+                            <div className="absolute top-0 right-0 p-2 sm:p-3 opacity-10"><AlertCircle className="w-8 h-8 sm:w-12 sm:h-12" /></div>
+                            <CardHeader className="p-3 sm:pb-2 sm:pt-6"><CardTitle className="text-[10px] sm:text-xs font-medium text-orange-300">미납/부분납</CardTitle></CardHeader>
+                            <CardContent className="p-3 pt-0 sm:pt-0"><div className="text-base sm:text-2xl font-bold text-orange-400">{stats.unpaidCount}명</div></CardContent>
                         </Card>
                         <Card className="bg-[#0a203f]/40 border-cyan-500/30 overflow-hidden relative">
                             <div className="absolute bottom-0 left-0 h-1 bg-cyan-400 transition-all duration-500" style={{ width: `${stats.collectionRate}%` }}></div>
-                            <CardHeader className="pb-2"><CardTitle className="text-xs font-medium text-cyan-300">수납률</CardTitle></CardHeader>
-                            <CardContent><div className="text-2xl font-bold text-cyan-100">{stats.collectionRate.toFixed(1)}%</div></CardContent>
+                            <CardHeader className="p-3 sm:pb-2 sm:pt-6"><CardTitle className="text-[10px] sm:text-xs font-medium text-cyan-300">수납률</CardTitle></CardHeader>
+                            <CardContent className="p-3 pt-0 sm:pt-0"><div className="text-base sm:text-2xl font-bold text-cyan-100">{stats.collectionRate.toFixed(1)}%</div></CardContent>
                         </Card>
                     </div>
 
@@ -376,70 +375,73 @@ export function TuitionDashboard({ currentUserId, currentUserRole }: TuitionDash
             <Card className="bg-[#0a1837]/60 border-cyan-500/30 overflow-hidden">
                 <CardContent className="p-0">
                     {viewMode === 'monthly' ? (
-                        <Table>
-                            <TableHeader>
-                                <TableRow className="border-cyan-500/20 hover:bg-transparent">
-                                    <TableHead className="text-cyan-300 cursor-pointer" onClick={() => handleSort('name')}>
-                                        <div className="flex items-center gap-1">학생 {renderSortIcon('name')}</div>
-                                    </TableHead>
-                                    <TableHead className="text-cyan-300 cursor-pointer" onClick={() => handleSort('teacher')}>
-                                        <div className="flex items-center gap-1">강사/과목 {renderSortIcon('teacher')}</div>
-                                    </TableHead>
-                                    <TableHead className="text-cyan-300 text-right cursor-pointer" onClick={() => handleSort('base_amount')}>
-                                        <div className="flex items-center justify-end gap-1">학원비 {renderSortIcon('base_amount')}</div>
-                                    </TableHead>
-                                    <TableHead className="text-cyan-300 text-right cursor-pointer" onClick={() => handleSort('total_paid_amount')}>
-                                        <div className="flex items-center justify-end gap-1">수납액 {renderSortIcon('total_paid_amount')}</div>
-                                    </TableHead>
-                                    <TableHead className="text-cyan-300 text-right">수납일</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {loading ? (
-                                    <TableRow><TableCell colSpan={5} className="text-center py-20 text-cyan-400">Loading...</TableCell></TableRow>
-                                ) : filteredMonthlyData.length === 0 ? (
-                                    <TableRow><TableCell colSpan={5} className="text-center py-20 text-cyan-600">내역 없음</TableCell></TableRow>
-                                ) : (
-                                    filteredMonthlyData.map((item) => (
-                                        <TableRow
-                                            key={item.student_id}
-                                            className={`border-cyan-500/10 cursor-pointer group hover:bg-white/5 transition-all ${item.payment.status === 'paid' ? 'bg-green-500/15' : item.payment.status === 'partial' ? 'bg-orange-500/15' : ''}`}
-                                            onClick={() => openPaymentModal(item)}
-                                        >
-                                            <TableCell className="py-1.5">
-                                                <div className="font-bold text-cyan-100 text-sm">
-                                                    {item.name} <span className="text-[10px] text-cyan-600 font-normal ml-1">{item.phone}</span>
-                                                </div>
-                                                <div className="text-[10px] text-cyan-500">학부모 : {item.parent_phone || "-"}</div>
-                                                {item.payment.memo && <div className="text-[9px] text-cyan-400/70 truncate max-w-[150px]">{item.payment.memo}</div>}
-                                            </TableCell>
-                                            <TableCell className="py-1.5 text-cyan-200 text-sm">
-                                                <div>{item.teacher_names || "-"}</div>
-                                                <div className="text-[10px] text-cyan-500">{item.subject}</div>
-                                            </TableCell>
-                                            <TableCell className="text-right py-1.5 text-cyan-300 font-mono">{item.base_amount.toLocaleString()}원</TableCell>
-                                            <TableCell className="text-right py-1.5 text-green-400 font-bold font-mono">
-                                                {item.payment.total_paid_amount.toLocaleString()}원
-                                                {item.payment.status === 'partial' && <div className="text-[9px] text-orange-500">미수: {(item.base_amount - item.payment.total_paid_amount).toLocaleString()}원</div>}
-                                            </TableCell>
-                                            <TableCell className="text-right py-1.5 text-cyan-400 font-mono text-[13px]">
-                                                {(() => {
-                                                    const dates = item.payment.payment_details?.map((p: any) => p.date).filter(Boolean).sort();
-                                                    return dates?.[dates.length - 1] || "-";
-                                                })()}
-                                            </TableCell>
-                                        </TableRow>
-                                    ))
-                                )}
-                            </TableBody>
-                        </Table>
+                        <div className="overflow-x-auto">
+                            <Table className="text-[12px] sm:text-sm">
+                                <TableHeader>
+                                    <TableRow className="border-cyan-500/20 hover:bg-transparent">
+                                        <TableHead className="text-cyan-300 cursor-pointer min-w-[100px]" onClick={() => handleSort('name')}>
+                                            <div className="flex items-center gap-1">학생 {renderSortIcon('name')}</div>
+                                        </TableHead>
+                                        <TableHead className="text-cyan-300 cursor-pointer min-w-[100px]" onClick={() => handleSort('teacher')}>
+                                            <div className="flex items-center gap-1">강사/과목 {renderSortIcon('teacher')}</div>
+                                        </TableHead>
+                                        <TableHead className="text-cyan-300 text-right cursor-pointer min-w-[80px] hidden sm:table-cell" onClick={() => handleSort('base_amount')}>
+                                            <div className="flex items-center justify-end gap-1">학원비 {renderSortIcon('base_amount')}</div>
+                                        </TableHead>
+                                        <TableHead className="text-cyan-300 text-right cursor-pointer min-w-[90px]" onClick={() => handleSort('total_paid_amount')}>
+                                            <div className="flex items-center justify-end gap-1">수납액 {renderSortIcon('total_paid_amount')}</div>
+                                        </TableHead>
+                                        <TableHead className="text-cyan-300 text-right min-w-[80px] hidden sm:table-cell">수납일</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {loading ? (
+                                        <TableRow><TableCell colSpan={5} className="text-center py-20 text-cyan-400">Loading...</TableCell></TableRow>
+                                    ) : filteredMonthlyData.length === 0 ? (
+                                        <TableRow><TableCell colSpan={5} className="text-center py-20 text-cyan-600">내역 없음</TableCell></TableRow>
+                                    ) : (
+                                        filteredMonthlyData.map((item) => (
+                                            <TableRow
+                                                key={item.student_id}
+                                                className={`border-cyan-500/10 cursor-pointer group hover:bg-white/5 transition-all ${item.payment.status === 'paid' ? 'bg-green-500/15' : item.payment.status === 'partial' ? 'bg-orange-500/15' : ''}`}
+                                                onClick={() => openPaymentModal(item)}
+                                            >
+                                                <TableCell className="py-2 sm:py-3 items-center">
+                                                    <div className="font-bold text-cyan-100 flex flex-col">
+                                                        <span>{item.name}</span>
+                                                        <span className="text-[10px] text-cyan-600 font-normal hidden sm:inline">{item.phone}</span>
+                                                    </div>
+                                                    <div className="text-[10px] text-cyan-500 hidden sm:block">학부모 : {item.parent_phone || "-"}</div>
+                                                    {item.payment.memo && <div className="text-[10px] text-cyan-400/70 truncate max-w-[120px] sm:max-w-[150px]">{item.payment.memo}</div>}
+                                                </TableCell>
+                                                <TableCell className="py-2 sm:py-3 text-cyan-200">
+                                                    <div className="font-medium truncate max-w-[80px] sm:max-w-none">{item.teacher_names || "-"}</div>
+                                                    <div className="text-[10px] text-cyan-500 truncate max-w-[80px] sm:max-w-[100px]">{item.subject}</div>
+                                                </TableCell>
+                                                <TableCell className="text-right py-2 sm:py-3 text-cyan-300 font-mono hidden sm:table-cell">{item.base_amount.toLocaleString()}</TableCell>
+                                                <TableCell className="text-right py-2 sm:py-3 text-green-400 font-bold font-mono">
+                                                    {item.payment.total_paid_amount.toLocaleString()}
+                                                    {item.payment.status === 'partial' && <div className="text-[9px] text-orange-500 leading-none mt-1">미수: {(item.base_amount - item.payment.total_paid_amount).toLocaleString()}</div>}
+                                                </TableCell>
+                                                <TableCell className="text-right py-2 sm:py-3 text-cyan-400 font-mono text-[11px] sm:text-[13px] hidden sm:table-cell">
+                                                    {(() => {
+                                                        const dates = item.payment.payment_details?.map((p: any) => p.date).filter(Boolean).sort();
+                                                        return dates?.[dates.length - 1]?.slice(2) || "-";
+                                                    })()}
+                                                </TableCell>
+                                            </TableRow>
+                                        ))
+                                    )}
+                                </TableBody>
+                            </Table>
+                        </div>
                     ) : (
                         <div className="overflow-x-auto">
-                            <Table className="min-w-[960px] w-full table-fixed">
+                            <Table className="min-w-[600px] sm:min-w-[960px] w-full table-fixed">
                                 <TableHeader>
                                     <TableRow className="border-cyan-500/20 hover:bg-transparent text-sm">
-                                        <TableHead className="text-cyan-300 sticky left-0 bg-[#0a1837] z-20 w-[180px] border-r border-cyan-500/20">학생 정보</TableHead>
-                                        {[...Array(12)].map((_, i) => <TableHead key={i} className="text-cyan-300 text-center px-0.5 min-w-[50px]">{i + 1}월</TableHead>)}
+                                        <TableHead className="text-cyan-300 sticky left-0 bg-[#0a1837] z-20 w-[60px] sm:w-[180px] border-r border-cyan-500/20 px-1 sm:px-4 text-[11px] sm:text-sm">학생 정보</TableHead>
+                                        {[...Array(12)].map((_, i) => <TableHead key={i} className="text-cyan-300 text-center px-0 min-w-[24px] sm:min-w-[50px] text-[10px] sm:text-sm">{i + 1}월</TableHead>)}
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
@@ -449,15 +451,15 @@ export function TuitionDashboard({ currentUserId, currentUserRole }: TuitionDash
                                         <TableRow><TableCell colSpan={14} className="text-center py-20 text-cyan-600">내역 없음</TableCell></TableRow>
                                     ) : (
                                         filteredYearlyData.map((item) => (
-                                            <TableRow key={item.student_id} className={`border-cyan-500/10 text-[11px] ${item.isInactive ? 'opacity-60 bg-zinc-900/20' : 'hover:bg-cyan-900/5'}`}>
-                                                <TableCell className="sticky left-0 bg-[#0a1837] z-10 border-r border-cyan-500/10 py-1.5 w-[180px]">
-                                                    <div className="font-bold flex items-center gap-1.5 flex-wrap text-sm">
-                                                        <span className={item.isInactive ? 'text-zinc-500' : 'text-cyan-100'}>{item.name}</span>
-                                                        <span className="text-[10px] text-cyan-600 font-normal">{item.phone}</span>
-                                                        {item.isInactive && <span className="text-[8px] bg-zinc-800 text-zinc-500 px-1 rounded border border-zinc-700">종료</span>}
+                                            <TableRow key={item.student_id} className={`border-cyan-500/10 text-[10px] sm:text-[11px] ${item.isInactive ? 'opacity-60 bg-zinc-900/20' : 'hover:bg-cyan-900/5'}`}>
+                                                <TableCell className="sticky left-0 bg-[#0a1837] z-10 border-r border-cyan-500/10 py-1 w-[60px] sm:w-[180px] px-1 sm:px-4">
+                                                    <div className="font-bold flex flex-col sm:flex-row sm:items-center gap-0.5 sm:gap-1.5 flex-wrap text-[11px] sm:text-sm">
+                                                        <span className={`${item.isInactive ? 'text-zinc-500' : 'text-cyan-100'} truncate max-w-[75px] sm:max-w-none`}>{item.name}</span>
+                                                        <span className="text-[10px] text-cyan-600 font-normal hidden sm:inline-block">{item.phone}</span>
+                                                        {item.isInactive && <span className="text-[7px] sm:text-[8px] bg-zinc-800 text-zinc-500 px-0.5 sm:px-1 rounded border border-zinc-700 w-fit">종료</span>}
                                                     </div>
-                                                    <div className="text-[10px] text-cyan-500 mt-0.5">학부모 : {item.parent_phone || "-"}</div>
-                                                    {item.memo && <div className="text-[9px] text-cyan-400/60 truncate max-w-[150px] mt-0.5">{item.memo}</div>}
+                                                    <div className="text-[9px] sm:text-[10px] text-cyan-500 mt-0.5 hidden sm:block">학부모 : {item.parent_phone || "-"}</div>
+                                                    {item.memo && <div className="text-[8px] sm:text-[9px] text-cyan-400/60 truncate max-w-[75px] sm:max-w-[150px] mt-0.5">{item.memo}</div>}
                                                 </TableCell>
                                                 {[...Array(12)].map((_, i) => {
                                                     const monthKey = String(i + 1).padStart(2, '0');
@@ -475,9 +477,9 @@ export function TuitionDashboard({ currentUserId, currentUserRole }: TuitionDash
                                                     }
 
                                                     return (
-                                                        <TableCell key={i} className="px-0.5 text-center">
+                                                        <TableCell key={i} className="px-0 sm:px-0.5 text-center">
                                                             <div
-                                                                className={`w-full py-0.5 rounded cursor-pointer hover:brightness-125 transition-all text-[13px] font-mono font-bold ${getStatusColor(status)} ${status === 'pending' ? 'text-transparent' : 'text-white/90 shadow-sm'}`}
+                                                                className={`w-full py-0.5 rounded cursor-pointer hover:brightness-125 transition-all text-[10px] sm:text-[13px] font-mono font-bold ${getStatusColor(status)} ${status === 'pending' ? 'text-transparent' : 'text-white/90 shadow-sm'}`}
                                                                 onClick={() => openPaymentModal({
                                                                     ...item,
                                                                     payment: payment ? { ...payment, memo: item.memo } : {

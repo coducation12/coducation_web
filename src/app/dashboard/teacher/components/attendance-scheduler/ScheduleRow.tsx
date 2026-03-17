@@ -5,9 +5,43 @@ import { timeToIndex } from './utils';
 interface ScheduleRowProps {
     student: Student;
     rowIdx: number;
+    isMobile?: boolean;
 }
 
-export const ScheduleRow = React.memo(({ student, rowIdx }: ScheduleRowProps) => {
+export const ScheduleRow = React.memo(({ student, rowIdx, isMobile = false }: ScheduleRowProps) => {
+    // 공통 배지 스타일 로직
+    const getBadgeStyle = () => {
+        const isMakeupRow = student.id.includes('-makeup-');
+        const status = student.attendanceTime.status;
+        
+        if (isMakeupRow) {
+            if (status === 'makeup') {
+                return 'bg-transparent border-yellow-500 text-yellow-500';
+            }
+            if (status === 'present') {
+                return 'bg-yellow-500 border-yellow-400 text-black';
+            }
+        }
+        return STATUS_CONFIG[status].color;
+    };
+
+    if (isMobile) {
+        return (
+            <div className={`flex items-center px-4 h-12 border-b border-cyan-500/20 ${rowIdx % 2 === 0 ? 'bg-cyan-900/10' : ''}`}>
+                <div className="w-24 text-cyan-100 text-sm font-medium truncate pr-3">
+                    {student.name}
+                </div>
+                <div className="flex-1">
+                    <div className={`w-full py-1.5 rounded border-2 flex items-center justify-center transition-colors duration-300 ${getBadgeStyle()}`}>
+                        <span className="text-xs sm:text-sm font-bold tracking-wider">
+                            {student.attendanceTime.start} ~ {student.attendanceTime.end}
+                        </span>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <React.Fragment>
             <div
@@ -29,20 +63,7 @@ export const ScheduleRow = React.memo(({ student, rowIdx }: ScheduleRowProps) =>
                             style={{ gridColumn: `span ${colSpan}`, zIndex: 1 }}
                         >
                             <div className={`w-full h-6 rounded border-2 flex items-center justify-center transition-colors duration-300 
-                                ${(() => {
-                                    const isMakeupRow = student.id.includes('-makeup-');
-                                    const status = student.attendanceTime.status;
-                                    
-                                    if (isMakeupRow) {
-                                        if (status === 'makeup') {
-                                            return 'bg-transparent border-yellow-500 text-yellow-500';
-                                        }
-                                        if (status === 'present') {
-                                            return 'bg-yellow-500 border-yellow-400 text-black';
-                                        }
-                                    }
-                                    return STATUS_CONFIG[status].color;
-                                })()}
+                                ${getBadgeStyle()}
                             `}>
                                 <span className="text-[8px] sm:text-[10px] md:text-xs opacity-80 leading-tight w-full text-center select-none truncate px-1 font-bold">
                                     <span className="hidden sm:inline">{student.attendanceTime.start}~{student.attendanceTime.end}</span>

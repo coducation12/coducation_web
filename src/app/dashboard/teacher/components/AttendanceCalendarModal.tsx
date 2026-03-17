@@ -86,34 +86,42 @@ export function AttendanceCalendarModal({
                         </Button>
                     )}
                 </DialogTrigger>
-                <DialogContent className="max-w-4xl bg-[#0a1a2f] border-cyan-500/30 text-cyan-100 p-0 overflow-hidden flex flex-col max-h-[95vh] shadow-[0_0_50px_rgba(0,0,0,0.5)]">
-                    <DialogHeader className="p-6 border-b border-cyan-500/20 bg-gradient-to-r from-cyan-950 to-blue-950">
-                        <DialogTitle className="text-xl font-bold flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                                <span className="text-cyan-100 drop-shadow-[0_0_8px_#00fff7] tracking-wider">{studentName} 출결 캘린더</span>
-                                <Badge variant="outline" className="border-cyan-500/40 text-cyan-400 bg-cyan-900/30 font-medium">관리자 전용</Badge>
+                <DialogContent className="w-[95vw] sm:max-w-4xl bg-[#0a1a2f] border-cyan-500/30 text-cyan-100 p-0 overflow-hidden flex flex-col max-h-[95vh] shadow-[0_0_50px_rgba(0,0,0,0.5)]">
+                    <DialogHeader className="p-2 sm:p-4 border-b border-cyan-500/20 bg-gradient-to-r from-cyan-950 to-blue-950">
+                        <DialogTitle className="flex items-center justify-between w-full h-8 sm:h-10 pr-6 sm:pr-0">
+                            {/* 왼쪽: 학생 이름 */}
+                            <div className="w-[18%] xs:w-[20%] sm:w-1/4">
+                                <span className="text-cyan-100 text-sm sm:text-lg font-bold drop-shadow-[0_0_8px_#00fff7] truncate block">
+                                    {studentName}
+                                </span>
                             </div>
-                            <div className="flex items-center gap-4 mr-8">
+
+                            {/* 중앙: 날짜 이동 및 Today */}
+                            <div className="flex-1 flex items-center justify-center gap-1 sm:gap-4">
+                                <div className="flex items-center gap-0.5 sm:gap-2">
+                                    <Button variant="ghost" size="icon" onClick={prevMonth} className="text-cyan-400 hover:bg-cyan-500/10 h-7 w-7 sm:h-8 sm:w-8">
+                                        <ChevronLeft className="h-4 w-4 sm:h-5 sm:h-5" />
+                                    </Button>
+                                    <span className="text-xs sm:text-lg font-black min-w-[70px] sm:min-w-[120px] text-center tracking-tighter text-cyan-50">
+                                        {currentMonth.getFullYear()}. {String(currentMonth.getMonth() + 1).padStart(2, '0')}
+                                    </span>
+                                    <Button variant="ghost" size="icon" onClick={nextMonth} className="text-cyan-400 hover:bg-cyan-500/10 h-7 w-7 sm:h-8 sm:w-8">
+                                        <ChevronRight className="h-4 w-4 sm:h-5 sm:h-5" />
+                                    </Button>
+                                </div>
+                                
                                 <Button
                                     variant="outline"
                                     size="sm"
                                     onClick={() => setCurrentMonth(new Date())}
-                                    className="border-cyan-500/30 text-cyan-400 bg-cyan-900/20 hover:bg-cyan-800/40 px-3 h-8 text-[10px] font-black uppercase tracking-wider transition-all"
+                                    className="border-cyan-500/30 text-cyan-400 bg-cyan-900/20 hover:bg-cyan-800/40 px-2 h-7 text-[9px] font-black uppercase tracking-wider transition-all hidden xs:flex"
                                 >
                                     Today
                                 </Button>
-                                <div className="flex items-center gap-2">
-                                    <Button variant="ghost" size="icon" onClick={prevMonth} className="text-cyan-400 hover:bg-cyan-500/10 h-8 w-8">
-                                        <ChevronLeft className="h-5 w-5" />
-                                    </Button>
-                                    <span className="text-lg font-black min-w-[120px] text-center tracking-tighter text-cyan-50">
-                                        {currentMonth.getFullYear()}. {String(currentMonth.getMonth() + 1).padStart(2, '0')}
-                                    </span>
-                                    <Button variant="ghost" size="icon" onClick={nextMonth} className="text-cyan-400 hover:bg-cyan-500/10 h-8 w-8">
-                                        <ChevronRight className="h-5 w-5" />
-                                    </Button>
-                                </div>
                             </div>
+
+                            {/* 오른쪽: X 버튼 공간 확보를 위한 더미 (lg 이상에서만 보임) */}
+                            <div className="hidden sm:block w-1/4"></div>
                         </DialogTitle>
                     </DialogHeader>
 
@@ -133,22 +141,22 @@ export function AttendanceCalendarModal({
                             />
                         </div>
 
-                        <div className="mt-8 flex flex-wrap gap-8 justify-center bg-cyan-900/10 p-5 rounded-2xl border border-cyan-500/10 backdrop-blur-md">
-                            <div className="flex items-center gap-3">
-                                <div className="w-4 h-4 rounded-full bg-green-500/40 border border-green-500/60 shadow-[0_0_8px_rgba(34,197,94,0.3)]"></div>
-                                <span className="text-sm font-bold text-cyan-200">출석</span>
+                        <div className="mt-4 sm:mt-8 flex flex-wrap gap-4 sm:gap-8 justify-center bg-cyan-900/10 p-3 sm:p-5 rounded-2xl border border-cyan-500/10 backdrop-blur-md">
+                            <div className="flex items-center gap-2 sm:gap-3">
+                                <div className="w-3 h-3 sm:w-4 sm:h-4 rounded-full bg-green-500/40 border border-green-500/60 shadow-[0_0_8px_rgba(34,197,94,0.3)]"></div>
+                                <span className="text-xs sm:text-sm font-bold text-cyan-200">출석</span>
                             </div>
-                            <div className="flex items-center gap-3">
-                                <div className="w-4 h-4 rounded-full bg-red-500/40 border border-red-500/60 shadow-[0_0_8px_rgba(239,68,68,0.3)]"></div>
-                                <span className="text-sm font-bold text-cyan-200">결석</span>
+                            <div className="flex items-center gap-2 sm:gap-3">
+                                <div className="w-3 h-3 sm:w-4 sm:h-4 rounded-full bg-red-500/40 border border-red-500/60 shadow-[0_0_8px_rgba(239,68,68,0.3)]"></div>
+                                <span className="text-xs sm:text-sm font-bold text-cyan-200">결석</span>
                             </div>
-                            <div className="flex items-center gap-3">
-                                <div className="w-4 h-4 rounded-full bg-yellow-500/40 border border-yellow-500/60 shadow-[0_0_8px_rgba(234,179,8,0.3)]"></div>
-                                <span className="text-sm font-bold text-cyan-200">보강</span>
+                            <div className="flex items-center gap-2 sm:gap-3">
+                                <div className="w-3 h-3 sm:w-4 sm:h-4 rounded-full bg-yellow-500/40 border border-yellow-500/60 shadow-[0_0_8px_rgba(234,179,8,0.3)]"></div>
+                                <span className="text-xs sm:text-sm font-bold text-cyan-200">보강</span>
                             </div>
-                            <div className="flex items-center gap-3 border-l border-cyan-500/20 pl-8">
-                                <div className="w-4 h-4 border-2 border-cyan-400 rounded-sm"></div>
-                                <span className="text-sm font-bold text-cyan-200">오늘 날짜</span>
+                            <div className="flex items-center gap-2 sm:gap-3 border-l border-cyan-500/20 pl-4 sm:pl-8">
+                                <div className="w-3 h-3 sm:w-4 sm:h-4 border-2 border-cyan-400 rounded-sm"></div>
+                                <span className="text-xs sm:text-sm font-bold text-cyan-200">오늘</span>
                             </div>
                         </div>
                     </div>

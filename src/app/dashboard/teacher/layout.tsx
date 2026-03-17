@@ -20,9 +20,9 @@ export default async function TeacherLayout({
   }
 
   return (
-    <div className="flex h-screen bg-gradient-to-br from-[#0a1837] via-[#0a1a2f] to-[#0a1837]">
+    <div className="flex flex-col lg:flex-row h-screen bg-gradient-to-br from-[#0a1837] via-[#0a1a2f] to-[#0a1837]">
       <TeacherSidebar />
-      <main className="flex-1 overflow-hidden">
+      <main className="flex-1 overflow-hidden min-h-0">
         {children}
       </main>
     </div>

@@ -45,7 +45,7 @@ export const ScheduleHeader = ({
                         <ChevronRight className="w-6 h-6 text-cyan-200" />
                     </button>
                 </div>
-                <div className="flex flex-wrap items-center gap-2 justify-end min-w-0">
+                <div className="hidden md:flex flex-wrap items-center gap-2 justify-end min-w-0">
                     <Badge className="bg-green-500/60 text-white text-xs border-none">출석</Badge>
                     <Badge className="bg-red-500/60 text-white text-xs border-none">결석</Badge>
                     <Badge className="bg-yellow-500/60 text-white text-xs border-none">보강</Badge>

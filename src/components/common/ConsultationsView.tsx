@@ -155,57 +155,57 @@ export default function ConsultationsView({ role }: ConsultationsViewProps) {
     }
 
     return (
-        <div className="container mx-auto p-6 pt-20 lg:pt-6 space-y-6 h-screen overflow-y-auto scrollbar-hide">
-            <div className="flex items-center justify-between">
+        <div className="container mx-auto p-4 sm:p-6 space-y-6">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-3xl font-bold text-cyan-100 drop-shadow-[0_0_6px_#00fff7]">상담문의 관리</h1>
-                    <p className="text-cyan-300 mt-2">대기 중이거나 완료된 상담 문의를 확인하세요</p>
+                    <h1 className="text-2xl sm:text-3xl font-bold text-cyan-100 drop-shadow-[0_0_10px_#00fff7]">상담문의 관리</h1>
                 </div>
                 <Button
                     onClick={loadConsultations}
-                    className="bg-cyan-900/40 border border-cyan-500/50 text-cyan-100 hover:bg-cyan-800/60 transition-colors"
+                    size="sm"
+                    className="bg-cyan-900/40 border border-cyan-500/50 text-cyan-100 hover:bg-cyan-800/60 transition-colors w-full sm:w-auto h-9"
                 >
                     새로고침
                 </Button>
             </div>
 
             {/* 통계 카드 */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6">
                 <Card className="bg-gradient-to-br from-cyan-900/20 to-blue-900/20 border-cyan-500/30">
-                    <CardContent className="p-6">
+                    <CardContent className="p-3 sm:p-6">
                         <div className="flex items-center justify-between">
                             <div>
-                                <p className="text-sm font-medium text-cyan-300">전체 문의</p>
-                                <p className="text-2xl font-bold text-cyan-100 drop-shadow-[0_0_4px_#00fff7]">{total}</p>
+                                <p className="text-[10px] sm:text-sm font-medium text-cyan-300">전체 문의</p>
+                                <p className="text-lg sm:text-2xl font-bold text-cyan-100 drop-shadow-[0_0_4px_#00fff7]">{total}</p>
                             </div>
-                            <MessageSquare className="h-8 w-8 text-cyan-400/60" />
+                            <MessageSquare className="h-5 w-5 sm:h-8 sm:w-8 text-cyan-400/60" />
                         </div>
                     </CardContent>
                 </Card>
 
                 <Card className="bg-gradient-to-br from-yellow-900/20 to-orange-900/20 border-yellow-500/30">
-                    <CardContent className="p-6">
+                    <CardContent className="p-3 sm:p-6">
                         <div className="flex items-center justify-between">
                             <div>
-                                <p className="text-sm font-medium text-yellow-300">대기중</p>
-                                <p className="text-2xl font-bold text-yellow-100 drop-shadow-[0_0_4px_rgba(234,179,8,0.6)]">{pending}</p>
+                                <p className="text-[10px] sm:text-sm font-medium text-yellow-300">대기중</p>
+                                <p className="text-lg sm:text-2xl font-bold text-yellow-100 drop-shadow-[0_0_4px_rgba(234,179,8,0.6)]">{pending}</p>
                             </div>
-                            <div className="h-8 w-8 bg-yellow-500/20 rounded-full flex items-center justify-center">
-                                <div className="h-4 w-4 bg-yellow-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(234,179,8,0.8)]"></div>
+                            <div className="h-5 w-5 sm:h-8 sm:w-8 bg-yellow-500/20 rounded-full flex items-center justify-center">
+                                <div className="h-2.5 w-2.5 sm:h-4 sm:w-4 bg-yellow-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(234,179,8,0.8)]"></div>
                             </div>
                         </div>
                     </CardContent>
                 </Card>
 
-                <Card className="bg-gradient-to-br from-green-900/20 to-emerald-900/20 border-green-500/30">
-                    <CardContent className="p-6">
+                <Card className="bg-gradient-to-br from-green-900/20 to-emerald-900/20 border-green-500/30 col-span-2 lg:col-span-1">
+                    <CardContent className="p-3 sm:p-6">
                         <div className="flex items-center justify-between">
                             <div>
-                                <p className="text-sm font-medium text-green-300">완료</p>
-                                <p className="text-2xl font-bold text-green-100 drop-shadow-[0_0_4px_rgba(34,197,94,0.6)]">{completed}</p>
+                                <p className="text-[10px] sm:text-sm font-medium text-green-300">완료</p>
+                                <p className="text-lg sm:text-2xl font-bold text-green-100 drop-shadow-[0_0_4px_rgba(34,197,94,0.6)]">{completed}</p>
                             </div>
-                            <div className="h-8 w-8 bg-green-500/20 rounded-full flex items-center justify-center">
-                                <div className="h-4 w-4 bg-green-500 rounded-full shadow-[0_0_8px_rgba(34,197,94,0.8)]"></div>
+                            <div className="h-5 w-5 sm:h-8 sm:w-8 bg-green-500/20 rounded-full flex items-center justify-center">
+                                <div className="h-2.5 w-2.5 sm:h-4 sm:w-4 bg-green-500 rounded-full shadow-[0_0_8px_rgba(34,197,94,0.8)]"></div>
                             </div>
                         </div>
                     </CardContent>
@@ -213,11 +213,11 @@ export default function ConsultationsView({ role }: ConsultationsViewProps) {
             </div>
 
             {/* 필터 */}
-            <div className="flex flex-wrap gap-4 items-center bg-cyan-900/20 p-4 rounded-xl border border-cyan-500/20">
-                <div className="flex items-center gap-2">
-                    <Filter className="h-4 w-4 text-cyan-400" />
+            <div className="flex flex-col sm:flex-row gap-2 sm:gap-4 items-stretch sm:items-center bg-cyan-900/20 p-2 sm:p-4 rounded-xl border border-cyan-500/20">
+                <div className="flex items-center gap-2 flex-1">
+                    <Filter className="h-4 w-4 text-cyan-400 shrink-0" />
                     <Select value={statusFilter} onValueChange={setStatusFilter}>
-                        <SelectTrigger className="w-32 bg-cyan-900/40 border-cyan-500/30 text-cyan-100">
+                        <SelectTrigger className="flex-1 sm:w-32 bg-cyan-900/40 border-cyan-500/30 text-cyan-100 h-9">
                             <SelectValue />
                         </SelectTrigger>
                         <SelectContent className="bg-cyan-950 border-cyan-500/30 text-cyan-100">
@@ -229,7 +229,7 @@ export default function ConsultationsView({ role }: ConsultationsViewProps) {
                 </div>
 
                 <Select value={academyFilter} onValueChange={setAcademyFilter}>
-                    <SelectTrigger className="w-48 bg-cyan-900/40 border-cyan-500/30 text-cyan-100">
+                    <SelectTrigger className="w-full sm:w-48 bg-cyan-900/40 border-cyan-500/30 text-cyan-100 h-9">
                         <SelectValue />
                     </SelectTrigger>
                     <SelectContent className="bg-cyan-950 border-cyan-500/30 text-cyan-100">
@@ -333,41 +333,45 @@ function ConsultationCard({ consultation, onUpdate, formatDate }: {
                 <Card
                     className={`bg-gradient-to-br from-cyan-900/10 to-blue-900/10 border-cyan-500/30 cursor-pointer hover:border-cyan-400 hover:bg-cyan-900/20 transition-all group ${consultation.status === 'completed' ? 'opacity-80 hover:opacity-100' : ''}`}
                 >
-                    <CardHeader className="pb-2">
-                        <div className="flex items-center justify-between">
-                            <CardTitle className="flex flex-wrap items-center gap-x-4 gap-y-2">
-                                <span className="text-lg font-bold text-cyan-100 group-hover:text-cyan-300 transition-colors drop-shadow-[0_0_4px_rgba(0,255,255,0.4)]">
-                                    {consultation.name}
-                                </span>
-                                <span className="text-sm font-normal text-cyan-200/80 flex items-center gap-1">
-                                    <Phone className="h-3 w-3" />
-                                    {consultation.phone}
-                                </span>
-                                <span className="text-sm font-normal text-cyan-200/60 flex items-center gap-1">
-                                    <CalendarDays className="h-3 w-3" />
-                                    {formatDate(consultation.created_at)}
-                                </span>
-                                <span className="text-sm font-normal text-cyan-200/80 flex items-center gap-1">
-                                    <Building2 className="h-3 w-3 text-cyan-400" />
-                                    {academyLabels[consultation.academy as keyof typeof academyLabels] || consultation.academy}
-                                </span>
-                            </CardTitle>
-                            <Badge className={`${statusColors[consultation.status]} border-none shadow-[0_0_8px_rgba(255,255,255,0.2)]`}>
-                                {statusLabels[consultation.status]}
-                            </Badge>
+                    <CardHeader className="p-3 sm:p-6 sm:pb-2">
+                        <div className="flex items-start justify-between gap-2">
+                            <div className="space-y-1.5 flex-1">
+                                <div className="flex flex-wrap items-center gap-2 sm:gap-x-4">
+                                    <span className="text-base sm:text-lg font-bold text-cyan-100 group-hover:text-cyan-300 transition-colors drop-shadow-[0_0_4px_rgba(0,255,255,0.4)]">
+                                        {consultation.name}
+                                    </span>
+                                    <Badge className={`${statusColors[consultation.status]} border-none shadow-[0_0_8px_rgba(255,255,255,0.2)] text-[10px] h-5`}>
+                                        {statusLabels[consultation.status]}
+                                    </Badge>
+                                </div>
+                                <div className="flex flex-wrap gap-x-3 gap-y-1 text-[11px] sm:text-sm font-normal text-cyan-200/60">
+                                    <span className="flex items-center gap-1 shrink-0">
+                                        <Phone className="h-3 w-3" />
+                                        {consultation.phone}
+                                    </span>
+                                    <span className="flex items-center gap-1 shrink-0">
+                                        <CalendarDays className="h-3 w-3" />
+                                        {formatDate(consultation.created_at)}
+                                    </span>
+                                    <span className="flex items-center gap-1 shrink-0">
+                                        <Building2 className="h-3 w-3 text-cyan-400" />
+                                        {academyLabels[consultation.academy as keyof typeof academyLabels] || consultation.academy}
+                                    </span>
+                                </div>
+                            </div>
                         </div>
                     </CardHeader>
-                    <CardContent>
-                        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-                            <div className="md:col-span-1">
-                                <Label className="text-xs font-medium text-cyan-400/70 uppercase tracking-wider">문의 과목</Label>
-                                <p className="text-sm text-cyan-100 font-medium mt-1">
+                    <CardContent className="p-3 sm:p-6 pt-0 sm:pt-0">
+                        <div className="space-y-3">
+                            <div>
+                                <Label className="text-[10px] sm:text-xs font-medium text-cyan-400/70 uppercase tracking-wider">문의 과목</Label>
+                                <p className="text-xs sm:text-sm text-cyan-100 font-medium mt-0.5">
                                     {subjectLabels[consultation.subject as keyof typeof subjectLabels] || consultation.subject}
                                 </p>
                             </div>
-                            <div className="md:col-span-4">
-                                <Label className="text-xs font-medium text-cyan-400/70 uppercase tracking-wider">문의 내용</Label>
-                                <p className="text-sm text-cyan-100 whitespace-pre-wrap mt-1 line-clamp-2 group-hover:line-clamp-none transition-all">
+                            <div>
+                                <Label className="text-[10px] sm:text-xs font-medium text-cyan-400/70 uppercase tracking-wider">문의 내용</Label>
+                                <p className="text-xs sm:text-sm text-cyan-100 whitespace-pre-wrap mt-0.5 line-clamp-2 group-hover:line-clamp-none transition-all">
                                     {consultation.message}
                                 </p>
                             </div>

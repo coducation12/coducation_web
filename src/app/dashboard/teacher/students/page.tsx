@@ -128,10 +128,7 @@ export default function TeacherStudentsPage() {
     return (
         <DashboardPageWrapper>
             <div className="flex items-center justify-between">
-                <div>
-                    <h1 className="text-3xl font-bold text-cyan-100 drop-shadow-[0_0_6px_#00fff7]">학생 관리</h1>
-                    <p className="text-cyan-300 mt-2">담당 학생들의 정보를 관리하세요</p>
-                </div>
+                <h1 className="text-2xl sm:text-3xl font-bold text-cyan-100 drop-shadow-[0_0_6px_#00fff7]">학생 관리</h1>
                 <StudentModal
                     mode="add"
                     onSave={async (formData) => { await handleAddStudent(formData); }}
@@ -141,19 +138,19 @@ export default function TeacherStudentsPage() {
             </div>
 
             <Card className="bg-gradient-to-br from-cyan-900/20 to-blue-900/20 border-cyan-500/30">
-                <CardHeader>
-                    <div className="flex items-center justify-between">
-                        <CardTitle className="text-cyan-100">학생 목록</CardTitle>
-                        <div className="flex items-center space-x-2">
+                <CardHeader className="p-4 sm:p-6 pb-2 sm:pb-4">
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                        <CardTitle className="text-cyan-100 text-lg sm:text-xl">학생 목록</CardTitle>
+                        <div className="flex flex-row items-center gap-2 w-full md:w-auto">
                             <Select value={statusFilter} onValueChange={setStatusFilter}>
-                                <SelectTrigger className={`w-[120px] bg-background/40 border-cyan-400/40 ${
+                                <SelectTrigger className={`flex-1 md:w-[120px] bg-background/40 border-cyan-400/40 text-[13px] h-9 ${
                                     statusFilter === '수강' ? 'text-green-400' :
                                     statusFilter === '상담' ? 'text-yellow-400' :
                                     statusFilter === '휴강' ? 'text-orange-400' :
                                     statusFilter === '종료' ? 'text-red-400' :
                                     'text-cyan-100'
                                 }`}>
-                                    <SelectValue placeholder="상태 필터" />
+                                    <SelectValue placeholder="상태" />
                                 </SelectTrigger>
                                 <SelectContent className="bg-[#0f172a] border-cyan-500/30">
                                     <SelectItem value="전체" className="text-cyan-100">전체</SelectItem>
@@ -167,81 +164,83 @@ export default function TeacherStudentsPage() {
                                 placeholder="학생 검색..."
                                 value={search}
                                 onChange={(e) => setSearch(e.target.value)}
-                                className="w-64 bg-background/40 border-cyan-400/40 text-cyan-100 placeholder:text-cyan-400/60 focus:border-cyan-400/80"
+                                className="flex-[2] md:w-64 bg-background/40 border-cyan-400/40 text-cyan-100 placeholder:text-cyan-400/60 focus:border-cyan-400/80 text-[13px] h-9"
                             />
                         </div>
                     </div>
                 </CardHeader>
-                <CardContent>
-                    <Table>
-                        <TableHeader>
-                            <TableRow className="border-cyan-500/20">
-                                <TableHead className="text-cyan-200">No</TableHead>
-                                <TableHead
-                                    className="text-cyan-200 cursor-pointer hover:text-cyan-100 transition-colors select-none"
-                                    onClick={() => handleSort('name')}
-                                >
-                                    <div className="flex items-center gap-2">
-                                        학생
-                                        {getSortIcon('name')}
-                                    </div>
-                                </TableHead>
-                                <TableHead
-                                    className="text-cyan-200 cursor-pointer hover:text-cyan-100 transition-colors select-none"
-                                    onClick={() => handleSort('academy')}
-                                >
-                                    <div className="flex items-center gap-2">
-                                        소속 학원
-                                        {getSortIcon('academy')}
-                                    </div>
-                                </TableHead>
-                                <TableHead
-                                    className="text-cyan-200 cursor-pointer hover:text-cyan-100 transition-colors select-none"
-                                    onClick={() => handleSort('phone')}
-                                >
-                                    <div className="flex items-center gap-2">
-                                        연락처
-                                        {getSortIcon('phone')}
-                                    </div>
-                                </TableHead>
-                                <TableHead
-                                    className="text-cyan-200 cursor-pointer hover:text-cyan-100 transition-colors select-none"
-                                    onClick={() => handleSort('course')}
-                                >
-                                    <div className="flex items-center gap-2">
-                                        과목
-                                        {getSortIcon('course')}
-                                    </div>
-                                </TableHead>
-                                <TableHead
-                                    className="text-cyan-200 cursor-pointer hover:text-cyan-100 transition-colors select-none"
-                                    onClick={() => handleSort('status')}
-                                >
-                                    <div className="flex items-center gap-2">
-                                        상태
-                                        {getSortIcon('status')}
-                                    </div>
-                                </TableHead>
-                                <TableHead
-                                    className="text-cyan-200 cursor-pointer hover:text-cyan-100 transition-colors select-none"
-                                    onClick={() => handleSort('monthlyAttendanceCount')}
-                                >
-                                    <div className="flex items-center gap-2 text-center justify-center">
-                                        출석 캘린더
-                                        {getSortIcon('monthlyAttendanceCount')}
-                                    </div>
-                                </TableHead>
-                                <TableHead
-                                    className="text-cyan-200 cursor-pointer hover:text-cyan-100 transition-colors select-none"
-                                    onClick={() => handleSort('joinDate')}
-                                >
-                                    <div className="flex items-center gap-2">
-                                        가입일
-                                        {getSortIcon('joinDate')}
-                                    </div>
-                                </TableHead>
-                            </TableRow>
-                        </TableHeader>
+                <CardContent className="p-2 sm:p-6">
+                    <div className="overflow-x-auto">
+                        <Table className="text-[13px] sm:text-sm">
+                            <TableHeader>
+                                <TableRow className="border-cyan-500/20">
+                                    <TableHead className="text-cyan-200 px-2 w-10 sm:w-16 text-center">No</TableHead>
+                                    <TableHead
+                                        className="text-cyan-200 cursor-pointer hover:text-cyan-100 transition-colors select-none px-2"
+                                        onClick={() => handleSort('name')}
+                                    >
+                                        <div className="flex items-center gap-1">
+                                            <span className="md:hidden">성명</span>
+                                            <span className="hidden md:inline">학생명</span>
+                                            {getSortIcon('name')}
+                                        </div>
+                                    </TableHead>
+                                    <TableHead
+                                        className="text-cyan-200 cursor-pointer hover:text-cyan-100 transition-colors select-none px-2 hidden lg:table-cell"
+                                        onClick={() => handleSort('academy')}
+                                    >
+                                        <div className="flex items-center gap-1">
+                                            소속 학원
+                                            {getSortIcon('academy')}
+                                        </div>
+                                    </TableHead>
+                                    <TableHead
+                                        className="text-cyan-200 cursor-pointer hover:text-cyan-100 transition-colors select-none px-2"
+                                        onClick={() => handleSort('phone')}
+                                    >
+                                        <div className="flex items-center gap-1">
+                                            연락처
+                                            {getSortIcon('phone')}
+                                        </div>
+                                    </TableHead>
+                                    <TableHead
+                                        className="text-cyan-200 cursor-pointer hover:text-cyan-100 transition-colors select-none px-2 hidden sm:table-cell"
+                                        onClick={() => handleSort('course')}
+                                    >
+                                        <div className="flex items-center gap-1">
+                                            과목
+                                            {getSortIcon('course')}
+                                        </div>
+                                    </TableHead>
+                                    <TableHead
+                                        className="text-cyan-200 cursor-pointer hover:text-cyan-100 transition-colors select-none px-2 text-center"
+                                        onClick={() => handleSort('status')}
+                                    >
+                                        <div className="flex items-center justify-center gap-1">
+                                            상태
+                                            {getSortIcon('status')}
+                                        </div>
+                                    </TableHead>
+                                    <TableHead
+                                        className="text-cyan-200 cursor-pointer hover:text-cyan-100 transition-colors select-none px-2 text-center"
+                                        onClick={() => handleSort('monthlyAttendanceCount')}
+                                    >
+                                        <div className="flex items-center justify-center gap-1">
+                                            출석
+                                            {getSortIcon('monthlyAttendanceCount')}
+                                        </div>
+                                    </TableHead>
+                                    <TableHead
+                                        className="text-cyan-200 cursor-pointer hover:text-cyan-100 transition-colors select-none px-2 hidden xl:table-cell"
+                                        onClick={() => handleSort('joinDate')}
+                                    >
+                                        <div className="flex items-center gap-2">
+                                            가입일
+                                            {getSortIcon('joinDate')}
+                                        </div>
+                                    </TableHead>
+                                </TableRow>
+                            </TableHeader>
                         <TableBody>
                             {sortedStudents.map((student, index) => (
                                 <TableRow
@@ -253,81 +252,50 @@ export default function TeacherStudentsPage() {
                                         }
                                     }}
                                 >
-                                    <TableCell className="text-cyan-300 font-medium">
+                                    <TableCell className="text-cyan-300 font-medium px-2 text-center">
                                         {(student.status === '수강' || student.status === '승인대기')
                                             ? ++activeNoCounter
                                             : '-'
                                         }
                                     </TableCell>
-                                    <TableCell className="font-medium text-cyan-100">
-                                        {student.type === 'signup_request' ? (
-                                            <span className="text-cyan-100">{student.name}</span>
-                                        ) : (
-                                            <span className="text-cyan-100 hover:text-cyan-300 transition-colors">
-                                                {student.name}
-                                            </span>
-                                        )}
+                                    <TableCell className="font-medium text-cyan-100 px-2 min-w-[50px] truncate">
+                                        {student.name}
                                     </TableCell>
-                                    <TableCell className="text-cyan-300">
+                                    <TableCell className="text-cyan-300 px-2 hidden lg:table-cell">
                                         {student.academy || '-'}
                                     </TableCell>
-                                    <TableCell className="text-cyan-300">
+                                    <TableCell className="text-cyan-300 px-2 whitespace-nowrap">
                                         {student.type === 'signup_request' ? (
-                                            <span className="text-cyan-400">가입요청 중</span>
+                                            <span className="text-cyan-400 text-xs sm:text-[13px]">가입요청</span>
                                         ) : (
-                                            <div className="flex items-center space-x-2">
-                                                <Phone className="w-4 h-4" />
-                                                <span>{student.phone}</span>
+                                            <div className="flex items-center space-x-1 sm:space-x-2">
+                                                <Phone className="w-3 h-3 sm:w-4 sm:h-4 opacity-50" />
+                                                <span className="text-xs sm:text-[13px]">{student.phone}</span>
                                             </div>
                                         )}
                                     </TableCell>
-                                    <TableCell className="text-cyan-300">
+                                    <TableCell className="text-cyan-300 px-2 hidden sm:table-cell">
                                         {student.type === 'signup_request' ? '-' : student.course}
                                     </TableCell>
-                                    <TableCell>
-                                        {student.type === 'signup_request' ? (
-                                            <Badge
-                                                variant="outline"
-                                                className="border-yellow-500/50 text-yellow-400"
-                                            >
-                                                <Clock className="w-3 h-3 mr-1" />
-                                                승인대기
-                                            </Badge>
-                                        ) : (
-                                            <Badge
-                                                variant="outline"
-                                                className={
-                                                    (student.status === '승인대기' || student.status === '상담')
-                                                        ? "border-yellow-500/50 text-yellow-400"
-                                                        : student.status === '휴강'
-                                                            ? "border-orange-500/50 text-orange-400"
-                                                            : "border-green-500/50 text-green-400"
-                                                }
-                                            >
-                                                {student.status === '승인대기' ? (
-                                                    <>
-                                                        <Clock className="w-3 h-3 mr-1" />
-                                                        승인대기
-                                                    </>
-                                                ) : student.status === '상담' ? (
-                                                    <>
-                                                        <Clock className="w-3 h-3 mr-1" />
-                                                        상담
-                                                    </>
-                                                ) : (
-                                                    <>
-                                                        <CheckCircle className="w-3 h-3 mr-1" />
-                                                        {student.status}
-                                                    </>
-                                                )}
-                                            </Badge>
-                                        )}
+                                    <TableCell className="px-2 text-center">
+                                        <Badge
+                                            variant="outline"
+                                            className={`px-1 sm:px-2 py-0 h-5 sm:h-6 text-[10px] sm:text-xs whitespace-nowrap ${
+                                                (student.type === 'signup_request' || student.status === '승인대기' || student.status === '상담')
+                                                    ? "border-yellow-500/50 text-yellow-400"
+                                                    : student.status === '휴강'
+                                                        ? "border-orange-500/50 text-orange-400"
+                                                        : "border-green-500/50 text-green-400"
+                                            }`}
+                                        >
+                                            {student.type === 'signup_request' || student.status === '승인대기' ? '대기' : student.status}
+                                        </Badge>
                                     </TableCell>
-                                    <TableCell className="text-center" onClick={(e) => e.stopPropagation()}>
-                                        <div className="flex items-center justify-center gap-2">
+                                    <TableCell className="text-center px-2" onClick={(e) => e.stopPropagation()}>
+                                        <div className="flex items-center justify-center gap-1 sm:gap-2">
                                             <Badge
                                                 variant="outline"
-                                                className={`font-bold px-3 py-1 ${
+                                                className={`hidden sm:flex font-bold px-1 sm:px-2 py-0 h-5 sm:h-6 text-[10px] sm:text-xs ${
                                                     (student.monthlyAttendanceCount || 0) >= 8 
                                                     ? "border-green-500/50 text-green-400 bg-green-900/20" 
                                                     : "border-cyan-500/50 text-cyan-300 bg-cyan-900/20"
@@ -342,7 +310,7 @@ export default function TeacherStudentsPage() {
                                             />
                                         </div>
                                     </TableCell>
-                                    <TableCell className="text-cyan-300">
+                                    <TableCell className="text-cyan-300 px-2 hidden xl:table-cell">
                                         {student.type === 'signup_request' ?
                                             (student.requested_at ? new Date(student.requested_at).toLocaleDateString() : '-') :
                                             student.joinDate
@@ -351,7 +319,8 @@ export default function TeacherStudentsPage() {
                                 </TableRow>
                             ))}
                         </TableBody>
-                    </Table>
+                        </Table>
+                    </div>
                 </CardContent>
             </Card>
 

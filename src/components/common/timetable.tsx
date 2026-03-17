@@ -80,9 +80,9 @@ export function Timetable({ title = "학원 시간표", className = "", teacherI
 
   return (
     <div className={`pb-24 space-y-8 animate-in fade-in duration-700 ${className}`}>
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 pb-2">
-        <div className="flex items-center gap-4">
-          <h1 className="text-3xl font-black text-cyan-100 drop-shadow-[0_0_12px_rgba(0,255,247,0.5)] italic tracking-tighter shrink-0">
+      <div className="flex flex-row items-center justify-between gap-2 sm:gap-6 pb-2">
+        <div className="flex items-center gap-4 min-w-0">
+          <h1 className="text-2xl sm:text-3xl font-bold text-cyan-100 drop-shadow-[0_0_6px_#00fff7] pr-2 shrink-0">
             {title}
           </h1>
 
@@ -107,17 +107,17 @@ export function Timetable({ title = "학원 시간표", className = "", teacherI
           </div>
         </div>
 
-        {/* 중앙 월 네비게이션 */}
-        <div className="flex items-center justify-center gap-4 bg-cyan-950/40 border border-cyan-800/30 p-1.5 rounded-2xl backdrop-blur-md shadow-lg shadow-cyan-950/20">
+        {/* 우측 월 네비게이션 */}
+        <div className="flex items-center gap-1 sm:gap-4 bg-cyan-950/40 border border-cyan-800/30 p-1 sm:p-1.5 rounded-xl sm:rounded-2xl backdrop-blur-md shadow-lg shadow-cyan-950/20 shrink-0">
           <button
             onClick={handlePrevMonth}
-            className="p-1.5 rounded-xl hover:bg-cyan-800/40 text-cyan-400 transition-all hover:scale-110 active:scale-95"
+            className="p-1 sm:p-1.5 rounded-lg sm:rounded-xl hover:bg-cyan-800/40 text-cyan-400 transition-all hover:scale-110 active:scale-95"
           >
-            <ChevronLeft className="w-6 h-6" />
+            <ChevronLeft className="w-4 h-4 sm:w-6 sm:h-6" />
           </button>
 
-          <div className="flex items-center gap-2.5 px-4">
-            <span className="text-xl font-black text-cyan-100 tracking-tight min-w-[120px] text-center">
+          <div className="flex items-center px-1 sm:px-4">
+            <span className="text-sm sm:text-xl font-black text-cyan-100 tracking-tight min-w-[70px] sm:min-w-[120px] text-center">
               {currentDate.year}년 {currentDate.month}월
             </span>
           </div>
@@ -125,34 +125,34 @@ export function Timetable({ title = "학원 시간표", className = "", teacherI
           <button
             onClick={handleNextMonth}
             disabled={isCurrentMonth}
-            className={`p-1.5 rounded-xl text-cyan-400 transition-all 
+            className={`p-1 sm:p-1.5 rounded-lg sm:rounded-xl text-cyan-400 transition-all 
               ${isCurrentMonth ? 'opacity-0 cursor-default' : 'hover:bg-cyan-800/40 hover:scale-110 active:scale-95'}
             `}
           >
-            <ChevronRight className="w-6 h-6" />
+            <ChevronRight className="w-4 h-4 sm:w-6 sm:h-6" />
           </button>
         </div>
 
-        {/* 우측 공백 또는 추가 버튼용 공간 */}
+        {/* 우측 공백 - PC에서만 균형을 위해 유지 */}
         <div className="hidden lg:block w-48"></div>
       </div>
 
       <Card className="bg-gradient-to-br from-[#0a1837]/80 to-[#0a1a2f]/80 border-cyan-900/40 overflow-hidden shadow-2xl shadow-cyan-950/50 backdrop-blur-xl">
         <CardContent className="p-0">
           <div className="overflow-x-auto custom-scrollbar">
-            <table className="w-full border-collapse">
+            <table className="w-full border-collapse min-w-[1200px]">
               <thead>
                 <tr className="bg-cyan-950/60 transition-colors">
-                  <th className="w-24 p-4 text-cyan-100 font-bold border border-cyan-900/30 text-sm uppercase tracking-widest">TIME</th>
+                  <th className="sticky left-0 z-20 w-20 p-4 text-cyan-100 font-bold border border-cyan-900/30 text-sm uppercase tracking-widest bg-[#0a1837] backdrop-blur-md">TIME</th>
                   {days.map((day) => (
-                    <th key={day} className="w-32 p-4 text-cyan-100 font-bold border border-cyan-900/30 text-sm">{day}</th>
+                    <th key={day} className="w-44 p-4 text-cyan-100 font-bold border border-cyan-900/30 text-sm">{day}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
                 {timeSlots.map((timeSlot) => (
                   <tr key={timeSlot} className="group hover:bg-cyan-500/5 transition-all duration-300">
-                    <td className="p-4 text-cyan-200 font-black border border-cyan-900/30 text-center text-[13px] bg-cyan-950/40">
+                    <td className="sticky left-0 z-10 p-4 text-cyan-200 font-black border border-cyan-900/30 text-center text-[11px] sm:text-[13px] bg-[#0a1837]/90 backdrop-blur-md">
                       {timeSlot}
                     </td>
                     {days.map((day) => {
@@ -160,7 +160,7 @@ export function Timetable({ title = "학원 시간표", className = "", teacherI
                       return (
                         <td key={`${day}-${timeSlot}`} className="p-1.5 border border-cyan-900/20 min-h-[140px] align-top transition-colors">
                           {studentsInSlot.length > 0 ? (
-                            <div className="flex flex-row flex-wrap gap-1 w-full p-1">
+                            <div className="grid grid-cols-3 sm:flex sm:flex-row sm:flex-wrap gap-1 w-full p-1">
                               {studentsInSlot.map((student) => (
                                 <StudentTag
                                   key={student.id}

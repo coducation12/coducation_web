@@ -97,12 +97,12 @@ function CommunityPage() {
       <DashboardPageWrapper>
         <div className="flex justify-between items-center mb-6">
           <div>
-            <h1 className="text-3xl font-bold text-cyan-100 drop-shadow-[0_0_6px_#00fff7]">커뮤니티</h1>
+            <h1 className="text-2xl sm:text-3xl font-bold text-cyan-100 drop-shadow-[0_0_6px_#00fff7]">커뮤니티</h1>
           </div>
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
-              <Button className="bg-cyan-500 hover:bg-cyan-600 text-white font-bold shadow">
-                <Plus className="h-4 w-4 mr-2" />
+              <Button size="sm" className="bg-cyan-500 hover:bg-cyan-600 text-white font-bold shadow text-xs sm:text-sm">
+                <Plus className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
                 새 글 작성
               </Button>
             </DialogTrigger>
@@ -147,12 +147,12 @@ function CommunityPage() {
     <DashboardPageWrapper>
       <div className="flex justify-between items-center mb-6">
         <div>
-          <h1 className="text-3xl font-bold text-cyan-100 drop-shadow-[0_0_6px_#00fff7]">커뮤니티</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-cyan-100 drop-shadow-[0_0_6px_#00fff7]">커뮤니티</h1>
         </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
-            <Button className="bg-cyan-500 hover:bg-cyan-600 text-white font-bold shadow">
-              <Plus className="h-4 w-4 mr-2" />
+            <Button size="sm" className="bg-cyan-500 hover:bg-cyan-600 text-white font-bold shadow text-xs sm:text-sm">
+              <Plus className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
               새 글 작성
             </Button>
           </DialogTrigger>

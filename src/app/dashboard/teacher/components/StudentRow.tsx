@@ -32,8 +32,8 @@ export const StudentRow = React.memo(({
                 </button>
             </td>
             <td className="px-2 py-3 text-center">{student.day}</td>
-            <td className="px-2 py-3 text-center">{student.course}</td>
-            <td className="px-2 py-3 text-center hidden sm:table-cell opacity-70">{student.curriculum}</td>
+            <td className="px-2 py-3 text-center hidden sm:table-cell">{student.course}</td>
+            <td className="px-2 py-3 text-center hidden lg:table-cell opacity-70">{student.curriculum}</td>
             <td className="px-2 py-3 text-center">
                 <button
                     className={`w-20 py-1.5 rounded-md border text-xs font-bold transition-all duration-200 shadow-sm hover:scale-105 active:scale-95 

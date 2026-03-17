@@ -37,14 +37,15 @@ export function SummaryTable({
             </div>
 
             <div className="overflow-x-auto rounded-lg border border-cyan-900/40 shadow-inner">
-                <table className="w-full border-collapse bg-[#0a1837]/50 backdrop-blur-md">
+                <table className="w-full border-collapse bg-[#0a1837]/50 backdrop-blur-md min-w-[360px] sm:min-w-0">
                     <thead>
                         <tr className="bg-cyan-950/80">
-                            <th className="p-1.5 text-cyan-100 font-semibold border border-cyan-900/40 w-20 text-sm">강사</th>
+                            <th className="p-1.5 text-cyan-100 font-semibold border border-cyan-900/40 w-16 sm:w-20 text-[11px] sm:text-sm">강사</th>
                             <th className="hidden md:table-cell p-1.5 text-cyan-100 font-semibold border border-cyan-900/40 w-28 text-sm">분원</th>
-                            <th className="p-1.5 text-cyan-100 font-semibold border border-cyan-900/40 text-sm text-left px-4">학생 명단</th>
-                            <th className="p-1.5 text-cyan-100 font-semibold border border-cyan-900/40 w-16 text-sm">인원</th>
-                            <th className="p-1.5 text-cyan-100 font-semibold border border-cyan-900/40 w-16 text-sm">단위계</th>
+                            <th className="p-1.5 text-cyan-100 font-semibold border border-cyan-900/40 text-[11px] sm:text-sm text-left px-3 sm:px-4">학생 명단</th>
+                            <th className="hidden sm:table-cell p-1.5 text-cyan-100 font-semibold border border-cyan-900/40 w-16 text-sm">인원</th>
+                            <th className="hidden sm:table-cell p-1.5 text-cyan-100 font-semibold border border-cyan-900/40 w-16 text-sm">단위계</th>
+                            <th className="table-cell sm:hidden p-1.5 text-cyan-100 font-semibold border border-cyan-900/40 w-16 text-[11px]">인원/단위</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -72,13 +73,13 @@ export function SummaryTable({
 
                             return (
                                 <tr key={teacherId} className="hover:bg-cyan-950/30 transition-all duration-300">
-                                    <td className="p-2 px-3 text-center border border-cyan-900/40 align-middle">
-                                        <div className="flex flex-col items-center justify-center gap-1">
+                                    <td className="p-1 sm:p-2 px-2 sm:px-3 text-center border border-cyan-900/40 align-middle">
+                                        <div className="flex flex-col items-center justify-center gap-0.5 sm:gap-1">
                                             <div
-                                                className={`w-3 h-3 rounded-full ${colorSet.bg} shadow-[0_0_8px_rgba(0,0,0,0.5)]`}
+                                                className={`w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full ${colorSet.bg} shadow-[0_0_8px_rgba(0,0,0,0.5)]`}
                                                 style={colorSet.style}
                                             ></div>
-                                            <span className="text-cyan-100 text-[14px] font-bold">{teacherData.name || teacherId}</span>
+                                            <span className="text-cyan-100 text-[11px] sm:text-[14px] font-bold">{teacherData.name || teacherId}</span>
                                         </div>
                                     </td>
                                     <td className="hidden md:table-cell p-2 px-3 text-center border border-cyan-900/40 text-cyan-300">
@@ -90,11 +91,11 @@ export function SummaryTable({
                                             ))}
                                         </div>
                                     </td>
-                                    <td className="p-2 px-4 border border-cyan-900/40">
+                                    <td className="p-1 px-2 sm:p-2 sm:px-4 border border-cyan-900/40 max-w-0">
                                         <div className="space-y-2">
                                             {/* 1.0단위 학생들 */}
                                             {teacherStudentsWithUnit.filter(s => s.unit === 1.0).length > 0 && (
-                                                <div className="grid grid-cols-3 sm:flex sm:flex-wrap gap-1 sm:gap-2 items-center">
+                                                <div className="flex flex-nowrap overflow-x-auto gap-1 sm:gap-2 custom-scrollbar py-1">
                                                     {teacherStudentsWithUnit.filter(s => s.unit === 1.0).map((student) => {
                                                         const isHovered = hoveredStudentId === student.id;
                                                         const enrollmentDate = student.enrollmentDate ? new Date(student.enrollmentDate) : null;
@@ -108,11 +109,11 @@ export function SummaryTable({
                                                                 key={student.id}
                                                                 onMouseEnter={() => onHover(student.id)}
                                                                 onMouseLeave={() => onHover(null)}
-                                                                className={`pl-1 pr-1.5 sm:pl-2 sm:pr-2.5 py-[1px] rounded-r-[2px] text-[11px] sm:text-[12px] font-bold transition-all duration-200 cursor-pointer border-l-[3px] sm:border-l-[4px] border-y border-r border-y-transparent border-r-transparent truncate
+                                                                className={`shrink-0 pl-1 pr-1.5 sm:pl-2 sm:pr-2.5 py-[1px] rounded-r-[2px] text-[10px] sm:text-[12px] font-bold transition-all duration-200 cursor-pointer border-l-[3px] sm:border-l-[4px] border-y border-r border-y-transparent border-r-transparent whitespace-nowrap
                                                                     ${isNewStudent
                                                                         ? 'text-amber-100 bg-amber-500/40 shadow-[0_0_12px_rgba(245,158,11,0.4)]'
                                                                         : 'text-cyan-200 bg-cyan-900/40 hover:bg-cyan-800/60'}
-                                                                    ${isHovered ? 'ring-2 ring-cyan-400 z-10 scale-105' : ''}
+                                                                    ${isHovered ? 'ring-2 ring-cyan-400 z-10 scale-105 shadow-[0_0_10px_rgba(34,211,238,0.3)]' : ''}
                                                                 `}
                                                                 style={{ borderLeftColor: academyColor }}
                                                             >
@@ -125,7 +126,7 @@ export function SummaryTable({
 
                                             {/* 1.0단위가 아닌 학생들 */}
                                             {teacherStudentsWithUnit.filter(s => s.unit !== 1.0).length > 0 && (
-                                                <div className="grid grid-cols-3 sm:flex sm:flex-wrap gap-1 sm:gap-2 items-center pt-1.5 border-t border-cyan-500/10">
+                                                <div className="flex flex-nowrap overflow-x-auto gap-1 sm:gap-2 custom-scrollbar py-1 pt-1.5 border-t border-cyan-500/10">
                                                     {teacherStudentsWithUnit.filter(s => s.unit !== 1.0).map((student) => {
                                                         const isHovered = hoveredStudentId === student.id;
                                                         const enrollmentDate = student.enrollmentDate ? new Date(student.enrollmentDate) : null;
@@ -139,15 +140,15 @@ export function SummaryTable({
                                                                 key={student.id}
                                                                 onMouseEnter={() => onHover(student.id)}
                                                                 onMouseLeave={() => onHover(null)}
-                                                                className={`pl-1 pr-1.5 sm:pl-2 sm:pr-2.5 py-[1px] rounded-r-[2px] text-[11px] sm:text-[12px] font-bold transition-all duration-200 cursor-pointer border-l-[3px] sm:border-l-[4px] border-y border-r border-y-transparent border-r-transparent truncate
+                                                                className={`shrink-0 pl-1 pr-1.5 sm:pl-2 sm:pr-2.5 py-[1px] rounded-r-[2px] text-[10px] sm:text-[12px] font-bold transition-all duration-200 cursor-pointer border-l-[3px] sm:border-l-[4px] border-y border-r border-y-transparent border-r-transparent whitespace-nowrap
                                                                     ${isNewStudent
                                                                         ? 'text-amber-100 bg-amber-500/40 shadow-[0_0_12px_rgba(245,158,11,0.4)]'
                                                                         : 'text-cyan-200 bg-cyan-900/40 hover:bg-cyan-800/60'}
-                                                                    ${isHovered ? 'ring-2 ring-cyan-400 z-10 scale-105' : ''}
+                                                                    ${isHovered ? 'ring-2 ring-cyan-400 z-10 scale-105 shadow-[0_0_10px_rgba(34,211,238,0.3)]' : ''}
                                                                 `}
                                                                 style={{ borderLeftColor: academyColor }}
                                                             >
-                                                                {student.name}<span className="ml-1 text-[10px] font-black text-cyan-400 opacity-80">({student.unit})</span>
+                                                                {student.name}<span className="ml-1 text-[9px] sm:text-[10px] font-black text-cyan-400 opacity-80">({student.unit})</span>
                                                             </div>
                                                         );
                                                     })}
@@ -155,11 +156,15 @@ export function SummaryTable({
                                             )}
                                         </div>
                                     </td>
-                                    <td className="p-2 text-center border border-cyan-900/40 text-cyan-100 font-bold text-sm">
+                                    <td className="hidden sm:table-cell p-2 text-center border border-cyan-900/40 text-cyan-100 font-bold text-sm">
                                         {totalInwon}
                                     </td>
-                                    <td className="p-2 text-center border border-cyan-900/40 text-cyan-300 font-black text-sm">
+                                    <td className="hidden sm:table-cell p-2 text-center border border-cyan-900/40 text-cyan-300 font-black text-sm">
                                         {totalUnitCount.toFixed(1)}
+                                    </td>
+                                    <td className="table-cell sm:hidden p-1 text-center border border-cyan-900/40 text-cyan-100 font-bold text-[11px]">
+                                        <div>{totalInwon}명</div>
+                                        <div className="text-cyan-400 text-[10px]">({totalUnitCount.toFixed(1)})</div>
                                     </td>
                                 </tr>
                             );

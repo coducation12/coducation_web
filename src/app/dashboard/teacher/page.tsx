@@ -10,7 +10,7 @@ export default async function TeacherDashboardPage() {
     return (
         <DashboardPageWrapper>
             <div>
-                <h1 className="text-3xl font-bold text-cyan-100 drop-shadow-[0_0_6px_#00fff7]">강사 대시보드</h1>
+                <h1 className="text-2xl sm:text-3xl font-bold text-cyan-100 drop-shadow-[0_0_6px_#00fff7] pr-2">강사 대시보드</h1>
             </div>
             <AttendanceScheduler teacherId={user?.id || ''} />
 

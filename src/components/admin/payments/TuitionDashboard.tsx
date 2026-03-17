@@ -297,39 +297,47 @@ export function TuitionDashboard({ currentUserId, currentUserRole }: TuitionDash
 
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                         <Card className="bg-cyan-950/20 border-cyan-500/10">
-                            <CardContent className="p-3 flex items-center justify-between">
-                                <div className="flex items-center gap-2">
-                                    <Wallet className="w-4 h-4 text-cyan-500" />
-                                    <span className="text-[11px] text-cyan-500 font-medium">카드</span>
+                            <CardContent className="p-2 sm:p-3 flex flex-col gap-1">
+                                <div className="flex items-center gap-2 opacity-80">
+                                    <Wallet className="w-3.5 h-3.5 text-cyan-500" />
+                                    <span className="text-[10px] sm:text-[11px] text-cyan-500 font-medium">카드</span>
                                 </div>
-                                <div className="text-sm font-bold text-cyan-100">{stats.methodStats.card.toLocaleString()}원</div>
+                                <div className="text-[13px] sm:text-sm font-bold text-cyan-100 break-all leading-tight">
+                                    {stats.methodStats.card.toLocaleString()}원
+                                </div>
                             </CardContent>
                         </Card>
                         <Card className="bg-cyan-950/20 border-cyan-500/10">
-                            <CardContent className="p-3 flex items-center justify-between">
-                                <div className="flex items-center gap-2">
-                                    <Banknote className="w-4 h-4 text-cyan-500" />
-                                    <span className="text-[11px] text-cyan-500 font-medium">현금</span>
+                            <CardContent className="p-2 sm:p-3 flex flex-col gap-1">
+                                <div className="flex items-center gap-2 opacity-80">
+                                    <Banknote className="w-3.5 h-3.5 text-cyan-500" />
+                                    <span className="text-[10px] sm:text-[11px] text-cyan-500 font-medium">현금</span>
                                 </div>
-                                <div className="text-sm font-bold text-cyan-100">{stats.methodStats.cash.toLocaleString()}원</div>
+                                <div className="text-[13px] sm:text-sm font-bold text-cyan-100 break-all leading-tight">
+                                    {stats.methodStats.cash.toLocaleString()}원
+                                </div>
                             </CardContent>
                         </Card>
                         <Card className="bg-cyan-950/20 border-cyan-500/10">
-                            <CardContent className="p-3 flex items-center justify-between">
-                                <div className="flex items-center gap-2">
-                                    <CreditCard className="w-4 h-4 text-cyan-500" />
-                                    <span className="text-[11px] text-cyan-500 font-medium">계좌이체</span>
+                            <CardContent className="p-2 sm:p-3 flex flex-col gap-1">
+                                <div className="flex items-center gap-2 opacity-80">
+                                    <CreditCard className="w-3.5 h-3.5 text-cyan-500" />
+                                    <span className="text-[10px] sm:text-[11px] text-cyan-500 font-medium">계좌이체</span>
                                 </div>
-                                <div className="text-sm font-bold text-cyan-100">{stats.methodStats.bank.toLocaleString()}원</div>
+                                <div className="text-[13px] sm:text-sm font-bold text-cyan-100 break-all leading-tight">
+                                    {stats.methodStats.bank.toLocaleString()}원
+                                </div>
                             </CardContent>
                         </Card>
                         <Card className="bg-cyan-950/20 border-cyan-500/10">
-                            <CardContent className="p-3 flex items-center justify-between">
-                                <div className="flex items-center gap-2">
-                                    <QrCode className="w-4 h-4 text-cyan-500" />
-                                    <span className="text-[11px] text-cyan-500 font-medium">결제선생</span>
+                            <CardContent className="p-2 sm:p-3 flex flex-col gap-1">
+                                <div className="flex items-center gap-2 opacity-80">
+                                    <QrCode className="w-3.5 h-3.5 text-cyan-500" />
+                                    <span className="text-[10px] sm:text-[11px] text-cyan-500 font-medium">결제선생</span>
                                 </div>
-                                <div className="text-sm font-bold text-cyan-100">{stats.methodStats.teacherPay.toLocaleString()}원</div>
+                                <div className="text-[13px] sm:text-sm font-bold text-cyan-100 break-all leading-tight">
+                                    {stats.methodStats.teacherPay.toLocaleString()}원
+                                </div>
                             </CardContent>
                         </Card>
                     </div>

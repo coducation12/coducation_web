@@ -175,7 +175,6 @@ export default function TeacherStudentsPage() {
                         <Table className="text-[13px] sm:text-sm">
                             <TableHeader>
                                 <TableRow className="border-cyan-500/20">
-                                    <TableHead className="text-cyan-200 px-2 w-10 sm:w-16 text-center">No</TableHead>
                                     <TableHead className="text-cyan-200 text-[10px] sm:text-xs md:text-sm px-1 sm:px-2 text-center">No</TableHead>
                                     <TableHead
                                         className="text-cyan-200 cursor-pointer hover:text-cyan-100 transition-colors select-none px-1 sm:px-2 text-[10px] sm:text-xs md:text-sm"

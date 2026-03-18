@@ -4,7 +4,7 @@ import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { LayoutDashboard, BookOpen, Users, Menu, LogOut, ChevronDown, User } from "lucide-react";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { logout } from "@/lib/actions";
@@ -130,6 +130,9 @@ export function ParentSidebar({ user }: ParentSidebarProps) {
             </Button>
           </SheetTrigger>
           <SheetContent side="top" className="p-0 w-full max-w-full bg-gradient-to-b from-[#0a1837] to-[#0a1a2f] border-b border-cyan-900/40">
+            <SheetHeader className="sr-only">
+              <SheetTitle>메뉴</SheetTitle>
+            </SheetHeader>
             {SidebarContent}
           </SheetContent>
         </Sheet>

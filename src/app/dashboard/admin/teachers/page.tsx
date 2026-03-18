@@ -12,6 +12,7 @@ import AddTeacherModal from "./components/AddTeacherModal";
 import EditTeacherModal from "./components/EditTeacherModal";
 import { deleteTeacher, updateTeacherLabelColor, toggleTeacherTuitionPermission } from "@/lib/actions";
 import { Checkbox } from "@/components/ui/checkbox";
+import { DashboardPageWrapper } from "@/components/common/DashboardPageWrapper";
 
 export const dynamic = 'force-dynamic';
 
@@ -54,11 +55,11 @@ export default function AdminTeachersPage() {
     // 정렬 아이콘 렌더링 함수
     const getSortIcon = (field: string) => {
         if (sortField !== field) {
-            return <ArrowUpDown className="w-4 h-4" />;
+            return <ArrowUpDown className="w-3 h-3 sm:w-4 sm:h-4" />;
         }
         return sortDirection === 'asc' ?
-            <ArrowUp className="w-4 h-4" /> :
-            <ArrowDown className="w-4 h-4" />;
+            <ArrowUp className="w-3 h-3 sm:w-4 sm:h-4" /> :
+            <ArrowDown className="w-3 h-3 sm:w-4 sm:h-4" />;
     };
 
     // 정렬된 강사 목록 생성
@@ -196,126 +197,128 @@ export default function AdminTeachersPage() {
 
     if (loading) {
         return (
-            <div className="p-6 space-y-6 pt-16 lg:pt-2 h-screen overflow-y-auto scrollbar-hide">
+            <DashboardPageWrapper>
                 <div className="text-cyan-100 text-center py-20">강사 정보를 불러오는 중...</div>
-            </div>
+            </DashboardPageWrapper>
         );
     }
 
     return (
-        <div className="p-6 space-y-6 pt-16 lg:pt-2 h-screen overflow-y-auto scrollbar-hide">
-            <div className="flex justify-between items-center">
+        <DashboardPageWrapper>
+            <div className="flex items-center justify-between mb-6 pr-2">
                 <div>
-                    <h1 className="text-3xl font-bold text-cyan-100 drop-shadow-[0_0_6px_#00fff7]">강사 관리</h1>
+                    <h1 className="text-2xl sm:text-3xl font-bold text-cyan-100 drop-shadow-[0_0_6px_#00fff7]">강사 관리</h1>
                 </div>
                 <AddTeacherModal onAddTeacher={handleRefreshTeachers} />
             </div>
 
             <Card className="bg-gradient-to-br from-cyan-900/20 to-blue-900/20 border-cyan-500/30">
                 <CardContent className="p-0">
-                    <Table>
-                        <TableHeader>
-                            <TableRow className="border-cyan-500/20 hover:bg-transparent">
-                                <TableHead className="text-cyan-200 text-center w-[80px]">프로필</TableHead>
-                                <TableHead className="text-cyan-200 w-[100px]">
-                                    <div className="flex items-center gap-1 cursor-pointer select-none" onClick={() => handleSort('name')}>
-                                        이름 {getSortIcon('name')}
-                                    </div>
-                                </TableHead>
-                                <TableHead className="text-cyan-200 text-center w-[80px]">라벨</TableHead>
-                                <TableHead className="text-cyan-200">
-                                    <div className="flex items-center gap-1 cursor-pointer select-none" onClick={() => handleSort('email')}>
-                                        이메일 {getSortIcon('email')}
-                                    </div>
-                                </TableHead>
-                                <TableHead className="text-cyan-200">
-                                    <div className="flex items-center gap-1 cursor-pointer select-none" onClick={() => handleSort('phone')}>
-                                        연락처 {getSortIcon('phone')}
-                                    </div>
-                                </TableHead>
-                                <TableHead className="text-cyan-200 text-center">
-                                    <div className="flex items-center gap-1 justify-center cursor-pointer select-none" onClick={() => handleSort('position')}>
-                                        직위 {getSortIcon('position')}
-                                    </div>
-                                </TableHead>
-                                <TableHead className="text-cyan-200 text-center">담당 과목 {getSortIcon('subject')}</TableHead>
-                                <TableHead className="text-cyan-200 text-center">수납 관리자</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {getSortedTeachers(teachers).length === 0 ? (
-                                <TableRow>
-                                    <TableCell colSpan={7} className="text-center text-cyan-200 py-12">
-                                        등록된 강사가 없습니다.
-                                    </TableCell>
+                    <div className="overflow-x-auto">
+                        <Table className="text-[12px] sm:text-sm">
+                            <TableHeader>
+                                <TableRow className="border-cyan-500/20 hover:bg-transparent">
+                                    <TableHead className="text-cyan-200 text-center w-[60px] sm:w-[80px] whitespace-nowrap">프로필</TableHead>
+                                    <TableHead className="text-cyan-200 w-[100px] whitespace-nowrap">
+                                        <div className="flex items-center gap-1 cursor-pointer select-none" onClick={() => handleSort('name')}>
+                                            이름 <span className="hidden sm:inline-block">{getSortIcon('name')}</span>
+                                        </div>
+                                    </TableHead>
+                                    <TableHead className="text-cyan-200 text-center w-[60px] sm:w-[80px] whitespace-nowrap">라벨</TableHead>
+                                    <TableHead className="text-cyan-200 whitespace-nowrap">
+                                        <div className="flex items-center gap-1 cursor-pointer select-none" onClick={() => handleSort('email')}>
+                                            이메일 <span className="hidden sm:inline-block">{getSortIcon('email')}</span>
+                                        </div>
+                                    </TableHead>
+                                    <TableHead className="text-cyan-200 whitespace-nowrap">
+                                        <div className="flex items-center gap-1 cursor-pointer select-none" onClick={() => handleSort('phone')}>
+                                            연락처 <span className="hidden sm:inline-block">{getSortIcon('phone')}</span>
+                                        </div>
+                                    </TableHead>
+                                    <TableHead className="text-cyan-200 text-center whitespace-nowrap">
+                                        <div className="flex items-center gap-1 justify-center cursor-pointer select-none" onClick={() => handleSort('position')}>
+                                            직위 <span className="hidden sm:inline-block">{getSortIcon('position')}</span>
+                                        </div>
+                                    </TableHead>
+                                    <TableHead className="text-cyan-200 text-center whitespace-nowrap">담당 과목</TableHead>
+                                    <TableHead className="text-cyan-200 text-center whitespace-nowrap">수납 관리자</TableHead>
                                 </TableRow>
-                            ) : (
-                                getSortedTeachers(teachers).map((teacher) => (
-                                    <TableRow
-                                        key={teacher.id}
-                                        className="border-cyan-500/10 cursor-pointer hover:bg-cyan-500/5 transition-colors group"
-                                        onClick={() => handleEditTeacher(teacher)}
-                                    >
-                                        <TableCell className="py-4">
-                                            <div className="flex justify-center">
-                                                <div className="relative w-10 h-10 rounded-full overflow-hidden border-2 border-cyan-400/30">
-                                                    {teacher.image ? (
-                                                        <Image
-                                                            src={teacher.image}
-                                                            alt={teacher.name}
-                                                            fill
-                                                            className="object-cover"
-                                                        />
-                                                    ) : (
-                                                        <div className="flex items-center justify-center h-full bg-cyan-900/20">
-                                                            <User className="w-5 h-5 text-cyan-400" />
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        </TableCell>
-                                        <TableCell className="font-medium text-cyan-100">
-                                            {teacher.name}
-                                        </TableCell>
-                                        <TableCell>
-                                            <div className="flex justify-center items-center">
-                                                <input
-                                                    type="color"
-                                                    value={teacher.labelColor || '#00fff7'}
-                                                    onChange={(e) => handleColorChange(teacher.id, e.target.value)}
-                                                    onClick={(e) => e.stopPropagation()}
-                                                    className="w-8 h-8 rounded-full border-none cursor-pointer bg-transparent overflow-hidden"
-                                                    style={{ padding: 0 }}
-                                                />
-                                            </div>
-                                        </TableCell>
-                                        <TableCell className="text-cyan-200/80">
-                                            {teacher.email}
-                                        </TableCell>
-                                        <TableCell className="text-cyan-200/80">
-                                            {teacher.phone}
-                                        </TableCell>
-                                        <TableCell className="text-center text-cyan-200/80">
-                                            {teacher.position}
-                                        </TableCell>
-                                        <TableCell className="text-center text-cyan-200/80">
-                                            {teacher.subject}
-                                        </TableCell>
-                                        <TableCell className="py-4">
-                                            <div className="flex justify-center items-center">
-                                                <Checkbox
-                                                    checked={teacher.canManageAllPayments}
-                                                    onCheckedChange={(checked) => handleTuitionPermissionToggle(teacher.id, !!checked)}
-                                                    onClick={(e) => e.stopPropagation()}
-                                                    className="border-cyan-500/50 data-[state=checked]:bg-cyan-600 data-[state=checked]:text-white"
-                                                />
-                                            </div>
+                            </TableHeader>
+                            <TableBody>
+                                {getSortedTeachers(teachers).length === 0 ? (
+                                    <TableRow>
+                                        <TableCell colSpan={8} className="text-center text-cyan-200 py-12">
+                                            등록된 강사가 없습니다.
                                         </TableCell>
                                     </TableRow>
-                                ))
-                            )}
-                        </TableBody>
-                    </Table>
+                                ) : (
+                                    getSortedTeachers(teachers).map((teacher) => (
+                                        <TableRow
+                                            key={teacher.id}
+                                            className="border-cyan-500/10 cursor-pointer hover:bg-cyan-500/5 transition-colors group whitespace-nowrap"
+                                            onClick={() => handleEditTeacher(teacher)}
+                                        >
+                                            <TableCell className="py-2 sm:py-4">
+                                                <div className="flex justify-center">
+                                                    <div className="relative w-8 h-8 sm:w-10 sm:h-10 rounded-full overflow-hidden border-2 border-cyan-400/30">
+                                                        {teacher.image ? (
+                                                            <Image
+                                                                src={teacher.image}
+                                                                alt={teacher.name}
+                                                                fill
+                                                                className="object-cover"
+                                                            />
+                                                        ) : (
+                                                            <div className="flex items-center justify-center h-full bg-cyan-900/20">
+                                                                <User className="w-4 h-4 sm:w-5 sm:h-5 text-cyan-400" />
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </TableCell>
+                                            <TableCell className="font-medium text-cyan-100">
+                                                {teacher.name}
+                                            </TableCell>
+                                            <TableCell className="py-2 sm:py-4">
+                                                <div className="flex justify-center items-center">
+                                                    <input
+                                                        type="color"
+                                                        value={teacher.labelColor || '#00fff7'}
+                                                        onChange={(e) => handleColorChange(teacher.id, e.target.value)}
+                                                        onClick={(e) => e.stopPropagation()}
+                                                        className="w-6 h-6 sm:w-8 sm:h-8 rounded-full border-none cursor-pointer bg-transparent overflow-hidden"
+                                                        style={{ padding: 0 }}
+                                                    />
+                                                </div>
+                                            </TableCell>
+                                            <TableCell className="text-cyan-200/80 max-w-[150px] truncate sm:max-w-none">
+                                                {teacher.email}
+                                            </TableCell>
+                                            <TableCell className="text-cyan-200/80">
+                                                {teacher.phone}
+                                            </TableCell>
+                                            <TableCell className="text-center text-cyan-200/80">
+                                                {teacher.position}
+                                            </TableCell>
+                                            <TableCell className="text-center text-cyan-200/80">
+                                                {teacher.subject}
+                                            </TableCell>
+                                            <TableCell className="py-2 sm:py-4">
+                                                <div className="flex justify-center items-center">
+                                                    <Checkbox
+                                                        checked={teacher.canManageAllPayments}
+                                                        onCheckedChange={(checked) => handleTuitionPermissionToggle(teacher.id, !!checked)}
+                                                        onClick={(e) => e.stopPropagation()}
+                                                        className="h-4 w-4 sm:h-5 sm:w-5 border-cyan-500/50 data-[state=checked]:bg-cyan-600 data-[state=checked]:text-white"
+                                                    />
+                                                </div>
+                                            </TableCell>
+                                        </TableRow>
+                                    ))
+                                )}
+                            </TableBody>
+                        </Table>
+                    </div>
                 </CardContent>
             </Card>
 
@@ -325,6 +328,6 @@ export default function AdminTeachersPage() {
                 onClose={handleCloseEditModal}
                 onUpdate={handleUpdateTeacher}
             />
-        </div>
+        </DashboardPageWrapper>
     );
 }

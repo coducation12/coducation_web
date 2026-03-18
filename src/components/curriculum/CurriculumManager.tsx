@@ -190,18 +190,20 @@ export default function CurriculumManager({ userRole = 'teacher' }: CurriculumMa
     const pageTitle = userRole === 'admin' ? '커리큘럼 관리' : '커리큘럼 관리';
 
     return (
-        <div className="p-6 space-y-6 pt-16 lg:pt-2">
-            <div className="flex justify-between items-center">
+        <div className="space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 pr-2">
                 <div>
-                    <h1 className="text-3xl font-bold text-cyan-100 drop-shadow-[0_0_6px_#00fff7]">{pageTitle}</h1>
+                    <h1 className="text-2xl sm:text-3xl font-bold text-cyan-100 drop-shadow-[0_0_6px_#00fff7]">{pageTitle}</h1>
                 </div>
-                <Button 
-                    className="bg-cyan-600 hover:bg-cyan-700 text-white"
-                    onClick={() => setIsModalOpen(true)}
-                >
-                    <Plus className="w-4 h-4 mr-2" />
-                    새 커리큘럼 추가
-                </Button>
+                <div className="flex justify-end">
+                    <Button 
+                        className="bg-cyan-600 hover:bg-cyan-700 text-white"
+                        onClick={() => setIsModalOpen(true)}
+                    >
+                        <Plus className="w-4 h-4 mr-2" />
+                        새 커리큘럼 추가
+                    </Button>
+                </div>
             </div>
 
             {/* 로딩 상태 표시 */}
@@ -225,112 +227,103 @@ export default function CurriculumManager({ userRole = 'teacher' }: CurriculumMa
             {/* 커리큘럼 목록 */}
             {!isLoading && !error && (
                 <Card className="bg-gradient-to-br from-cyan-900/20 to-blue-900/20 border-cyan-500/30">
-                    <CardContent>
-                        <Table>
-                            <TableHeader>
-                                <TableRow className="border-cyan-500/20">
-                                    <TableHead className="text-cyan-200 text-center">이미지</TableHead>
-                                    <TableHead className="text-cyan-200 text-center">과정명</TableHead>
-                                    <TableHead className="text-cyan-200 text-center">분류</TableHead>
-                                    <TableHead className="text-cyan-200 text-center">레벨</TableHead>
-                                    <TableHead className="text-cyan-200 text-center">담당 강사</TableHead>
-                                    <TableHead className="text-cyan-200 text-center">상태</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {curriculums.length === 0 ? (
-                                    <TableRow>
-                                        <TableCell colSpan={6} className="text-center text-cyan-200 py-8">
-                                            {userRole === 'teacher' 
-                                                ? '작성한 커리큘럼이 없습니다. 새 커리큘럼을 추가해보세요.'
-                                                : '등록된 커리큘럼이 없습니다.'
-                                            }
-                                        </TableCell>
+                    <CardContent className="p-0">
+                        <div className="overflow-x-auto">
+                            <Table className="text-[12px] sm:text-sm">
+                                <TableHeader>
+                                    <TableRow className="border-cyan-500/20">
+                                        <TableHead className="text-cyan-200 text-center whitespace-nowrap">이미지</TableHead>
+                                        <TableHead className="text-cyan-200 text-center whitespace-nowrap">과정명</TableHead>
+                                        <TableHead className="text-cyan-200 text-center whitespace-nowrap">분류</TableHead>
+                                        <TableHead className="text-cyan-200 text-center whitespace-nowrap">레벨</TableHead>
+                                        <TableHead className="text-cyan-200 text-center whitespace-nowrap">담당 강사</TableHead>
+                                        <TableHead className="text-cyan-200 text-center whitespace-nowrap">상태</TableHead>
                                     </TableRow>
-                                ) : (
-                                    curriculums.map((curriculum: any) => (
-                                        <TableRow key={curriculum.id} className="border-cyan-500/10">
-                                            <TableCell className="text-center">
-                                                <div className="flex justify-center">
-                                                    {curriculum.image ? (
-                                                        <div className="relative w-12 h-12 rounded border border-cyan-500/30 overflow-hidden">
-                                                            <Image 
-                                                                src={curriculum.image.startsWith('data:') ? curriculum.image : curriculum.image} 
-                                                                alt={curriculum.title}
-                                                                width={48}
-                                                                height={48}
-                                                                className="object-cover"
-                                                                loading="lazy"
-                                                                placeholder="blur"
-                                                                blurDataURL="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAAIAAoDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAhEAACAQMDBQAAAAAAAAAAAAABAgMABAUGIWGRkqGxwf/EABUBAQEAAAAAAAAAAAAAAAAAAAMF/8QAGhEAAgIDAAAAAAAAAAAAAAAAAAECEgMRkf/aAAwDAQACEQMRAD8AltJagyeH0AthI5xdrLcNM91BF5pX2HaH9bcfaSXWGaRmknyJckliyjqTzSlT54b6bk+h0R//2Q=="
-                                                                onError={(e) => {
-                                                                    // 에러 시 fallback 처리
-                                                                    const target = e.target as HTMLImageElement;
-                                                                    target.style.display = 'none';
-                                                                    // 부모 요소에 fallback UI 표시
-                                                                    const parent = target.closest('.relative');
-                                                                    if (parent) {
-                                                                        parent.innerHTML = '<div class="w-12 h-12 bg-cyan-900/20 rounded border border-cyan-500/30 flex items-center justify-center"><span class="text-cyan-400 text-xs">No Image</span></div>';
-                                                                    }
-                                                                }}
-                                                            />
-                                                        </div>
-                                                    ) : (
-                                                        <div className="w-12 h-12 bg-cyan-900/20 rounded border border-cyan-500/30 flex items-center justify-center">
-                                                            <span className="text-cyan-400 text-xs">No Image</span>
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            </TableCell>
-                                            <TableCell className="font-medium text-cyan-100 text-center">
-                                                <button
-                                                    onClick={() => handleEditCurriculum(curriculum)}
-                                                    className="hover:text-cyan-300 transition-colors cursor-pointer underline"
-                                                >
-                                                    {curriculum.title}
-                                                </button>
-                                            </TableCell>
-                                            <TableCell className="text-cyan-200 text-center">
-                                                {curriculum.category}
-                                            </TableCell>
-                                            <TableCell className="text-center">
-                                                <Badge
-                                                    className={
-                                                        curriculum.level === '기초'
-                                                            ? 'bg-green-500 text-white'
-                                                            : curriculum.level === '중급'
-                                                            ? 'bg-yellow-500 text-white'
-                                                            : curriculum.level === '고급'
-                                                            ? 'bg-red-500 text-white'
-                                                            : 'bg-cyan-600/20 text-cyan-200 border-cyan-400/40'
-                                                    }
-                                                >
-                                                    {curriculum.level}
-                                                </Badge>
-                                            </TableCell>
-                                            <TableCell className="text-cyan-200 text-center">
-                                                {curriculum.teacherName}
-                                            </TableCell>
-                                            <TableCell className="text-center">
-                                                <Badge
-                                                    className={
-                                                        curriculum.status === '완료'
-                                                            ? 'bg-green-600/20 text-green-300 border-green-500/30'
-                                                            : curriculum.status === '준비중'
-                                                            ? 'bg-yellow-600/20 text-yellow-300 border-yellow-500/30'
-                                                            : curriculum.status === '진행중'
-                                                            ? 'bg-blue-600/20 text-blue-300 border-blue-500/30'
-                                                            : 'bg-gray-600/20 text-gray-300 border-gray-500/30'
-                                                    }
-                                                >
-                                                    {curriculum.status}
-                                                </Badge>
+                                </TableHeader>
+                                <TableBody>
+                                    {curriculums.length === 0 ? (
+                                        <TableRow>
+                                            <TableCell colSpan={6} className="text-center text-cyan-200 py-12">
+                                                {userRole === 'teacher' 
+                                                    ? '작성한 커리큘럼이 없습니다. 새 커리큘럼을 추가해보세요.'
+                                                    : '등록된 커리큘럼이 없습니다.'
+                                                }
                                             </TableCell>
                                         </TableRow>
-                                    ))
-                                )}
-                            </TableBody>
-                        </Table>
+                                    ) : (
+                                        curriculums.map((curriculum: any) => (
+                                            <TableRow key={curriculum.id} className="border-cyan-500/10 whitespace-nowrap">
+                                                <TableCell className="text-center py-2 sm:py-4">
+                                                    <div className="flex justify-center">
+                                                        {curriculum.image ? (
+                                                            <div className="relative w-10 h-10 sm:w-12 sm:h-12 rounded border border-cyan-500/30 overflow-hidden">
+                                                                <Image 
+                                                                    src={curriculum.image.startsWith('data:') ? curriculum.image : curriculum.image} 
+                                                                    alt={curriculum.title}
+                                                                    fill
+                                                                    className="object-cover"
+                                                                    loading="lazy"
+                                                                />
+                                                            </div>
+                                                        ) : (
+                                                            <div className="w-10 h-10 sm:w-12 sm:h-12 bg-cyan-900/20 rounded border border-cyan-500/30 flex items-center justify-center">
+                                                                <span className="text-cyan-400 text-[10px] sm:text-xs">No Image</span>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </TableCell>
+                                                <TableCell className="font-medium text-cyan-100 text-center py-2 sm:py-4">
+                                                    <button
+                                                        onClick={() => handleEditCurriculum(curriculum)}
+                                                        className="hover:text-cyan-300 transition-colors cursor-pointer underline"
+                                                    >
+                                                        {curriculum.title}
+                                                    </button>
+                                                </TableCell>
+                                                <TableCell className="text-cyan-200 text-center py-2 sm:py-4">
+                                                    {curriculum.category}
+                                                </TableCell>
+                                                <TableCell className="text-center py-2 sm:py-4">
+                                                    <Badge
+                                                        className={`
+                                                            text-[10px] sm:text-xs
+                                                            ${curriculum.level === '기초'
+                                                                ? 'bg-green-500 text-white'
+                                                                : curriculum.level === '중급'
+                                                                ? 'bg-yellow-500 text-white'
+                                                                : curriculum.level === '고급'
+                                                                ? 'bg-red-500 text-white'
+                                                                : 'bg-cyan-600/20 text-cyan-200 border-cyan-400/40'}
+                                                        `}
+                                                    >
+                                                        {curriculum.level}
+                                                    </Badge>
+                                                </TableCell>
+                                                <TableCell className="text-cyan-200 text-center py-2 sm:py-4">
+                                                    {curriculum.teacherName}
+                                                </TableCell>
+                                                <TableCell className="text-center py-2 sm:py-4">
+                                                    <Badge
+                                                        className={`
+                                                            text-[10px] sm:text-xs
+                                                            ${curriculum.status === '완료'
+                                                                ? 'bg-green-600/20 text-green-300 border-green-500/30'
+                                                                : curriculum.status === '준비중'
+                                                                ? 'bg-yellow-600/20 text-yellow-300 border-yellow-500/30'
+                                                                : curriculum.status === '진행중'
+                                                                ? 'bg-blue-600/20 text-blue-300 border-blue-500/30'
+                                                                : 'bg-gray-600/20 text-gray-300 border-gray-500/30'}
+                                                        `}
+                                                    >
+                                                        {curriculum.status}
+                                                    </Badge>
+                                                </TableCell>
+                                            </TableRow>
+                                        ))
+                                    )}
+                                </TableBody>
+                            </Table>
+                        </div>
                     </CardContent>
                 </Card>
             )}

@@ -155,10 +155,10 @@ export default function ConsultationsView({ role }: ConsultationsViewProps) {
     }
 
     return (
-        <div className="container mx-auto p-4 sm:p-6 space-y-6">
+        <div className="space-y-6">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-2xl sm:text-3xl font-bold text-cyan-100 drop-shadow-[0_0_10px_#00fff7]">상담문의 관리</h1>
+                    <h1 className="text-2xl sm:text-3xl font-bold text-cyan-100 drop-shadow-[0_0_6px_#00fff7]">상담문의 관리</h1>
                 </div>
                 <Button
                     onClick={loadConsultations}

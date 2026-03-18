@@ -5,7 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 import { LayoutDashboard, BookOpen, Users, Menu, LogOut, GraduationCap, User, CalendarDays, UserCheck, Settings, MessageSquare, Home, CreditCard } from "lucide-react";
 import Image from "next/image";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { logout } from "@/lib/actions";
 import { supabase } from "@/lib/supabase";
@@ -138,9 +138,9 @@ export function AdminSidebar() {
             </Button>
           </SheetTrigger>
           <SheetContent side="top" className="p-0 w-full max-w-full bg-gradient-to-b from-[#0a1837] to-[#0a1a2f] border-b border-cyan-900/40">
-            <div className="sr-only">
-              <h2>메뉴</h2>
-            </div>
+            <SheetHeader className="sr-only">
+              <SheetTitle>메뉴</SheetTitle>
+            </SheetHeader>
             {SidebarContent}
           </SheetContent>
         </Sheet>

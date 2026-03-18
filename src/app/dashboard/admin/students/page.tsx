@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Mail, Phone, CheckCircle, XCircle, Clock, ArrowUpDown, ArrowUp, ArrowDown, Trash2 } from "lucide-react";
+import { Mail, Phone, CheckCircle, XCircle, Clock, ArrowUpDown, ArrowUp, ArrowDown, Trash2, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/lib/supabase";
 import { addStudent, updateStudent, getCurrentUser, deleteStudent } from "@/lib/actions";
@@ -136,25 +136,27 @@ export default function AdminStudentsPage() {
 
     return (
         <DashboardPageWrapper>
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 pr-2">
                 <div>
-                    <h1 className="text-3xl font-bold text-cyan-100 drop-shadow-[0_0_6px_#00fff7]">학생 관리</h1>
+                    <h1 className="text-2xl sm:text-3xl font-bold text-cyan-100 drop-shadow-[0_0_6px_#00fff7]">학생 관리</h1>
                 </div>
-                <StudentModal
-                    mode="add"
-                    onSave={async (formData) => { await handleAddStudent(formData); }}
-                    teachers={teachers as any}
-                    academies={Array.from(new Set(students.map((s: Student) => s.academy).filter(Boolean).concat(["코딩메이커", "광양코딩"])))}
-                />
+                <div className="flex justify-end">
+                    <StudentModal
+                        mode="add"
+                        onSave={async (formData) => { await handleAddStudent(formData); }}
+                        teachers={teachers as any}
+                        academies={Array.from(new Set(students.map((s: Student) => s.academy).filter(Boolean).concat(["코딩메이커", "광양코딩"])))}
+                    />
+                </div>
             </div>
 
             <Card className="bg-gradient-to-br from-cyan-900/20 to-blue-900/20 border-cyan-500/30">
-                <CardHeader>
-                    <div className="flex items-center justify-between">
-                        <CardTitle className="text-cyan-100">학생 목록</CardTitle>
-                        <div className="flex items-center space-x-2">
+                <CardHeader className="p-4 sm:p-6">
+                    <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                        <CardTitle className="text-lg text-cyan-100">학생 목록</CardTitle>
+                        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                             <Select value={statusFilter} onValueChange={setStatusFilter}>
-                                <SelectTrigger className={`w-[120px] bg-background/40 border-cyan-400/40 ${
+                                <SelectTrigger className={`w-full sm:w-[130px] bg-background/40 border-cyan-400/40 h-9 text-sm ${
                                     statusFilter === '수강' ? 'text-green-400' :
                                     statusFilter === '상담' ? 'text-yellow-400' :
                                     statusFilter === '휴강' ? 'text-orange-400' :
@@ -171,228 +173,234 @@ export default function AdminStudentsPage() {
                                     <SelectItem value="종료" className="text-red-400">종료</SelectItem>
                                 </SelectContent>
                             </Select>
-                            <Input
-                                placeholder="학생 검색..."
-                                value={search}
-                                onChange={(e) => setSearch(e.target.value)}
-                                className="w-64 bg-background/40 border-cyan-400/40 text-cyan-100 placeholder:text-cyan-400/60 focus:border-cyan-400/80"
-                            />
+                            <div className="relative w-full sm:w-64">
+                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-cyan-400/60" />
+                                <Input
+                                    placeholder="학생 검색..."
+                                    value={search}
+                                    onChange={(e) => setSearch(e.target.value)}
+                                    className="w-full pl-9 h-9 bg-background/40 border-cyan-400/40 text-cyan-100 placeholder:text-cyan-400/60 focus:border-cyan-400/80 text-sm"
+                                />
+                            </div>
                         </div>
                     </div>
                 </CardHeader>
-                <CardContent>
-                    <Table>
-                        <TableHeader>
-                            <TableRow className="border-cyan-500/20">
-                                <TableHead className="text-cyan-200 text-[10px] sm:text-xs md:text-sm px-1 sm:px-2 text-center">No</TableHead>
-                                <TableHead
-                                    className="text-cyan-200 cursor-pointer hover:text-cyan-100 transition-colors select-none px-1 sm:px-2 text-[10px] sm:text-xs md:text-sm"
-                                    onClick={() => handleSort('name')}
-                                >
-                                    <div className="flex items-center gap-0.5 sm:gap-1 whitespace-nowrap">
-                                        학생
-                                        {getSortIcon('name')}
-                                    </div>
-                                </TableHead>
-                                <TableHead
-                                    className="text-cyan-200 cursor-pointer hover:text-cyan-100 transition-colors select-none px-1 sm:px-2 text-[10px] sm:text-xs md:text-sm"
-                                    onClick={() => handleSort('academy')}
-                                >
-                                    <div className="flex items-center gap-0.5 sm:gap-1 whitespace-nowrap">
-                                        소속 학원
-                                        {getSortIcon('academy')}
-                                    </div>
-                                </TableHead>
-                                <TableHead
-                                    className="text-cyan-200 cursor-pointer hover:text-cyan-100 transition-colors select-none px-1 sm:px-2 text-[10px] sm:text-xs md:text-sm"
-                                    onClick={() => handleSort('phone')}
-                                >
-                                    <div className="flex items-center gap-0.5 sm:gap-1 whitespace-nowrap">
-                                        연락처
-                                        {getSortIcon('phone')}
-                                    </div>
-                                </TableHead>
-                                <TableHead
-                                    className="text-cyan-200 cursor-pointer hover:text-cyan-100 transition-colors select-none px-1 sm:px-2 text-[10px] sm:text-xs md:text-sm"
-                                    onClick={() => handleSort('course')}
-                                >
-                                    <div className="flex items-center gap-0.5 sm:gap-1 whitespace-nowrap">
-                                        과목
-                                        {getSortIcon('course')}
-                                    </div>
-                                </TableHead>
-                                <TableHead
-                                    className="text-cyan-200 cursor-pointer hover:text-cyan-100 transition-colors select-none px-1 sm:px-2 text-[10px] sm:text-xs md:text-sm"
-                                    onClick={() => handleSort('assignedTeacherName')}
-                                >
-                                    <div className="flex items-center gap-0.5 sm:gap-1 whitespace-nowrap">
-                                        담당강사1
-                                        {getSortIcon('assignedTeacherName')}
-                                    </div>
-                                </TableHead>
-                                <TableHead
-                                    className="text-cyan-200 cursor-pointer hover:text-cyan-100 transition-colors select-none px-1 sm:px-2 text-[10px] sm:text-xs md:text-sm"
-                                >
-                                    <div className="flex items-center gap-0.5 sm:gap-1 whitespace-nowrap">
-                                        담당강사2
-                                    </div>
-                                </TableHead>
-                                <TableHead
-                                    className="text-cyan-200 cursor-pointer hover:text-cyan-100 transition-colors select-none px-1 sm:px-2 text-[10px] sm:text-xs md:text-sm"
-                                    onClick={() => handleSort('status')}
-                                >
-                                    <div className="flex items-center gap-0.5 sm:gap-1 whitespace-nowrap">
-                                        상태
-                                        {getSortIcon('status')}
-                                    </div>
-                                </TableHead>
-                                <TableHead className="text-cyan-200 text-[10px] sm:text-xs md:text-sm px-1 sm:px-2 whitespace-nowrap">
-                                    가입일
-                                </TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {sortedStudents.map((student, index) => (
-                                <TableRow
-                                    key={student.id}
-                                    className="border-cyan-500/10 hover:bg-cyan-900/10 cursor-pointer"
-                                    onClick={() => handleEditStudent(student)}
-                                >
-                                    <TableCell className="text-cyan-300 font-medium">
-                                        {(student.status === '수강' || student.status === '승인대기')
-                                            ? ++activeNoCounter
-                                            : '-'
-                                        }
-                                    </TableCell>
-                                    <TableCell className="font-medium text-cyan-100">
-                                        <button className="text-cyan-100 hover:text-cyan-300 transition-colors cursor-pointer">
-                                            {student.name}
-                                        </button>
-                                    </TableCell>
-                                    <TableCell className="text-cyan-300">
-                                        {student.academy || '-'}
-                                    </TableCell>
-                                    <TableCell className="text-cyan-300">
-                                        <div className="flex items-center space-x-2">
-                                            <Phone className="w-4 h-4" />
-                                            <span>{student.phone}</span>
+                <CardContent className="p-0">
+                    <div className="overflow-x-auto">
+                        <Table className="text-[12px] sm:text-sm">
+                            <TableHeader>
+                                <TableRow className="border-cyan-500/20">
+                                    <TableHead className="text-cyan-200 text-[10px] sm:text-xs md:text-sm px-1 sm:px-2 text-center whitespace-nowrap">No</TableHead>
+                                    <TableHead
+                                        className="text-cyan-200 cursor-pointer hover:text-cyan-100 transition-colors select-none px-1 sm:px-2 text-[10px] sm:text-xs md:text-sm whitespace-nowrap"
+                                        onClick={() => handleSort('name')}
+                                    >
+                                        <div className="flex items-center gap-0.5 sm:gap-1">
+                                            학생
+                                            {getSortIcon('name')}
                                         </div>
-                                    </TableCell>
-                                    <TableCell className="text-cyan-300">
-                                        {student.course}
-                                    </TableCell>
-                                    <TableCell className="text-cyan-300">
-                                        <div onClick={(e) => e.stopPropagation()}>
-                                            <Select
-                                                value={student.assignedTeachers?.[0]?.id || 'none'}
-                                                onValueChange={(value) => handleTeacherChange(student.id, value, 0)}
-                                            >
-                                                <SelectTrigger className="w-28 h-8 text-xs bg-cyan-900/30 border-cyan-500/30 text-cyan-200">
-                                                    <SelectValue placeholder="강사1">
-                                                        {student.assignedTeachers?.[0] ? (
-                                                            <span
-                                                                className="font-medium"
-                                                                style={{ color: getTeacherColorSet(teachers.find(t => t.id === student.assignedTeachers?.[0]?.id)?.label_color || student.assignedTeachers?.[0]?.id).style.color }}
-                                                            >
-                                                                {student.assignedTeachers?.[0]?.name}
-                                                            </span>
-                                                        ) : (
-                                                            <span className="text-gray-400">강사1</span>
-                                                        )}
-                                                    </SelectValue>
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    <SelectItem value="none">
-                                                        <span className="text-gray-400">미지정</span>
-                                                    </SelectItem>
-                                                    {teachers.map((teacher) => (
-                                                        <SelectItem key={teacher.id} value={teacher.id}>
-                                                            <span
-                                                                className="font-medium"
-                                                                style={{ color: getTeacherColorSet(teacher.label_color || teacher.id).style.color }}
-                                                            >
-                                                                {teacher.name}
-                                                            </span>
-                                                        </SelectItem>
-                                                    ))}
-                                                </SelectContent>
-                                            </Select>
+                                    </TableHead>
+                                    <TableHead
+                                        className="text-cyan-200 cursor-pointer hover:text-cyan-100 transition-colors select-none px-1 sm:px-2 text-[10px] sm:text-xs md:text-sm whitespace-nowrap"
+                                        onClick={() => handleSort('academy')}
+                                    >
+                                        <div className="flex items-center gap-0.5 sm:gap-1">
+                                            소속 학원
+                                            {getSortIcon('academy')}
                                         </div>
-                                    </TableCell>
-                                    <TableCell className="text-cyan-300">
-                                        <div onClick={(e) => e.stopPropagation()}>
-                                            <Select
-                                                value={student.assignedTeachers?.[1]?.id || 'none'}
-                                                onValueChange={(value) => handleTeacherChange(student.id, value, 1)}
-                                            >
-                                                <SelectTrigger className="w-28 h-8 text-xs bg-cyan-900/30 border-cyan-500/30 text-cyan-200">
-                                                    <SelectValue placeholder="강사2">
-                                                        {student.assignedTeachers?.[1] ? (
-                                                            <span
-                                                                className="font-medium"
-                                                                style={{ color: getTeacherColorSet(teachers.find(t => t.id === student.assignedTeachers?.[1]?.id)?.label_color || student.assignedTeachers?.[1]?.id).style.color }}
-                                                            >
-                                                                {student.assignedTeachers?.[1]?.name}
-                                                            </span>
-                                                        ) : (
-                                                            <span className="text-gray-400">강사2</span>
-                                                        )}
-                                                    </SelectValue>
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    <SelectItem value="none">
-                                                        <span className="text-gray-400">미지정</span>
-                                                    </SelectItem>
-                                                    {teachers.map((teacher) => (
-                                                        <SelectItem key={teacher.id} value={teacher.id}>
-                                                            <span
-                                                                className="font-medium"
-                                                                style={{ color: getTeacherColorSet(teacher.label_color || teacher.id).style.color }}
-                                                            >
-                                                                {teacher.name}
-                                                            </span>
-                                                        </SelectItem>
-                                                    ))}
-                                                </SelectContent>
-                                            </Select>
+                                    </TableHead>
+                                    <TableHead
+                                        className="text-cyan-200 cursor-pointer hover:text-cyan-100 transition-colors select-none px-1 sm:px-2 text-[10px] sm:text-xs md:text-sm whitespace-nowrap"
+                                        onClick={() => handleSort('phone')}
+                                    >
+                                        <div className="flex items-center gap-0.5 sm:gap-1">
+                                            연락처
+                                            {getSortIcon('phone')}
                                         </div>
-                                    </TableCell>
-                                    <TableCell>
-                                        <Badge
-                                            variant="outline"
-                                                className={
-                                                    (student.status === '승인대기' || student.status === '상담')
-                                                        ? "border-yellow-500/50 text-yellow-400"
-                                                        : student.status === '휴강'
-                                                            ? "border-orange-500/50 text-orange-400"
-                                                            : "border-green-500/50 text-green-400"
-                                                }
-                                        >
-                                            {student.status === '승인대기' ? (
-                                                <>
-                                                    <Clock className="w-3 h-3 mr-1" />
-                                                    승인대기
-                                                </>
-                                            ) : student.status === '상담' ? (
-                                                <>
-                                                    <Clock className="w-3 h-3 mr-1" />
-                                                    상담
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <CheckCircle className="w-3 h-3 mr-1" />
-                                                    {student.status}
-                                                </>
-                                            )}
-                                        </Badge>
-                                    </TableCell>
-                                    <TableCell className="text-cyan-300">
-                                        {student.joinDate}
-                                    </TableCell>
+                                    </TableHead>
+                                    <TableHead
+                                        className="text-cyan-200 cursor-pointer hover:text-cyan-100 transition-colors select-none px-1 sm:px-2 text-[10px] sm:text-xs md:text-sm whitespace-nowrap"
+                                        onClick={() => handleSort('course')}
+                                    >
+                                        <div className="flex items-center gap-0.5 sm:gap-1">
+                                            과목
+                                            {getSortIcon('course')}
+                                        </div>
+                                    </TableHead>
+                                    <TableHead
+                                        className="text-cyan-200 cursor-pointer hover:text-cyan-100 transition-colors select-none px-1 sm:px-2 text-[10px] sm:text-xs md:text-sm whitespace-nowrap"
+                                        onClick={() => handleSort('assignedTeacherName')}
+                                    >
+                                        <div className="flex items-center gap-0.5 sm:gap-1">
+                                            담당강사1
+                                            {getSortIcon('assignedTeacherName')}
+                                        </div>
+                                    </TableHead>
+                                    <TableHead
+                                        className="text-cyan-200 cursor-pointer hover:text-cyan-100 transition-colors select-none px-1 sm:px-2 text-[10px] sm:text-xs md:text-sm whitespace-nowrap"
+                                    >
+                                        <div className="flex items-center gap-0.5 sm:gap-1">
+                                            담당강사2
+                                        </div>
+                                    </TableHead>
+                                    <TableHead
+                                        className="text-cyan-200 cursor-pointer hover:text-cyan-100 transition-colors select-none px-1 sm:px-2 text-[10px] sm:text-xs md:text-sm whitespace-nowrap"
+                                        onClick={() => handleSort('status')}
+                                    >
+                                        <div className="flex items-center gap-0.5 sm:gap-1">
+                                            상태
+                                            {getSortIcon('status')}
+                                        </div>
+                                    </TableHead>
+                                    <TableHead className="text-cyan-200 text-[10px] sm:text-xs md:text-sm px-1 sm:px-2 whitespace-nowrap">
+                                        가입일
+                                    </TableHead>
                                 </TableRow>
-                            ))}
-                        </TableBody>
-                    </Table>
+                            </TableHeader>
+                            <TableBody>
+                                {sortedStudents.map((student, index) => (
+                                    <TableRow
+                                        key={student.id}
+                                        className="border-cyan-500/10 hover:bg-cyan-900/10 cursor-pointer whitespace-nowrap"
+                                        onClick={() => handleEditStudent(student)}
+                                    >
+                                        <TableCell className="text-cyan-300 font-medium py-2 sm:py-4">
+                                            {(student.status === '수강' || student.status === '승인대기')
+                                                ? ++activeNoCounter
+                                                : '-'
+                                            }
+                                        </TableCell>
+                                        <TableCell className="font-medium text-cyan-100 py-2 sm:py-4">
+                                            <button className="text-cyan-100 hover:text-cyan-300 transition-colors cursor-pointer">
+                                                {student.name}
+                                            </button>
+                                        </TableCell>
+                                        <TableCell className="text-cyan-300 py-2 sm:py-4">
+                                            {student.academy || '-'}
+                                        </TableCell>
+                                        <TableCell className="text-cyan-300 py-2 sm:py-4">
+                                            <div className="flex items-center space-x-2">
+                                                <Phone className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                                                <span>{student.phone}</span>
+                                            </div>
+                                        </TableCell>
+                                        <TableCell className="text-cyan-300 py-2 sm:py-4">
+                                            {student.course}
+                                        </TableCell>
+                                        <TableCell className="text-cyan-300 py-2 sm:py-4">
+                                            <div onClick={(e) => e.stopPropagation()}>
+                                                <Select
+                                                    value={student.assignedTeachers?.[0]?.id || 'none'}
+                                                    onValueChange={(value) => handleTeacherChange(student.id, value, 0)}
+                                                >
+                                                    <SelectTrigger className="w-24 sm:w-28 h-8 text-[10px] sm:text-xs bg-cyan-900/30 border-cyan-500/30 text-cyan-200">
+                                                        <SelectValue placeholder="강사1">
+                                                            {student.assignedTeachers?.[0] ? (
+                                                                <span
+                                                                    className="font-medium"
+                                                                    style={{ color: getTeacherColorSet(teachers.find(t => t.id === student.assignedTeachers?.[0]?.id)?.label_color || student.assignedTeachers?.[0]?.id).style.color }}
+                                                                >
+                                                                    {student.assignedTeachers?.[0]?.name}
+                                                                </span>
+                                                            ) : (
+                                                                <span className="text-gray-400">강사1</span>
+                                                            )}
+                                                        </SelectValue>
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        <SelectItem value="none">
+                                                            <span className="text-gray-400">미지정</span>
+                                                        </SelectItem>
+                                                        {teachers.map((teacher) => (
+                                                            <SelectItem key={teacher.id} value={teacher.id}>
+                                                                <span
+                                                                    className="font-medium"
+                                                                    style={{ color: getTeacherColorSet(teacher.label_color || teacher.id).style.color }}
+                                                                >
+                                                                    {teacher.name}
+                                                                </span>
+                                                            </SelectItem>
+                                                        ))}
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
+                                        </TableCell>
+                                        <TableCell className="text-cyan-300 py-2 sm:py-4">
+                                            <div onClick={(e) => e.stopPropagation()}>
+                                                <Select
+                                                    value={student.assignedTeachers?.[1]?.id || 'none'}
+                                                    onValueChange={(value) => handleTeacherChange(student.id, value, 1)}
+                                                >
+                                                    <SelectTrigger className="w-24 sm:w-28 h-8 text-[10px] sm:text-xs bg-cyan-900/30 border-cyan-500/30 text-cyan-200">
+                                                        <SelectValue placeholder="강사2">
+                                                            {student.assignedTeachers?.[1] ? (
+                                                                <span
+                                                                    className="font-medium"
+                                                                    style={{ color: getTeacherColorSet(teachers.find(t => t.id === student.assignedTeachers?.[1]?.id)?.label_color || student.assignedTeachers?.[1]?.id).style.color }}
+                                                                >
+                                                                    {student.assignedTeachers?.[1]?.name}
+                                                                </span>
+                                                            ) : (
+                                                                <span className="text-gray-400">강사2</span>
+                                                            )}
+                                                        </SelectValue>
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        <SelectItem value="none">
+                                                            <span className="text-gray-400">미지정</span>
+                                                        </SelectItem>
+                                                        {teachers.map((teacher) => (
+                                                            <SelectItem key={teacher.id} value={teacher.id}>
+                                                                <span
+                                                                    className="font-medium"
+                                                                    style={{ color: getTeacherColorSet(teacher.label_color || teacher.id).style.color }}
+                                                                >
+                                                                    {teacher.name}
+                                                                </span>
+                                                            </SelectItem>
+                                                        ))}
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
+                                        </TableCell>
+                                        <TableCell className="py-2 sm:py-4">
+                                            <Badge
+                                                variant="outline"
+                                                    className={`
+                                                        text-[10px] py-0 px-1
+                                                        ${(student.status === '승인대기' || student.status === '상담')
+                                                            ? "border-yellow-500/50 text-yellow-400"
+                                                            : student.status === '휴강'
+                                                                ? "border-orange-500/50 text-orange-400"
+                                                                : "border-green-500/50 text-green-400"}
+                                                    `}
+                                            >
+                                                {student.status === '승인대기' ? (
+                                                    <>
+                                                        <Clock className="w-3 h-3 mr-1" />
+                                                        승인대기
+                                                    </>
+                                                ) : student.status === '상담' ? (
+                                                    <>
+                                                        <Clock className="w-3 h-3 mr-1" />
+                                                        상담
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <CheckCircle className="w-3 h-3 mr-1" />
+                                                        {student.status}
+                                                    </>
+                                                )}
+                                            </Badge>
+                                        </TableCell>
+                                        <TableCell className="text-cyan-300 py-2 sm:py-4">
+                                            {student.joinDate}
+                                        </TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    </div>
                 </CardContent>
             </Card>
 

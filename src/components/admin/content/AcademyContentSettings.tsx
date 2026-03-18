@@ -196,23 +196,28 @@ export default function AcademyContentSettings({ initialData }: AcademyContentSe
                                     {formData.academy_slides?.map((slide, index) => (
                                         <Draggable key={slide.id} draggableId={slide.id!} index={index}>
                                             {(provided) => (
-                                                <div
-                                                    ref={provided.innerRef}
-                                                    {...provided.draggableProps}
-                                                    className="flex items-start space-x-4 p-4 border rounded-lg bg-card"
-                                                >
-                                                    <div {...provided.dragHandleProps} className="mt-2 text-muted-foreground hover:text-foreground cursor-move">
-                                                        <GripVertical className="w-5 h-5" />
-                                                    </div>
+                                                    <div
+                                                        ref={provided.innerRef}
+                                                        {...provided.draggableProps}
+                                                        className="flex flex-col md:flex-row items-stretch md:items-start gap-4 p-4 border rounded-lg bg-card"
+                                                    >
+                                                        <div {...provided.dragHandleProps} className="hidden md:block mt-2 text-muted-foreground hover:text-foreground cursor-move">
+                                                            <GripVertical className="w-5 h-5" />
+                                                        </div>
 
-                                                    <div className="w-[400px] space-y-2 flex-shrink-0">
-                                                        <Label>배너 이미지</Label>
-                                                        <ImageUpload
-                                                            value={slide.image}
-                                                            onChange={(url) => handleSlideChange(slide.id!, 'image', url)}
-                                                            className="w-full"
-                                                        />
-                                                    </div>
+                                                        <div className="w-full md:w-[400px] space-y-2">
+                                                            <div className="flex items-center justify-between md:block">
+                                                                <Label>배너 이미지</Label>
+                                                                <div {...provided.dragHandleProps} className="md:hidden text-muted-foreground cursor-move">
+                                                                    <GripVertical className="w-5 h-5" />
+                                                                </div>
+                                                            </div>
+                                                            <ImageUpload
+                                                                value={slide.image}
+                                                                onChange={(url) => handleSlideChange(slide.id!, 'image', url)}
+                                                                className="w-full"
+                                                            />
+                                                        </div>
 
                                                     <div className="flex-1 space-y-4">
                                                         <div className="space-y-2">

@@ -169,14 +169,29 @@ export async function saveTuitionPayment(data: {
                 .maybeSingle();
 
             const updatedMonthlyData = { ...(existingRecord?.monthly_data || {}) };
-
-            // 이번 연도에 수정된 항목들만 루프 돌며 업데이트
+            
+            // 월별로 항목 다시 그룹화 (동일 월 내 다수 결제 처리)
+            const monthlyGroups: Record<string, any[]> = {};
             itemsInYear.forEach(item => {
                 const monthKey = item.targetMonth.split('-')[1];
-                const total_paid_amount = Number(item.amount) || 0;
+                if (!monthlyGroups[monthKey]) monthlyGroups[monthKey] = [];
+                monthlyGroups[monthKey].push(item);
+            });
 
-                // baseAmount 결정
-                const baseFee = item.baseAmount !== undefined ? item.baseAmount : standardFee;
+            // 각 월별로 합산 및 상세 내역 통합
+            Object.entries(monthlyGroups).forEach(([monthKey, monthItems]) => {
+                // 해당 월의 모든 결제 금액 합산
+                const total_paid_amount = monthItems.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
+                
+                // baseAmount는 해당 월 항목 중 하나를 사용 (보통 모두 같거나 첫 번째가 기준)
+                const baseFee = monthItems[0].baseAmount !== undefined ? monthItems[0].baseAmount : standardFee;
+
+                // 모든 상세 내역 통합
+                const combinedDetails = monthItems.flatMap(item => 
+                    item.payment_details && Array.isArray(item.payment_details) 
+                        ? item.payment_details 
+                        : [item]
+                );
 
                 // 상태 결정
                 let status = 'pending';
@@ -189,7 +204,7 @@ export async function saveTuitionPayment(data: {
                 updatedMonthlyData[monthKey] = {
                     base_amount: baseFee,
                     total_paid_amount,
-                    payment_details: item.payment_details || [item], // 상세 내역 저장
+                    payment_details: combinedDetails,
                     status
                 };
             });

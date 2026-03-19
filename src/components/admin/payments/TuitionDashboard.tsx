@@ -414,13 +414,14 @@ export function TuitionDashboard({ currentUserId, currentUserRole }: TuitionDash
                                                 className={`border-cyan-500/10 cursor-pointer group hover:bg-white/5 transition-all ${item.payment.status === 'paid' ? 'bg-green-500/15' : item.payment.status === 'partial' ? 'bg-orange-500/15' : ''}`}
                                                 onClick={() => openPaymentModal(item)}
                                             >
-                                                <TableCell className="py-2 sm:py-3 items-center">
-                                                    <div className="font-bold text-cyan-100 flex flex-col">
-                                                        <span>{item.name}</span>
-                                                        <span className="text-[10px] text-cyan-600 font-normal hidden sm:inline">{item.phone}</span>
+                                                <TableCell className="py-2 sm:py-3">
+                                                    <div className="flex flex-col gap-0.5">
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="font-bold text-cyan-100">{item.name}</span>
+                                                            <span className="text-[10px] text-cyan-600 font-normal">{item.phone}</span>
+                                                        </div>
+                                                        <div className="text-[10px] text-cyan-500">학부모: {item.parent_phone || "-"}</div>
                                                     </div>
-                                                    <div className="text-[10px] text-cyan-500 hidden sm:block">학부모 : {item.parent_phone || "-"}</div>
-                                                    {item.payment.memo && <div className="text-[10px] text-cyan-400/70 truncate max-w-[120px] sm:max-w-[150px]">{item.payment.memo}</div>}
                                                 </TableCell>
                                                 <TableCell className="py-2 sm:py-3 text-cyan-200">
                                                     <div className="font-medium truncate max-w-[80px] sm:max-w-none">{item.teacher_names || "-"}</div>
@@ -467,7 +468,7 @@ export function TuitionDashboard({ currentUserId, currentUserRole }: TuitionDash
                                                         {item.isInactive && <span className="text-[7px] sm:text-[8px] bg-zinc-800 text-zinc-500 px-0.5 sm:px-1 rounded border border-zinc-700 w-fit">종료</span>}
                                                     </div>
                                                     <div className="text-[9px] sm:text-[10px] text-cyan-500 mt-0.5 hidden sm:block">학부모 : {item.parent_phone || "-"}</div>
-                                                    {item.memo && <div className="text-[8px] sm:text-[9px] text-cyan-400/60 truncate max-w-[75px] sm:max-w-[150px] mt-0.5">{item.memo}</div>}
+                                                    {/* item.memo && <div className="text-[8px] sm:text-[9px] text-cyan-400/60 truncate max-w-[75px] sm:max-w-[150px] mt-0.5">{item.memo}</div> */}
                                                 </TableCell>
                                                 {[...Array(12)].map((_, i) => {
                                                     const monthKey = String(i + 1).padStart(2, '0');

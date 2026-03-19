@@ -3,17 +3,19 @@ import React, { useState, useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
-import { LayoutDashboard, BookOpen, Keyboard, Users, Menu, LogOut, GraduationCap, User, CalendarDays, MessageSquare, CreditCard } from "lucide-react";
+import { LayoutDashboard, BookOpen, Keyboard, Users, Menu, LogOut, GraduationCap, User, CalendarDays, MessageSquare, CreditCard, Monitor } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { logout } from "@/lib/actions";
 import { getCurrentUserClient } from "@/lib/client-auth";
 import { supabase } from "@/lib/supabase";
+import { usePCStatus } from "@/hooks/use-pc-status";
 
 const navItems = [
   { href: "/dashboard/teacher", label: "대시보드", icon: <LayoutDashboard className="w-5 h-5" /> },
   { href: "/dashboard/teacher/students", label: "학생관리", icon: <GraduationCap className="w-5 h-5" /> },
   { href: "/dashboard/teacher/payments", label: "수납관리", icon: <CreditCard className="w-5 h-5" /> },
+  { href: "/dashboard/teacher/pc-management", label: "PC 관리", icon: <Monitor className="w-5 h-5" /> },
   { href: "/dashboard/teacher/timetable", label: "학원시간표", icon: <CalendarDays className="w-5 h-5" /> },
   // TODO: 커리큘럼 페이지 완성 후 활성화 예정
   // { href: "/dashboard/teacher/curriculum", label: "커리큘럼", icon: <BookOpen className="w-5 h-5" /> },
@@ -27,6 +29,7 @@ export function TeacherSidebar() {
   const [open, setOpen] = useState(false);
   const [userName, setUserName] = useState<string>("");
   const [pendingCount, setPendingCount] = useState(0);
+  const { faultyCount } = usePCStatus();
 
   useEffect(() => {
     fetchUserInfo();
@@ -119,6 +122,11 @@ export function TeacherSidebar() {
             {item.label === "상담문의" && pendingCount > 0 && (
               <span className="bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center animate-pulse shadow-[0_0_8px_rgba(239,68,68,0.5)]">
                 {pendingCount}
+              </span>
+            )}
+            {item.label === "PC 관리" && faultyCount > 0 && (
+              <span className="bg-red-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center shadow-[0_0_8px_rgba(220,38,38,0.5)]">
+                {faultyCount}
               </span>
             )}
           </Link>

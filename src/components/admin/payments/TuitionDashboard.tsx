@@ -225,10 +225,11 @@ export function TuitionDashboard({ currentUserId, currentUserRole }: TuitionDash
     return (
         <div className="space-y-6">
             {/* 상단 헤더 */}
-            <div className="flex flex-col gap-4">
-                <div className="flex items-center justify-between w-full">
-                    <h1 className="text-2xl sm:text-3xl font-bold text-cyan-100 drop-shadow-[0_0_8px_#00fff7]">수납 관리</h1>
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-2">
+                <h1 className="text-2xl sm:text-3xl font-bold text-cyan-100 drop-shadow-[0_0_8px_#00fff7]">수납 관리</h1>
 
+                <div className="flex flex-wrap items-center justify-end gap-2 sm:gap-3 w-full lg:w-auto">
+                    {/* 날짜 선택기 */}
                     <div className="flex items-center bg-[#0a1837] border border-cyan-500/20 rounded-lg p-0.5 sm:p-1">
                         <Button variant="ghost" size="icon" onClick={() => handleMonthChange(-1)} className="text-cyan-100 h-7 w-7 sm:h-8 sm:w-8">
                             <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5" />
@@ -240,32 +241,32 @@ export function TuitionDashboard({ currentUserId, currentUserRole }: TuitionDash
                             <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5" />
                         </Button>
                     </div>
-                </div>
 
-                <div className="flex flex-wrap items-center gap-2 sm:gap-3 w-full lg:w-auto">
-                    {canExport && (
-                        <Button
-                            onClick={() => setIsExportModalOpen(true)}
-                            className="bg-cyan-600/20 hover:bg-cyan-600/40 text-cyan-100 border border-cyan-500/30 h-8 sm:h-9 flex-1 sm:flex-initial"
-                            size="sm"
-                        >
-                            <Download className="w-3.5 h-3.5 mr-2" />
-                            엑셀
-                        </Button>
-                    )}
-
-                    <Tabs value={viewMode} onValueChange={(v: any) => setViewMode(v)} className="w-full sm:w-[180px]">
-                        <TabsList className="grid w-full grid-cols-2 bg-cyan-900/20 border border-cyan-500/20 h-8 sm:h-9">
-                            <TabsTrigger value="monthly" className="text-xs data-[state=active]:bg-cyan-500/20 data-[state=active]:text-cyan-100">
-                                <TableIcon className="w-3 h-3 mr-1" />
+                    {/* 월간/연간 탭 */}
+                    <Tabs value={viewMode} onValueChange={(v: any) => setViewMode(v)} className="w-[160px] sm:w-[200px]">
+                        <TabsList className="grid w-full grid-cols-2 bg-cyan-900/20 border border-cyan-500/20 h-9 sm:h-10 p-1">
+                            <TabsTrigger value="monthly" className="text-xs sm:text-sm data-[state=active]:bg-cyan-500/20 data-[state=active]:text-cyan-100 py-1.5">
+                                <TableIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1.5" />
                                 월간
                             </TabsTrigger>
-                            <TabsTrigger value="yearly" className="text-xs data-[state=active]:bg-cyan-500/20 data-[state=active]:text-cyan-100">
-                                <LayoutGrid className="w-3 h-3 mr-1" />
+                            <TabsTrigger value="yearly" className="text-xs sm:text-sm data-[state=active]:bg-cyan-500/20 data-[state=active]:text-cyan-100 py-1.5">
+                                <LayoutGrid className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1.5" />
                                 연간
                             </TabsTrigger>
                         </TabsList>
                     </Tabs>
+
+                    {/* 엑셀 추출 버튼 */}
+                    {canExport && (
+                        <Button
+                            onClick={() => setIsExportModalOpen(true)}
+                            className="bg-cyan-600/20 hover:bg-cyan-600/40 text-cyan-100 border border-cyan-500/30 h-8 sm:h-9 px-3"
+                            size="sm"
+                        >
+                            <Download className="w-3.5 h-3.5 mr-2" />
+                            <span className="hidden sm:inline">엑셀</span>
+                        </Button>
+                    )}
                 </div>
             </div>
 

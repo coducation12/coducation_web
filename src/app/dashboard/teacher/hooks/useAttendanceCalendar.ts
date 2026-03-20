@@ -66,6 +66,7 @@ export function useAttendanceCalendar(studentId: string, teacherId?: string | nu
         try {
             setIsSaving(true);
             const attendanceData: any = {
+                id: editingDay.id,
                 student_id: studentId,
                 date: editingDay.date,
                 status: editingDay.status,

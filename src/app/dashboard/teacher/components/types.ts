@@ -18,6 +18,7 @@ export interface Student {
   koreanSpeed?: number;
   englishSpeed?: number;
   memo?: string;
+  sessionId?: string; // 실제 DB 세션 ID
 }
 
 // 출석 상태 타입

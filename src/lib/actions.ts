@@ -688,11 +688,16 @@ export async function updateStudent(formData: FormData) {
 
     if (userError) return { success: false, error: userError.message };
 
-    // parents 연락처 업데이트
+    // parents 연락처 및 비밀번호 업데이트
     const parentUsername = `${studentData.studentId}p`;
+    const parentUpdateData: any = { phone: studentData.parentPhone };
+    if (studentData.password) {
+      parentUpdateData.password = await bcrypt.hash(studentData.password, 10);
+    }
+    
     await supabaseAdmin
       .from('users')
-      .update({ phone: studentData.parentPhone })
+      .update(parentUpdateData)
       .eq('username', parentUsername);
 
     // students 테이블 업데이트 (assigned_teachers 배열도 업데이트 - 관리자만)
@@ -1027,6 +1032,28 @@ export async function saveAttendanceSessionAction(attendanceData: any) {
       return { success: false, error: '권한이 없습니다.' };
     }
 
+    // 1. ID가 명시적으로 제공된 경우, 직접 업데이트 (가장 정확)
+    if (attendanceData.id) {
+      const { error } = await supabaseAdmin
+        .from('attendance_sessions')
+        .update({
+          status: attendanceData.status,
+          memo: attendanceData.memo || null,
+          start_time: attendanceData.start_time || null,
+          end_time: attendanceData.end_time || null,
+          teacher_id: attendanceData.teacher_id || userId,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', attendanceData.id);
+
+      if (error) {
+        console.error('saveAttendanceSessionAction update error:', error);
+        return { success: false, error: '기존 기록 업데이트에 실패했습니다.' };
+      }
+      return { success: true };
+    }
+
+    // 2. ID가 없는 경우 RPC 호출 (존재 여부 체크 및 삽입 - Upsert)
     // RPC 호출 (supabaseAdmin을 사용하여 RLS 완전 우회 - Double Lock)
     const { data, error } = await supabaseAdmin.rpc('upsert_attendance_session_rpc', {
       p_student_id: attendanceData.student_id,

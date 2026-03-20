@@ -66,6 +66,7 @@ export const getAttendanceData = async (date: Date, teacherId?: string | null): 
 
                 resultSessions.push({
                     id: `${student.user_id}-regular`,
+                    sessionId: regularSession?.id,
                     userId: student.user_id,
                     name: student.users?.name || '알 수 없음',
                     teacher: teacherName,
@@ -86,9 +87,13 @@ export const getAttendanceData = async (date: Date, teacherId?: string | null): 
             }
 
             // B. 보강 수업 추가
-            studentSessions.filter((s: any) => s.session_type === 'makeup').forEach((session: any) => {
+            studentSessions.filter((s: any) => 
+                s.session_type === 'makeup' && 
+                (!teacherId || s.teacher_id?.toLowerCase() === teacherId.toLowerCase())
+            ).forEach((session: any) => {
                 resultSessions.push({
                     id: `${student.user_id}-makeup-${session.id}`,
+                    sessionId: session.id,
                     userId: student.user_id,
                     name: student.users?.name || '알 수 없음',
                     teacher: teacherName,

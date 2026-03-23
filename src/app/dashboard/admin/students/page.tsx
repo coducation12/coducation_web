@@ -8,8 +8,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Mail, Phone, CheckCircle, XCircle, Clock, ArrowUpDown, ArrowUp, ArrowDown, Trash2, Search } from "lucide-react";
+import { Mail, Phone, CheckCircle, XCircle, Clock, ArrowUpDown, ArrowUp, ArrowDown, Trash2, Search, Calendar } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { addStudent, updateStudent, getCurrentUser, deleteStudent } from "@/lib/actions";
 import StudentModal from "@/components/common/StudentModal";
@@ -17,6 +18,7 @@ import { useToast } from "@/hooks/use-toast";
 import { DashboardPageWrapper } from "@/components/common/DashboardPageWrapper";
 import { getTeacherColorSet } from "@/lib/colors";
 import { useStudentsData, Student, ClassSchedule } from "@/hooks/useStudentsData";
+import { AttendanceCalendarModal } from "@/app/dashboard/teacher/components/AttendanceCalendarModal";
 
 export const dynamic = 'force-dynamic';
 
@@ -255,6 +257,9 @@ export default function AdminStudentsPage() {
                                     <TableHead className="text-cyan-200 text-[10px] sm:text-xs md:text-sm px-1 sm:px-2 whitespace-nowrap">
                                         가입일
                                     </TableHead>
+                                    <TableHead className="text-cyan-200 text-[10px] sm:text-xs md:text-sm px-1 sm:px-2 text-center whitespace-nowrap">
+                                        스케줄
+                                    </TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -271,9 +276,27 @@ export default function AdminStudentsPage() {
                                             }
                                         </TableCell>
                                         <TableCell className="font-medium text-cyan-100 py-2 sm:py-4">
-                                            <button className="text-cyan-100 hover:text-cyan-300 transition-colors cursor-pointer">
-                                                {student.name}
-                                            </button>
+                                            <div className="flex items-center gap-2">
+                                                <button className="text-cyan-100 hover:text-cyan-300 transition-colors cursor-pointer">
+                                                    {student.name}
+                                                </button>
+                                                <div onClick={(e) => e.stopPropagation()}>
+                                                    <AttendanceCalendarModal
+                                                        studentId={student.id}
+                                                        studentName={student.name || ''}
+                                                        customTrigger={
+                                                            <Button 
+                                                                variant="ghost" 
+                                                                size="icon" 
+                                                                className="h-6 w-6 text-purple-400 hover:bg-purple-500/10"
+                                                                title="출결 캘린더 확인"
+                                                            >
+                                                                <Calendar className="h-4 w-4" />
+                                                            </Button>
+                                                        }
+                                                    />
+                                                </div>
+                                            </div>
                                         </TableCell>
                                         <TableCell className="text-cyan-300 py-2 sm:py-4">
                                             {student.academy || '-'}
@@ -395,6 +418,19 @@ export default function AdminStudentsPage() {
                                         </TableCell>
                                         <TableCell className="text-cyan-300 py-2 sm:py-4">
                                             {student.joinDate}
+                                        </TableCell>
+                                        <TableCell className="py-2 sm:py-4 text-center">
+                                            <div onClick={(e) => e.stopPropagation()}>
+                                                <AttendanceCalendarModal
+                                                    studentId={student.id}
+                                                    studentName={student.name || ''}
+                                                    customTrigger={
+                                                        <Button size="sm" variant="ghost" className="h-8 w-8 p-0 text-purple-400 hover:text-purple-300">
+                                                            <Calendar className="w-4 h-4" />
+                                                        </Button>
+                                                    }
+                                                />
+                                            </div>
                                         </TableCell>
                                     </TableRow>
                                 ))}

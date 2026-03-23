@@ -211,7 +211,7 @@ export function useStudentsData() {
                     title: "학생 등록 완료",
                     description: `${studentData.name} 학생이 성공적으로 등록되었습니다.`,
                 });
-                fetchStudents();
+                await fetchStudents();
                 return true;
             } else {
                 toast({
@@ -262,7 +262,7 @@ export function useStudentsData() {
                 });
 
                 // 학생 목록 새로고침
-                fetchStudents();
+                await fetchStudents();
                 if (onSuccess) onSuccess();
                 return true;
             } else {
@@ -362,7 +362,7 @@ export function useStudentsData() {
                     title: "성공",
                     description: result.message || "학생이 성공적으로 삭제되었습니다.",
                 });
-                fetchStudents(); // 목록 새로고침
+                await fetchStudents(); // 목록 새로고침
                 return true;
             } else {
                 toast({

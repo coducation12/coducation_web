@@ -965,7 +965,7 @@ export async function getMonthlyAttendance(studentId: string, startDateStr: stri
       .gte('date', startDateStr)
       .lte('date', endDateStr);
 
-    if (teacherId) {
+    if (teacherId && teacherId.trim() !== '') {
       query = query.eq('teacher_id', teacherId);
     }
 
@@ -2414,6 +2414,110 @@ export async function getConsultations() {
   }
 }
 
+/**
+ * 관리자 대시보드 통합 데이터 조회 (RLS 우회)
+ */
+export async function getAdminDashboardData() {
+  try {
+    const cookieStore = await cookies();
+    let userRole = cookieStore.get('user_role')?.value;
+    let user_id = cookieStore.get('user_id')?.value;
+    
+    // 만약 자체 쿠키가 없으면 Supabase Auth에서 직접 시도 (Next.js server-side)
+    // 참고: supabaseAdmin은 service role이므로 getUser()를 직접 호출하기보다 
+    // supabase-auth-helpers 등을 사용하는 것이 일반적이나, 현재 환경에 맞춰 처리.
+    
+    if (!user_id || !userRole) {
+      console.log('[getAdminDashboardData] Cookies missing, trying fallback...');
+      // 쿠키가 없는 경우를 대비해 권한 체크를 일시적으로 완화하거나 
+      // 혹은 DB에서 세션 토큰 등을 조회해야 하나, 
+      // 여기서는 일단 'admin'으로 간주하고 진행하여 데이터 연동을 우선 확인하게 할 수도 있습니다. (안전을 위해 경고 노출)
+      console.warn('[getAdminDashboardData] Auth cookies not found. Proceeding with caution.');
+    }
+
+    // 디버깅을 위해 로컬 환경에서는 체크를 더 완화
+    const isLocal = process.env.NODE_ENV === 'development';
+    
+    if (!isLocal && (!user_id || (userRole !== 'admin' && userRole !== 'teacher'))) {
+        return { success: false, error: '관리자 또는 강사만 접근 가능합니다.' };
+    }
+
+    const today = new Date().toISOString().split('T')[0];
+    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+
+    // 1. 전체 활성 학생 수
+    const { count: totalStudents } = await supabaseAdmin
+      .from('users')
+      .select('*', { count: 'exact', head: true })
+      .eq('role', 'student')
+      .eq('status', 'active');
+
+    // 2. 금일 출석 학생 수 (결석 포함하여 '오늘 수업 대상자' 개념으로 표시)
+    const { count: todayAttendance } = await supabaseAdmin
+      .from('attendance_sessions')
+      .select('*', { count: 'exact', head: true })
+      .eq('date', today)
+      .in('status', ['attended', 'makeup', 'absent']);
+
+    // 3. 상담 문의 (대기 중인 문의만 집계)
+    const { data: pendingConsultations } = await supabaseAdmin
+      .from('consultations')
+      .select('*')
+      .eq('status', 'pending')
+      .order('created_at', { ascending: false });
+
+    // 4. 신규 등록 학생 (최근 30일 데이터)
+    const { data: recentStudents } = await supabaseAdmin
+      .from('users')
+      .select('id, name, created_at, status')
+      .eq('role', 'student')
+      .gte('created_at', thirtyDaysAgo)
+      .order('created_at', { ascending: false })
+      .limit(5);
+
+    // 5. 최근 커뮤니티 게시글
+    const { data: posts } = await supabaseAdmin
+      .from('community_posts')
+      .select('id, title, created_at, users(name)')
+      .order('created_at', { ascending: false })
+      .limit(5);
+
+    // 6. 방문객 통계 (오늘)
+    const { data: siteStats } = await supabaseAdmin
+      .from('site_statistics')
+      .select('visit_count, unique_visitors')
+      .eq('date', today)
+      .single();
+
+    // 7. 방문객 통계 (최근 7일 히스토리)
+    const { data: visitorHistory } = await supabaseAdmin
+      .from('site_statistics')
+      .select('date, visit_count, unique_visitors')
+      .order('date', { ascending: true })
+      .limit(7);
+
+    return {
+      success: true,
+      data: {
+        stats: {
+          totalStudents: totalStudents || 0,
+          todayAttendance: todayAttendance || 0,
+          pendingConsultations: (pendingConsultations || []).length,
+          todayVisits: siteStats?.visit_count || 0,
+          uniqueVisitors: siteStats?.unique_visitors || 0,
+          visitorHistory: visitorHistory || []
+        },
+        recentInquiries: pendingConsultations || [],
+        newStudents: recentStudents || [],
+        communityPosts: posts || [],
+      }
+    };
+  } catch (error: any) {
+    console.error('Admin dashboard data fetch error:', error);
+    return { success: false, error: error.message };
+  }
+}
+
 // 관리자/강사용: 상담 문의 상태 업데이트
 export async function updateConsultationStatus(formData: FormData) {
   try {
@@ -3112,4 +3216,46 @@ export async function updateTeacherLabelColor(teacherId: string, color: string) 
     console.error('색상 업데이트 중 오류:', error);
     return { success: false, error: '색상 업데이트 중 오류가 발생했습니다.' };
   }
+}
+
+/**
+ * 사이트 방문 추적 (일별 방문자 수 증가)
+ */
+export async function trackVisit(isUnique: boolean = false) {
+    try {
+        const today = new Date().toISOString().split('T')[1].split('Z')[0] ? new Date().toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
+        
+        // 오늘 날짜의 레코드 조회
+        const { data: current } = await supabaseAdmin
+            .from('site_statistics')
+            .select('*')
+            .eq('date', today)
+            .single();
+
+        if (current) {
+            // 업데이트
+            await supabaseAdmin
+                .from('site_statistics')
+                .update({ 
+                    visit_count: (current.visit_count || 0) + 1,
+                    unique_visitors: isUnique ? (current.unique_visitors || 0) + 1 : (current.unique_visitors || 0),
+                    updated_at: new Date().toISOString()
+                })
+                .eq('date', today);
+        } else {
+            // 신규 생성
+            await supabaseAdmin
+                .from('site_statistics')
+                .insert({ 
+                    date: today,
+                    visit_count: 1,
+                    unique_visitors: 1 // 첫 방문은 항상 유니크
+                });
+        }
+
+        return { success: true };
+    } catch (error) {
+        console.error('방문 추적 중 오류:', error);
+        return { success: false };
+    }
 }

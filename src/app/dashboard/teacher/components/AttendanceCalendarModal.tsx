@@ -26,8 +26,11 @@ interface AttendanceCalendarModalProps {
     studentName: string;
     teacherId?: string | null;
     mode?: 'calendar' | 'detail';
+    initialStatus?: AttendanceStatus;
+    isMakeup?: boolean;
     customTrigger?: React.ReactNode;
     onRefresh?: () => void;
+    refreshTrigger?: number;
 }
 
 export function AttendanceCalendarModal({
@@ -35,8 +38,11 @@ export function AttendanceCalendarModal({
     studentName,
     teacherId,
     mode = 'calendar',
+    initialStatus,
+    isMakeup = false,
     customTrigger,
-    onRefresh
+    onRefresh,
+    refreshTrigger = 0
 }: AttendanceCalendarModalProps) {
     const [open, setOpen] = useState(false);
     const {
@@ -51,16 +57,20 @@ export function AttendanceCalendarModal({
         nextMonth,
         prevMonth,
         openTodayDetail
-    } = useAttendanceCalendar(studentId, teacherId, onRefresh);
+    } = useAttendanceCalendar(studentId, teacherId, onRefresh, refreshTrigger);
 
     const onEditDay = (dateStr: string, record?: AttendanceRecord) => {
         setEditingDay(record || { date: dateStr, status: 'present', memo: '' });
     };
 
+    const handleOpenDetail = () => {
+        openTodayDetail(isMakeup, initialStatus);
+    };
+
     if (mode === 'detail') {
         return (
             <>
-                <div onClick={openTodayDetail} className="cursor-pointer">
+                <div onClick={handleOpenDetail} className="cursor-pointer">
                     {customTrigger}
                 </div>
                 <DayEditor

@@ -28,9 +28,10 @@ const getDayName = (date: Date): string => {
 interface WeeklyCalendarProps {
   currentDate: Date;
   teacherId?: string;
+  refreshTrigger?: number;
 }
 
-export function WeeklyCalendar({ currentDate, teacherId }: WeeklyCalendarProps) {
+export function WeeklyCalendar({ currentDate, teacherId, refreshTrigger = 0 }: WeeklyCalendarProps) {
   const weekDates = useMemo(() => getWeekDates(currentDate), [currentDate]);
   const today = useMemo(() => {
     const d = new Date();
@@ -59,7 +60,7 @@ export function WeeklyCalendar({ currentDate, teacherId }: WeeklyCalendarProps) 
     };
 
     fetchStudentsByDay();
-  }, [weekDates, teacherId]);
+  }, [weekDates, teacherId, refreshTrigger]);
 
   // 모바일에서는 일요일 제외 (월~토만 표시)
   const mobileWeekDates = useMemo(() => weekDates.filter((_, index) => index !== 0), [weekDates]);

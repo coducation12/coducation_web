@@ -17,35 +17,7 @@ export async function GET(request: NextRequest) {
             return NextResponse.json({ error: 'Date is required' }, { status: 400 });
         }
 
-        // 1. Fetch Students
-        let studentsQuery = supabaseAdmin
-            .from('students')
-            .select(`
-                user_id,
-                assigned_teachers,
-                attendance_schedule,
-                main_subject,
-                sub_subject,
-                users!students_user_id_fkey(name, status)
-            `);
-
-        // Force teacher filtering on the server
-        if (userRole === 'teacher') {
-            studentsQuery = studentsQuery.contains('assigned_teachers', [userId]);
-        }
-
-        const { data: studentsData, error: studentsError } = await studentsQuery;
-
-        if (studentsError) {
-            console.error('Error fetching students via API:', studentsError);
-            return NextResponse.json({ error: 'Database error fetching students' }, { status: 500 });
-        }
-
-        const activeStudents = (studentsData || []).filter((s: any) =>
-            s.users?.status === 'active' || !s.users?.status
-        );
-
-        // 2. Fetch Attendance Sessions Data
+        // 2. Fetch Attendance Sessions Data FIRST to identify students with sessions today
         const { data: sessionData, error: sessionError } = await supabaseAdmin
             .from('attendance_sessions')
             .select(`
@@ -67,6 +39,43 @@ export async function GET(request: NextRequest) {
             return NextResponse.json({ error: 'Database error fetching sessions' }, { status: 500 });
         }
 
+        // 1. Fetch Students (Include those in assigned_teachers OR those with sessions today for this teacher)
+        let studentsQuery = supabaseAdmin
+            .from('students')
+            .select(`
+                user_id,
+                assigned_teachers,
+                attendance_schedule,
+                main_subject,
+                sub_subject,
+                users!students_user_id_fkey(name, status)
+            `);
+
+        // Force teacher filtering on the server
+        if (userRole === 'teacher') {
+            const studentIdsFromSessions = (sessionData || [])
+                .filter((s: any) => s.teacher_id === userId)
+                .map((s: any) => s.student_id);
+            
+            if (studentIdsFromSessions.length > 0) {
+                // Combine assigned students and students from sessions
+                studentsQuery = studentsQuery.or(`assigned_teachers.cs.{${userId}},user_id.in.(${studentIdsFromSessions.join(',')})`);
+            } else {
+                studentsQuery = studentsQuery.contains('assigned_teachers', [userId]);
+            }
+        }
+
+        const { data: studentsData, error: studentsError } = await studentsQuery;
+
+        if (studentsError) {
+            console.error('Error fetching students via API:', studentsError);
+            return NextResponse.json({ error: 'Database error fetching students' }, { status: 500 });
+        }
+
+        const activeStudents = (studentsData || []).filter((s: any) =>
+            s.users?.status === 'active' || !s.users?.status
+        );
+
         // 3. Collect assigned teacher IDs to fetch their names securely
         const teacherIds = new Set<string>();
         activeStudents.forEach((s: any) => {
@@ -76,7 +85,7 @@ export async function GET(request: NextRequest) {
         });
 
         // Add teacher IDs from sessions as well
-        sessionData.forEach((s: any) => {
+        (sessionData || []).forEach((s: any) => {
             if (s.teacher_id) teacherIds.add(s.teacher_id);
         });
 
@@ -88,7 +97,7 @@ export async function GET(request: NextRequest) {
         // Return combined data, the client will process it to avoid large data transfer overheads
         return NextResponse.json({
             students: activeStudents,
-            sessions: sessionData, // Changed from logs to sessions
+            sessions: sessionData,
             teachers: teachersData,
             userId: userId,
             userRole: userRole

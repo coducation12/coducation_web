@@ -10,9 +10,18 @@ interface StudentListProps {
   allActiveStudents?: { id: string, name: string }[];
   onRefresh?: () => void;
   onStudentClick: (userId: string) => void;
+  refreshTrigger?: number;
 }
 
-export function StudentList({ students, onAttendanceChange, teacherId, allActiveStudents = [], onRefresh, onStudentClick }: StudentListProps) {
+export function StudentList({ 
+  students, 
+  onAttendanceChange, 
+  teacherId, 
+  allActiveStudents = [], 
+  onRefresh, 
+  onStudentClick,
+  refreshTrigger = 0
+}: StudentListProps) {
   return (
     <Card className="bg-gradient-to-br from-cyan-900/20 to-blue-900/20 border-cyan-500/30 mt-8">
       <CardHeader className="flex flex-row items-center justify-between py-4">
@@ -25,27 +34,25 @@ export function StudentList({ students, onAttendanceChange, teacherId, allActive
       </CardHeader>
       <CardContent className="p-2 sm:p-6">
         <div className="overflow-x-auto">
-          <table className="w-full text-[13px] sm:text-sm text-cyan-100 table-auto">
+          <table className="w-full text-[13px] sm:text-sm text-cyan-100 table-fixed">
             <thead>
               <tr className="bg-cyan-900/30">
-                <th className="px-2 py-2 text-center min-w-[50px]">
+                <th className="px-2 py-2 text-center w-[14.28%]">
                     <span className="md:hidden">이름</span>
                     <span className="hidden md:inline">학생 이름</span>
                 </th>
-                <th className="px-2 py-2 text-center min-w-[40px]">
+                <th className="px-2 py-2 text-center w-[14.28%]">
                     <span className="md:hidden">요일</span>
                     <span className="hidden md:inline">수강 요일</span>
                 </th>
-                <th className="px-2 py-2 text-center min-w-[80px] hidden sm:table-cell">과목</th>
-                <th className="px-2 py-2 text-center min-w-[120px] hidden lg:table-cell">학습 진도</th>
-                <th className="px-2 py-2 text-center min-w-[60px]">
+                <th className="px-2 py-2 text-center w-[14.28%] hidden sm:table-cell">학습 과목</th>
+                <th className="px-2 py-2 text-center w-[14.28%]">
                     <span className="md:hidden">출결</span>
                     <span className="hidden md:inline">출결 상태</span>
                 </th>
-                <th className="px-2 py-2 text-center min-w-[80px]">
-                    <span className="md:hidden">상세</span>
-                    <span className="hidden md:inline">상세 관리</span>
-                </th>
+                <th className="px-2 py-2 text-center w-[14.28%]">출결 기록</th>
+                <th className="px-2 py-2 text-center w-[14.28%]">출결 캘린더</th>
+                <th className="px-2 py-2 text-center w-[14.28%]">학습 진도</th>
               </tr>
             </thead>
             <tbody>
@@ -58,6 +65,7 @@ export function StudentList({ students, onAttendanceChange, teacherId, allActive
                   teacherId={teacherId}
                   onStudentClick={onStudentClick}
                   onRefresh={onRefresh}
+                  refreshTrigger={refreshTrigger}
                 />
               ))}
             </tbody>

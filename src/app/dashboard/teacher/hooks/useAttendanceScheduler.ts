@@ -37,6 +37,7 @@ export const useAttendanceScheduler = (teacherId?: string) => {
     const [students, setStudents] = useState<Student[]>([]);
     const [allActiveStudents, setAllActiveStudents] = useState<{ id: string, name: string }[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [refreshTrigger, setRefreshTrigger] = useState(0);
 
     // 모든 활성 학생 목록 가져오기 (보강 등록용)
     useEffect(() => {
@@ -77,6 +78,7 @@ export const useAttendanceScheduler = (teacherId?: string) => {
     const refreshData = async () => {
         const studentsData = await getAttendanceData(currentDate, teacherId);
         setStudents(studentsData);
+        setRefreshTrigger(prev => prev + 1);
     };
 
     // 자동 결석 처리 (1분마다 체크)
@@ -106,7 +108,8 @@ export const useAttendanceScheduler = (teacherId?: string) => {
 
     const handleAttendanceChange = useCallback(async (id: string, value: AttendanceStatus) => {
         console.log(`[Attendance] Updating ${id} to ${value} via Server Action`);
-        // 로컬 상태 업데이트
+        
+        // 1. 로컬 상태 업데이트
         setStudents(prev => prev.map(s =>
             s.id === id ? {
                 ...s,
@@ -117,54 +120,58 @@ export const useAttendanceScheduler = (teacherId?: string) => {
                 }
             } : s
         ));
-
-        // 데이터베이스에 출석 기록 저장 (서버 액션을 통해 RLS 우회)
+        
         try {
             const today = currentDate.toLocaleDateString('en-CA');
             const realUserId = id.split('-').slice(0, 5).join('-');
+            const isMakeup = id.includes('-makeup-');
+            const sessionType = isMakeup ? 'makeup' : 'regular';
 
-            // 1. 'unregistered'인 경우 기록 삭제
+            // 'unregistered' 상태 처리: 
+            // - 정규 수업이면 삭제 (기본 스케줄로 복구)
+            // - 보강 수업이면 'makeup' 상태로 유지 (삭제하면 목록에서 사라짐)
             if (value === 'unregistered') {
-                const sessionType = id.includes('-makeup-') ? 'makeup' : 'regular';
-                const result = await deleteAttendanceSessionAction(
-                    realUserId,
-                    today,
-                    sessionType
-                );
-
-                if (!result.success) {
-                    console.error('출석 기록 삭제 실패:', result.error);
+                if (isMakeup) {
+                    const student = students.find(s => s.id === id);
+                    await saveAttendanceSessionAction({
+                        id: student?.sessionId,
+                        student_id: realUserId,
+                        date: today,
+                        status: 'makeup', // 보강은 'makeup'이 대기 상태임
+                        session_type: 'makeup',
+                        teacher_id: teacherId || null
+                    });
+                } else {
+                    await deleteAttendanceSessionAction(realUserId, today, 'regular');
                 }
-                return;
+            } else {
+                const student = students.find(s => s.id === id);
+                const attendanceData: any = {
+                    id: student?.sessionId,
+                    student_id: realUserId,
+                    date: today,
+                    status: value,
+                    session_type: sessionType,
+                    teacher_id: teacherId || null
+                };
+
+                await saveAttendanceSessionAction(attendanceData);
             }
 
-            // 2. 출석 데이터 준비
-            const student = students.find(s => s.id === id);
-            const sessionType = id.includes('-makeup-') ? 'makeup' : 'regular';
-            const attendanceData: any = {
-                id: student?.sessionId,
-                student_id: realUserId,
-                date: today,
-                status: value,
-                session_type: sessionType,
-                teacher_id: teacherId || null
-            };
-
-            const result = await saveAttendanceSessionAction(attendanceData);
-
-            if (!result.success) {
-                console.error('출석 기록 저장 실패:', result.error);
-            }
+            // 2. 다른 컴포넌트 동기화를 위한 트리거 발생 및 로컬 데이터 최신화 (DB의 sessionId 등 반영)
+            await refreshData();
         } catch (error) {
             console.error('출석 상태 저장 중 오류:', error);
+            setRefreshTrigger(prev => prev + 1);
         }
-    }, [currentDate, teacherId]);
+    }, [currentDate, teacherId, students, refreshData]);
 
     return {
         currentDate,
         students,
         allActiveStudents,
         isLoading,
+        refreshTrigger,
         handlePrev,
         handleNext,
         handleAttendanceChange,

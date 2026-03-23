@@ -61,7 +61,7 @@ export function MakeupSessionModal({ students, teacherId, onSuccess }: MakeupSes
             const result = await saveAttendanceSessionAction({
                 student_id: selectedStudent,
                 date: date,
-                status: 'present', // 보강 등록 시 기본적으로 출석 상태로 저장
+                status: 'makeup', // 보강 등록 시 기본적으로 대기 상태로 저장
                 session_type: 'makeup',
                 start_time: startTime,
                 end_time: endTime,
@@ -175,7 +175,7 @@ export function MakeupSessionModal({ students, teacherId, onSuccess }: MakeupSes
                             onClick={handleSubmit}
                             disabled={loading}
                         >
-                            {loading ? '등록 중...' : '보강 완료 처리'}
+                            {loading ? '등록 중...' : '보강 등록하기'}
                         </Button>
                     </div>
                 </div>

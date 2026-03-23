@@ -67,16 +67,20 @@ export function CalendarGrid({
                         >
                             <div className={`text-[8px] sm:text-[10px] font-bold px-1 sm:px-1.5 py-0.5 rounded-md flex items-center gap-1 mb-0.5
                                 ${record.session_type === 'makeup'
-                                    ? record.status === 'makeup'
+                                    ? record.status === 'unregistered'
                                         ? 'border border-yellow-500/50 bg-yellow-500/10 text-yellow-200'
-                                        : 'border border-yellow-400 bg-yellow-400/80 text-yellow-900'
+                                        : record.status === 'present'
+                                            ? 'bg-green-600 border-green-500 text-white shadow-[0_0_10px_rgba(34,197,94,0.2)]'
+                                            : record.status === 'absent'
+                                                ? 'bg-red-600 border-red-500 text-white shadow-[0_0_10px_rgba(239,68,68,0.2)]'
+                                                : 'border border-yellow-400 bg-yellow-400/80 text-yellow-900'
                                     : `${STATUS_CONFIG[record.status].color} bg-black/20`
                                 }
                                 backdrop-blur-sm whitespace-nowrap overflow-hidden
                             `}>
                                 <span className="truncate">
                                     {record.session_type === 'makeup' 
-                                        ? (record.status === 'makeup' ? '보강 예정' : `보강 ${STATUS_CONFIG[record.status].text}`)
+                                        ? (record.status === 'unregistered' ? '보강 예정' : `보강 ${STATUS_CONFIG[record.status].text}`)
                                         : STATUS_CONFIG[record.status].text
                                     }
                                 </span>

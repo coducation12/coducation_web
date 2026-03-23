@@ -4,7 +4,12 @@ import { AttendanceStatus } from '../components/types';
 import { useToast } from '@/hooks/use-toast';
 import { AttendanceRecord } from '../components/attendance-calendar/types';
 
-export function useAttendanceCalendar(studentId: string, teacherId?: string | null, onRefresh?: () => void) {
+export function useAttendanceCalendar(
+    studentId: string, 
+    teacherId?: string | null, 
+    onRefresh?: () => void,
+    refreshTrigger: number = 0
+) {
     const [currentMonth, setCurrentMonth] = useState(new Date());
     const [attendanceRecords, setAttendanceRecords] = useState<Record<string, AttendanceRecord[]>>({});
     const [loading, setLoading] = useState(false);
@@ -58,7 +63,7 @@ export function useAttendanceCalendar(studentId: string, teacherId?: string | nu
 
     useEffect(() => {
         loadMonthlyAttendance();
-    }, [studentId, currentMonth, teacherId]);
+    }, [studentId, currentMonth, teacherId, refreshTrigger]);
 
     const handleSaveDay = async (teacherId?: string | null) => {
         if (!editingDay) return;
@@ -138,30 +143,48 @@ export function useAttendanceCalendar(studentId: string, teacherId?: string | nu
     const nextMonth = () => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1));
     const prevMonth = () => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1));
 
-    const openTodayDetail = async () => {
+    const openTodayDetail = async (isMakeup: boolean = false, initialStatus?: AttendanceStatus) => {
         const todayStr = new Date().toLocaleDateString('en-CA');
-        // 임시 데이터로 먼저 열기
-        setEditingDay({ date: todayStr, status: 'present', memo: '', session_type: 'regular' });
+        
+        // 1. 우선 전달받은 초기 상태로 즉시 UI 설정 (동기화 지연 방지)
+        setEditingDay({ 
+            date: todayStr, 
+            status: initialStatus || 'present', 
+            memo: '', 
+            session_type: isMakeup ? 'makeup' : 'regular' 
+        });
 
         try {
             const { getDailyAttendance } = await import('@/lib/actions');
-            const result = await getDailyAttendance(studentId, todayStr);
+            const result = await getDailyAttendance(studentId, todayStr, isMakeup ? 'makeup' : 'regular');
             const data = result.data;
 
             if (data) {
+                // 2. DB에 데이터가 있는 경우 상태 업데이트
+                // 단, 전달받은 initialStatus가 'present'/'absent'인데 DB가 'unregistered'라면 
+                // 아직 DB 저장이 완료되지 않은 상태일 수 있으므로 initialStatus 유지 고려
+                
                 setAttendanceRecords(prev => ({
                     ...prev,
-                    [todayStr]: data ? [data] : []
+                    [todayStr]: [data]
                 }));
-                setEditingDay({
-                    id: data.id,
-                    date: data.date,
-                    status: data.status as AttendanceStatus,
-                    memo: data.memo,
-                    session_type: data.session_type,
-                    is_makeup: data.session_type === 'makeup',
-                    start_time: data.start_time,
-                    end_time: data.end_time
+
+                setEditingDay(prev => {
+                    // 이미 사용자가 수동으로 변경했거나, initialStatus가 더 최신일 가능성 체크
+                    const finalStatus = (data.status === 'unregistered' && initialStatus && initialStatus !== 'unregistered')
+                        ? initialStatus 
+                        : (data.status as AttendanceStatus);
+
+                    return {
+                        id: data.id,
+                        date: data.date,
+                        status: finalStatus,
+                        memo: data.memo,
+                        session_type: data.session_type,
+                        is_makeup: data.session_type === 'makeup',
+                        start_time: data.start_time,
+                        end_time: data.end_time
+                    };
                 });
             }
         } catch (e) {

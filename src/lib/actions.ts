@@ -983,14 +983,14 @@ export async function getMonthlyAttendance(studentId: string, startDateStr: stri
   }
 }
 
-export async function getDailyAttendance(studentId: string, dateStr: string) {
+export async function getDailyAttendance(studentId: string, dateStr: string, sessionType: string = 'regular') {
   try {
     const { data, error } = await supabaseAdmin
       .from('attendance_sessions')
       .select('id, date, status, memo, session_type, start_time, end_time')
       .eq('student_id', studentId)
       .eq('date', dateStr)
-      .eq('session_type', 'regular') // 기본적으로 정규 수업 조회
+      .eq('session_type', sessionType)
       .maybeSingle();
 
     if (error) {

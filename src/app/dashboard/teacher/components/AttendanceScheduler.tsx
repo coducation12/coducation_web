@@ -19,7 +19,8 @@ export function AttendanceScheduler({ teacherId }: { teacherId?: string }) {
     handlePrev,
     handleNext,
     handleAttendanceChange,
-    refreshData
+    refreshData,
+    refreshTrigger
   } = useAttendanceScheduler(teacherId);
 
   // 학생 수정 모달 관련 상태
@@ -80,7 +81,11 @@ export function AttendanceScheduler({ teacherId }: { teacherId?: string }) {
 
   return (
     <>
-      <WeeklyCalendar currentDate={currentDate} teacherId={teacherId} />
+      <WeeklyCalendar 
+        currentDate={currentDate} 
+        teacherId={teacherId} 
+        refreshTrigger={refreshTrigger}
+      />
 
       <Card className="bg-gradient-to-br from-cyan-900/20 to-blue-900/20 border-cyan-500/30">
         <ScheduleHeader

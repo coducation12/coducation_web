@@ -56,7 +56,7 @@ export function DayEditor({
                                 {editingDay.session_type === 'makeup' ? '보강 수업' : '정규 수업'}
                             </span>
                         </div>
-                        <div className="grid grid-cols-3 gap-2">
+                        <div className="grid grid-cols-2 gap-3">
                             {[
                                 { value: 'present', label: '출석', icon: CheckCircle2, activeClass: 'bg-green-500/20 border-green-500/50 text-green-300 shadow-[0_0_15px_rgba(34,197,94,0.2)]' },
                                 { value: 'absent', label: '결석', icon: CircleX, activeClass: 'bg-red-500/20 border-red-500/50 text-red-300 shadow-[0_0_15px_rgba(239,68,68,0.2)]' },

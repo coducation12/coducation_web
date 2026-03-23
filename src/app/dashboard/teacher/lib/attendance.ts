@@ -35,58 +35,55 @@ export const getAttendanceData = async (date: Date, teacherId?: string | null): 
         (students || []).forEach((student: any) => {
             const schedule = student.attendance_schedule || {};
             const assignedTeachers = student.assigned_teachers || [];
-
-            // 강사 ID 필터링
-            if (teacherId && !assignedTeachers.includes(teacherId)) return;
-
             const studentSessions = sessionMap.get(student.user_id) || [];
             const teacherName = teacherMap.get(assignedTeachers[0]) || '미배정';
-
-            // 요일 라벨 생성
-            const daysLabel = Object.keys(schedule)
-                .filter(k => {
-                    const dayNum = parseInt(k);
-                    if (isNaN(dayNum)) return false;
-                    if (teacherId) {
-                        const slotTeacherId = schedule[k]?.teacherId || schedule[k]?.teacher_id;
-                        return slotTeacherId?.toLowerCase() === teacherId.toLowerCase();
-                    }
-                    return true;
-                })
-                .map(k => dayNames[parseInt(k)])
-                .join('/');
 
             // A. 정규 수업 추가
             const daySchedule = schedule[dayOfWeek] || schedule[dayOfWeek.toString()];
             if (daySchedule) {
                 const slotTeacherId = daySchedule.teacherId || daySchedule.teacher_id;
-                if (teacherId && slotTeacherId?.toLowerCase() !== teacherId.toLowerCase()) return;
+                const isAssignedToMe = teacherId && slotTeacherId?.toLowerCase() === teacherId.toLowerCase();
+                
+                // 정규 수업은 본인 담당인 경우에만 추가
+                if (isAssignedToMe || !teacherId) {
+                    const regularSession = studentSessions.find(s => s.session_type === 'regular');
 
-                const regularSession = studentSessions.find(s => s.session_type === 'regular');
-
-                resultSessions.push({
-                    id: `${student.user_id}-regular`,
-                    sessionId: regularSession?.id,
-                    userId: student.user_id,
-                    name: student.users?.name || '알 수 없음',
-                    teacher: teacherName,
-                    day: daysLabel,
-                    course: student.main_subject || '미설정',
-                    curriculum: student.sub_subject || '미설정',
-                    phone: '',
-                    attendanceTime: {
-                        start: daySchedule.startTime || '10:00',
-                        end: daySchedule.endTime || '11:30',
-                        status: (regularSession?.status || 'unregistered') as AttendanceStatus
-                    },
-                    isMakeup: false,
-                    koreanSpeed: regularSession?.korean_typing_speed || 0,
-                    englishSpeed: regularSession?.english_typing_speed || 0,
-                    memo: regularSession?.memo || ''
-                });
+                    resultSessions.push({
+                        id: `${student.user_id}-regular`,
+                        sessionId: regularSession?.id,
+                        userId: student.user_id,
+                        name: student.users?.name || '알 수 없음',
+                        teacher: teacherName,
+                        day: Object.keys(schedule)
+                            .filter(k => {
+                                const dayNum = parseInt(k);
+                                if (isNaN(dayNum)) return false;
+                                if (teacherId) {
+                                    const slotTeacherId = schedule[k]?.teacherId || schedule[k]?.teacher_id;
+                                    return slotTeacherId?.toLowerCase() === teacherId.toLowerCase();
+                                }
+                                return true;
+                            })
+                            .map(k => dayNames[parseInt(k)])
+                            .join('/'),
+                        course: student.main_subject || '미설정',
+                        curriculum: student.sub_subject || '미설정',
+                        phone: '',
+                        attendanceTime: {
+                            start: daySchedule.startTime || '10:00',
+                            end: daySchedule.endTime || '11:30',
+                            status: (regularSession?.status || 'unregistered') as AttendanceStatus
+                        },
+                        isMakeup: false,
+                        koreanSpeed: regularSession?.korean_typing_speed || 0,
+                        englishSpeed: regularSession?.english_typing_speed || 0,
+                        memo: regularSession?.memo || ''
+                    });
+                }
             }
 
-            // B. 보강 수업 추가
+            // B. 보강 수업 추가 
+            // (강사 필터링은 API에서 이미 되어있거나 여기서 session.teacher_id로 필터링함)
             studentSessions.filter((s: any) => 
                 s.session_type === 'makeup' && 
                 (!teacherId || s.teacher_id?.toLowerCase() === teacherId.toLowerCase())

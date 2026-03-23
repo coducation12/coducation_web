@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useToast } from "@/hooks/use-toast";
 import {
     Dialog,
     DialogContent,
@@ -34,6 +35,7 @@ interface MakeupSessionModalProps {
 }
 
 export function MakeupSessionModal({ students, teacherId, onSuccess }: MakeupSessionModalProps) {
+    const { toast } = useToast();
     const [open, setOpen] = useState(false);
     const [loading, setLoading] = useState(false);
     const [selectedStudent, setSelectedStudent] = useState<string>('');
@@ -44,7 +46,11 @@ export function MakeupSessionModal({ students, teacherId, onSuccess }: MakeupSes
 
     const handleSubmit = async () => {
         if (!selectedStudent || !date || !startTime || !endTime) {
-            alert('학생, 날짜, 시간을 모두 선택해주세요.');
+            toast({
+                title: "입력 오류",
+                description: "학생, 날짜, 시간을 모두 선택해주세요.",
+                variant: "destructive",
+            });
             return;
         }
 
@@ -55,7 +61,7 @@ export function MakeupSessionModal({ students, teacherId, onSuccess }: MakeupSes
             const result = await saveAttendanceSessionAction({
                 student_id: selectedStudent,
                 date: date,
-                status: 'makeup',
+                status: 'present', // 보강 등록 시 기본적으로 출석 상태로 저장
                 session_type: 'makeup',
                 start_time: startTime,
                 end_time: endTime,
@@ -65,7 +71,10 @@ export function MakeupSessionModal({ students, teacherId, onSuccess }: MakeupSes
 
             if (!result.success) throw new Error(result.error);
 
-            alert('보강 수업이 성공적으로 등록되었습니다.');
+            toast({
+                title: "등록 성공",
+                description: "보강 수업이 성공적으로 등록되었습니다.",
+            });
             setOpen(false);
             onSuccess();
             // Reset form
@@ -73,7 +82,11 @@ export function MakeupSessionModal({ students, teacherId, onSuccess }: MakeupSes
             setMemo('');
         } catch (error: any) {
             console.error('보강 수업 등록 실패:', error);
-            alert(`등록 실패: ${error.message}`);
+            toast({
+                title: "등록 실패",
+                description: error.message,
+                variant: "destructive",
+            });
         } finally {
             setLoading(false);
         }

@@ -140,7 +140,7 @@ export const useAttendanceScheduler = (teacherId?: string) => {
 
             // 2. 출석 데이터 준비
             const student = students.find(s => s.id === id);
-            const sessionType = id.includes('-makeup-') ? 'makeup' : (value === 'makeup' ? 'makeup' : 'regular');
+            const sessionType = id.includes('-makeup-') ? 'makeup' : 'regular';
             const attendanceData: any = {
                 id: student?.sessionId,
                 student_id: realUserId,

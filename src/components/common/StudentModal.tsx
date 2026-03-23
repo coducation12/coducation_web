@@ -7,9 +7,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, Trash2, User, Users, Calendar, BookOpen, MessageSquare, CreditCard } from "lucide-react";
+import { Plus, Trash2, User, Users, Calendar, BookOpen, MessageSquare, CreditCard, RefreshCcw } from "lucide-react";
 import { getTeacherColorSet } from "@/lib/colors";
 import { deleteStudent } from "@/lib/actions";
+import { useToast } from "@/hooks/use-toast";
 
 interface ClassSchedule {
     day: string;
@@ -99,9 +100,11 @@ const formatAmount = (value: string | number): string => {
 };
 
 export default function StudentModal({ mode, student, isOpen, onClose, onSave, triggerText, teachers = [], currentUserId, academies = ["코딩메이커", "광양코딩"] }: StudentModalProps) {
+    const { toast } = useToast();
     const defaultTeacherId = currentUserId || (teachers.length === 1 ? teachers[0].id : "");
 
     const [internalOpen, setInternalOpen] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
     const [showConfirmDialog, setShowConfirmDialog] = useState(false);
     const [originalData, setOriginalData] = useState<any>(null);
     const [formData, setFormData] = useState({
@@ -315,31 +318,64 @@ export default function StudentModal({ mode, student, isOpen, onClose, onSave, t
         e.preventDefault();
         // 간단한 필수 입력 검증
         if (mode === 'add' && (!formData.studentId || !formData.password)) {
-            alert("아이디와 비밀번호를 입력해주세요.");
+            toast({
+                title: "입력 오류",
+                description: "아이디와 비밀번호를 입력해주세요.",
+                variant: "destructive",
+            });
             return;
         }
         if (!formData.name || !formData.subject) {
-            alert("이름과 과목을 입력해주세요.");
+            toast({
+                title: "입력 오류",
+                description: "이름과 과목을 입력해주세요.",
+                variant: "destructive",
+            });
             return;
         }
 
         if (mode === 'edit') {
             const diff = getDiff();
             if (diff.length === 0) {
-                alert("변경 내역이 없습니다.");
+                toast({
+                    title: "변경 내역 없음",
+                    description: "수정된 내용이 없습니다.",
+                });
                 return;
             }
             setShowConfirmDialog(true);
         } else {
-            await onSave(formData);
-            if (!isControlled) setInternalOpen(false);
+            try {
+                setIsSubmitting(true);
+                await onSave(formData);
+                if (!isControlled) {
+                    setInternalOpen(false);
+                } else {
+                    onClose?.();
+                }
+            } catch (error) {
+                console.error("저장 중 오류 발생:", error);
+            } finally {
+                setIsSubmitting(false);
+            }
         }
     };
 
     const handleConfirmSave = async () => {
-        await onSave(formData);
-        setShowConfirmDialog(false);
-        if (!isControlled) setInternalOpen(false);
+        try {
+            setIsSubmitting(true);
+            await onSave(formData);
+            setShowConfirmDialog(false);
+            if (!isControlled) {
+                setInternalOpen(false);
+            } else {
+                onClose?.();
+            }
+        } catch (error) {
+            console.error("확인 저장 중 오류 발생:", error);
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     return (
@@ -628,10 +664,17 @@ export default function StudentModal({ mode, student, isOpen, onClose, onSave, t
                                         if (confirm('정말로 이 학생을 삭제하시겠습니까?')) {
                                             const result = await deleteStudent(student.id);
                                             if (result.success) {
-                                                alert(result.message);
+                                                toast({
+                                                    title: "삭제 완료",
+                                                    description: result.message || "학생 정보가 삭제되었습니다.",
+                                                });
                                                 onClose?.();
                                             } else {
-                                                alert(result.error);
+                                                toast({
+                                                    title: "삭제 실패",
+                                                    description: result.error || "삭제 중 오류가 발생했습니다.",
+                                                    variant: "destructive",
+                                                });
                                             }
                                         }
                                     }}
@@ -650,8 +693,19 @@ export default function StudentModal({ mode, student, isOpen, onClose, onSave, t
                             >
                                 취소
                             </Button>
-                            <Button type="submit" className="bg-cyan-600 hover:bg-cyan-500 text-white min-w-[100px] shadow-[0_0_15px_rgba(6,182,212,0.4)]">
-                                {mode === "add" ? "등록 완료" : "정보 업데이트"}
+                            <Button
+                                type="submit"
+                                disabled={isSubmitting}
+                                className="bg-cyan-600 hover:bg-cyan-500 text-white min-w-[100px] shadow-[0_0_15px_rgba(6,182,212,0.4)]"
+                            >
+                                {isSubmitting ? (
+                                    <span className="flex items-center gap-2">
+                                        <RefreshCcw className="w-4 h-4 animate-spin" />
+                                        처리 중...
+                                    </span>
+                                ) : (
+                                    mode === "add" ? "등록 완료" : "정보 업데이트"
+                                )}
                             </Button>
                         </div>
                     </div>
@@ -699,9 +753,17 @@ export default function StudentModal({ mode, student, isOpen, onClose, onSave, t
                         </Button>
                         <Button
                             onClick={handleConfirmSave}
-                            className="bg-cyan-600 hover:bg-cyan-500 text-white shadow-[0_0_15px_rgba(6,182,212,0.4)]"
+                            disabled={isSubmitting}
+                            className="bg-cyan-600 hover:bg-cyan-500 text-white shadow-[0_0_15px_rgba(6,182,212,0.4)] min-w-[120px]"
                         >
-                            최종 업데이트
+                            {isSubmitting ? (
+                                <span className="flex items-center gap-2">
+                                    <RefreshCcw className="w-4 h-4 animate-spin" />
+                                    저장 중...
+                                </span>
+                            ) : (
+                                "최종 업데이트"
+                            )}
                         </Button>
                     </div>
                 </DialogContent>

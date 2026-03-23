@@ -60,7 +60,6 @@ export function DayEditor({
                             {[
                                 { value: 'present', label: '출석', icon: CheckCircle2, activeClass: 'bg-green-500/20 border-green-500/50 text-green-300 shadow-[0_0_15px_rgba(34,197,94,0.2)]' },
                                 { value: 'absent', label: '결석', icon: CircleX, activeClass: 'bg-red-500/20 border-red-500/50 text-red-300 shadow-[0_0_15px_rgba(239,68,68,0.2)]' },
-                                { value: 'makeup', label: '보강', icon: RefreshCcw, activeClass: 'bg-yellow-500/20 border-yellow-500/50 text-yellow-300 shadow-[0_0_15px_rgba(234,179,8,0.2)]' },
                             ].map((status) => {
                                 const Icon = status.icon;
                                 const isActive = editingDay.status === status.value;
@@ -70,12 +69,9 @@ export function DayEditor({
                                         type="button"
                                         onClick={() => setEditingDay(prev => {
                                             if (!prev) return null;
-                                            const newSessionType = status.value === 'makeup' ? 'makeup' : prev.session_type;
                                             return { 
                                                 ...prev, 
-                                                status: status.value as AttendanceStatus,
-                                                session_type: newSessionType,
-                                                is_makeup: newSessionType === 'makeup'
+                                                status: status.value as AttendanceStatus
                                             };
                                         })}
                                         className={`flex flex-col items-center justify-center p-3 rounded-xl border-2 transition-all duration-200 gap-1.5

@@ -11,7 +11,7 @@ export interface Student {
   attendanceTime: {
     start: string;
     end: string;
-    status: 'unregistered' | 'present' | 'absent' | 'makeup';
+    status: 'unregistered' | 'present' | 'absent';
     checkedAt?: Date;
   };
   isMakeup?: boolean;
@@ -22,7 +22,7 @@ export interface Student {
 }
 
 // 출석 상태 타입
-export type AttendanceStatus = 'unregistered' | 'present' | 'absent' | 'makeup';
+export type AttendanceStatus = 'unregistered' | 'present' | 'absent';
 
 // 출석 상태 설정
 export const STATUS_CONFIG = {
@@ -43,11 +43,5 @@ export const STATUS_CONFIG = {
     text: '결석',
     textColor: 'text-white',
     fullClass: 'bg-red-500/80 border-red-400 text-white shadow-[0_0_10px_rgba(239,68,68,0.3)]'
-  },
-  makeup: {
-    color: 'bg-yellow-500/80 border-yellow-400',
-    text: '보강',
-    textColor: 'text-black',
-    fullClass: 'bg-yellow-500/80 border-yellow-400 text-black shadow-[0_0_10px_rgba(234,179,8,0.3)]'
   }
 } as const;

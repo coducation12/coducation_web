@@ -31,7 +31,7 @@ export function useAttendanceCalendar(studentId: string, teacherId?: string | nu
 
             const recordMap: Record<string, AttendanceRecord[]> = {};
             data?.forEach((item: any) => {
-                const status = (item.status || (item.attended ? 'present' : 'absent')) as AttendanceStatus;
+                const status = (item.status === 'makeup' ? 'unregistered' : (item.status || (item.attended ? 'present' : 'absent'))) as AttendanceStatus;
                 
                 if (!recordMap[item.date]) {
                     recordMap[item.date] = [];

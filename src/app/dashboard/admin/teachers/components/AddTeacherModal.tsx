@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import ImageUpload from "@/components/ui/image-upload";
 import { Plus } from "lucide-react";
 import { addTeacher } from "@/lib/actions";
+import { useToast } from "@/hooks/use-toast";
 
 interface AddTeacherModalProps {
     onAddTeacher: () => void; // 강사 목록 새로고침용 콜백
@@ -40,6 +41,7 @@ export default function AddTeacherModal({ onAddTeacher }: AddTeacherModalProps) 
         label_color: "#00fff7"
     });
     const [loading, setLoading] = useState(false);
+    const { toast } = useToast();
 
     // 휴대폰 번호 자동 하이픈 생성 함수
     const formatPhoneNumber = (value: string) => {
@@ -63,27 +65,27 @@ export default function AddTeacherModal({ onAddTeacher }: AddTeacherModalProps) 
     const handleSubmit = async () => {
         // 필수 필드 검증
         if (!formData.email || !formData.name || !formData.phone || !formData.password || !formData.subject) {
-            alert("모든 필수 항목을 입력해주세요.");
+            toast({ title: "입력 오류", description: "모든 필수 항목을 입력해주세요.", variant: "destructive" });
             return;
         }
 
         // 이메일 형식 검증
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (!emailRegex.test(formData.email)) {
-            alert("올바른 이메일 형식을 입력해주세요.");
+            toast({ title: "입력 오류", description: "올바른 이메일 형식을 입력해주세요.", variant: "destructive" });
             return;
         }
 
         // 전화번호 형식 검증
         const phoneRegex = /^010-\d{4}-\d{4}$/;
         if (!phoneRegex.test(formData.phone)) {
-            alert("올바른 전화번호 형식을 입력해주세요. (예: 010-1234-5678)");
+            toast({ title: "입력 오류", description: "올바른 전화번호 형식을 입력해주세요. (예: 010-1234-5678)", variant: "destructive" });
             return;
         }
 
         // 비밀번호 길이 검증
         if (formData.password.length < 6) {
-            alert("비밀번호는 최소 6자 이상이어야 합니다.");
+            toast({ title: "입력 오류", description: "비밀번호는 최소 6자 이상이어야 합니다.", variant: "destructive" });
             return;
         }
 
@@ -105,7 +107,10 @@ export default function AddTeacherModal({ onAddTeacher }: AddTeacherModalProps) 
             const result = await addTeacher(submitFormData);
 
             if (result.success) {
-                alert("강사가 성공적으로 등록되었습니다.");
+                toast({
+                    title: "강사 등록 완료",
+                    description: `${formData.name} 강사가 성공적으로 등록되었습니다.`,
+                });
                 setFormData({
                     email: "",
                     name: "",
@@ -119,11 +124,19 @@ export default function AddTeacherModal({ onAddTeacher }: AddTeacherModalProps) 
                 setOpen(false);
                 onAddTeacher(); // 목록 새로고침
             } else {
-                alert(result.error || "강사 등록에 실패했습니다.");
+                toast({
+                    title: "등록 실패",
+                    description: result.error || "강사 등록에 실패했습니다.",
+                    variant: "destructive",
+                });
             }
         } catch (error) {
             console.error('강사 등록 오류:', error);
-            alert("강사 등록 중 오류가 발생했습니다.");
+            toast({
+                title: "오류 발생",
+                description: "강사 등록 중 오류가 발생했습니다.",
+                variant: "destructive",
+            });
         } finally {
             setLoading(false);
         }

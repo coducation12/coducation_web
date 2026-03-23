@@ -15,11 +15,14 @@ export const ScheduleRow = React.memo(({ student, rowIdx, isMobile = false }: Sc
         const status = student.attendanceTime.status;
         
         if (isMakeupRow) {
-            if (status === 'makeup') {
-                return 'bg-transparent border-yellow-500 text-yellow-500';
+            if (status === 'unregistered') {
+                return 'bg-transparent border-yellow-500/50 text-yellow-500/70';
             }
             if (status === 'present') {
                 return 'bg-yellow-500 border-yellow-400 text-black';
+            }
+            if (status === 'absent') {
+                return 'bg-red-500/20 border-red-500 text-red-500';
             }
         }
         return STATUS_CONFIG[status].color;

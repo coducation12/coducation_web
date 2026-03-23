@@ -104,7 +104,7 @@ export const getAttendanceData = async (date: Date, teacherId?: string | null): 
                     attendanceTime: {
                         start: session.start_time || '14:00',
                         end: session.end_time || '15:30',
-                        status: (session.status || 'makeup') as AttendanceStatus
+                        status: (session.status === 'makeup' ? 'unregistered' : (session.status || 'unregistered')) as AttendanceStatus
                     },
                     isMakeup: true,
                     koreanSpeed: session.korean_typing_speed || 0,

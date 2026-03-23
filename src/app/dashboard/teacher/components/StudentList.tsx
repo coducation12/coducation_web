@@ -37,7 +37,7 @@ export function StudentList({ students, onAttendanceChange, teacherId, allActive
                     <span className="hidden md:inline">수강 요일</span>
                 </th>
                 <th className="px-2 py-2 text-center min-w-[80px] hidden sm:table-cell">과목</th>
-                <th className="px-2 py-2 text-center min-w-[120px] hidden lg:table-cell">수업 과정</th>
+                <th className="px-2 py-2 text-center min-w-[120px] hidden lg:table-cell">학습 진도</th>
                 <th className="px-2 py-2 text-center min-w-[60px]">
                     <span className="md:hidden">출결</span>
                     <span className="hidden md:inline">출결 상태</span>

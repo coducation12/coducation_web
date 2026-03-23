@@ -55,6 +55,7 @@ export async function GET(request: NextRequest) {
                 session_type, 
                 start_time, 
                 end_time, 
+                teacher_id,
                 korean_typing_speed, 
                 english_typing_speed, 
                 memo

@@ -2,7 +2,7 @@ import React from 'react';
 import { Student, AttendanceStatus, STATUS_CONFIG } from './types';
 import { AttendanceCalendarModal } from "./AttendanceCalendarModal";
 import { Button } from "@/components/ui/button";
-import { Calendar, FileEdit } from "lucide-react";
+import { Calendar, FileEdit, LineChart } from "lucide-react";
 
 interface StudentRowProps {
     student: Student;
@@ -33,7 +33,17 @@ export const StudentRow = React.memo(({
             </td>
             <td className="px-2 py-3 text-center">{student.day}</td>
             <td className="px-2 py-3 text-center hidden sm:table-cell">{student.course}</td>
-            <td className="px-2 py-3 text-center hidden lg:table-cell opacity-70">{student.curriculum}</td>
+            <td className="px-2 py-3 text-center hidden lg:table-cell">
+                <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="h-8 w-8 text-cyan-400 hover:bg-cyan-500/10"
+                    onClick={() => onStudentClick(student.userId)} // 일단 모달 열릴 자리
+                    title="진도/성과 기록"
+                >
+                    <LineChart className="h-4 w-4" />
+                </Button>
+            </td>
             <td className="px-2 py-3 text-center">
                 <button
                     className={`w-20 py-1.5 rounded-md border text-xs font-bold transition-all duration-200 shadow-sm hover:scale-105 active:scale-95 
@@ -42,29 +52,28 @@ export const StudentRow = React.memo(({
                             const status = student.attendanceTime.status;
                             
                             if (isMakeupRow) {
-                                if (status === 'makeup') {
-                                    return 'bg-transparent border-yellow-500 text-yellow-500 shadow-[0_0_10px_rgba(234,179,8,0.2)]';
+                                if (status === 'unregistered') {
+                                    return 'bg-transparent border-yellow-500/50 text-yellow-500/70 hover:border-yellow-500 hover:bg-yellow-500/10';
                                 }
                                 if (status === 'present') {
                                     return 'bg-yellow-500 border-yellow-400 text-black shadow-[0_0_15px_rgba(234,179,8,0.4)]';
+                                }
+                                if (status === 'absent') {
+                                    return 'bg-red-500/20 border-red-500 text-red-500 shadow-[0_0_10px_rgba(239,68,68,0.2)]';
                                 }
                             }
                             return STATUS_CONFIG[status].fullClass;
                         })()}
                     `}
                     onClick={() => {
-                        const isMakeupRow = student.id.includes('-makeup-');
-                        const statusCycle: AttendanceStatus[] = isMakeupRow 
-                            ? ['present', 'absent', 'makeup'] // 보강 로우는 보강 내에서 순환
-                            : ['unregistered', 'present', 'absent']; // 일반 로우는 보강 옵션 제외
-
+                        const statusCycle: AttendanceStatus[] = ['unregistered', 'present', 'absent'];
                         const currentIndex = statusCycle.indexOf(student.attendanceTime.status);
                         const nextIndex = (currentIndex + 1) % statusCycle.length;
                         onAttendanceChange(student.id, statusCycle[nextIndex]);
                     }}
                 >
-                    {student.id.includes('-makeup-') && student.attendanceTime.status === 'present' 
-                        ? '보강출석' 
+                    {student.id.includes('-makeup-') 
+                        ? (student.attendanceTime.status === 'present' ? '보강출석' : student.attendanceTime.status === 'absent' ? '보강결석' : '보강대기')
                         : STATUS_CONFIG[student.attendanceTime.status].text}
                 </button>
             </td>

@@ -13,6 +13,7 @@ import EditTeacherModal from "./components/EditTeacherModal";
 import { deleteTeacher, updateTeacherLabelColor, toggleTeacherTuitionPermission } from "@/lib/actions";
 import { Checkbox } from "@/components/ui/checkbox";
 import { DashboardPageWrapper } from "@/components/common/DashboardPageWrapper";
+import { useToast } from "@/hooks/use-toast";
 
 export const dynamic = 'force-dynamic';
 
@@ -37,6 +38,8 @@ export default function AdminTeachersPage() {
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [sortField, setSortField] = useState<string | null>(null);
     const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+    const [isDeleting, setIsDeleting] = useState<string | null>(null);
+    const { toast } = useToast();
 
     useEffect(() => {
         fetchTeachers();
@@ -158,15 +161,29 @@ export default function AdminTeachersPage() {
         }
 
         try {
+            setIsDeleting(teacherId);
             const result = await deleteTeacher(teacherId);
             if (result.success) {
                 setTeachers(prev => prev.filter(teacher => teacher.id !== teacherId));
-                alert(result.message);
+                toast({
+                    title: "삭제 완료",
+                    description: result.message || "강사가 성공적으로 삭제되었습니다.",
+                });
             } else {
-                alert(result.error);
+                toast({
+                    title: "삭제 실패",
+                    description: result.error || "삭제 중 오류가 발생했습니다.",
+                    variant: "destructive",
+                });
             }
         } catch (error) {
-            alert('강사 삭제 중 오류가 발생했습니다.');
+            toast({
+                title: "오류 발생",
+                description: "강사 삭제 중 오류가 발생했습니다.",
+                variant: "destructive",
+            });
+        } finally {
+            setIsDeleting(null);
         }
     };
 
@@ -175,11 +192,23 @@ export default function AdminTeachersPage() {
             const result = await updateTeacherLabelColor(teacherId, color);
             if (result.success) {
                 setTeachers(prev => prev.map(t => t.id === teacherId ? { ...t, labelColor: color } : t));
+                toast({
+                    title: "색상 변경 완료",
+                    description: "강사 라벨 색상이 업데이트되었습니다.",
+                });
             } else {
-                alert(result.error);
+                toast({
+                    title: "색상 변경 실패",
+                    description: result.error || "색상 업데이트 중 오류가 발생했습니다.",
+                    variant: "destructive",
+                });
             }
         } catch (error) {
-            alert('색상 업데이트 중 오류가 발생했습니다.');
+            toast({
+                title: "오류 발생",
+                description: "색상 업데이트 중 오류가 발생했습니다.",
+                variant: "destructive",
+            });
         }
     };
     const handleTuitionPermissionToggle = async (teacherId: string, checked: boolean) => {
@@ -187,11 +216,23 @@ export default function AdminTeachersPage() {
             const result = await toggleTeacherTuitionPermission(teacherId, checked);
             if (result.success) {
                 setTeachers(prev => prev.map(t => t.id === teacherId ? { ...t, canManageAllPayments: checked } : t));
+                toast({
+                    title: "권한 변경 완료",
+                    description: `수납 관리 권한이 ${checked ? '부여' : '해제'}되었습니다.`,
+                });
             } else {
-                alert(result.error);
+                toast({
+                    title: "권한 변경 실패",
+                    description: result.error || "권한 변경 중 오류가 발생했습니다.",
+                    variant: "destructive",
+                });
             }
         } catch (error) {
-            alert('권한 변경 중 오류가 발생했습니다.');
+            toast({
+                title: "오류 발생",
+                description: "권한 변경 중 오류가 발생했습니다.",
+                variant: "destructive",
+            });
         }
     };
 

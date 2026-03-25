@@ -3,7 +3,6 @@ import { TypingChart } from "@/app/dashboard/student/components/typing-chart";
 import { LearningProgress } from "@/app/dashboard/student/components/learning-progress";
 import { GoalsCard } from "@/app/dashboard/student/components/goals-card";
 import { AttendanceCalendar } from "@/components/common/attendance-calendar";
-import { AttendanceCheckCard } from "@/app/dashboard/student/components/attendance-check-card";
 import { DashboardCard } from "@/app/dashboard/student/components/DashboardCard";
 import { Trophy } from "lucide-react";
 import { CompletedLearning } from "@/app/dashboard/student/components/completed-learning";
@@ -23,42 +22,42 @@ export default async function StudentDashboardPage() {
         <DashboardPageWrapper className="student-dashboard-content w-full h-screen overflow-hidden flex flex-col px-4 pt-16 lg:pt-6 pb-6 lg:px-12">
             <StudentHeading size="h1" className="mb-4 shrink-0">학생 대시보드</StudentHeading>
             
-            <div className="flex-1 min-h-0 grid grid-cols-1 md:grid-cols-2 grid-rows-2 gap-4 w-full">
-                {/* 1행 1열: 출석 및 캘린더 */}
-                <DashboardCard className="student-card-container flex flex-col min-h-0">
-                    <section className="student-card-content flex-1 flex flex-col overflow-hidden">
-                        <AttendanceCheckCard studentId={user.id} />
-                        <div className="flex-1 min-h-0">
-                            <AttendanceCalendar studentId={user.id} />
-                        </div>
-                    </section>
-                </DashboardCard>
-
-                {/* 1행 2열: To-Do List */}
-                <DashboardCard className="student-card-container flex flex-col min-h-0">
-                    <section className="student-card-content flex-1 h-full min-h-0 overflow-hidden">
-                        <GoalsCard studentId={user.id} fixedInput />
-                    </section>
-                </DashboardCard>
-
-                {/* 2행 1열: 타자 기록 그래프 */}
-                <DashboardCard className="student-card-container flex flex-col min-h-0">
-                    <section className="student-card-content flex-1 flex flex-col min-h-0 overflow-hidden">
-                        <TypingChart studentId={user.id} />
-                    </section>
-                </DashboardCard>
-
-                {/* 2행 2열: 완료된 학습 (커리큘럼 숨김 포함) */}
-                <DashboardCard className="student-card-container flex flex-col min-h-0">
-                    <div className="student-card-content flex flex-col h-full min-h-0 overflow-hidden">
-                        {/* <section className="mb-4">
-                            <LearningProgress studentId={user.id} vertical />
-                        </section> */}
-                        <section className="flex-1 min-h-0">
-                            <CompletedLearning studentId={user.id} />
+            <div className="flex-1 min-h-0 flex flex-col lg:flex-row gap-6 w-full overflow-y-auto lg:overflow-hidden scrollbar-hide">
+                {/* 왼쪽 컬럼: 타자 차트 + 완료된 학습 */}
+                <div className="flex-none lg:flex-1 min-h-0 flex flex-col gap-6">
+                    {/* 타자 기록 그래프 (상단 - 작게) */}
+                    <DashboardCard className="student-card-container flex-none lg:flex-[1] h-[300px] lg:h-auto flex flex-col min-h-0 p-4">
+                        <section className="student-card-content flex-1 flex flex-col min-h-0 overflow-hidden">
+                            <TypingChart studentId={user.id} />
                         </section>
-                    </div>
-                </DashboardCard>
+                    </DashboardCard>
+
+                    {/* 완료된 학습 (하단 - 크게) */}
+                    <DashboardCard className="student-card-container flex-none lg:flex-[2] h-[500px] lg:h-auto flex flex-col min-h-0 p-4">
+                        <div className="student-card-content flex flex-col h-full min-h-0 overflow-hidden">
+                            <section className="flex-1 min-h-0">
+                                <CompletedLearning studentId={user.id} />
+                            </section>
+                        </div>
+                    </DashboardCard>
+                </div>
+
+                {/* 오른쪽 컬럼: 캘린더 + To-Do List */}
+                <div className="flex-none lg:flex-1 min-h-0 flex flex-col gap-6">
+                    {/* 출석 및 캘린더 (상단) */}
+                    <DashboardCard className="student-card-container flex-none lg:flex-1 h-[500px] lg:h-auto flex flex-col min-h-0 p-4">
+                        <section className="student-card-content flex flex-col h-full min-h-0 overflow-hidden">
+                            <AttendanceCalendar studentId={user.id} />
+                        </section>
+                    </DashboardCard>
+
+                    {/* To-Do List (하단) */}
+                    <DashboardCard className="student-card-container flex-none lg:flex-1 h-[400px] lg:h-auto flex flex-col min-h-0 p-4">
+                        <section className="student-card-content h-full min-h-0 overflow-hidden">
+                            <GoalsCard studentId={user.id} fixedInput />
+                        </section>
+                    </DashboardCard>
+                </div>
             </div>
         </DashboardPageWrapper>
     );

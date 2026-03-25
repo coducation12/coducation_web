@@ -1307,6 +1307,118 @@ export async function saveTypingResult(data: {
 }
 
 // 타자연습 기록 조회 서버 액션
+// 학생 할 일 목록(To-Do List) 조회
+export async function getStudentGoals(studentId: string) {
+  try {
+    const { data, error } = await supabaseAdmin
+      .from('students')
+      .select('todolist')
+      .eq('user_id', studentId)
+      .maybeSingle();
+
+    if (error) {
+      console.error('할 일 목록 조회 실패:', error);
+      return { success: false, error: error.message };
+    }
+
+    return { success: true, data: data?.todolist || [] };
+  } catch (error) {
+    console.error('할 일 목록 조회 중 오류:', error);
+    return { success: false, error: '할 일 목록을 불러오는 중 오류가 발생했습니다.' };
+  }
+}
+
+// 학생 할 일 추가
+export async function addStudentGoal(studentId: string, title: string) {
+  try {
+    // 기존 목록 조회
+    const { data, error: fetchError } = await supabaseAdmin
+      .from('students')
+      .select('todolist')
+      .eq('user_id', studentId)
+      .maybeSingle();
+
+    if (fetchError) throw fetchError;
+
+    const currentTodolist = data?.todolist || [];
+    const updatedTodolist = [...currentTodolist, { title, isCompleted: false }];
+
+    // 업데이트
+    const { error: updateError } = await supabaseAdmin
+      .from('students')
+      .update({ todolist: updatedTodolist })
+      .eq('user_id', studentId);
+
+    if (updateError) throw updateError;
+
+    return { success: true, data: updatedTodolist };
+  } catch (error: any) {
+    console.error('할 일 추가 실패:', error);
+    return { success: false, error: error.message || '할 일을 추가하는 중 오류가 발생했습니다.' };
+  }
+}
+
+// 학생 할 일 상태 토글
+export async function toggleStudentGoal(studentId: string, goalIndex: number) {
+  try {
+    const { data, error: fetchError } = await supabaseAdmin
+      .from('students')
+      .select('todolist')
+      .eq('user_id', studentId)
+      .maybeSingle();
+
+    if (fetchError) throw fetchError;
+
+    const currentTodolist = data?.todolist || [];
+    const updatedTodolist = currentTodolist.map((goal: any, index: number) => {
+      if (index === goalIndex) {
+        return { ...goal, isCompleted: !goal.isCompleted };
+      }
+      return goal;
+    });
+
+    const { error: updateError } = await supabaseAdmin
+      .from('students')
+      .update({ todolist: updatedTodolist })
+      .eq('user_id', studentId);
+
+    if (updateError) throw updateError;
+
+    return { success: true, data: updatedTodolist };
+  } catch (error: any) {
+    console.error('할 일 상태 변경 실패:', error);
+    return { success: false, error: error.message || '상태를 변경하는 중 오류가 발생했습니다.' };
+  }
+}
+
+// 학생 할 일 삭제
+export async function deleteStudentGoal(studentId: string, goalIndex: number) {
+  try {
+    const { data, error: fetchError } = await supabaseAdmin
+      .from('students')
+      .select('todolist')
+      .eq('user_id', studentId)
+      .maybeSingle();
+
+    if (fetchError) throw fetchError;
+
+    const currentTodolist = data?.todolist || [];
+    const updatedTodolist = currentTodolist.filter((_: any, index: number) => index !== goalIndex);
+
+    const { error: updateError } = await supabaseAdmin
+      .from('students')
+      .update({ todolist: updatedTodolist })
+      .eq('user_id', studentId);
+
+    if (updateError) throw updateError;
+
+    return { success: true, data: updatedTodolist };
+  } catch (error: any) {
+    console.error('할 일 삭제 실패:', error);
+    return { success: false, error: error.message || '할 일을 삭제하는 중 오류가 발생했습니다.' };
+  }
+}
+
 export async function getTypingRecords(studentId: string, daysBack: number = 90) {
   try {
     console.log('getTypingRecords - 시작:', { studentId, daysBack });

@@ -98,6 +98,7 @@ export interface Database {
           achievement_records?: any;
           typing_stats?: any;
           total_xp?: number;
+          todolist?: any;
           created_at: string;
         };
         Insert: {

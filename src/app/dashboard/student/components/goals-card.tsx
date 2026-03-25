@@ -5,8 +5,8 @@ import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Target, Plus, Trash2, Calendar } from "lucide-react";
 import { useState, useEffect } from "react";
-import { supabase } from "@/lib/supabase";
 import { StudentSectionTitle, StudentText, studentButtonStyles, studentInputStyles } from "./StudentThemeProvider";
+import { getStudentGoals, addStudentGoal, toggleStudentGoal, deleteStudentGoal as deleteStudentGoalAction } from "@/lib/actions";
 
 interface Goal {
   title: string;        // 할 일 제목만
@@ -27,22 +27,13 @@ export function GoalsCard({ studentId, fixedInput, readOnly }: { studentId: stri
   const fetchGoals = async () => {
     try {
       setError(null);
+      const result = await getStudentGoals(studentId);
 
-      // Students 테이블에서 todolist 컬럼을 조회
-      const { data, error: supabaseError } = await supabase
-        .from('students')
-        .select('todolist')
-        .eq('user_id', studentId)
-        .maybeSingle();
-
-      if (supabaseError) {
-        console.error('Supabase 에러:', JSON.stringify(supabaseError, null, 2));
-        throw new Error(`데이터베이스 조회 실패: ${supabaseError.message || '알 수 없는 오류'}`);
+      if (result.success) {
+        setGoals(result.data || []);
+      } else {
+        throw new Error(result.error || '할 일 목록을 불러오는데 실패했습니다.');
       }
-
-      // todolist 컬럼이 없거나 null인 경우 빈 배열로 초기화
-      const todolistData = data?.todolist || [];
-      setGoals(todolistData);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : '알 수 없는 오류가 발생했습니다.';
       console.error('할 일 조회 실패:', error);
@@ -58,39 +49,14 @@ export function GoalsCard({ studentId, fixedInput, readOnly }: { studentId: stri
     setIsAdding(true);
     setError(null);
     try {
-      const newGoalData = {
-        title: newGoal.trim(),
-        isCompleted: false
-      };
+      const result = await addStudentGoal(studentId, newGoal.trim());
 
-      // 기존 todolist 배열에 새로운 할 일 추가
-      const { data: currentData, error: fetchError } = await supabase
-        .from('students')
-        .select('todolist')
-        .eq('user_id', studentId)
-        .maybeSingle();
-
-      if (fetchError) {
-        console.error('기존 할 일 조회 에러:', JSON.stringify(fetchError, null, 2));
-        throw new Error(`기존 할 일 조회 실패: ${fetchError.message || '알 수 없는 오류'}`);
+      if (result.success) {
+        setNewGoal('');
+        setGoals(result.data || []);
+      } else {
+        throw new Error(result.error || '할 일을 추가하는데 실패했습니다.');
       }
-
-      const currentTodolist = currentData?.todolist || [];
-      const updatedTodolist = [...currentTodolist, newGoalData];
-
-      // Students 테이블의 todolist 컬럼 업데이트
-      const { error: updateError } = await supabase
-        .from('students')
-        .update({ todolist: updatedTodolist })
-        .eq('user_id', studentId);
-
-      if (updateError) {
-        console.error('할 일 추가 에러:', JSON.stringify(updateError, null, 2));
-        throw new Error(`할 일 추가 실패: ${updateError.message || '알 수 없는 오류'}`);
-      }
-
-      setNewGoal('');
-      await fetchGoals();
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : '알 수 없는 오류가 발생했습니다.';
       console.error('할 일 추가 실패:', error);
@@ -103,42 +69,13 @@ export function GoalsCard({ studentId, fixedInput, readOnly }: { studentId: stri
   const toggleGoal = async (goalIndex: number) => {
     try {
       setError(null);
+      const result = await toggleStudentGoal(studentId, goalIndex);
 
-      // 기존 todolist 배열 조회
-      const { data: currentData, error: fetchError } = await supabase
-        .from('students')
-        .select('todolist')
-        .eq('user_id', studentId)
-        .maybeSingle();
-
-      if (fetchError) {
-        console.error('기존 할 일 조회 에러:', JSON.stringify(fetchError, null, 2));
-        throw new Error(`기존 할 일 조회 실패: ${fetchError.message || '알 수 없는 오류'}`);
+      if (result.success) {
+        setGoals(result.data || []);
+      } else {
+        throw new Error(result.error || '상태를 변경하는데 실패했습니다.');
       }
-
-      const currentTodolist = currentData?.todolist || [];
-      const updatedTodolist = currentTodolist.map((goal: any, index: number) => {
-        if (index === goalIndex) {
-          return {
-            ...goal,
-            isCompleted: !goal.isCompleted
-          };
-        }
-        return goal;
-      });
-
-      // Students 테이블의 todolist 컬럼 업데이트
-      const { error: updateError } = await supabase
-        .from('students')
-        .update({ todolist: updatedTodolist })
-        .eq('user_id', studentId);
-
-      if (updateError) {
-        console.error('할 일 상태 변경 에러:', JSON.stringify(updateError, null, 2));
-        throw new Error(`할 일 상태 변경 실패: ${updateError.message || '알 수 없는 오류'}`);
-      }
-
-      await fetchGoals();
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : '알 수 없는 오류가 발생했습니다.';
       console.error('할 일 상태 변경 실패:', error);
@@ -149,34 +86,13 @@ export function GoalsCard({ studentId, fixedInput, readOnly }: { studentId: stri
   const deleteGoal = async (goalIndex: number) => {
     try {
       setError(null);
+      const result = await deleteStudentGoalAction(studentId, goalIndex);
 
-      // 기존 todolist 배열 조회
-      const { data: currentData, error: fetchError } = await supabase
-        .from('students')
-        .select('todolist')
-        .eq('user_id', studentId)
-        .maybeSingle();
-
-      if (fetchError) {
-        console.error('기존 할 일 조회 에러:', JSON.stringify(fetchError, null, 2));
-        throw new Error(`기존 할 일 조회 실패: ${fetchError.message || '알 수 없는 오류'}`);
+      if (result.success) {
+        setGoals(result.data || []);
+      } else {
+        throw new Error(result.error || '할 일을 삭제하는데 실패했습니다.');
       }
-
-      const currentTodolist = currentData?.todolist || [];
-      const updatedTodolist = currentTodolist.filter((_: any, index: number) => index !== goalIndex);
-
-      // Students 테이블의 todolist 컬럼 업데이트
-      const { error: updateError } = await supabase
-        .from('students')
-        .update({ todolist: updatedTodolist })
-        .eq('user_id', studentId);
-
-      if (updateError) {
-        console.error('할 일 삭제 에러:', JSON.stringify(updateError, null, 2));
-        throw new Error(`할 일 삭제 실패: ${updateError.message || '알 수 없는 오류'}`);
-      }
-
-      await fetchGoals();
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : '알 수 없는 오류가 발생했습니다.';
       console.error('할 일 삭제 실패:', error);

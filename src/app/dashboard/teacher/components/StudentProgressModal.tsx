@@ -55,6 +55,7 @@ export default function StudentProgressModal({ isOpen, onClose, studentId, stude
     const [selectedProgressId, setSelectedProgressId] = useState<string | null>(null);
     const [selectedCourseTitle, setSelectedCourseTitle] = useState('');
 
+
     useEffect(() => {
         if (isOpen && studentId) {
             loadData();
@@ -357,6 +358,7 @@ export default function StudentProgressModal({ isOpen, onClose, studentId, stude
                                     </div>
                                 </div>
                             </div>
+
 
                             {/* Portfolio Results Box */}
                             <div className="bg-slate-800/40 border border-cyan-500/20 rounded-2xl p-4 sm:p-5 flex flex-col h-[480px] shadow-xl">

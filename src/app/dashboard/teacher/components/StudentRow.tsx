@@ -47,11 +47,11 @@ export const StudentRow = React.memo(({
                             <button
                                 key={session.id}
                                 disabled={isUpdating}
-                                className={`w-[72px] py-1 rounded-md border text-[9px] font-bold transition-all duration-200 shadow-sm 
+                                className={`w-[72px] py-1 rounded-md border text-[12px] font-black transition-all duration-200 shadow-sm 
                                     ${isUpdating ? 'opacity-50 cursor-not-allowed scale-95' : 'hover:scale-105 active:scale-95'}
                                     ${(() => {
                                         const status = session.attendanceTime.status;
-                                        
+
                                         if (session.isMakeup) {
                                             if (status === 'unregistered') {
                                                 return 'bg-transparent border-yellow-500/50 text-yellow-500/70 hover:border-yellow-500 hover:bg-yellow-500/10';
@@ -115,9 +115,9 @@ export const StudentRow = React.memo(({
                 />
             </td>
             <td className="px-2 py-3 text-center">
-                <Button 
-                    variant="ghost" 
-                    size="icon" 
+                <Button
+                    variant="ghost"
+                    size="icon"
                     className="h-8 w-8 text-cyan-400 hover:bg-cyan-500/10"
                     onClick={() => onProgressClick(student.userId, student.name)}
                     title="진도/성과 기록"

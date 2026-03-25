@@ -47,7 +47,7 @@ export const StudentRow = React.memo(({
                             <button
                                 key={session.id}
                                 disabled={isUpdating}
-                                className={`w-20 py-1.5 rounded-md border text-[10px] font-bold transition-all duration-200 shadow-sm 
+                                className={`w-[72px] py-1 rounded-md border text-[9px] font-bold transition-all duration-200 shadow-sm 
                                     ${isUpdating ? 'opacity-50 cursor-not-allowed scale-95' : 'hover:scale-105 active:scale-95'}
                                     ${(() => {
                                         const status = session.attendanceTime.status;
@@ -74,10 +74,9 @@ export const StudentRow = React.memo(({
                                 }}
                                 title={`${session.isMakeup ? '[보강] ' : ''}${session.attendanceTime.start}~${session.attendanceTime.end}`}
                             >
-                                <div className="flex flex-col leading-tight">
-                                    <span>{isUpdating ? '처리중...' : (session.isMakeup ? '보강' : STATUS_CONFIG[session.attendanceTime.status].text)}</span>
-                                    <span className="text-[8px] opacity-70 font-normal">{session.attendanceTime.start}</span>
-                                </div>
+                                <span className={isUpdating ? 'animate-pulse' : ''}>
+                                    {isUpdating ? '처리중...' : (session.isMakeup ? '보강' : STATUS_CONFIG[session.attendanceTime.status].text)}
+                                </span>
                             </button>
                         );
                     })}

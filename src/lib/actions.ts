@@ -965,9 +965,11 @@ export async function getMonthlyAttendance(studentId: string, startDateStr: stri
       .gte('date', startDateStr)
       .lte('date', endDateStr);
 
+    /* 캘린더에서는 해당 학생의 모든 출결 내역을 보여주기 위해 강사 필터링 제거
     if (teacherId && teacherId.trim() !== '') {
       query = query.eq('teacher_id', teacherId);
     }
+    */
 
     const { data, error } = await query;
 

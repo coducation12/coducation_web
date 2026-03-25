@@ -1437,6 +1437,8 @@ export async function getTypingRecords(studentId: string, daysBack: number = 90)
       .select('date, korean_typing_speed, english_typing_speed, created_at')
       .eq('student_id', studentId)
       .gte('date', fromDateString)
+      .in('status', ['present', 'makeup'])
+      .or('korean_typing_speed.gt.0,english_typing_speed.gt.0')
       .order('date', { ascending: true });
 
     console.log('getTypingRecords - 쿼리 결과:', { data: data?.length || 0, error: error?.message });

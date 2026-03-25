@@ -55,7 +55,7 @@ export function CalendarGrid({
                     </div>
                 </div>
 
-                <div className="flex-1 space-y-1 relative z-10 overflow-y-auto no-scrollbar scroll-smooth">
+                <div className="flex-1 space-y-1 relative z-10 overflow-y-auto overflow-x-hidden scrollbar-hide scroll-smooth">
                     {records.map((record, idx) => (
                         <div 
                             key={idx} 

@@ -78,6 +78,8 @@ export function useAttendanceCalendar(
                 memo: editingDay.memo,
                 session_type: editingDay.session_type || 'regular',
                 teacher_id: teacherId || null,
+                start_time: editingDay.start_time || null,
+                end_time: editingDay.end_time || null,
             };
 
             const { saveDailyAttendance } = await import('@/lib/actions');
@@ -151,7 +153,9 @@ export function useAttendanceCalendar(
             date: todayStr, 
             status: initialStatus || 'present', 
             memo: '', 
-            session_type: isMakeup ? 'makeup' : 'regular' 
+            session_type: isMakeup ? 'makeup' : 'regular',
+            start_time: isMakeup ? '14:00' : '10:00',
+            end_time: isMakeup ? '15:30' : '11:30'
         });
 
         try {

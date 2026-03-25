@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
     Dialog,
     DialogContent,
@@ -56,11 +56,26 @@ export function AttendanceCalendarModal({
         handleDeleteDay,
         nextMonth,
         prevMonth,
-        openTodayDetail
+        openTodayDetail,
+        refresh
     } = useAttendanceCalendar(studentId, teacherId, onRefresh, refreshTrigger);
 
+    // 모달이 열릴 때마다 데이터를 최신으로 새로고침
+    useEffect(() => {
+        if (open) {
+            refresh();
+        }
+    }, [open, refresh]);
+
     const onEditDay = (dateStr: string, record?: AttendanceRecord) => {
-        setEditingDay(record || { date: dateStr, status: 'present', memo: '' });
+        setEditingDay(record || { 
+            date: dateStr, 
+            status: 'present', 
+            memo: '',
+            session_type: 'regular',
+            start_time: '10:00',
+            end_time: '11:30'
+        });
     };
 
     const handleOpenDetail = () => {

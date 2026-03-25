@@ -1,4 +1,4 @@
-import { Student, AttendanceStatus } from "../components/types";
+import { Student, AttendanceStatus, AttendanceSession } from "../components/types";
 
 /**
  * 특정 날짜의 학생 출결 및 스케줄 데이터를 통합하여 가져오는 함수
@@ -30,45 +30,28 @@ export const getAttendanceData = async (date: Date, teacherId?: string | null): 
 
         const dayOfWeek = date.getDay();
         const dayNames = ['일', '월', '화', '수', '목', '금', '토'];
-        const resultSessions: Student[] = [];
+        const studentMap = new Map<string, Student>();
 
         (students || []).forEach((student: any) => {
+            const userId = student.user_id;
             const schedule = student.attendance_schedule || {};
             const assignedTeachers = student.assigned_teachers || [];
-            const studentSessions = sessionMap.get(student.user_id) || [];
+            const studentSessions = sessionMap.get(userId) || [];
             const teacherName = teacherMap.get(assignedTeachers[0]) || '미배정';
 
-            // A. 정규 수업 추가
+            const sessions: AttendanceSession[] = [];
+
+            // A. 정규 수업 확인 및 추가
             const daySchedule = schedule[dayOfWeek] || schedule[dayOfWeek.toString()];
             if (daySchedule) {
                 const slotTeacherId = daySchedule.teacherId || daySchedule.teacher_id;
                 const isAssignedToMe = teacherId && slotTeacherId?.toLowerCase() === teacherId.toLowerCase();
                 
-                // 정규 수업은 본인 담당인 경우에만 추가
                 if (isAssignedToMe || !teacherId) {
                     const regularSession = studentSessions.find(s => s.session_type === 'regular');
-
-                    resultSessions.push({
-                        id: `${student.user_id}-regular`,
+                    sessions.push({
+                        id: `${userId}-regular`,
                         sessionId: regularSession?.id,
-                        userId: student.user_id,
-                        name: student.users?.name || '알 수 없음',
-                        teacher: teacherName,
-                        day: Object.keys(schedule)
-                            .filter(k => {
-                                const dayNum = parseInt(k);
-                                if (isNaN(dayNum)) return false;
-                                if (teacherId) {
-                                    const slotTeacherId = schedule[k]?.teacherId || schedule[k]?.teacher_id;
-                                    return slotTeacherId?.toLowerCase() === teacherId.toLowerCase();
-                                }
-                                return true;
-                            })
-                            .map(k => dayNames[parseInt(k)])
-                            .join('/'),
-                        course: student.main_subject || '미설정',
-                        curriculum: student.sub_subject || '미설정',
-                        phone: '',
                         attendanceTime: {
                             start: daySchedule.startTime || '10:00',
                             end: daySchedule.endTime || '11:30',
@@ -82,22 +65,14 @@ export const getAttendanceData = async (date: Date, teacherId?: string | null): 
                 }
             }
 
-            // B. 보강 수업 추가 
-            // (강사 필터링은 API에서 이미 되어있거나 여기서 session.teacher_id로 필터링함)
+            // B. 보강 수업 확인 및 추가
             studentSessions.filter((s: any) => 
                 s.session_type === 'makeup' && 
                 (!teacherId || s.teacher_id?.toLowerCase() === teacherId.toLowerCase())
             ).forEach((session: any) => {
-                resultSessions.push({
-                    id: `${student.user_id}-makeup-${session.id}`,
+                sessions.push({
+                    id: `${userId}-makeup-${session.id}`,
                     sessionId: session.id,
-                    userId: student.user_id,
-                    name: student.users?.name || '알 수 없음',
-                    teacher: teacherName,
-                    day: '보강',
-                    course: student.main_subject || '미설정',
-                    curriculum: student.sub_subject || '미설정',
-                    phone: '',
                     attendanceTime: {
                         start: session.start_time || '14:00',
                         end: session.end_time || '15:30',
@@ -109,17 +84,47 @@ export const getAttendanceData = async (date: Date, teacherId?: string | null): 
                     memo: session.memo || ''
                 });
             });
+
+            // 결과 세션이 하나라도 있는 경우에만 학생 레코드 생성
+            if (sessions.length > 0) {
+                studentMap.set(userId, {
+                    userId: userId,
+                    name: student.users?.name || '알 수 없음',
+                    teacher: teacherName,
+                    day: Object.keys(schedule)
+                        .filter(k => {
+                            const dayNum = parseInt(k);
+                            if (isNaN(dayNum)) return false;
+                            if (teacherId) {
+                                const slotTeacherId = schedule[k]?.teacherId || schedule[k]?.teacher_id;
+                                return slotTeacherId?.toLowerCase() === teacherId.toLowerCase();
+                            }
+                            return true;
+                        })
+                        .map(k => dayNames[parseInt(k)])
+                        .join('/'),
+                    course: student.main_subject || '미설정',
+                    curriculum: student.sub_subject || '미설정',
+                    phone: '',
+                    sessions: sessions
+                });
+            }
         });
 
-        // 세션 정렬
-        resultSessions.sort((a, b) => {
-            if (a.attendanceTime.start !== b.attendanceTime.start) {
-                return a.attendanceTime.start.localeCompare(b.attendanceTime.start);
+        const resultStudents = Array.from(studentMap.values());
+
+        // 정렬 (첫 번째 수업 시간 기준)
+        resultStudents.sort((a, b) => {
+            const aFirstStart = a.sessions[0]?.attendanceTime.start || '24:00';
+            const bFirstStart = b.sessions[0]?.attendanceTime.start || '24:00';
+            
+            if (aFirstStart !== bFirstStart) {
+                return aFirstStart.localeCompare(bFirstStart);
             }
             return a.name.localeCompare(b.name, 'ko-KR');
         });
 
-        return resultSessions;
+        return resultStudents;
     } catch (error) {
         console.error('getAttendanceData 처리 중 예기치 못한 오류:', error);
         return [];

@@ -49,21 +49,20 @@ export const DayCard = React.memo(({
                     </div>
                     {/* 모바일에서는 최소 2열 표시, 3줄 정도 보이고 스크롤되도록 max-h 조정 */}
                     <div className="grid grid-cols-2 lg:grid-cols-[repeat(auto-fill,minmax(42px,1fr))] gap-1 max-h-[72px] lg:max-h-32 overflow-y-auto custom-scrollbar">
-                        {students.map(student => {
-                            const isMakeup = student.isMakeup;
-                            return (
+                        {students.flatMap(student => 
+                            student.sessions.map(session => (
                                 <div
-                                    key={student.id}
-                                    className={`text-[9px] lg:text-[10px] text-center px-1 py-0.5 rounded border whitespace-nowrap transition-colors ${isMakeup
+                                    key={session.id}
+                                    className={`text-[9px] lg:text-[10px] text-center px-1 py-0.5 rounded border whitespace-nowrap transition-colors ${session.isMakeup
                                         ? 'bg-yellow-400/25 border-yellow-400/40 text-yellow-200 hover:bg-yellow-400/35 shadow-[0_0_5px_rgba(234,179,8,0.1)]'
                                         : 'bg-cyan-500/20 border-cyan-400/30 hover:bg-cyan-500/30'
                                         }`}
-                                    title={`${student.name} - ${student.course}${isMakeup ? ' (보강)' : ''}`}
+                                    title={`${student.name} - ${student.course}${session.isMakeup ? ' (보강)' : ''} (${session.attendanceTime.start})`}
                                 >
                                     {student.name}
                                 </div>
-                            );
-                        })}
+                            ))
+                        )}
                     </div>
                 </div>
             )}

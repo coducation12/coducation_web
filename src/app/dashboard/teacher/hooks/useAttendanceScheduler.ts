@@ -1,33 +1,42 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
-import { Student, AttendanceStatus } from "../components/types";
+import { Student, AttendanceStatus, AttendanceSession } from "../components/types";
 import { getAttendanceData } from "../lib/attendance";
 import { saveAttendanceSessionAction, deleteAttendanceSessionAction } from "@/lib/actions";
 
 // 자동 결석 처리 함수
 const processAutoAbsence = (students: Student[], currentDate: Date): Student[] => {
     return students.map(student => {
-        // 이미 출석체크가 된 경우는 건드리지 않음
-        if (student.attendanceTime.status !== 'unregistered' || student.attendanceTime.checkedAt) {
-            return student;
+        const updatedSessions = student.sessions.map(session => {
+            // 이미 출석체크가 된 경우는 건드리지 않음
+            if (session.attendanceTime.status !== 'unregistered' || session.attendanceTime.checkedAt) {
+                return session;
+            }
+
+            // 수업 시간이 지났고 아직 미등록 상태라면 자동으로 결석 처리
+            const classEndTime = new Date(currentDate);
+            const [endHour, endMinute] = session.attendanceTime.end.split(':').map(Number);
+            classEndTime.setHours(endHour, endMinute, 0, 0);
+
+            if (new Date() > classEndTime) {
+                return {
+                    ...session,
+                    attendanceTime: {
+                        ...session.attendanceTime,
+                        status: 'absent' as AttendanceStatus,
+                        checkedAt: new Date()
+                    }
+                };
+            }
+
+            return session;
+        }) as AttendanceSession[];
+
+        // 세션 상태가 하나라도 변경되었는지 확인
+        const isChanged = updatedSessions.some((session, idx) => session !== student.sessions[idx]);
+        if (isChanged) {
+            return { ...student, sessions: updatedSessions };
         }
-
-        // 수업 시간이 지났고 아직 미등록 상태라면 자동으로 결석 처리
-        const classEndTime = new Date(currentDate);
-        const [endHour, endMinute] = student.attendanceTime.end.split(':').map(Number);
-        classEndTime.setHours(endHour, endMinute, 0, 0);
-
-        if (new Date() > classEndTime) {
-            return {
-                ...student,
-                attendanceTime: {
-                    ...student.attendanceTime,
-                    status: 'absent',
-                    checkedAt: new Date()
-                }
-            };
-        }
-
         return student;
     });
 };
@@ -38,6 +47,7 @@ export const useAttendanceScheduler = (teacherId?: string) => {
     const [allActiveStudents, setAllActiveStudents] = useState<{ id: string, name: string }[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [refreshTrigger, setRefreshTrigger] = useState(0);
+    const [updatingIds, setUpdatingIds] = useState<Set<string>>(new Set());
 
     // 모든 활성 학생 목록 가져오기 (보강 등록용)
     useEffect(() => {
@@ -107,19 +117,29 @@ export const useAttendanceScheduler = (teacherId?: string) => {
     }, []);
 
     const handleAttendanceChange = useCallback(async (id: string, value: AttendanceStatus) => {
-        console.log(`[Attendance] Updating ${id} to ${value} via Server Action`);
+        // 이미 처리 중인 ID면 무시 (중복 클릭 방지)
+        if (updatingIds.has(id)) return;
+
+        console.log(`[Attendance] Updating session ${id} to ${value}`);
         
-        // 1. 로컬 상태 업데이트
-        setStudents(prev => prev.map(s =>
-            s.id === id ? {
-                ...s,
+        setUpdatingIds(prev => new Set(prev).add(id));
+
+        // 1. 로컬 상태 업데이트 (Optimistic UI)
+        setStudents(prev => prev.map(student => {
+            const sessionIdx = student.sessions.findIndex(s => s.id === id);
+            if (sessionIdx === -1) return student;
+
+            const updatedSessions = [...student.sessions];
+            updatedSessions[sessionIdx] = {
+                ...updatedSessions[sessionIdx],
                 attendanceTime: {
-                    ...s.attendanceTime,
+                    ...updatedSessions[sessionIdx].attendanceTime,
                     status: value,
                     checkedAt: value === 'unregistered' ? undefined : new Date()
                 }
-            } : s
-        ));
+            };
+            return { ...student, sessions: updatedSessions };
+        }));
         
         try {
             const today = currentDate.toLocaleDateString('en-CA');
@@ -127,44 +147,57 @@ export const useAttendanceScheduler = (teacherId?: string) => {
             const isMakeup = id.includes('-makeup-');
             const sessionType = isMakeup ? 'makeup' : 'regular';
 
-            // 'unregistered' 상태 처리: 
-            // - 정규 수업이면 삭제 (기본 스케줄로 복구)
-            // - 보강 수업이면 'makeup' 상태로 유지 (삭제하면 목록에서 사라짐)
+            // 현재 최신 학생 데이터에서 해당 세션 정보 찾기
+            let targetSession: AttendanceSession | undefined;
+            for (const student of students) {
+                const s = student.sessions.find(item => item.id === id);
+                if (s) {
+                    targetSession = s;
+                    break;
+                }
+            }
+
             if (value === 'unregistered') {
                 if (isMakeup) {
-                    const student = students.find(s => s.id === id);
                     await saveAttendanceSessionAction({
-                        id: student?.sessionId,
+                        id: targetSession?.sessionId,
                         student_id: realUserId,
                         date: today,
-                        status: 'makeup', // 보강은 'makeup'이 대기 상태임
+                        status: 'makeup',
                         session_type: 'makeup',
-                        teacher_id: teacherId || null
+                        teacher_id: teacherId || null,
+                        start_time: targetSession?.attendanceTime.start,
+                        end_time: targetSession?.attendanceTime.end
                     });
                 } else {
                     await deleteAttendanceSessionAction(realUserId, today, 'regular');
                 }
             } else {
-                const student = students.find(s => s.id === id);
-                const attendanceData: any = {
-                    id: student?.sessionId,
+                await saveAttendanceSessionAction({
+                    id: targetSession?.sessionId,
                     student_id: realUserId,
                     date: today,
                     status: value,
                     session_type: sessionType,
-                    teacher_id: teacherId || null
-                };
-
-                await saveAttendanceSessionAction(attendanceData);
+                    teacher_id: teacherId || null,
+                    start_time: targetSession?.attendanceTime.start,
+                    end_time: targetSession?.attendanceTime.end
+                });
             }
 
-            // 2. 다른 컴포넌트 동기화를 위한 트리거 발생 및 로컬 데이터 최신화 (DB의 sessionId 등 반영)
+            // DB 반영 후 전체 데이터 동기화
             await refreshData();
         } catch (error) {
             console.error('출석 상태 저장 중 오류:', error);
-            setRefreshTrigger(prev => prev + 1);
+            await refreshData();
+        } finally {
+            setUpdatingIds(prev => {
+                const newSet = new Set(prev);
+                newSet.delete(id);
+                return newSet;
+            });
         }
-    }, [currentDate, teacherId, students, refreshData]);
+    }, [currentDate, teacherId, students, updatingIds]);
 
     return {
         currentDate,
@@ -172,6 +205,7 @@ export const useAttendanceScheduler = (teacherId?: string) => {
         allActiveStudents,
         isLoading,
         refreshTrigger,
+        updatingIds,
         handlePrev,
         handleNext,
         handleAttendanceChange,

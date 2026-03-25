@@ -8,6 +8,7 @@ import { useAttendanceScheduler } from "../hooks/useAttendanceScheduler";
 import { ScheduleHeader } from "./attendance-scheduler/ScheduleHeader";
 import { ScheduleGrid } from "./attendance-scheduler/ScheduleGrid";
 import StudentModal from "@/components/common/StudentModal";
+import StudentProgressModal from "./StudentProgressModal";
 import { getStudentDetailsForEdit, getTeachersAndAcademies, updateStudent } from "@/lib/actions";
 
 export function AttendanceScheduler({ teacherId }: { teacherId?: string }) {
@@ -20,12 +21,17 @@ export function AttendanceScheduler({ teacherId }: { teacherId?: string }) {
     handleNext,
     handleAttendanceChange,
     refreshData,
-    refreshTrigger
+    refreshTrigger,
+    updatingIds
   } = useAttendanceScheduler(teacherId);
 
   // 학생 수정 모달 관련 상태
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [selectedStudentForEdit, setSelectedStudentForEdit] = useState<any>(null);
+
+  // 학생 진도 모달 관련 상태
+  const [isProgressModalOpen, setIsProgressModalOpen] = useState(false);
+  const [selectedStudentForProgress, setSelectedStudentForProgress] = useState<{ id: string, name: string } | null>(null);
   const [teachers, setTeachers] = useState<any[]>([]);
   const [academies, setAcademies] = useState<string[]>([]);
 
@@ -53,6 +59,11 @@ export function AttendanceScheduler({ teacherId }: { teacherId?: string }) {
       console.error('학생 정보 로드 중 오류:', error);
       alert('학생 정보를 불러오는 중 오류가 발생했습니다.');
     }
+  };
+
+  const handleProgressClick = (userId: string, userName: string) => {
+    setSelectedStudentForProgress({ id: userId, name: userName });
+    setIsProgressModalOpen(true);
   };
 
   const handleSaveStudent = async (formData: any) => {
@@ -94,7 +105,11 @@ export function AttendanceScheduler({ teacherId }: { teacherId?: string }) {
           onNext={handleNext}
         />
         <CardContent className="p-0">
-          <ScheduleGrid students={students} isLoading={isLoading} />
+          <ScheduleGrid 
+            students={students} 
+            isLoading={isLoading} 
+            updatingIds={updatingIds}
+          />
         </CardContent>
       </Card>
 
@@ -105,6 +120,8 @@ export function AttendanceScheduler({ teacherId }: { teacherId?: string }) {
         allActiveStudents={allActiveStudents}
         onRefresh={refreshData}
         onStudentClick={handleStudentClick}
+        onProgressClick={handleProgressClick}
+        updatingIds={updatingIds}
       />
 
       <StudentModal
@@ -117,6 +134,15 @@ export function AttendanceScheduler({ teacherId }: { teacherId?: string }) {
         currentUserId={teacherId || undefined}
         academies={academies}
       />
+
+      {selectedStudentForProgress && (
+        <StudentProgressModal
+          isOpen={isProgressModalOpen}
+          onClose={() => setIsProgressModalOpen(false)}
+          studentId={selectedStudentForProgress.id}
+          studentName={selectedStudentForProgress.name}
+        />
+      )}
     </>
   );
 }

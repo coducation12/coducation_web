@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useToast } from "@/hooks/use-toast";
 import {
     Dialog,
@@ -38,11 +38,18 @@ export function MakeupSessionModal({ students, teacherId, onSuccess }: MakeupSes
     const { toast } = useToast();
     const [open, setOpen] = useState(false);
     const [loading, setLoading] = useState(false);
+    const [isMounted, setIsMounted] = useState(false);
     const [selectedStudent, setSelectedStudent] = useState<string>('');
     const [date, setDate] = useState<string>(new Date().toISOString().split('T')[0]);
     const [startTime, setStartTime] = useState<string>('14:00');
     const [endTime, setEndTime] = useState<string>('15:30');
     const [memo, setMemo] = useState<string>('');
+
+    useEffect(() => {
+        setIsMounted(true);
+    }, []);
+
+    if (!isMounted) return null;
 
     const handleSubmit = async () => {
         if (!selectedStudent || !date || !startTime || !endTime) {

@@ -10,7 +10,9 @@ interface StudentListProps {
   allActiveStudents?: { id: string, name: string }[];
   onRefresh?: () => void;
   onStudentClick: (userId: string) => void;
+  onProgressClick: (userId: string, userName: string) => void;
   refreshTrigger?: number;
+  updatingIds: Set<string>;
 }
 
 export function StudentList({ 
@@ -20,7 +22,9 @@ export function StudentList({
   allActiveStudents = [], 
   onRefresh, 
   onStudentClick,
-  refreshTrigger = 0
+  onProgressClick,
+  refreshTrigger = 0,
+  updatingIds
 }: StudentListProps) {
   return (
     <Card className="bg-gradient-to-br from-cyan-900/20 to-blue-900/20 border-cyan-500/30 mt-8">
@@ -58,14 +62,16 @@ export function StudentList({
             <tbody>
               {students.map((student, idx) => (
                 <StudentRow
-                  key={student.id}
+                  key={student.userId}
                   student={student}
                   idx={idx}
                   onAttendanceChange={onAttendanceChange}
                   teacherId={teacherId}
                   onStudentClick={onStudentClick}
+                  onProgressClick={onProgressClick}
                   onRefresh={onRefresh}
                   refreshTrigger={refreshTrigger}
+                  updatingIds={updatingIds}
                 />
               ))}
             </tbody>

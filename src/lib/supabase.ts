@@ -94,6 +94,10 @@ export interface Database {
           enrollment_start_date: string;
           enrollment_end_date?: string;
           attendance_schedule?: any;
+          learning_progress?: any;
+          achievement_records?: any;
+          typing_stats?: any;
+          total_xp?: number;
           created_at: string;
         };
         Insert: {
@@ -105,6 +109,10 @@ export interface Database {
           enrollment_start_date: string;
           enrollment_end_date?: string;
           attendance_schedule?: any;
+          learning_progress?: any;
+          achievement_records?: any;
+          typing_stats?: any;
+          total_xp?: number;
           created_at?: string;
         };
         Update: {
@@ -116,6 +124,10 @@ export interface Database {
           enrollment_start_date?: string;
           enrollment_end_date?: string;
           attendance_schedule?: any;
+          learning_progress?: any;
+          achievement_records?: any;
+          typing_stats?: any;
+          total_xp?: number;
           created_at?: string;
         };
       };
@@ -127,6 +139,7 @@ export interface Database {
           category?: string;
           level: '기초' | '중급' | '고급';
           image?: string;
+          status?: string;
           checklist?: string[];
           created_by?: string;
           public: boolean;
@@ -141,6 +154,7 @@ export interface Database {
           category?: string;
           level: '기초' | '중급' | '고급';
           image?: string;
+          status?: string;
           checklist?: string[];
           created_by?: string;
           public: boolean;
@@ -155,6 +169,7 @@ export interface Database {
           category?: string;
           level?: '기초' | '중급' | '고급';
           image?: string;
+          status?: string;
           checklist?: string[];
           created_by?: string;
           public?: boolean;

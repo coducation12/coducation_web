@@ -91,13 +91,14 @@
 ## 5. 구현 단계 (Roadmap)
 
 ### Phase 1: DB 스키마 업데이트
-- [ ] `students` 테이블 JSONB 칼럼(`learning_progress`, `achievement_records`, `typing_stats`) 추가.
-- [ ] `users.total_xp` 데이터를 `students.total_xp`로 마이그레이션.
-- [ ] 자격증 카테고리 마스터 데이터 정의.
+- [x] `students` 테이블 JSONB 칼럼(`learning_progress`, `achievement_records`, `typing_stats`) 추가.
+- [x] `users.total_xp` 데이터를 `students.total_xp`로 마이그레이션.
+- [x] 자격증 카테고리 마스터 데이터 정의.
 
 ### Phase 2: 강사 전용 관리 도구
-- [ ] `StudentProgressModal` UI 컴포넌트 개발.
-- [ ] 이미지 업로드(Supabase Storage) & 데이터 저장 Server Action 구현.
+- [x] `StudentProgressModal` UI 컴포넌트 개발.
+- [x] 이미지 업로드(Supabase Storage) & 데이터 저장 Server Action 구현.
+- [x] 출석부(StudentRow) "📈" 아이콘 연동.
 
 ### Phase 3: 사용자 대시보드 화면
 - [ ] 대시보드 내 수업 카드 및 갤러리 UI 구현.

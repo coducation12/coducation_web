@@ -3219,11 +3219,170 @@ export async function updateTeacherLabelColor(teacherId: string, color: string) 
 }
 
 /**
+ * 학생 진도 및 성과 정보 조회
+ */
+export async function getStudentProgress(studentId: string) {
+  try {
+    const { data, error } = await supabaseAdmin
+      .from('students')
+      .select('learning_progress, achievement_records, typing_stats, total_xp')
+      .eq('user_id', studentId)
+      .single();
+
+    if (error) {
+      return { success: false, error: `진도 정보 조회 실패: ${error.message}` };
+    }
+
+    return { 
+      success: true, 
+      data: {
+        learning_progress: data.learning_progress || [],
+        achievement_records: data.achievement_records || { attained: [], targets: [] },
+        typing_stats: data.typing_stats || { ko: { maxSpeed: 0 }, en: { maxSpeed: 0 } },
+        total_xp: data.total_xp || 0
+      } 
+    };
+  } catch (error) {
+    console.error('진도 정보 조회 중 오류:', error);
+    return { success: false, error: '진도 정보 조회 중 오류가 발생했습니다.' };
+  }
+}
+
+/**
+ * 학생 진도 및 성과 정보 업데이트
+ */
+export async function updateStudentProgress(studentId: string, progressData: any) {
+  try {
+    const { error } = await supabaseAdmin
+      .from('students')
+      .update({
+        learning_progress: progressData.learning_progress,
+        achievement_records: progressData.achievement_records,
+        typing_stats: progressData.typing_stats,
+        total_xp: progressData.total_xp
+      })
+      .eq('user_id', studentId);
+
+    if (error) {
+      return { success: false, error: `진도 정보 저장 실패: ${error.message}` };
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error('진도 정보 저장 중 오류:', error);
+    return { success: false, error: '진도 정보 저장 중 오류가 발생했습니다.' };
+  }
+}
+
+/**
+ * 마스터 커리큘럼 목록 조회
+ */
+export async function getCurriculums() {
+  try {
+    const { data, error } = await supabaseAdmin
+      .from('curriculums')
+      .select('*')
+      .order('title', { ascending: true });
+
+    if (error) {
+      return { success: false, error: `커리큘럼 조회 실패: ${error.message}` };
+    }
+
+    return { success: true, data };
+  } catch (error) {
+    console.error('커리큘럼 조회 중 오류:', error);
+    return { success: false, error: '커리큘럼 조회 중 오류가 발생했습니다.' };
+  }
+}
+
+/**
+ * 학습 결과물 등록 및 커뮤니티 동기화
+ */
+export async function createPortfolioEntry(
+  studentId: string, 
+  progressId: string, 
+  entryData: { title: string, description: string, imageUrl?: string, url?: string },
+  shareToCommunity: boolean
+) {
+  try {
+    // 1. 학생 데이터 조회
+    const { data: student, error: fetchError } = await supabaseAdmin
+      .from('students')
+      .select('learning_progress, user_id')
+      .eq('user_id', studentId)
+      .single();
+
+    if (fetchError || !student) {
+      throw new Error(`학생 조회 실패: ${fetchError?.message}`);
+    }
+
+    const progress = student.learning_progress as any[] || [];
+    const targetProgress = progress.find(p => p.id === progressId);
+
+    if (!targetProgress) {
+        throw new Error('해당 학습 과정을 찾을 수 없습니다.');
+    }
+
+    // 2. 새로운 결과물 아이템 생성
+    const newItem = {
+      id: crypto.randomUUID(),
+      date: new Date().toISOString().split('T')[0],
+      ...entryData,
+      isShared: shareToCommunity
+    };
+
+    targetProgress.results = [newItem, ...(targetProgress.results || [])];
+
+    // 3. 학생 데이터 업데이트
+    const { error: updateError } = await supabaseAdmin
+      .from('students')
+      .update({ learning_progress: progress })
+      .eq('user_id', studentId);
+
+    if (updateError) {
+      throw new Error(`진도 업데이트 실패: ${updateError.message}`);
+    }
+
+    // 4. 커뮤니티 공유 (체크된 경우)
+    if (shareToCommunity) {
+      const { data: userData } = await supabaseAdmin
+        .from('users')
+        .select('name')
+        .eq('id', studentId)
+        .single();
+      
+      const teacherName = "(강사 기록)"; // 또는 현재 세션의 강사 이름
+      
+      const contentText = `${entryData.description}\n\n${entryData.url ? `링크: ${entryData.url}` : ''}`;
+      
+      const { error: postError } = await supabaseAdmin
+        .from('community_posts')
+        .insert({
+          user_id: studentId,
+          title: entryData.title,
+          content: contentText,
+          images: entryData.imageUrl ? [entryData.imageUrl] : []
+        });
+
+      if (postError) {
+        console.error('커뮤니티 게시 실패:', postError);
+        // 포트폴리오 저장은 성공했으므로 오류를 던지지는 않음
+      }
+    }
+
+    return { success: true, newItem };
+  } catch (error: any) {
+    console.error('결과물 등록 중 오류:', error);
+    return { success: false, error: error.message || '오류가 발생했습니다.' };
+  }
+}
+
+/**
  * 사이트 방문 추적 (일별 방문자 수 증가)
  */
 export async function trackVisit(isUnique: boolean = false) {
     try {
-        const today = new Date().toISOString().split('T')[1].split('Z')[0] ? new Date().toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
+        const today = new Date().toISOString().split('T')[0];
         
         // 오늘 날짜의 레코드 조회
         const { data: current } = await supabaseAdmin

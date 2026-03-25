@@ -3,7 +3,7 @@ import React, { useState, useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
-import { LayoutDashboard, BookOpen, Keyboard, Users, Menu, LogOut, GraduationCap, User, CalendarDays, MessageSquare, CreditCard, Monitor } from "lucide-react";
+import { LayoutDashboard, Keyboard, Users, Menu, LogOut, GraduationCap, User, CalendarDays, MessageSquare, CreditCard, Monitor } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { logout } from "@/lib/actions";
@@ -17,8 +17,6 @@ const navItems = [
   { href: "/dashboard/teacher/payments", label: "수납관리", icon: <CreditCard className="w-5 h-5" /> },
   { href: "/dashboard/teacher/pc-management", label: "PC 관리", icon: <Monitor className="w-5 h-5" /> },
   { href: "/dashboard/teacher/timetable", label: "학원시간표", icon: <CalendarDays className="w-5 h-5" /> },
-  // TODO: 커리큘럼 페이지 완성 후 활성화 예정
-  // { href: "/dashboard/teacher/curriculum", label: "커리큘럼", icon: <BookOpen className="w-5 h-5" /> },
   { href: "/dashboard/teacher/consultations", label: "상담문의", icon: <MessageSquare className="w-5 h-5" /> },
   { href: "/dashboard/teacher/community", label: "커뮤니티", icon: <Users className="w-5 h-5" /> },
 ];

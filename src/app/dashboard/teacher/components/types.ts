@@ -1,6 +1,21 @@
-// 학생 타입 정의
+// 개별 출석 세션 타입
+export interface AttendanceSession {
+  id: string; // row 내의 고유 식별자 (예: user_id-regular, user_id-makeup-uuid)
+  sessionId?: string; // DB 레코드 ID
+  attendanceTime: {
+    start: string;
+    end: string;
+    status: 'unregistered' | 'present' | 'absent';
+    checkedAt?: Date;
+  };
+  isMakeup: boolean;
+  koreanSpeed?: number;
+  englishSpeed?: number;
+  memo?: string;
+}
+
+// 학생 타입 (UI 행 하나를 구성)
 export interface Student {
-  id: string;
   userId: string;
   name: string;
   teacher: string;
@@ -8,17 +23,7 @@ export interface Student {
   course: string;
   curriculum: string;
   phone: string;
-  attendanceTime: {
-    start: string;
-    end: string;
-    status: 'unregistered' | 'present' | 'absent';
-    checkedAt?: Date;
-  };
-  isMakeup?: boolean;
-  koreanSpeed?: number;
-  englishSpeed?: number;
-  memo?: string;
-  sessionId?: string; // 실제 DB 세션 ID
+  sessions: AttendanceSession[];
 }
 
 // 출석 상태 타입

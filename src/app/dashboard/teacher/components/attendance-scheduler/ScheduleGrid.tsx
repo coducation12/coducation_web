@@ -6,9 +6,10 @@ import { ScheduleRow } from './ScheduleRow';
 interface ScheduleGridProps {
     students: Student[];
     isLoading: boolean;
+    updatingIds: Set<string>;
 }
 
-export const ScheduleGrid = ({ students, isLoading }: ScheduleGridProps) => {
+export const ScheduleGrid = ({ students, isLoading, updatingIds }: ScheduleGridProps) => {
     if (isLoading) {
         return (
             <div className="flex justify-center items-center py-8">
@@ -45,7 +46,12 @@ export const ScheduleGrid = ({ students, isLoading }: ScheduleGridProps) => {
                 
                 {/* 데스크톱 학생별 행 */}
                 {students.map((student, rowIdx) => (
-                    <ScheduleRow key={student.id} student={student} rowIdx={rowIdx} />
+                    <ScheduleRow 
+                        key={student.userId} 
+                        student={student} 
+                        rowIdx={rowIdx} 
+                        updatingIds={updatingIds}
+                    />
                 ))}
             </div>
 
@@ -56,7 +62,13 @@ export const ScheduleGrid = ({ students, isLoading }: ScheduleGridProps) => {
                     <span className="flex-1 text-center">시간 스케줄</span>
                 </div>
                 {students.map((student, rowIdx) => (
-                    <ScheduleRow key={student.id + '-mobile'} student={student} rowIdx={rowIdx} isMobile />
+                    <ScheduleRow 
+                        key={student.userId + '-mobile'} 
+                        student={student} 
+                        rowIdx={rowIdx} 
+                        isMobile 
+                        updatingIds={updatingIds}
+                    />
                 ))}
             </div>
         </div>

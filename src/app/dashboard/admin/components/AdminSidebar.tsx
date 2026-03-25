@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
-import { LayoutDashboard, BookOpen, Users, Menu, LogOut, GraduationCap, User, CalendarDays, UserCheck, Settings, MessageSquare, Home, CreditCard, Monitor } from "lucide-react";
+import { LayoutDashboard, Users, Menu, LogOut, GraduationCap, User, CalendarDays, UserCheck, Settings, MessageSquare, Home, CreditCard, Monitor, Library } from "lucide-react";
 import Image from "next/image";
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
@@ -18,7 +18,7 @@ const navItems = [
   { href: "/dashboard/admin/payments", label: "수납관리", icon: <CreditCard className="w-5 h-5" /> },
   { href: "/dashboard/admin/pc-management", label: "PC 관리", icon: <Monitor className="w-5 h-5" /> },
   { href: "/dashboard/admin/timetable", label: "학원시간표", icon: <CalendarDays className="w-5 h-5" /> },
-  { href: "/dashboard/admin/curriculum", label: "커리큘럼", icon: <BookOpen className="w-5 h-5" /> },
+  { href: "/dashboard/admin/subjects", label: "과목 관리", icon: <Library className="w-5 h-5" /> },
   { href: "/dashboard/admin/consultations", label: "상담문의", icon: <MessageSquare className="w-5 h-5" /> },
   { href: "/dashboard/admin/community", label: "커뮤니티", icon: <Users className="w-5 h-5" /> },
   { href: "/dashboard/admin/content", label: "컨텐츠 관리", icon: <Settings className="w-5 h-5" /> },

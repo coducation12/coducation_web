@@ -1,0 +1,41 @@
+import { NextResponse } from 'next/server';
+import { supabaseAdmin } from '@/lib/supabase';
+
+const subjects = [
+    { category: "컴퓨터 기초", title: "한글 실무 기초", image: "https://sufndxzfcigp.supabase.co/storage/v1/object/public/content-images/seed-basic-1774338421876.png" },
+    { category: "컴퓨터 기초", title: "엑셀 데이터 활용", image: "https://sufndxzfcigp.supabase.co/storage/v1/object/public/content-images/seed-basic-1774338421876.png" },
+    { category: "컴퓨터 기초", title: "파워포인트 디자인", image: "https://sufndxzfcigp.supabase.co/storage/v1/object/public/content-images/seed-basic-1774338421876.png" },
+    { category: "컴퓨터 기초", title: "윈도우/인터넷 활용", image: "https://sufndxzfcigp.supabase.co/storage/v1/object/public/content-images/seed-basic-1774338421876.png" },
+    { category: "코딩", title: "파이썬 기초 프로그래밍", image: "https://sufndxzfcigp.supabase.co/storage/v1/object/public/content-images/seed-coding-1774338435762.png" },
+    { category: "코딩", title: "엔트리 AI 블록코딩", image: "https://sufndxzfcigp.supabase.co/storage/v1/object/public/content-images/seed-coding-1774338435762.png" },
+    { category: "코딩", title: "C언어 프로그래밍", image: "https://sufndxzfcigp.supabase.co/storage/v1/object/public/content-images/seed-coding-1774338435762.png" },
+    { category: "코딩", title: "자바 객체지향 기초", image: "https://sufndxzfcigp.supabase.co/storage/v1/object/public/content-images/seed-coding-1774338435762.png" },
+    { category: "코딩", title: "팅커캐드 3D 코딩", image: "https://sufndxzfcigp.supabase.co/storage/v1/object/public/content-images/seed-coding-1774338435762.png" },
+    { category: "코딩", title: "아두이노 하드웨어", image: "https://sufndxzfcigp.supabase.co/storage/v1/object/public/content-images/seed-coding-1774338435762.png" },
+    { category: "자격증", title: "ITQ 한글 자격반", image: "https://sufndxzfcigp.supabase.co/storage/v1/object/public/content-images/seed-cert-1774338450123.png" },
+    { category: "자격증", title: "ITQ 엑셀 자격반", image: "https://sufndxzfcigp.supabase.co/storage/v1/object/public/content-images/seed-cert-1774338450123.png" },
+    { category: "자격증", title: "COS Pro 파이썬 2급", image: "https://sufndxzfcigp.supabase.co/storage/v1/object/public/content-images/seed-cert-1774338450123.png" },
+    { category: "드로잉", title: "블랜더 3D 모델링", image: "https://sufndxzfcigp.supabase.co/storage/v1/object/public/content-images/seed-draw-1774338466453.png" },
+    { category: "드로잉", title: "디지털 일러스트 기초", image: "https://sufndxzfcigp.supabase.co/storage/v1/object/public/content-images/seed-draw-1774338466453.png" }
+];
+
+export async function GET() {
+    try {
+        const finalData = subjects.map(s => ({
+            ...s,
+            level: '기초',
+            public: true,
+            status: '진행중'
+        }));
+
+        const { data, error } = await supabaseAdmin
+            .from('curriculums')
+            .insert(finalData);
+
+        if (error) throw error;
+
+        return NextResponse.json({ success: true, count: finalData.length });
+    } catch (error: any) {
+        return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    }
+}

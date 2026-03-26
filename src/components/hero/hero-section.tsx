@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ContactModal } from '@/components/ui/contact-modal';
+import { Instagram } from 'lucide-react';
 
 export function HeroSection() {
   const headingText = "코딩으로 세상을 교육하다, Coducation";
@@ -41,6 +42,18 @@ export function HeroSection() {
               </div>
             </div>
           </div>
+
+          <a
+            href="https://www.instagram.com/coducation.cc/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="absolute bottom-6 right-6 z-20 transition-all duration-500 hover:scale-110 group"
+            aria-label="Coducation Instagram"
+          >
+            <div className="relative p-3 rounded-2xl bg-white/5 backdrop-blur-sm border border-white/10 group-hover:bg-gradient-to-tr group-hover:from-[#f9ce34] group-hover:via-[#ee2a7b] group-hover:to-[#6228d7] transition-all duration-500 shadow-xl group-hover:shadow-[0_0_25px_rgba(238,42,123,0.5)] group-hover:border-transparent">
+              <Instagram className="w-8 h-8 md:w-10 md:h-10 text-white transition-transform duration-500 group-hover:rotate-6" />
+            </div>
+          </a>
         </Card>
       </div>
 

@@ -1,8 +1,8 @@
 "use client";
 import { useState, useEffect } from "react";
-import CurriculumUpload from "@/components/curriculum/curriculum-upload";
-import CurriculumMemo from "@/components/curriculum/curriculum-memo";
-import CurriculumFeedback from "@/components/curriculum/curriculum-feedback";
+// import CurriculumUpload from "@/components/curriculum/curriculum-upload";
+// import CurriculumMemo from "@/components/curriculum/curriculum-memo";
+// import CurriculumFeedback from "@/components/curriculum/curriculum-feedback";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { CheckCircle, Circle, Trophy } from "lucide-react";
@@ -189,12 +189,15 @@ export default function ParentStudyPage() {
                     )}
 
                     {/* 피드백 영역 - 부모가 작성 가능 */}
-                    <CurriculumMemo
+                    {/* <CurriculumMemo
                       stepId={step.id}
                       feedbacks={cur.progress[idx].feedbacks}
                       onAddFeedback={(content) => handleAddFeedback(cur.idx, idx, content)}
                       currentUserRole={currentUserRole}
-                    />
+                    /> */}
+                    <div className="p-4 bg-cyan-950/20 border border-cyan-400/20 rounded-lg">
+                      <p className="text-sm text-cyan-400 text-center">피드백 기능은 새로운 학습 시스템 도입에 따라 업데이트 중입니다.</p>
+                    </div>
                   </div>
                 )}
               </li>
@@ -263,12 +266,12 @@ export default function ParentStudyPage() {
                               )}
 
                               {/* 피드백 보기 */}
-                              <CurriculumMemo
+                              {/* <CurriculumMemo
                                 stepId={step.id}
                                 feedbacks={cur.progress[idx].feedbacks}
                                 onAddFeedback={(content) => handleAddFeedback(cur.idx, idx, content)}
                                 currentUserRole={currentUserRole}
-                              />
+                              /> */}
                             </div>
                           )}
                         </li>

@@ -77,7 +77,7 @@ const koreanSentences = [
   '벼는 익을수록 고개를 숙인다. 겸손해져라.',
   '티끌 모아 티끌이다. 하지만 태산으로 가는 밑거름이된다.',
   '실패는 성공의 어머니이다. 실패를 두려워 하지마라.',
-  '일찍 일어나는 새가 벌레를 잡는다. 부지런해져라.',
+  '일찍 일어나는 새가 벌레를 잡는다. 그럼 벌레는?',
   '슬픔을 나누면 반이되고, 기쁨을 나누면 배가 된다.',
   '낮말은 새가 듣고 밤말은 쥐가 듣는다. 비밀은 없다.',
   '너 자신을 알라. 그것이 지혜의 시작이다.',
@@ -89,7 +89,7 @@ const koreanSentences = [
   '행복은 이미 만들어진 것이 아니라 당신의 행동에서 나온다.',
   '최후의 웃음을 웃는 자가 가장 잘 웃는 자이다.',
   '인생은 짧고 예술은 길다. 예술은 폭발이다!',
-  '똥 묻은 개가 겨 묻은 개 나무란다. 너 자신을 알라.',
+  '똥 묻은 개가 겨 묻은 개 나무란다. 주제를 알아라.',
   '어제는 역사이고 내일은 미스터리이며 오늘은 선물이다.',
   '과거는 아플 수 있지만, 도망치거나 배울 수 있어.',
   '무한한 공간, 저 너머로 함께 나아가자!',
@@ -598,22 +598,22 @@ export default function SentencePage() {
 
                   {[1, 2, 3, 4].map((offset) => {
                     const targetIndex = currentCharIndex + offset;
-                    if (targetIndex >= words.length) return null;
+                    const hasWord = targetIndex < words.length;
 
                     const opacity = 1 - (offset * 0.2);
                     const scale = 1 - (offset * 0.05);
 
                     return (
                       <div
-                        key={targetIndex}
-                        className="font-mono text-lg sm:text-xl lg:text-2xl font-medium leading-normal whitespace-nowrap text-left text-white/20 transition-all duration-500"
+                        key={offset}
+                        className="font-mono text-lg sm:text-xl lg:text-2xl font-medium leading-normal whitespace-nowrap text-left text-white/20 transition-all duration-500 min-h-[1.5em]"
                         style={{
-                          opacity: opacity,
+                          opacity: hasWord ? opacity : 0,
                           transform: `scale(${scale})`,
                           transformOrigin: 'left bottom',
                         }}
                       >
-                        {words[targetIndex]}
+                        {hasWord ? words[targetIndex] : '\u00A0'}
                       </div>
                     );
                   })}

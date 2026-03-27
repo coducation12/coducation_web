@@ -1052,7 +1052,7 @@ export async function saveAttendanceSessionAction(attendanceData: any) {
         console.error('saveAttendanceSessionAction update error:', error);
         return { success: false, error: '기존 기록 업데이트에 실패했습니다.' };
       }
-      return { success: true };
+      return { success: true, id: attendanceData.id };
     }
 
     // 2. ID가 없는 경우 RPC 호출 (존재 여부 체크 및 삽입 - Upsert)
@@ -1077,7 +1077,7 @@ export async function saveAttendanceSessionAction(attendanceData: any) {
       return { success: false, error: data.error };
     }
 
-    return { success: true };
+    return { success: true, id: data.id };
   } catch (error: any) {
     console.error('saveAttendanceSessionAction exception:', error);
     return { success: false, error: error.message };

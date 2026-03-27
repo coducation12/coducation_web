@@ -157,9 +157,10 @@ export const useAttendanceScheduler = (teacherId?: string) => {
                 }
             }
 
+            let serverResult;
             if (value === 'unregistered') {
                 if (isMakeup) {
-                    await saveAttendanceSessionAction({
+                    serverResult = await saveAttendanceSessionAction({
                         id: targetSession?.sessionId,
                         student_id: realUserId,
                         date: today,
@@ -170,10 +171,10 @@ export const useAttendanceScheduler = (teacherId?: string) => {
                         end_time: targetSession?.attendanceTime.end
                     });
                 } else {
-                    await deleteAttendanceSessionAction(realUserId, today, 'regular');
+                    serverResult = await deleteAttendanceSessionAction(realUserId, today, 'regular');
                 }
             } else {
-                await saveAttendanceSessionAction({
+                serverResult = await saveAttendanceSessionAction({
                     id: targetSession?.sessionId,
                     student_id: realUserId,
                     date: today,
@@ -185,8 +186,26 @@ export const useAttendanceScheduler = (teacherId?: string) => {
                 });
             }
 
-            // DB 반영 후 전체 데이터 동기화
-            await refreshData();
+            if (serverResult?.success) {
+                // 서버 결과가 성공적이면 로컬 상태를 최신화 (id 등)하고 리프레시는 건너뜀
+                const resultId = (serverResult as any).id;
+                if (resultId) {
+                    setStudents(prev => prev.map(student => {
+                        const sessionIdx = student.sessions.findIndex(s => s.id === id);
+                        if (sessionIdx === -1) return student;
+
+                        const updatedSessions = [...student.sessions];
+                        updatedSessions[sessionIdx] = {
+                            ...updatedSessions[sessionIdx],
+                            sessionId: resultId
+                        };
+                        return { ...student, sessions: updatedSessions };
+                    }));
+                }
+            } else {
+                // 에러 발생 시 데이터 정합성을 위해 리프레시
+                await refreshData();
+            }
         } catch (error) {
             console.error('출석 상태 저장 중 오류:', error);
             await refreshData();

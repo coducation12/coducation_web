@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -37,6 +37,11 @@ export default function ImageUpload({
     const [uploading, setUploading] = useState(false);
     const [preview, setPreview] = useState<string>(value || "");
     const fileInputRef = useRef<HTMLInputElement>(null);
+
+    // 외부에서 전달된 value가 변경될 때 미리보기 상태 동기화 (예: 폼 리셋 시)
+    useEffect(() => {
+        setPreview(value || "");
+    }, [value]);
 
     const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
         if (disabled) return;

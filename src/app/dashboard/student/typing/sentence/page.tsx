@@ -476,7 +476,12 @@ export default function SentencePage() {
       if (event.key === 'Enter') { // 단문 연습에서는 스페이스바를 허용하고 엔터로만 넘어감
         event.preventDefault();
         event.stopPropagation();
-        if (userInput.trim().length > 0) {
+        
+        // 문장의 90% 이상을 입력했을 때만 다음으로 넘어감 (부정행위 방지)
+        const currentSentence = words[currentCharIndex];
+        const completionRate = userInput.length / (currentSentence?.length || 1);
+        
+        if (completionRate >= 0.9) {
           checkWordInput();
         }
       }

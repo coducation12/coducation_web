@@ -36,6 +36,7 @@ interface Student {
     tuition_fee?: number; // 추가됨
     classSchedules?: ClassSchedule[];
     assignedTeachers?: Array<{ id: string, name: string }>; // 객체 배열로 복구
+    category?: string;
 }
 
 interface StudentModalProps {
@@ -150,13 +151,24 @@ export default function StudentModal({ mode, student, isOpen, onClose, onSave, t
 
     useEffect(() => {
         if (mode === "edit" && student) {
+            // 커리큘럼 데이터가 있으면 현재 과목명(student.course)에 해당하는 카테고리 찾기
+            let resolvedCategory = student.category || "";
+            let resolvedSubject = student.course || "";
+
+            if (!resolvedCategory && resolvedSubject && curriculums.length > 0) {
+                const matchedCurriculum = curriculums.find(c => c.title === resolvedSubject);
+                if (matchedCurriculum) {
+                    resolvedCategory = matchedCurriculum.category;
+                }
+            }
+
             const initialData = {
                 studentId: student.studentId || "",
                 name: student.name,
                 birthYear: student.birthDate || "",
                 password: "", // 수정 시 비밀번호는 비워둠
-                subject: student.course || "", 
-                sub_subject: student.sub_subject || "",
+                subject: resolvedCategory, 
+                sub_subject: resolvedSubject,
                 phone: student.phone || "",
                 parentPhone: student.parentPhone || "",
                 email: student.email || "",
@@ -174,6 +186,14 @@ export default function StudentModal({ mode, student, isOpen, onClose, onSave, t
             };
             setFormData(initialData);
             setOriginalData(initialData);
+
+            // 카테고리에 맞는 세부 과목 목록 업데이트
+            if (resolvedCategory) {
+                const subjects = curriculums
+                    .filter(c => c.category === resolvedCategory)
+                    .map(c => c.title);
+                setSubjectsForCategory(subjects);
+            }
         } else if (mode === "add") {
             setFormData({
                 studentId: "",

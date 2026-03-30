@@ -101,6 +101,7 @@ export default function StudentProgressModal({ isOpen, onClose, studentId, stude
             id: crypto.randomUUID(),
             curriculum_id: course.id,
             title: course.title,
+            category: course.category || '', // 카테고리 정보 추가
             imageUrl: course.image || '',
             percentage: 0,
             status: 'ongoing',

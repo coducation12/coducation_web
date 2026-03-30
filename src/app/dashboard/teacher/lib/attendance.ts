@@ -87,6 +87,10 @@ export const getAttendanceData = async (date: Date, teacherId?: string | null): 
 
             // 결과 세션이 하나라도 있는 경우에만 학생 레코드 생성
             if (sessions.length > 0) {
+                const progress = student?.learning_progress || [];
+                const ongoing = progress.filter((p: any) => p.status !== 'completed');
+                const currentProgress = ongoing.length > 0 ? ongoing[ongoing.length - 1] : null;
+
                 studentMap.set(userId, {
                     userId: userId,
                     name: student.users?.name || '알 수 없음',
@@ -103,18 +107,12 @@ export const getAttendanceData = async (date: Date, teacherId?: string | null): 
                         })
                         .map(k => dayNames[parseInt(k)])
                         .join('/'),
-                    course: (() => {
-                        const progress = student.learning_progress || [];
-                        const ongoing = progress.filter((p: any) => p.status !== 'completed');
-                        if (ongoing.length > 0) {
-                            return ongoing[ongoing.length - 1].title;
-                        }
-                        return '미지정';
-                    })(),
-                    curriculum: student.sub_subject || '미설정',
+                    course: currentProgress ? currentProgress.title : (student.main_subject || '미지정'),
+                    category: currentProgress ? (currentProgress.category || '') : '',
+                    curriculum: currentProgress ? currentProgress.title : (student.sub_subject || '미설정'),
                     phone: '',
                     sessions: sessions
-                });
+                } as Student);
             }
         });
 

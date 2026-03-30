@@ -21,6 +21,7 @@ export interface Student {
   teacher: string;
   day: string;
   course: string;
+  category: string;
   curriculum: string;
   phone: string;
   sessions: AttendanceSession[];

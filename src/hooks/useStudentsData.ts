@@ -30,6 +30,7 @@ export interface Student {
     requested_at?: string;
     uniqueKey?: string;
     monthlyAttendanceCount?: number;
+    category?: string;
 }
 
 export interface ClassSchedule {
@@ -135,7 +136,22 @@ export function useStudentsData() {
                         }
                         return item.main_subject || '미지정';
                     })(),
-                    curriculum: '기초 프로그래밍', // 기본값, 나중에 실제 커리큘럼 데이터로 교체
+                    category: (() => {
+                        const progress = item.learning_progress || [];
+                        const ongoing = progress.filter((p: any) => p.status !== 'completed');
+                        if (ongoing.length > 0) {
+                            return ongoing[ongoing.length - 1].category || '';
+                        }
+                        return '';
+                    })(),
+                    sub_subject: (() => {
+                        const progress = item.learning_progress || [];
+                        const ongoing = progress.filter((p: any) => p.status !== 'completed');
+                        if (ongoing.length > 0) {
+                            return ongoing[ongoing.length - 1].title;
+                        }
+                        return item.sub_subject || '';
+                    })(),
                     status: (item.users?.status === 'suspended' || item.users?.status === '휴강') ? '휴강' :
                             (item.users?.status === 'inactive' || item.users?.status === '종료') ? '종료' : 
                             (item.users?.status === 'consulting' || item.users?.status === '상담') ? '상담' :
@@ -143,7 +159,6 @@ export function useStudentsData() {
                     joinDate: item.users?.created_at ? new Date(item.users.created_at).toLocaleDateString() : '-',
                     lastLogin: '2024-01-15', // 기본값
                     studentId: item.users?.username || '-',
-                    sub_subject: item.sub_subject || '',
                     enrollment_date: item.enrollment_start_date || '',
                     memo: item.memo || '',
                     tuition_fee: item.tuition_fee || 0,

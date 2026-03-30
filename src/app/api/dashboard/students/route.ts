@@ -27,6 +27,7 @@ export async function GET(request: NextRequest) {
                 assigned_teachers,
                 main_subject,
                 sub_subject,
+                learning_progress,
                 memo,
                 tuition_fee,
                 users!students_user_id_fkey ( 

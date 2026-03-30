@@ -127,7 +127,14 @@ export function useStudentsData() {
                     parentPhone: item.parent?.phone || '-',
                     birthDate: item.users?.birth_year ? String(item.users.birth_year) : '-',
                     avatar: '/default-avatar.png',
-                    course: item.main_subject || '프로그래밍',
+                    course: (() => {
+                        const progress = item.learning_progress || [];
+                        const ongoing = progress.filter((p: any) => p.status !== 'completed');
+                        if (ongoing.length > 0) {
+                            return ongoing[ongoing.length - 1].title;
+                        }
+                        return item.main_subject || '미지정';
+                    })(),
                     curriculum: '기초 프로그래밍', // 기본값, 나중에 실제 커리큘럼 데이터로 교체
                     status: (item.users?.status === 'suspended' || item.users?.status === '휴강') ? '휴강' :
                             (item.users?.status === 'inactive' || item.users?.status === '종료') ? '종료' : 

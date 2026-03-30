@@ -103,7 +103,14 @@ export const getAttendanceData = async (date: Date, teacherId?: string | null): 
                         })
                         .map(k => dayNames[parseInt(k)])
                         .join('/'),
-                    course: student.main_subject || '미설정',
+                    course: (() => {
+                        const progress = student.learning_progress || [];
+                        const ongoing = progress.filter((p: any) => p.status !== 'completed');
+                        if (ongoing.length > 0) {
+                            return ongoing[ongoing.length - 1].title;
+                        }
+                        return '미지정';
+                    })(),
                     curriculum: student.sub_subject || '미설정',
                     phone: '',
                     sessions: sessions

@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Plus, Trash2, User, Users, Calendar, BookOpen, MessageSquare, CreditCard, RefreshCcw } from "lucide-react";
 import { getTeacherColorSet } from "@/lib/colors";
-import { deleteStudent } from "@/lib/actions";
+import { deleteStudent, getCurriculums } from "@/lib/actions";
 import { useToast } from "@/hooks/use-toast";
 
 interface ClassSchedule {
@@ -112,8 +112,8 @@ export default function StudentModal({ mode, student, isOpen, onClose, onSave, t
         name: "",
         birthYear: "",
         password: "",
-        subject: "",
-        sub_subject: "",
+        subject: "", // Category (분류)
+        sub_subject: "", // Subject Name (과목)
         phone: "",
         parentPhone: "",
         email: "",
@@ -128,9 +128,25 @@ export default function StudentModal({ mode, student, isOpen, onClose, onSave, t
         ] as ClassSchedule[]
     });
 
+    const [curriculums, setCurriculums] = useState<any[]>([]);
+    const [categories, setCategories] = useState<string[]>([]);
+    const [subjectsForCategory, setSubjectsForCategory] = useState<string[]>([]);
+
     const isControlled = isOpen !== undefined;
     const dialogOpen = isControlled ? isOpen : internalOpen;
     const setDialogOpen = isControlled ? (open: boolean) => !open && onClose?.() : setInternalOpen;
+
+    useEffect(() => {
+        const fetchCurriculumData = async () => {
+            const result = await getCurriculums();
+            if (result.success) {
+                setCurriculums(result.data || []);
+                const uniqueCategories = Array.from(new Set((result.data || []).map((c: any) => c.category))).filter(Boolean) as string[];
+                setCategories(uniqueCategories);
+            }
+        };
+        fetchCurriculumData();
+    }, []);
 
     useEffect(() => {
         if (mode === "edit" && student) {
@@ -139,7 +155,7 @@ export default function StudentModal({ mode, student, isOpen, onClose, onSave, t
                 name: student.name,
                 birthYear: student.birthDate || "",
                 password: "", // 수정 시 비밀번호는 비워둠
-                subject: student.course || "",
+                subject: student.course || "", 
                 sub_subject: student.sub_subject || "",
                 phone: student.phone || "",
                 parentPhone: student.parentPhone || "",
@@ -180,7 +196,18 @@ export default function StudentModal({ mode, student, isOpen, onClose, onSave, t
                 ]
             });
         }
-    }, [mode, student, dialogOpen, teachers.length]);
+    }, [mode, student, dialogOpen, teachers.length, curriculums.length]);
+
+    useEffect(() => {
+        if (formData.subject) {
+            const subjects = curriculums
+                .filter(c => c.category === formData.subject)
+                .map(c => c.title);
+            setSubjectsForCategory(subjects);
+        } else {
+            setSubjectsForCategory([]);
+        }
+    }, [formData.subject, curriculums]);
 
     // ID 자동 생성 및 중복 체크 로직
     useEffect(() => {
@@ -276,8 +303,8 @@ export default function StudentModal({ mode, student, isOpen, onClose, onSave, t
         const labels: { [key: string]: string } = {
             name: "이름",
             birthYear: "출생년도",
-            subject: "희망 과목",
-            sub_subject: "서브 과목",
+            subject: "분류",
+            sub_subject: "과목",
             phone: "본인 연락처",
             parentPhone: "학부모 연락처",
             email: "이메일",
@@ -514,25 +541,34 @@ export default function StudentModal({ mode, student, isOpen, onClose, onSave, t
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 border-t border-cyan-500/10 pt-4">
                         <div className="space-y-2">
                             <Label className="text-cyan-300 flex items-center gap-2 text-sm">
-                                <BookOpen className="w-4 h-4" /> 주요 과목
+                                <BookOpen className="w-4 h-4" /> 분류
                             </Label>
-                            <Select value={formData.subject} onValueChange={(v) => handleInputChange("subject", v)}>
+                            <Select value={formData.subject} onValueChange={(v) => {
+                                handleInputChange("subject", v);
+                                handleInputChange("sub_subject", ""); // 분류 변경 시 과목 초기화
+                            }}>
                                 <SelectTrigger className="bg-cyan-950/30 border-cyan-500/30">
-                                    <SelectValue placeholder="선택하세요" />
+                                    <SelectValue placeholder="분류 선택" />
                                 </SelectTrigger>
                                 <SelectContent className="bg-[#0f172a] border-cyan-500/30">
-                                    {subjects.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                                    {categories.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
                                 </SelectContent>
                             </Select>
                         </div>
                         <div className="space-y-2">
-                            <Label className="text-cyan-300 flex items-center gap-2 text-sm">세부 과목</Label>
-                            <Input
-                                value={formData.sub_subject}
-                                onChange={(e) => handleInputChange("sub_subject", e.target.value)}
-                                className="bg-cyan-950/30 border-cyan-500/30 focus:border-cyan-400"
-                                placeholder="직접 입력"
-                            />
+                            <Label className="text-cyan-300 flex items-center gap-2 text-sm">과목</Label>
+                            <Select 
+                                value={formData.sub_subject} 
+                                onValueChange={(v) => handleInputChange("sub_subject", v)}
+                                disabled={!formData.subject}
+                            >
+                                <SelectTrigger className="bg-cyan-950/30 border-cyan-500/30 disabled:opacity-50">
+                                    <SelectValue placeholder={formData.subject ? "과목 선택" : "분류를 먼저 선택하세요"} />
+                                </SelectTrigger>
+                                <SelectContent className="bg-[#0f172a] border-cyan-500/30">
+                                    {subjectsForCategory.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                                </SelectContent>
+                            </Select>
                         </div>
                         <div className="space-y-2">
                             <Label className="text-cyan-300 flex items-center gap-2 text-sm">상태</Label>

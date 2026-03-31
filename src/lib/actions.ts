@@ -256,6 +256,39 @@ export async function getCurrentUser() {
   }
 }
 
+// 학부모가 관리하는 학생(자녀) 목록 조회
+export async function getParentStudents(parentId: string) {
+  try {
+    const { data, error } = await supabaseAdmin
+      .from('students')
+      .select(`
+        user_id,
+        users!students_user_id_fkey (
+          id,
+          name,
+          birth_year,
+          status
+        )
+      `)
+      .eq('parent_id', parentId);
+
+    if (error) throw error;
+
+    return {
+      success: true,
+      data: data.map((item: any) => ({
+        id: item.user_id,
+        name: item.users?.name || '알 수 없음',
+        grade: item.users?.birth_year ? `${new Date().getFullYear() - item.users.birth_year + 1}세` : '정보 없음',
+        status: item.users?.status
+      }))
+    };
+  } catch (error: any) {
+    console.error('getParentStudents error:', error);
+    return { success: false, error: error.message };
+  }
+}
+
 // Supabase Auth를 사용한 로그아웃
 export async function logout() {
   try {
@@ -489,6 +522,14 @@ export async function addStudent(formData: FormData, isSignup: boolean = false) 
     }
 
     // 4. students 테이블에 학생 상세 정보 등록
+    const initialProgress = studentDataFinal.subject ? [{
+      id: crypto.randomUUID(),
+      title: studentDataFinal.sub_subject || studentDataFinal.subject,
+      category: studentDataFinal.subject,
+      status: 'ongoing',
+      started_at: new Date().toISOString()
+    }] : [];
+
     const studentInsertData = {
       user_id: userData.id,
       assigned_teachers: currentUserRole === 'teacher' && currentUserId ? [currentUserId] : [],
@@ -497,6 +538,7 @@ export async function addStudent(formData: FormData, isSignup: boolean = false) 
       attendance_schedule: Object.keys(attendanceSchedule).length > 0 ? attendanceSchedule : null,
       main_subject: studentDataFinal.subject || null,
       sub_subject: studentDataFinal.sub_subject || null,
+      learning_progress: initialProgress,
       memo: studentDataFinal.memo || null,
       tuition_fee: studentDataFinal.tuition_fee || 0,
       enrollment_start_date: studentDataFinal.enrollment_date || new Date().toISOString().split('T')[0],
@@ -571,7 +613,7 @@ export async function updateStudent(formData: FormData) {
     let finalAttendanceSchedule: any = {};
     const { data: currentStudent, error: studentFetchError } = await supabaseAdmin
       .from('students')
-      .select('attendance_schedule, assigned_teachers')
+      .select('attendance_schedule, assigned_teachers, learning_progress')
       .eq('user_id', existingUser.id)
       .single();
 
@@ -707,10 +749,34 @@ export async function updateStudent(formData: FormData) {
         .filter(id => id && id !== 'none')
     )) as string[];
 
+    // learning_progress 동기화
+    let updatedProgress = currentStudent.learning_progress || [];
+    if (studentData.subject || studentData.sub_subject) {
+      const ongoingIndex = updatedProgress.findIndex((p: any) => p.status !== 'completed');
+      if (ongoingIndex !== -1) {
+        // 기존 진행 중인 항목이 있으면 업데이트
+        updatedProgress[ongoingIndex] = {
+          ...updatedProgress[ongoingIndex],
+          title: studentData.sub_subject || updatedProgress[ongoingIndex].title,
+          category: studentData.subject || updatedProgress[ongoingIndex].category
+        };
+      } else if (studentData.subject) {
+        // 진행 중인 항목이 없으면 새로 추가
+        updatedProgress.push({
+          id: crypto.randomUUID(),
+          title: studentData.sub_subject || studentData.subject,
+          category: studentData.subject,
+          status: 'ongoing',
+          started_at: new Date().toISOString()
+        });
+      }
+    }
+
     const studentUpdateData: any = {
       attendance_schedule: finalAttendanceSchedule,
       main_subject: studentData.subject || null,
       sub_subject: studentData.sub_subject || null,
+      learning_progress: updatedProgress,
       memo: studentData.memo || null,
       tuition_fee: studentData.tuition_fee || 0,
       enrollment_start_date: studentData.enrollment_date || null

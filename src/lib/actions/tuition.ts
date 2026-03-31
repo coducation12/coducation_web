@@ -30,6 +30,7 @@ export async function getTuitionDashboardData(month: string, currentUserId: stri
                 name, 
                 phone, 
                 status,
+                academy,
                 students!students_user_id_fkey!inner (
                     tuition_fee,
                     assigned_teachers,
@@ -110,6 +111,7 @@ export async function getTuitionDashboardData(month: string, currentUserId: stri
                 base_amount: displayBaseAmount,
                 teacher_names: teacherNames,
                 teacher_ids: assignedTeacherIds,
+                academy: user.academy,
                 payment: payment ? {
                     ...payment,
                     memo: annualRecord?.memo, // 메모는 연도별로 관리 중
@@ -366,6 +368,7 @@ export async function getTuitionYearlySummary(year: number, currentUserId: strin
                 base_amount: student.tuition_fee || 0,
                 teacher_names: teacherNames,
                 teacher_ids: assignedTeacherIds,
+                academy: user.academy,
                 isInactive,
                 monthly_payments: monthlyData,
                 memo: annualRecord?.memo
@@ -412,6 +415,7 @@ export async function getTuitionExportData(startMonth: string, endMonth: string,
                 name, 
                 phone, 
                 status,
+                academy,
                 students!students_user_id_fkey!inner (
                     tuition_fee,
                     assigned_teachers,

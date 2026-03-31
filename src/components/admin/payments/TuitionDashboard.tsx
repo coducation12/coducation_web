@@ -130,7 +130,8 @@ export function TuitionDashboard({ currentUserId, currentUserRole }: TuitionDash
                 item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                 item.phone?.includes(searchTerm) ||
                 (item.teacher_names || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
-                (item.subject || "").toLowerCase().includes(searchTerm.toLowerCase());
+                (item.subject || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+                (item.academy || "").toLowerCase().includes(searchTerm.toLowerCase());
 
             let matchesStatus = true;
             const currentStatus = item.payment?.status;
@@ -151,6 +152,7 @@ export function TuitionDashboard({ currentUserId, currentUserRole }: TuitionDash
 
                 switch (sortConfig.key) {
                     case 'name': aValue = a.name; bValue = b.name; break;
+                    case 'academy': aValue = a.academy || ""; bValue = b.academy || ""; break;
                     case 'teacher': aValue = a.teacher_names || ""; bValue = b.teacher_names || ""; break;
                     case 'status': aValue = a.payment.status; bValue = b.payment.status; break;
                     case 'base_amount': aValue = a.base_amount; bValue = b.base_amount; break;
@@ -174,10 +176,13 @@ export function TuitionDashboard({ currentUserId, currentUserRole }: TuitionDash
     }, [monthlyData, searchTerm, selectedStatus, sortConfig]);
 
     const filteredYearlyData = useMemo(() => {
-        return yearlyData.filter(item =>
-            item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            item.phone?.includes(searchTerm)
-        );
+        return yearlyData.filter(item => {
+            const matchesSearch = 
+                item.phone?.includes(searchTerm) ||
+                (item.academy || "").toLowerCase().includes(searchTerm.toLowerCase());
+            
+            return matchesSearch;
+        });
     }, [yearlyData, searchTerm]);
 
     const stats = useMemo(() => {
@@ -347,11 +352,11 @@ export function TuitionDashboard({ currentUserId, currentUserRole }: TuitionDash
 
             {/* 필터 및 검색 바 */}
             <div className="flex flex-col md:flex-row gap-4 justify-between items-center px-1">
-                <div className="flex items-center gap-2 w-full md:w-auto">
+                <div className="flex flex-col sm:flex-row items-center gap-2 w-full md:w-auto">
                     <div className="relative w-full md:w-48">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-cyan-500" />
                         <Input
-                            placeholder="이름, 전화번호 검색"
+                            placeholder="이름, 학원, 과목 검색"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                             className="pl-10 bg-[#0a1837] border-cyan-500/20 text-cyan-100 focus:border-cyan-400 h-9 text-sm"
@@ -388,8 +393,11 @@ export function TuitionDashboard({ currentUserId, currentUserRole }: TuitionDash
                             <Table className="text-[12px] sm:text-sm">
                                 <TableHeader>
                                     <TableRow className="border-cyan-500/20 hover:bg-transparent">
-                                        <TableHead className="text-cyan-300 cursor-pointer min-w-[100px]" onClick={() => handleSort('name')}>
+                                        <TableHead className="text-cyan-300 cursor-pointer min-w-[90px]" onClick={() => handleSort('name')}>
                                             <div className="flex items-center gap-1">학생 {renderSortIcon('name')}</div>
+                                        </TableHead>
+                                        <TableHead className="text-cyan-300 cursor-pointer min-w-[100px] hidden lg:table-cell" onClick={() => handleSort('academy')}>
+                                            <div className="flex items-center gap-1">학원 {renderSortIcon('academy')}</div>
                                         </TableHead>
                                         <TableHead className="text-cyan-300 cursor-pointer min-w-[100px]" onClick={() => handleSort('teacher')}>
                                             <div className="flex items-center gap-1">강사/과목 {renderSortIcon('teacher')}</div>
@@ -424,6 +432,11 @@ export function TuitionDashboard({ currentUserId, currentUserRole }: TuitionDash
                                                         <div className="text-[10px] text-cyan-500">학부모: {item.parent_phone || "-"}</div>
                                                     </div>
                                                 </TableCell>
+                                                <TableCell className="py-2 sm:py-3 text-cyan-400 hidden lg:table-cell">
+                                                    <div className="flex items-center gap-1.5 capitalize">
+                                                        <span className="px-1.5 py-0.5 bg-cyan-500/10 border border-cyan-500/20 rounded text-[10px] font-medium">{item.academy || "-"}</span>
+                                                    </div>
+                                                </TableCell>
                                                 <TableCell className="py-2 sm:py-3 text-cyan-200">
                                                     <div className="font-medium truncate max-w-[80px] sm:max-w-none">{item.teacher_names || "-"}</div>
                                                     <div className="text-[10px] text-cyan-500 truncate max-w-[80px] sm:max-w-[100px]">{item.subject}</div>
@@ -450,7 +463,7 @@ export function TuitionDashboard({ currentUserId, currentUserRole }: TuitionDash
                             <Table className="min-w-[600px] sm:min-w-[960px] w-full table-fixed">
                                 <TableHeader>
                                     <TableRow className="border-cyan-500/20 hover:bg-transparent text-sm">
-                                        <TableHead className="text-cyan-300 sticky left-0 bg-[#0a1837] z-20 w-[60px] sm:w-[180px] border-r border-cyan-500/20 px-1 sm:px-4 text-[11px] sm:text-sm">학생 정보</TableHead>
+                                        <TableHead className="text-cyan-300 sticky left-0 bg-[#0a1837] z-20 w-[60px] sm:w-[220px] border-r border-cyan-500/20 px-1 sm:px-4 text-[11px] sm:text-sm">학생 정보/학원</TableHead>
                                         {[...Array(12)].map((_, i) => <TableHead key={i} className="text-cyan-300 text-center px-0 min-w-[24px] sm:min-w-[50px] text-[10px] sm:text-sm">{i + 1}월</TableHead>)}
                                     </TableRow>
                                 </TableHeader>
@@ -462,13 +475,16 @@ export function TuitionDashboard({ currentUserId, currentUserRole }: TuitionDash
                                     ) : (
                                         filteredYearlyData.map((item) => (
                                             <TableRow key={item.student_id} className={`border-cyan-500/10 text-[10px] sm:text-[11px] ${item.isInactive ? 'opacity-60 bg-zinc-900/20' : 'hover:bg-cyan-900/5'}`}>
-                                                <TableCell className="sticky left-0 bg-[#0a1837] z-10 border-r border-cyan-500/10 py-1 w-[60px] sm:w-[180px] px-1 sm:px-4">
+                                                <TableCell className="sticky left-0 bg-[#0a1837] z-10 border-r border-cyan-500/10 py-1 w-[60px] sm:w-[220px] px-1 sm:px-4">
                                                     <div className="font-bold flex flex-col sm:flex-row sm:items-center gap-0.5 sm:gap-1.5 flex-wrap text-[11px] sm:text-sm">
                                                         <span className={`${item.isInactive ? 'text-zinc-500' : 'text-cyan-100'} truncate max-w-[75px] sm:max-w-none`}>{item.name}</span>
                                                         <span className="text-[10px] text-cyan-600 font-normal hidden sm:inline-block">{item.phone}</span>
                                                         {item.isInactive && <span className="text-[7px] sm:text-[8px] bg-zinc-800 text-zinc-500 px-0.5 sm:px-1 rounded border border-zinc-700 w-fit">종료</span>}
                                                     </div>
-                                                    <div className="text-[9px] sm:text-[10px] text-cyan-500 mt-0.5 hidden sm:block">학부모 : {item.parent_phone || "-"}</div>
+                                                    <div className="text-[9px] sm:text-[10px] text-cyan-500 mt-0.5">
+                                                        <span className="text-cyan-400 font-medium">[{item.academy || "학원 미지정"}]</span>
+                                                        <span className="ml-1 hidden sm:inline">학부모: {item.parent_phone || "-"}</span>
+                                                    </div>
                                                     {/* item.memo && <div className="text-[8px] sm:text-[9px] text-cyan-400/60 truncate max-w-[75px] sm:max-w-[150px] mt-0.5">{item.memo}</div> */}
                                                 </TableCell>
                                                 {[...Array(12)].map((_, i) => {

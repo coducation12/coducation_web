@@ -74,6 +74,7 @@ const CATEGORY_THEMES: Record<string, { icon: any; color: string; bg: string }> 
 };
 
 const getTheme = (category: string) => {
+  if (!category || typeof category !== 'string') return CATEGORY_THEMES['기본'];
   const key = Object.keys(CATEGORY_THEMES).find(k => category.includes(k)) || '기본';
   return CATEGORY_THEMES[key];
 };

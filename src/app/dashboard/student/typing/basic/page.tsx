@@ -121,7 +121,7 @@ const koreanKeysByPosition = {
 
 // 각 자리별 영어 키 정의
 const englishKeysByPosition = {
-  'basic': ['a', 's', 'd', 'f', 'j', 'k', 'l'],
+  'basic': ['a', 's', 'd', 'f', 'j', 'k', 'l', ';'],
   'left-upper': ['q', 'w', 'e', 'r', 'a', 's', 'd', 'f'],
   'right-upper': ['u', 'i', 'o', 'p', 'j', 'k', 'l', ';'],
   'left-lower': ['z', 'x', 'c', 'v', 'a', 's', 'd', 'f'],
@@ -266,7 +266,7 @@ const englishWordSequences = {
   ],
 
   // leftupper = q,w,e,r (+ basic 포함) — 전부 일반 단어
-  leftupper: [
+  'left-upper': [
     ['war', 'raw', 'wear', 'rear', 'dear'],
     ['weird', 'weed', 'read', 'ward', 'ware'],
     ['were', 'wears', 'readers', 'reads', 'weir'],
@@ -280,7 +280,7 @@ const englishWordSequences = {
   ],
 
   // rightupper = u,i,o,p (+ leftupper + basic 포함) — 전부 일반 단어
-  rightupper: [
+  'right-upper': [
     ['pair', 'paid', 'pail', 'pier', 'pied'],
     ['pure', 'pore', 'pour', 'ripe', 'ride'],
     ['pipe', 'pill', 'pool', 'poll', 'pupa'],
@@ -294,7 +294,7 @@ const englishWordSequences = {
   ],
 
   // leftlower = z,x,c,v (+ rightupper 등 모두 포함) — 전부 일반 단어
-  leftlower: [
+  'left-lower': [
     ['vex', 'vexed', 'vivid', 'civic', 'civic'],
     ['cave', 'caves', 'caved', 'cavia', 'caviar'], // cavia(쥐과 속명, 일반 사전 표기)
     ['zinc', 'zany', 'zone', 'zoned', 'zones'],
@@ -309,7 +309,7 @@ const englishWordSequences = {
 
   // rightlower = m , . / ? (+ leftlower까지 포함)
   // 구두점은 실제 영어단어 구성에는 사용하지 않으므로 'm'을 중심으로 구성
-  rightlower: [
+  'right-lower': [
     ['man', 'men', 'mom', 'mem', 'mad'],
     ['made', 'make', 'meal', 'mail', 'mall'],
     ['main', 'mean', 'mine', 'mini', 'mind'],
@@ -450,29 +450,21 @@ export default function BasicPage() {
 
   // 현재 입력할 글자/단어 가져오기 (단순화된 로직)
   const getCurrentItem = useCallback((): string => {
-    if (currentCharIndex < 50) {
-      // 1단계: 개별 글자 연습
-      return sequences[currentPosition][currentCharIndex % sequences[currentPosition].length];
-    } else {
-      // 2단계: 단어 연습
-      const wordIndex = currentCharIndex - 50;
-      return words[currentPosition][wordIndex % words[currentPosition].length];
-    }
-  }, [language, currentPosition, currentCharIndex, sequences, words]);
+    const list = currentCharIndex < 50 ? sequences[currentPosition] : words[currentPosition];
+    if (!list || list.length === 0) return '';
+    const index = currentCharIndex < 50 ? currentCharIndex : currentCharIndex - 50;
+    return list[index % list.length];
+  }, [currentPosition, currentCharIndex, sequences, words]);
 
   // 다음 입력할 글자/단어 가져오기
   const getNextItem = useCallback((): string => {
     const nextIndex = currentCharIndex + 1;
     if (nextIndex >= 100) return '';
 
-    if (nextIndex < 50) {
-      // 1단계: 개별 글자 연습
-      return sequences[currentPosition][nextIndex % sequences[currentPosition].length];
-    } else {
-      // 2단계: 단어 연습
-      const wordIndex = nextIndex - 50;
-      return words[currentPosition][wordIndex % words[currentPosition].length];
-    }
+    const list = nextIndex < 50 ? sequences[currentPosition] : words[currentPosition];
+    if (!list || list.length === 0) return '';
+    const index = nextIndex < 50 ? nextIndex : nextIndex - 50;
+    return list[index % list.length];
   }, [currentPosition, currentCharIndex, sequences, words]);
 
 
@@ -932,6 +924,9 @@ export default function BasicPage() {
     } else {
       // 1단계(개별 글자 연습) 중에는 현재 글자를 하이라이트
       targetKey = currentChar;
+      if (language === 'english') {
+        targetKey = targetKey.toUpperCase();
+      }
     }
 
     // 현재 입력해야 할 키와 정확히 일치하는 경우

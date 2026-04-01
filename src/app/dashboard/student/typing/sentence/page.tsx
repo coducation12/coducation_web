@@ -552,7 +552,7 @@ export default function SentencePage() {
           </div>
         </div>
 
-        <div className="max-w-6xl mx-auto w-full flex-1 flex flex-col pt-8">
+        <div className="max-w-[1440px] mx-auto w-full flex-1 flex flex-col pt-8 px-4 sm:px-6">
           {mounted && words.length > 0 ? (
             <div className="flex-1 flex flex-col items-center justify-start mb-1 sm:mb-2 animate-in fade-in-0 slide-in-from-bottom-4 duration-500">
               <div className="mb-4 text-center h-4 sm:h-5 lg:h-6 flex items-center justify-center">
@@ -566,7 +566,7 @@ export default function SentencePage() {
               </div>
 
               {/* 문장 박스 영역 (5개 문장 노출) */}
-              <div className="w-full max-w-5xl mx-auto mb-10 bg-slate-800/40 backdrop-blur-md rounded-3xl p-10 lg:p-14 border border-cyan-500/20 shadow-2xl overflow-hidden">
+              <div className="w-full mb-10 bg-slate-800/40 backdrop-blur-md rounded-3xl p-6 sm:p-10 lg:p-16 border border-cyan-500/20 shadow-2xl overflow-hidden self-stretch transition-all duration-500">
                 <div className="flex flex-col-reverse gap-4 transition-all duration-500">
                   {/* 현재 입력 중인 문장과 그 아래의 입력창 */}
                   <div className="relative mt-4 pt-4 border-t border-cyan-500/20 overflow-hidden">
@@ -653,7 +653,7 @@ export default function SentencePage() {
                 />
               </div>
 
-              <div className="hidden lg:block bg-slate-800/90 backdrop-blur-sm rounded-2xl xl:rounded-3xl p-3 xl:p-4 shadow-2xl border border-cyan-500/30 w-full max-w-4xl animate-in fade-in-0 slide-in-from-bottom-2 duration-700 delay-200">
+              <div className="hidden lg:block bg-slate-800/90 backdrop-blur-sm rounded-2xl xl:rounded-3xl p-3 xl:p-4 shadow-2xl border border-cyan-500/30 w-full max-w-5xl mx-auto animate-in fade-in-0 slide-in-from-bottom-2 duration-700 delay-200">
                 <div className="mb-3">
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-cyan-300 text-sm">단문 연습</span>

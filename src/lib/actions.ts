@@ -1118,6 +1118,11 @@ export async function saveAttendanceSessionAction(attendanceData: any) {
         console.error('saveAttendanceSessionAction update error:', error);
         return { success: false, error: '기존 기록 업데이트에 실패했습니다.' };
       }
+      // 출석(present)인 경우 XP 부여 (100 XP)
+      if (attendanceData.status === 'present') {
+        await addStudentXP(attendanceData.student_id, 100, '출석 보상');
+      }
+
       return { success: true, id: attendanceData.id };
     }
 
@@ -1364,6 +1369,9 @@ export async function saveTypingResult(data: {
         return { success: false, error: insertError.message };
       }
     }
+
+    // 타자 연습 완료 XP 부여 (200 XP)
+    await addStudentXP(userId, 200, '타자 연습 완료');
 
     return { success: true };
   } catch (error) {
@@ -2869,15 +2877,13 @@ export async function deleteStudent(studentId: string) {
       console.warn('학생 출결 세션 삭제 실패:', attendanceError);
     }
 
-    // 3-2. 학생 학습 로그 삭제
+    // 3-2. 학생 학습 로그 삭제 (레거시 테이블 제거 대상 - 필요 시 삭제)
+    /* 
     const { error: learningLogsError } = await supabase
       .from('student_learning_logs')
       .delete()
       .eq('student_id', studentId);
-
-    if (learningLogsError) {
-      console.warn('학생 학습 로그 삭제 실패:', learningLogsError);
-    }
+    */
 
     // 3-3. 수납 기록 삭제 (tuition_annual_records 삭제는 CASCADE 정책에 따라 자동 처리됨)
 
@@ -3431,17 +3437,111 @@ export async function getStudentProgress(studentId: string) {
 }
 
 /**
+ * 학생 XP 추가 유틸리티
+ */
+export async function addStudentXP(studentId: string, amount: number, reason: string) {
+  try {
+    const { data: student, error: fetchError } = await supabaseAdmin
+      .from('students')
+      .select('total_xp')
+      .eq('user_id', studentId)
+      .single();
+
+    if (fetchError) throw fetchError;
+
+    const newXP = (student?.total_xp || 0) + amount;
+
+    const { error: updateError } = await supabaseAdmin
+      .from('students')
+      .update({ total_xp: newXP })
+      .eq('user_id', studentId);
+
+    if (updateError) throw updateError;
+    
+    console.log(`XP 지급 완료: ${studentId}에게 ${amount} XP 부여 (사유: ${reason})`);
+    return { success: true, total_xp: newXP };
+  } catch (error) {
+    console.error('XP 지급 중 오류:', error);
+    return { success: false, error: 'XP 지급에 실패했습니다.' };
+  }
+}
+
+/**
  * 학생 진도 및 성과 정보 업데이트
  */
 export async function updateStudentProgress(studentId: string, progressData: any) {
   try {
+    // 현재 학습 중(ongoing)인 과목 추출하여 main_subject, sub_subject 동기화
+    const ongoingItems = (progressData.learning_progress || []).filter((p: any) => p.status === 'ongoing');
+    const main_subject = ongoingItems[0]?.category || ongoingItems[0]?.title || null;
+    const sub_subject = ongoingItems[1]?.category || ongoingItems[1]?.title || null;
+
+    // [공유 로직] 진도 내 결과물 중 커뮤니티 공유 대상(isShared) 데이터가 있으면 게시글 생성
+    const learningProgress = progressData.learning_progress || [];
+    let sharedAny = false;
+
+    for (const cur of learningProgress) {
+      if (!cur.results || !Array.isArray(cur.results)) continue;
+      
+      for (const res of cur.results) {
+        // 이미 게시되었거나 공유 설정이 안 된 경우 건너뜀
+        if (!res.isShared || res.isPosted) continue;
+
+        try {
+          // 커뮤니티 게시글 생성
+          const contentText = `${res.description || ''}\n\n${res.url ? `링크: ${res.url}` : ''}`;
+          
+          await supabaseAdmin
+            .from('community_posts')
+            .insert({
+              user_id: studentId,
+              title: `[${cur.title}] ${res.title}`,
+              content: contentText,
+              images: res.imageUrl ? [res.imageUrl] : []
+            });
+          
+          // 게시 완료 플래그 설정 (중복 게시 방지)
+          res.isPosted = true;
+          sharedAny = true;
+        } catch (postError) {
+          console.error('커뮤니티 게시 실패:', postError);
+          // 포트폴리오 저장은 성공했으므로 오류를 던지지는 않음
+        }
+      }
+    }
+
+    // XP 보상 체크 (학습 완료 및 자격증 취득)
+    let totalXpBonus = 0;
+    
+    // 1. 학습 완료 보상 (10,000 XP)
+    for (const cur of learningProgress) {
+      if (cur.status === 'completed' && !cur.xpAwarded) {
+        totalXpBonus += 10000;
+        cur.xpAwarded = true;
+      }
+    }
+
+    // 2. 자격증 취득 보상 (10,000 XP)
+    const achievementRecords = progressData.achievement_records || { attained: [] };
+    if (achievementRecords.attained) {
+      for (const cert of achievementRecords.attained) {
+        // 날짜가 있고 아직 XP가 지급되지 않은 항목
+        if (cert.date && cert.date.trim() !== "" && !cert.xpAwarded) {
+          totalXpBonus += 10000;
+          cert.xpAwarded = true;
+        }
+      }
+    }
+
     const { error } = await supabaseAdmin
       .from('students')
       .update({
-        learning_progress: progressData.learning_progress,
-        achievement_records: progressData.achievement_records,
+        learning_progress: learningProgress,
+        achievement_records: achievementRecords,
         typing_stats: progressData.typing_stats,
-        total_xp: progressData.total_xp
+        total_xp: (progressData.total_xp || 0) + totalXpBonus,
+        main_subject: main_subject,
+        sub_subject: sub_subject
       })
       .eq('user_id', studentId);
 

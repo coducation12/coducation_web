@@ -466,4 +466,29 @@ input::-ms-clear {
   .scrollbar-hide::-webkit-scrollbar {
     display: none;  /* Safari and Chrome */
   }
+
+  /* 심플하고 얇은 스크롤바 (학생 대시보드용) */
+  .scrollbar-simple-cyan::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+  }
+
+  .scrollbar-simple-cyan::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .scrollbar-simple-cyan::-webkit-scrollbar-thumb {
+    background: rgba(34, 211, 238, 0.15);
+    border-radius: 20px;
+  }
+
+  .scrollbar-simple-cyan:hover::-webkit-scrollbar-thumb {
+    background: rgba(34, 211, 238, 0.4);
+  }
+
+  /* Firefox용 */
+  .scrollbar-simple-cyan {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(34, 211, 238, 0.3) transparent;
+  }
 }

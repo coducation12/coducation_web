@@ -9,28 +9,9 @@ import { CheckCircle, Circle, Trophy } from "lucide-react";
 import { StudentHeading, StudentText, studentButtonStyles } from "../../student/components/StudentThemeProvider";
 import { useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
+import { getStudentProgress } from "@/lib/actions";
 
-// 커리큘럼 목록 상태 추가
-const [curriculums, setCurriculums] = useState<any[]>([]);
-useEffect(() => {
-  fetchCurriculums();
-}, []);
-
-const fetchCurriculums = async () => {
-  const { data, error } = await supabase
-    .from('curriculums')
-    .select('id, title, checklist');
-  if (error) {
-    setCurriculums([]);
-    return;
-  }
-  // checklist가 string[]이므로 id 부여
-  const mapped = (data || []).map((cur: any) => ({
-    ...cur,
-    checklist: (cur.checklist || []).map((title: string, idx: number) => ({ id: idx + 1, title }))
-  }));
-  setCurriculums(mapped);
-};
+// curriculums state and fetchers moved inside component
 
 interface ProgressItem {
   done: boolean;
@@ -59,6 +40,28 @@ export default function ParentStudyPage() {
   const searchParams = useSearchParams();
   const studentId = searchParams.get('studentId') || "1";
 
+  // 커리큘럼 목록 상태 추가
+  const [curriculums, setCurriculums] = useState<any[]>([]);
+  useEffect(() => {
+    fetchCurriculums();
+  }, []);
+
+  const fetchCurriculums = async () => {
+    const { data, error } = await supabase
+      .from('curriculums')
+      .select('id, title, checklist');
+    if (error) {
+      setCurriculums([]);
+      return;
+    }
+    // checklist가 string[]이므로 id 부여
+    const mapped = (data || []).map((cur: any) => ({
+      ...cur,
+      checklist: (cur.checklist || []).map((title: string, idx: number) => ({ id: idx + 1, title }))
+    }));
+    setCurriculums(mapped);
+  };
+
   // TODO: 실제 데이터는 DB에서 가져오도록 구현
   const mockStudents = [
     { id: "1", name: "김철수", grade: "초등 3학년" },
@@ -75,39 +78,69 @@ export default function ParentStudyPage() {
   }, [curriculums]);
 
   const fetchProgressList = async () => {
-    // TODO: 실제 선택된 학생 ID로 대체 필요
-    const studentId = selectedStudent.id;
-    const newProgressList = await Promise.all(curriculums.map(async (cur: any) => {
-      // student_learning_logs 테이블에서 완료된 단계 조회 (레거시 student_activity_logs 대체)
-      const { data: logs } = await supabase
-        .from('student_learning_logs')
-        .select('step_title, completed_at')
-        .eq('student_id', studentId)
-        .eq('curriculum_id', cur.id);
+    try {
+      // 1. 학생의 JSONB 진도 데이터 조회 (서버 액션 사용)
+      const result = await getStudentProgress(studentId);
+      
+      if (!result.success) throw new Error(result.error);
+      const studentProgress = (result.data?.learning_progress as any[]) || [];
 
-      return (cur.checklist || []).map((step: any) => {
-        const log = (logs || []).find((l: any) => l.step_title === step.title);
-        return {
-          done: !!log,
-          date: log?.completed_at ? new Date(log.completed_at).toISOString().split('T')[0] : '',
-          uploads: [], // 신규 시스템에서는 uploads/feedbacks가 별도로 관리될 예정이거나 현재 미지원
+      // 2. 커리큘럼별 진행 상태 매핑
+      const newProgressList = curriculums.map((cur: any) => {
+        // 학생 진도에서 해당 커리큘럼 찾기 (curriculum_id 또는 title로 매칭)
+        const item = studentProgress.find(p => p.curriculum_id === cur.id || p.title === cur.title);
+        
+        if (!item) {
+          return (cur.checklist || []).map(() => ({ done: false, date: '', uploads: [], feedbacks: [] }));
+        }
+
+        const percentage = item.percentage || 0;
+        const totalSteps = cur.checklist?.length || 0;
+        
+        // 퍼센테이지를 기반으로 완료된 단계 계산 (예: 50%면 10개 중 5개 완료)
+        const completedCount = Math.floor((percentage / 100) * totalSteps);
+
+        return (cur.checklist || []).map((step: any, idx: number) => ({
+          done: idx < completedCount || item.status === 'completed',
+          date: item.status === 'completed' ? (item.completed_at || '').split('T')[0] : '',
+          uploads: item.results || [], // JSONB의 results를 uploads로 취급
           feedbacks: []
-        };
+        }));
       });
-    }));
-    setProgressList(newProgressList);
+
+      setProgressList(newProgressList);
+    } catch (error) {
+      console.error('진도 조회 실패:', error);
+      setProgressList([]);
+    }
   };
 
   const [expandedStep, setExpandedStep] = useState<string | null>(null);
   const [currentUserRole] = useState<"admin" | "teacher" | "parent" | "student">("parent");
 
-  // 진행/완료 커리큘럼 분리
-  const ongoing = curriculums
-    .map((cur: any, idx: number) => ({ ...cur, idx, progress: progressList[idx as number] }))
-    .filter((cur: any) => cur.progress.some((step: any) => !step.done));
-  const completed = curriculums
-    .map((cur: any, idx: number) => ({ ...cur, idx, progress: progressList[idx as number] }))
-    .filter((cur: any) => cur.progress.every((step: any) => step.done));
+  // 진행/완료 커리큘럼 분리 (학생 JSONB 데이터 기준)
+  const [ongoing, setOngoing] = useState<any[]>([]);
+  const [completed, setCompleted] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (!progressList.length || !curriculums.length) return;
+    
+    const ongoingItems: any[] = [];
+    const completedItems: any[] = [];
+
+    curriculums.forEach((cur, idx) => {
+      const isCompleted = progressList[idx].every(step => step.done);
+      const item = { ...cur, idx, progress: progressList[idx] };
+      if (isCompleted && progressList[idx].length > 0) {
+        completedItems.push(item);
+      } else {
+        ongoingItems.push(item);
+      }
+    });
+
+    setOngoing(ongoingItems);
+    setCompleted(completedItems);
+  }, [progressList, curriculums]);
 
   const handleAddFeedback = async (curIdx: number, stepIndex: number, content: string) => {
     const newFeedback = {

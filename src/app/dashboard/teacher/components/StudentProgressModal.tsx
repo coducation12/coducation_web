@@ -429,15 +429,16 @@ export default function StudentProgressModal({ isOpen, onClose, studentId, stude
                     onAdd={addCourse}
                 />
                 
-                {selectedProgressId && (
+                {isRecordResultOpen && (
                     <CourseRecordModal 
                         isOpen={isRecordResultOpen}
                         onClose={() => setIsRecordResultOpen(false)}
                         studentId={studentId}
-                        progressId={selectedProgressId}
-                        courseTitle={selectedCourseTitle}
-                        onSuccess={(newItem) => {
-                            setProgress(prev => prev.map(p => p.id === selectedProgressId ? { ...p, results: [newItem, ...(p.results || [])] } : p));
+                        progressId={selectedProgressId || (progress.length > 0 ? progress[0].id : '')}
+                        courseTitle={selectedCourseTitle || (progress.length > 0 ? progress[0].title : '')}
+                        courses={progress}
+                        onSuccess={(pid, newItem, share) => {
+                            setProgress(prev => prev.map(p => p.id === pid ? { ...p, results: [newItem, ...(p.results || [])] } : p));
                         }}
                     />
                 )}

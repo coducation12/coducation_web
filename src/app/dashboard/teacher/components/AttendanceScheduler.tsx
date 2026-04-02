@@ -38,17 +38,19 @@ export function AttendanceScheduler({ teacherId }: { teacherId?: string }) {
   // 학생 이름 클릭 시 상세 정보 로드 및 모달 오픈
   const handleStudentClick = async (userId: string) => {
     try {
-      // 1. 메타데이터 (강사, 학원) 로드 (미리 로드되지 않은 경우)
-      if (teachers.length === 0) {
-        const metaResult = await getTeachersAndAcademies();
-        if (metaResult.success) {
-          setTeachers(metaResult.teachers || []);
-          setAcademies(metaResult.academies || []);
-        }
+      // 🟢 최적화: 메타데이터(강사/학원)와 학생 상세 정보를 병렬로 로드합니다.
+      const fetchMeta = teachers.length === 0 ? getTeachersAndAcademies() : Promise.resolve(null);
+      const fetchDetails = getStudentDetailsForEdit(userId, teacherId);
+
+      const [metaResult, result] = await Promise.all([fetchMeta, fetchDetails]);
+
+      // 메타데이터 처리
+      if (metaResult && metaResult.success) {
+        setTeachers(metaResult.teachers || []);
+        setAcademies(metaResult.academies || []);
       }
 
-      // 2. 학생 상세 정보 로드
-      const result = await getStudentDetailsForEdit(userId, teacherId);
+      // 학생 상세 정보 처리
       if (result.success) {
         setSelectedStudentForEdit(result.data);
         setIsEditModalOpen(true);
@@ -60,7 +62,6 @@ export function AttendanceScheduler({ teacherId }: { teacherId?: string }) {
       alert('학생 정보를 불러오는 중 오류가 발생했습니다.');
     }
   };
-
   const handleProgressClick = (userId: string, userName: string) => {
     setSelectedStudentForProgress({ id: userId, name: userName });
     setIsProgressModalOpen(true);

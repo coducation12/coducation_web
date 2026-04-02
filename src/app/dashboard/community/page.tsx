@@ -46,7 +46,7 @@ function CommunityPage() {
       setCurrentUserId(user?.id || null);
       setCurrentUserRole(user?.role || null);
     } catch (error) {
-      // 에러 로그 제거 - 조용히 처리
+      console.error('사용자 정보를 불러오는 중 오류 발생:', error);
     }
   };
 
@@ -58,7 +58,7 @@ function CommunityPage() {
       setTotalPages(result.totalPages);
       setTotalCount(result.totalCount);
     } catch (error) {
-      // 에러 로그 제거 - 조용히 처리
+      console.error('게시물 로드 중 오류 발생:', error);
     } finally {
       setLoading(false);
     }

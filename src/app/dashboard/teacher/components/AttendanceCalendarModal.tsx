@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
     Dialog,
     DialogContent,
@@ -67,7 +67,7 @@ export function AttendanceCalendarModal({
         }
     }, [open, refresh]);
 
-    const onEditDay = (dateStr: string, record?: AttendanceRecord) => {
+    const onEditDay = useCallback((dateStr: string, record?: AttendanceRecord) => {
         setEditingDay(record || { 
             date: dateStr, 
             status: 'present', 
@@ -76,11 +76,11 @@ export function AttendanceCalendarModal({
             start_time: '10:00',
             end_time: '11:30'
         });
-    };
+    }, [setEditingDay]);
 
-    const handleOpenDetail = () => {
+    const handleOpenDetail = useCallback(() => {
         openTodayDetail(isMakeup, initialStatus);
-    };
+    }, [openTodayDetail, isMakeup, initialStatus]);
 
     if (mode === 'detail') {
         return (

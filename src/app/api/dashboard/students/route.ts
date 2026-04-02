@@ -45,10 +45,17 @@ export async function GET(request: NextRequest) {
                 parent:users!students_parent_id_fkey ( phone )
             `);
 
-        // If the user is a teacher, filter ONLY students assigned to them
-        // UNLESS 'all=true' is requested (for Academy Timetable)
-        if (userRole === 'teacher' && !showAll) {
-            query = query.contains('assigned_teachers', [userId]);
+        // 1. 권한 기반 필터링 적용
+        if (userRole === 'admin') {
+            // 관리자는 모든 학생 조회 가능
+        } else if (userRole === 'teacher') {
+            // 강사는 기본적으로 담당 학생만 조회, 'all=true'일 때만 전체 조회(시간표용) 가능
+            if (!showAll) {
+                query = query.contains('assigned_teachers', [userId]);
+            }
+        } else {
+            // 학생/학부모는 전체 학생 목록 API 접근 권한 없음 (보안 강화)
+            return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
         }
 
         // Execute query

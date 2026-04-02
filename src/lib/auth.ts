@@ -1,9 +1,10 @@
+import { cache } from 'react';
 import { cookies } from 'next/headers';
 import { User } from '@/types';
 import { supabase, supabaseAdmin } from './supabase';
 
 // 하이브리드 인증 시스템: 학생은 DB, 강사/관리자는 Auth 사용
-export async function getAuthenticatedUser(): Promise<User | null> {
+export const getAuthenticatedUser = cache(async (): Promise<User | null> => {
   try {
     const cookieStore = await cookies();
     const userId = cookieStore.get('user_id')?.value;
@@ -58,7 +59,7 @@ export async function getAuthenticatedUser(): Promise<User | null> {
     console.error('Authentication error:', error);
     return null;
   }
-}
+});
 
 // 하이브리드 로그아웃: 강사/관리자는 Auth 로그아웃도 수행
 export async function logout() {

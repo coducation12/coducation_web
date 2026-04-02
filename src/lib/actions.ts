@@ -3,6 +3,7 @@
 import { cookies, headers } from 'next/headers'
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
+import { cache } from 'react'
 import { supabase, supabaseAdmin } from '@/lib/supabase'
 import bcrypt from 'bcryptjs'
 import { compressImage, validateImageFile, formatFileSize } from '@/lib/image-utils'
@@ -220,8 +221,8 @@ export async function login(formData: FormData) {
   }
 }
 
-// 사용자 정보 조회 서버 액션 (클라이언트 컴포넌트용)
-export async function getCurrentUser() {
+// 사용자 정보 조회 서버 액션 (클라이언트 컴포넌트용 - 캐싱 적용)
+export const getCurrentUser = cache(async () => {
   try {
     const cookieStore = await cookies();
     const userId = cookieStore.get('user_id')?.value;
@@ -254,11 +255,20 @@ export async function getCurrentUser() {
     // 에러 로그 제거 - 조용히 처리
     return null;
   }
-}
+})
 
 // 학부모가 관리하는 학생(자녀) 목록 조회
 export async function getParentStudents(parentId: string) {
   try {
+    const cookieStore = await cookies();
+    const currentUserId = cookieStore.get('user_id')?.value;
+    const currentUserRole = cookieStore.get('user_role')?.value;
+
+    // 본인 확인 또는 관리자 확인
+    if (currentUserId !== parentId && currentUserRole !== 'admin') {
+      return { success: false, error: '권한이 없습니다.' };
+    }
+
     const { data, error } = await supabaseAdmin
       .from('students')
       .select(`
@@ -405,6 +415,11 @@ export async function addStudent(formData: FormData, isSignup: boolean = false) 
     }
 
     // 관리자가 학생을 직접 추가하는 경우 (기존 로직 유지)
+    // 서버 측 권한 검증: 관리자나 강사만 직접 추가 가능
+    if (currentUserRole !== 'admin' && currentUserRole !== 'teacher') {
+      return { success: false, error: '학생 정보를 직접 추가할 권한이 없습니다.' };
+    }
+
     // 서버 측 유효성 검증
     // 이름 검증 (한글만 허용, 2-10자)
     const nameRegex = /^[가-힣]{2,10}$/;
@@ -424,53 +439,51 @@ export async function addStudent(formData: FormData, isSignup: boolean = false) 
       return { success: false, error: '올바른 출생년도를 입력해주세요. (1900년 ~ 현재년도)' };
     }
 
-    // 1. 학생 ID에 'p'를 붙여서 학부모 계정 자동 생성
+    // 1. 비밀번호 해싱 (한 번만 수행하여 CPU 부하 감소)
+    const sharedPasswordHash = await bcrypt.hash(studentDataFinal.password, 10);
     const parentUsername = `${studentDataFinal.studentId}p`;
-    const parentPasswordHash = await bcrypt.hash(studentDataFinal.password, 10);
 
-    const { data: parentData, error: parentError } = await supabaseAdmin
-      .from('users')
-      .insert({
+    // 2. 유저 정보 준비 (학생 + 학부모를 한 번에 인서트하여 네트워크 라운드트립 감소)
+    const usersToInsert = [
+      {
         username: parentUsername,
         name: `${studentData.name} 학부모`,
         role: 'parent',
-        password: parentPasswordHash,
+        password: sharedPasswordHash,
         phone: studentData.parentPhone || null,
         academy: studentData.academy || '코딩메이커',
-        status: 'active', // 관리자 추가 시에는 바로 active
+        status: 'active',
         created_at: new Date().toISOString()
-      })
-      .select()
-      .single();
-
-    if (parentError) {
-      return { success: false, error: '학부모 계정 생성에 실패했습니다.' };
-    }
-
-    // 2. users 테이블에 학생 정보 등록
-    const studentPasswordHash = await bcrypt.hash(studentDataFinal.password, 10);
-
-    const { data: userData, error: userError } = await supabaseAdmin
-      .from('users')
-      .insert({
+      },
+      {
         username: studentDataFinal.studentId,
         name: studentDataFinal.name,
         role: 'student',
-        password: studentPasswordHash,
+        password: sharedPasswordHash,
         phone: studentDataFinal.phone,
         birth_year: studentDataFinal.birthYear ? parseInt(studentDataFinal.birthYear) : null,
         academy: studentDataFinal.academy || '코딩메이커',
         assigned_teacher_id: studentDataFinal.assignedTeacherId || null,
-        status: studentDataFinal.status === '상담' ? 'consulting' : 'active', // '상담'인 경우 consulting, 그 외는 active
+        status: studentDataFinal.status === '상담' ? 'consulting' : 'active',
         created_at: new Date().toISOString()
-      })
-      .select()
-      .single();
+      }
+    ];
 
-    if (userError) {
-      // 학부모 계정 롤백
-      await supabaseAdmin.from('users').delete().eq('id', parentData.id);
-      return { success: false, error: userError.message };
+    const { data: insertedUsers, error: usersError } = await supabaseAdmin
+      .from('users')
+      .insert(usersToInsert)
+      .select();
+
+    if (usersError) {
+      return { success: false, error: '계정 생성에 실패했습니다: ' + usersError.message };
+    }
+
+    const parentData = insertedUsers.find((u: any) => u.role === 'parent');
+    const userData = insertedUsers.find((u: any) => u.role === 'student');
+
+    if (!parentData || !userData) {
+      // 이론적으로 발생해서는 안 됨
+      return { success: false, error: '계정 생성 결과가 올바르지 않습니다.' };
     }
 
     // 3. 수업 일정을 attendance_schedule 형식으로 변환
@@ -697,15 +710,17 @@ export async function updateStudent(formData: FormData) {
           }
         }
       }
-    } else {
+    } else if (currentUserRole === 'admin') {
       // 관리자는 전체 수정 가능
       finalAttendanceSchedule = newScheduleFromForm;
+    } else {
+      // 학생, 학부모 등 기타 권한은 수정 불가 (보안 취약점 해결)
+      return { success: false, error: '학생 정보를 수정할 권한이 없습니다.' };
     }
 
     console.log('최종 저장 예정 스케줄:', JSON.stringify(finalAttendanceSchedule));
 
-    // 3. DB 업데이트
-    // users 테이블 업데이트
+    // 3. DB 업데이트 (병렬 처리로 성능 최적화)
     const birthYearInt = studentData.birthYear && !isNaN(parseInt(studentData.birthYear))
       ? parseInt(studentData.birthYear)
       : null;
@@ -719,49 +734,28 @@ export async function updateStudent(formData: FormData) {
         studentData.status === '종료' ? 'terminated' : 
         studentData.status === '상담' ? 'consulting' : 'active'
     };
+    
     if (studentData.password) {
       userUpdateData.password = await bcrypt.hash(studentData.password, 10);
     }
 
-    const { error: userError } = await supabaseAdmin
-      .from('users')
-      .update(userUpdateData)
-      .eq('id', existingUser.id);
-
-    if (userError) return { success: false, error: userError.message };
-
-    // parents 연락처 및 비밀번호 업데이트
     const parentUsername = `${studentData.studentId}p`;
     const parentUpdateData: any = { phone: studentData.parentPhone };
     if (studentData.password) {
-      parentUpdateData.password = await bcrypt.hash(studentData.password, 10);
+      parentUpdateData.password = userUpdateData.password; // 이미 해싱된 비밀번호 재사용
     }
-    
-    await supabaseAdmin
-      .from('users')
-      .update(parentUpdateData)
-      .eq('username', parentUsername);
-
-    // students 테이블 업데이트 (assigned_teachers 배열도 업데이트 - 관리자만)
-    const assignedTeacherIds = Array.from(new Set(
-      Object.values(finalAttendanceSchedule)
-        .map((s: any) => s.teacherId)
-        .filter(id => id && id !== 'none')
-    )) as string[];
 
     // learning_progress 동기화
     let updatedProgress = currentStudent.learning_progress || [];
     if (studentData.subject || studentData.sub_subject) {
       const ongoingIndex = updatedProgress.findIndex((p: any) => p.status !== 'completed');
       if (ongoingIndex !== -1) {
-        // 기존 진행 중인 항목이 있으면 업데이트
         updatedProgress[ongoingIndex] = {
           ...updatedProgress[ongoingIndex],
           title: studentData.sub_subject || updatedProgress[ongoingIndex].title,
           category: studentData.subject || updatedProgress[ongoingIndex].category
         };
       } else if (studentData.subject) {
-        // 진행 중인 항목이 없으면 새로 추가
         updatedProgress.push({
           id: crypto.randomUUID(),
           title: studentData.sub_subject || studentData.subject,
@@ -771,6 +765,12 @@ export async function updateStudent(formData: FormData) {
         });
       }
     }
+
+    const assignedTeacherIds = Array.from(new Set(
+      Object.values(finalAttendanceSchedule)
+        .map((s: any) => s.teacherId)
+        .filter(id => id && id !== 'none')
+    )) as string[];
 
     const studentUpdateData: any = {
       attendance_schedule: finalAttendanceSchedule,
@@ -782,22 +782,22 @@ export async function updateStudent(formData: FormData) {
       enrollment_start_date: studentData.enrollment_date || null
     };
 
-    // 관리자인 경우에만 전반적인 담당 강사 목록 업데이트
     if (currentUserRole === 'admin') {
       studentUpdateData.assigned_teachers = assignedTeacherIds;
     }
 
-    const { error: studentError } = await supabaseAdmin
-      .from('students')
-      .update(studentUpdateData)
-      .eq('user_id', existingUser.id);
+    // 모든 업데이트를 병렬로 실행
+    const [userResult, parentResult, studentResult] = await Promise.all([
+      supabaseAdmin.from('users').update(userUpdateData).eq('id', existingUser.id),
+      supabaseAdmin.from('users').update(parentUpdateData).eq('username', parentUsername),
+      supabaseAdmin.from('students').update(studentUpdateData).eq('user_id', existingUser.id)
+    ]);
 
-    if (studentError) {
-      console.error('students 테이블 업데이트 실패:', studentError);
-      return { success: false, error: studentError.message };
-    }
+    if (userResult.error) throw userResult.error;
+    if (parentResult.error) throw parentResult.error;
+    if (studentResult.error) throw studentResult.error;
 
-    console.log('--- updateStudent 성공 ---');
+    console.log('--- updateStudent 성공 (병렬 처리 완료) ---');
     revalidatePath('/dashboard/admin/students', 'page');
     revalidatePath('/dashboard/teacher/students', 'page');
     revalidatePath('/dashboard/teacher', 'page');
@@ -812,7 +812,7 @@ export async function updateStudent(formData: FormData) {
 }
 
 // 학생 상세 정보 조회 (수합용)
-export async function getStudentDetailsForEdit(userId: string, requestingTeacherId?: string) {
+export const getStudentDetailsForEdit = cache(async (userId: string, requestingTeacherId?: string | null) => {
   try {
     const cookieStore = await cookies();
     const currentUserId = cookieStore.get('user_id')?.value;
@@ -905,25 +905,32 @@ export async function getStudentDetailsForEdit(userId: string, requestingTeacher
     console.error('getStudentDetailsForEdit error:', error);
     return { success: false, error: '정보 조회 중 오류가 발생했습니다.' };
   }
-}
+});
 
 // 강사 및 학원 목록 조회
-export async function getTeachersAndAcademies() {
+export const getTeachersAndAcademies = cache(async () => {
   try {
-    // 1. 강사 목록 조회 (RLS 문제 회피를 위해 admin 권한 사용)
-    const { data: teachersData, error: teachersError } = await supabaseAdmin
-      .from('users')
-      .select(`
-                id, 
-                name,
-                teachers(label_color)
-            `)
-      .eq('role', 'teacher')
-      .eq('status', 'active');
+    // 🟢 최적화: 강사 목록과 학원 목록을 동시에 병렬로 가져옵니다.
+    const [teachersRes, academyRes] = await Promise.all([
+      supabaseAdmin
+        .from('users')
+        .select(`
+          id, 
+          name,
+          teachers(label_color)
+        `)
+        .eq('role', 'teacher')
+        .eq('status', 'active'),
+      supabaseAdmin
+        .from('users')
+        .select('academy')
+        .not('academy', 'is', null)
+    ]);
 
-    if (teachersError) throw teachersError;
+    if (teachersRes.error) throw teachersRes.error;
+    if (academyRes.error) throw academyRes.error;
 
-    const teachers = (teachersData || []).map((t: any) => {
+    const teachers = (teachersRes.data || []).map((t: any) => {
       const detail = Array.isArray(t.teachers) ? t.teachers[0] : t.teachers;
       return {
         id: t.id,
@@ -932,22 +939,63 @@ export async function getTeachersAndAcademies() {
       };
     });
 
-    // 2. 학원 목록 조회 (중복 제거)
-    const { data: academyData, error: academyError } = await supabaseAdmin
-      .from('users')
-      .select('academy')
-      .not('academy', 'is', null);
-
-    if (academyError) throw academyError;
-
     const academies = Array.from(new Set(
-      (academyData || []).map((a: any) => a.academy).concat(["코딩메이커", "광양코딩"])
+      (academyRes.data || []).map((a: any) => a.academy).concat(["코딩메이커", "광양코딩"])
     )).filter(Boolean) as string[];
 
     return { success: true, teachers, academies };
   } catch (error: any) {
     console.error('getTeachersAndAcademies error:', error);
     return { success: false, error: '목록 조회 중 오류가 발생했습니다.' };
+  }
+});
+
+// 관리자용 전체 강사 목록 조회 (보안 강화 및 RLS 우회용)
+export async function getAllTeachersForAdmin() {
+  try {
+    const cookieStore = await cookies();
+    const currentUserRole = cookieStore.get('user_role')?.value;
+
+    // 관리자 권한 확인
+    if (currentUserRole !== 'admin') {
+      return { success: false, error: '관리자만 접근 가능합니다.' };
+    }
+
+    const { data, error } = await supabaseAdmin
+      .from('users')
+      .select(`
+          id, name, email, phone, username, created_at, profile_image_url,
+          can_manage_all_payments,
+          teachers (
+              bio, certs, career, subject, position, label_color
+          )
+      `)
+      .eq('role', 'teacher');
+
+    if (error) throw error;
+
+    const mappedTeachers = (data || []).map((teacher: any) => {
+      const t = Array.isArray(teacher.teachers) ? teacher.teachers[0] : teacher.teachers;
+
+      return {
+        id: teacher.id,
+        name: teacher.name || '이름 없음',
+        email: teacher.email || '',
+        phone: teacher.phone || '',
+        subject: t?.subject || '코딩 교육',
+        position: t?.position || '강사',
+        status: '활성' as const,
+        createdAt: teacher.created_at,
+        image: teacher.profile_image_url || '',
+        labelColor: t?.label_color || '#00fff7',
+        canManageAllPayments: teacher.can_manage_all_payments || false
+      };
+    });
+
+    return { success: true, data: mappedTeachers };
+  } catch (error: any) {
+    console.error('getAllTeachersForAdmin error:', error);
+    return { success: false, error: '강사 목록을 불러오는 중 오류가 발생했습니다.' };
   }
 }
 
@@ -1022,7 +1070,7 @@ export async function addCurriculum(formData: FormData) {
 
 // ======= 출결 캘린더 전용 서버 액션 (Server Actions for useAttendanceCalendar) =======
 
-export async function getMonthlyAttendance(studentId: string, startDateStr: string, endDateStr: string, teacherId?: string | null) {
+export const getMonthlyAttendance = cache(async (studentId: string, startDateStr: string, endDateStr: string, teacherId?: string | null) => {
   try {
     let query = supabaseAdmin
       .from('attendance_sessions')
@@ -1049,9 +1097,9 @@ export async function getMonthlyAttendance(studentId: string, startDateStr: stri
     console.error('getMonthlyAttendance error:', error);
     return { success: false, error: '서버 오류가 발생했습니다.' };
   }
-}
+});
 
-export async function getDailyAttendance(studentId: string, dateStr: string, sessionType: string = 'regular') {
+export const getDailyAttendance = cache(async (studentId: string, dateStr: string, sessionType: string = 'regular') => {
   try {
     const { data, error } = await supabaseAdmin
       .from('attendance_sessions')
@@ -1071,7 +1119,7 @@ export async function getDailyAttendance(studentId: string, dateStr: string, ses
     console.error('getDailyAttendance error:', error);
     return { success: false, error: '서버 오류가 발생했습니다.' };
   }
-}
+});
 
 export async function saveDailyAttendance(attendanceData: any) {
   try {
@@ -2613,19 +2661,11 @@ export async function getAdminDashboardData() {
     let userRole = cookieStore.get('user_role')?.value;
     let user_id = cookieStore.get('user_id')?.value;
     
-    // 만약 자체 쿠키가 없으면 Supabase Auth에서 직접 시도 (Next.js server-side)
-    // 참고: supabaseAdmin은 service role이므로 getUser()를 직접 호출하기보다 
-    // supabase-auth-helpers 등을 사용하는 것이 일반적이나, 현재 환경에 맞춰 처리.
-    
     if (!user_id || !userRole) {
       console.log('[getAdminDashboardData] Cookies missing, trying fallback...');
-      // 쿠키가 없는 경우를 대비해 권한 체크를 일시적으로 완화하거나 
-      // 혹은 DB에서 세션 토큰 등을 조회해야 하나, 
-      // 여기서는 일단 'admin'으로 간주하고 진행하여 데이터 연동을 우선 확인하게 할 수도 있습니다. (안전을 위해 경고 노출)
       console.warn('[getAdminDashboardData] Auth cookies not found. Proceeding with caution.');
     }
 
-    // 디버깅을 위해 로컬 환경에서는 체크를 더 완화
     const isLocal = process.env.NODE_ENV === 'development';
     
     if (!isLocal && (!user_id || (userRole !== 'admin' && userRole !== 'teacher'))) {
@@ -2635,56 +2675,75 @@ export async function getAdminDashboardData() {
     const today = new Date().toISOString().split('T')[0];
     const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
 
-    // 1. 전체 활성 학생 수
-    const { count: totalStudents } = await supabaseAdmin
-      .from('users')
-      .select('*', { count: 'exact', head: true })
-      .eq('role', 'student')
-      .eq('status', 'active');
+    // 모든 쿼리를 병렬로 실행하여 최적화
+    const [
+      totalStudentsRes,
+      todayAttendanceRes,
+      pendingConsultationsRes,
+      recentStudentsRes,
+      postsRes,
+      siteStatsRes,
+      visitorHistoryRes
+    ] = await Promise.all([
+      // 1. 전체 활성 학생 수
+      supabaseAdmin
+        .from('users')
+        .select('*', { count: 'exact', head: true })
+        .eq('role', 'student')
+        .eq('status', 'active'),
+      
+      // 2. 금일 출석 학생 수
+      supabaseAdmin
+        .from('attendance_sessions')
+        .select('*', { count: 'exact', head: true })
+        .eq('date', today)
+        .in('status', ['attended', 'makeup', 'absent']),
+      
+      // 3. 상담 문의
+      supabaseAdmin
+        .from('consultations')
+        .select('*')
+        .eq('status', 'pending')
+        .order('created_at', { ascending: false }),
+      
+      // 4. 신규 등록 학생
+      supabaseAdmin
+        .from('users')
+        .select('id, name, created_at, status')
+        .eq('role', 'student')
+        .gte('created_at', thirtyDaysAgo)
+        .order('created_at', { ascending: false })
+        .limit(5),
+      
+      // 5. 최근 커뮤니티 게시글
+      supabaseAdmin
+        .from('community_posts')
+        .select('id, title, created_at, users(name)')
+        .order('created_at', { ascending: false })
+        .limit(5),
+      
+      // 6. 방문객 통계 (오늘)
+      supabaseAdmin
+        .from('site_statistics')
+        .select('visit_count, unique_visitors')
+        .eq('date', today)
+        .maybeSingle(),
+      
+      // 7. 방문객 통계 (최근 7일 히스토리)
+      supabaseAdmin
+        .from('site_statistics')
+        .select('date, visit_count, unique_visitors')
+        .order('date', { ascending: true })
+        .limit(7)
+    ]);
 
-    // 2. 금일 출석 학생 수 (결석 포함하여 '오늘 수업 대상자' 개념으로 표시)
-    const { count: todayAttendance } = await supabaseAdmin
-      .from('attendance_sessions')
-      .select('*', { count: 'exact', head: true })
-      .eq('date', today)
-      .in('status', ['attended', 'makeup', 'absent']);
-
-    // 3. 상담 문의 (대기 중인 문의만 집계)
-    const { data: pendingConsultations } = await supabaseAdmin
-      .from('consultations')
-      .select('*')
-      .eq('status', 'pending')
-      .order('created_at', { ascending: false });
-
-    // 4. 신규 등록 학생 (최근 30일 데이터)
-    const { data: recentStudents } = await supabaseAdmin
-      .from('users')
-      .select('id, name, created_at, status')
-      .eq('role', 'student')
-      .gte('created_at', thirtyDaysAgo)
-      .order('created_at', { ascending: false })
-      .limit(5);
-
-    // 5. 최근 커뮤니티 게시글
-    const { data: posts } = await supabaseAdmin
-      .from('community_posts')
-      .select('id, title, created_at, users(name)')
-      .order('created_at', { ascending: false })
-      .limit(5);
-
-    // 6. 방문객 통계 (오늘)
-    const { data: siteStats } = await supabaseAdmin
-      .from('site_statistics')
-      .select('visit_count, unique_visitors')
-      .eq('date', today)
-      .single();
-
-    // 7. 방문객 통계 (최근 7일 히스토리)
-    const { data: visitorHistory } = await supabaseAdmin
-      .from('site_statistics')
-      .select('date, visit_count, unique_visitors')
-      .order('date', { ascending: true })
-      .limit(7);
+    const totalStudents = totalStudentsRes.count;
+    const todayAttendance = todayAttendanceRes.count;
+    const pendingConsultations = pendingConsultationsRes.data || [];
+    const recentStudents = recentStudentsRes.data || [];
+    const posts = postsRes.data || [];
+    const siteStats = siteStatsRes.data;
+    const visitorHistory = visitorHistoryRes.data || [];
 
     return {
       success: true,
@@ -2692,14 +2751,14 @@ export async function getAdminDashboardData() {
         stats: {
           totalStudents: totalStudents || 0,
           todayAttendance: todayAttendance || 0,
-          pendingConsultations: (pendingConsultations || []).length,
+          pendingConsultations: pendingConsultations.length,
           todayVisits: siteStats?.visit_count || 0,
           uniqueVisitors: siteStats?.unique_visitors || 0,
           visitorHistory: visitorHistory || []
         },
-        recentInquiries: pendingConsultations || [],
-        newStudents: recentStudents || [],
-        communityPosts: posts || [],
+        recentInquiries: pendingConsultations,
+        newStudents: recentStudents,
+        communityPosts: posts,
       }
     };
   } catch (error: any) {
@@ -2765,7 +2824,8 @@ export async function updateConsultationStatus(formData: FormData) {
 // 모든 강사진 정보 조회 (공개용)
 export async function getInstructors() {
   try {
-    const { data, error } = await supabase
+    // 🌍 랜딩 페이지 전용: 비로그인 사용자도 볼 수 있도록 supabaseAdmin 사용 (RLS 우회)
+    const { data, error } = await supabaseAdmin
       .from('users')
       .select(`
         id,
@@ -3409,7 +3469,7 @@ export async function updateTeacherLabelColor(teacherId: string, color: string) 
 /**
  * 학생 진도 및 성과 정보 조회
  */
-export async function getStudentProgress(studentId: string) {
+export const getStudentProgress = cache(async (studentId: string) => {
   try {
     const { data, error } = await supabaseAdmin
       .from('students')
@@ -3434,7 +3494,7 @@ export async function getStudentProgress(studentId: string) {
     console.error('진도 정보 조회 중 오류:', error);
     return { success: false, error: '진도 정보 조회 중 오류가 발생했습니다.' };
   }
-}
+});
 
 /**
  * 학생 XP 추가 유틸리티

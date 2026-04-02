@@ -23,8 +23,8 @@ export function CurriculumCard({ curriculum }: CurriculumCardProps) {
       {/* Background Glow */}
       <div className="absolute top-0 right-0 -mr-12 -mt-12 w-32 h-32 bg-cyan-500/5 blur-[60px] group-hover:bg-cyan-500/10 transition-colors" />
       
-      {/* Image Section */}
-      <div className="relative h-48 w-full overflow-hidden bg-slate-900/50 flex items-center justify-center">
+      {/* Image Section - Height increased from h-48 to h-64 for better vertical ratio */}
+      <div className="relative h-64 w-full overflow-hidden bg-slate-900/50 flex items-center justify-center">
         {curriculum.image ? (
           <img 
             src={curriculum.image} 
@@ -61,20 +61,7 @@ export function CurriculumCard({ curriculum }: CurriculumCardProps) {
           {curriculum.description || 'Coducation의 전문 교육 과정입니다.'}
         </p>
 
-        {/* Footer Info */}
-        <div className="mt-6 flex items-center justify-between border-t border-slate-800/50 pt-4">
-          <div className="flex items-center gap-4 text-slate-500 text-xs">
-            <span className="flex items-center gap-1">
-              <Layers className="w-3.5 h-3.5" /> step-by-step
-            </span>
-            <span className="flex items-center gap-1">
-              <Star className="w-3.5 h-3.5" /> expert
-            </span>
-          </div>
-          <div className="text-cyan-600/50">
-            <BookOpen className="w-4 h-4" />
-          </div>
-        </div>
+        {/* Footer Info removed as per user request */}
       </CardContent>
     </Card>
   );

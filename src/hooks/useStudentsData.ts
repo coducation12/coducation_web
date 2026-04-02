@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
-import { addStudent, updateStudent, deleteStudent } from "@/lib/actions";
+import { addStudent, updateStudent, deleteStudent, getTeachersAndAcademies } from "@/lib/actions";
 import { useToast } from "@/hooks/use-toast";
 
 export interface Student {
@@ -17,6 +17,9 @@ export interface Student {
     joinDate: string;
     lastLogin: string;
     studentId?: string;
+    uniqueKey?: string;
+    monthlyAttendanceCount?: number;
+    category?: string;
     sub_subject?: string;
     enrollment_date?: string;
     memo?: string;
@@ -26,11 +29,6 @@ export interface Student {
     assignedTeacherName?: string;
     assignedTeachers?: Array<{ id: string, name: string }>;
     academy: string;
-    type?: string;
-    requested_at?: string;
-    uniqueKey?: string;
-    monthlyAttendanceCount?: number;
-    category?: string;
 }
 
 export interface ClassSchedule {
@@ -50,42 +48,37 @@ export function useStudentsData() {
     useEffect(() => {
         const loadData = async () => {
             setIsLoading(true);
-            await fetchTeachers();
-            await fetchStudents();
-            setIsLoading(false);
+            try {
+                // 병렬 실행: 강사 정보와 학생 정보를 동시에 요청
+                await Promise.all([
+                    fetchTeachers(),
+                    fetchStudents()
+                ]);
+            } catch (error) {
+                console.error("Data loading error:", error);
+            } finally {
+                setIsLoading(false);
+            }
         };
         loadData();
     }, []);
 
     const fetchTeachers = async () => {
         try {
-            const { getTeachersAndAcademies } = await import("@/lib/actions");
             const result = await getTeachersAndAcademies();
             if (result.success && result.teachers) {
                 setTeachers(result.teachers);
+                return result.teachers;
             }
+            return [];
         } catch (error) {
             console.error("Failed to fetch teachers", error);
+            return [];
         }
     };
 
     const fetchStudents = async () => {
-        setIsLoading(true);
-
         try {
-            // 서버 액션을 통해 강사 목록 조회
-            let currentTeachers: any[] = [];
-            try {
-                const { getTeachersAndAcademies } = await import("@/lib/actions");
-                const result = await getTeachersAndAcademies();
-                if (result.success && result.teachers) {
-                    currentTeachers = result.teachers;
-                    setTeachers(currentTeachers);
-                }
-            } catch (error) {
-                console.error("Failed to fetch teachers", error);
-            }
-
             // API 를 통해 서버 측 쿠키 및 데이터 확인 (보안 강화)
             const response = await fetch('/api/dashboard/students');
 
@@ -94,7 +87,6 @@ export function useStudentsData() {
                     toast({ title: '권한 없음', description: '세션이 만료되었거나 권한이 없습니다.', variant: 'destructive' })
                 }
                 setStudents([]);
-                setIsLoading(false);
                 return;
             }
 
@@ -105,23 +97,24 @@ export function useStudentsData() {
             setUserId(currentUserId);
             setUserRole(jsonRes.userRole);
 
+            // 강사 정보는 이미 fetchTeachers에서 전역 상태(teachers)에 저장됨
+            // 하지만 즉시 매핑을 위해 최신 값을 가져오거나 현재 상태 사용
+            const currentTeachers = teachers.length > 0 ? teachers : await fetchTeachers();
+
             // Student 타입에 맞게 매핑
             const mapped = (data || []).map((item: any) => {
-                // 담당강사 정보 찾기 (students 테이블의 assigned_teachers 배열에서 최대 2명)
                 const assignedTeacherIds = item.assigned_teachers || [];
                 const assignedTeachers = assignedTeacherIds.map((teacherId: string) => {
                     const teacher = currentTeachers.find((t: any) => t.id === teacherId);
                     return teacher || { id: teacherId, name: `강사 ${teacherId.slice(-4)}` };
                 });
 
-                // 기존 호환성을 위한 첫 번째 강사 정보
                 const assignedTeacherId = assignedTeacherIds.length > 0 ? assignedTeacherIds[0] : null;
                 const assignedTeacherName = assignedTeachers.length > 0 ? assignedTeachers[0].name : '미지정';
 
-
                 return {
                     id: item.user_id,
-                    uniqueKey: item.user_id, // Add unique key
+                    uniqueKey: item.user_id,
                     name: item.users?.name || '-',
                     email: item.users?.email || '-',
                     phone: item.users?.phone || '-',
@@ -131,25 +124,19 @@ export function useStudentsData() {
                     course: (() => {
                         const progress = item.learning_progress || [];
                         const ongoing = progress.filter((p: any) => p.status !== 'completed');
-                        if (ongoing.length > 0) {
-                            return ongoing[ongoing.length - 1].title;
-                        }
+                        if (ongoing.length > 0) return ongoing[ongoing.length - 1].title;
                         return item.main_subject || '미지정';
                     })(),
                     category: (() => {
                         const progress = item.learning_progress || [];
                         const ongoing = progress.filter((p: any) => p.status !== 'completed');
-                        if (ongoing.length > 0) {
-                            return ongoing[ongoing.length - 1].category || '';
-                        }
+                        if (ongoing.length > 0) return ongoing[ongoing.length - 1].category || '';
                         return '';
                     })(),
                     sub_subject: (() => {
                         const progress = item.learning_progress || [];
                         const ongoing = progress.filter((p: any) => p.status !== 'completed');
-                        if (ongoing.length > 0) {
-                            return ongoing[ongoing.length - 1].title;
-                        }
+                        if (ongoing.length > 0) return ongoing[ongoing.length - 1].title;
                         return item.sub_subject || '';
                     })(),
                     status: (item.users?.status === 'suspended' || item.users?.status === '휴강') ? '휴강' :
@@ -157,7 +144,7 @@ export function useStudentsData() {
                             (item.users?.status === 'consulting' || item.users?.status === '상담') ? '상담' :
                             (item.users?.status === 'pending') ? '승인대기' : '수강',
                     joinDate: item.users?.created_at ? new Date(item.users.created_at).toLocaleDateString() : '-',
-                    lastLogin: '2024-01-15', // 기본값
+                    lastLogin: '2024-01-15',
                     studentId: item.users?.username || '-',
                     enrollment_date: item.enrollment_start_date || '',
                     memo: item.memo || '',
@@ -167,11 +154,9 @@ export function useStudentsData() {
                     assignedTeachers: assignedTeachers,
                     classSchedules: item.attendance_schedule ? Object.entries(item.attendance_schedule)
                         .filter(([day, schedule]: [string, any]) => {
-                            // 강사인 경우 본인의 스케줄만 필터링 (대소문자 무관)
                             if (jsonRes.userRole?.toLowerCase() === 'teacher' && currentUserId) {
                                 const teacherId = schedule.teacherId || schedule.teacher_id;
-                                if (!teacherId) return false;
-                                return teacherId.trim().toLowerCase() === currentUserId.trim().toLowerCase();
+                                return teacherId?.trim().toLowerCase() === currentUserId.trim().toLowerCase();
                             }
                             return true;
                         })
@@ -200,8 +185,6 @@ export function useStudentsData() {
                 variant: "destructive"
             });
             setStudents([]);
-        } finally {
-            setIsLoading(false);
         }
     };
 

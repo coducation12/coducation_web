@@ -69,13 +69,20 @@ export default function AdminDashboardPage() {
             const { data: { user }, error: authError } = await supabase.auth.getUser();
             console.log('[Dashboard] User auth result:', { user: user?.id, error: authError });
             
-            // user가 없어도 서버 액션은 자체 쿠키를 사용하므로 중단하지 않음
             const currentUserId = user?.id || '';
-            const currentUserRole = 'admin'; // 대시보드 접근 자체가 관리자 권한 필요하므로 기본값 설정
+            const currentUserRole = 'admin';
+            const currentMonth = format(new Date(), 'yyyy-MM-01');
+            const academies = ['코딩메이커', '광양코딩', '순천코딩', '여수코딩'];
+
+            // 1, 2, 3단계 데이터를 병렬로 요청
+            console.log('[Dashboard] Fetching all data in parallel...');
+            const [adminDataRes, tuitionRes, pcResults] = await Promise.all([
+                getAdminDashboardData(),
+                getTuitionDashboardData(currentMonth, currentUserId, currentUserRole),
+                Promise.all(academies.map(academy => getPCRoomLayouts(academy)))
+            ]);
             
-            // 1. 통합 데이터 페칭 (RLS 우회)
-            const adminDataRes = await getAdminDashboardData();
-            
+            // 1. 통합 데이터 처리
             if (!adminDataRes.success || !adminDataRes.data) {
                 console.error('[Dashboard] Failed to fetch admin data:', adminDataRes.error);
             }
@@ -94,10 +101,7 @@ export default function AdminDashboardPage() {
                 communityPosts: []
             };
 
-            // 2. 수납 데이터 (이번 달)
-            const currentMonth = format(new Date(), 'yyyy-MM-01');
-            const tuitionRes = await getTuitionDashboardData(currentMonth, currentUserId, currentUserRole);
-            
+            // 2. 수납 데이터 처리
             let target = 0;
             let collected = 0;
             if (tuitionRes.success && tuitionRes.data) {
@@ -107,13 +111,11 @@ export default function AdminDashboardPage() {
                 });
             }
 
-            // 3. PC 상태
-            const academies = ['코딩메이커', '광양코딩', '순천코딩', '여수코딩'];
+            // 3. PC 상태 처리 (병렬 결과 합치기)
             let allFaultyCount = 0;
             const allIssues: any[] = [];
 
-            for (const academy of academies) {
-                const pcRes = await getPCRoomLayouts(academy);
+            pcResults.forEach((pcRes) => {
                 if (pcRes.success && pcRes.data) {
                     pcRes.data.forEach((room: any) => {
                         const layout = room.layout_data as any[] || [];
@@ -128,7 +130,7 @@ export default function AdminDashboardPage() {
                         }
                     });
                 }
-            }
+            });
 
             // 상태 업데이트
             setStats({

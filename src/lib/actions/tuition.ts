@@ -22,8 +22,8 @@ export async function getTuitionDashboardData(month: string, currentUserId: stri
             canManageAll = userData?.can_manage_all_payments || false;
         }
 
-        // 2. 학생 목록 조회
-        let studentsQuery = supabaseAdmin
+        // 2, 3, 4 단계를 병렬로 실행하여 최적화
+        const studentsQuery = supabaseAdmin
             .from('users')
             .select(`
                 id, 
@@ -47,24 +47,27 @@ export async function getTuitionDashboardData(month: string, currentUserId: stri
             .eq('role', 'student');
 
         if (!canManageAll && currentUserRole === 'teacher') {
-            studentsQuery = studentsQuery.filter('students.assigned_teachers', 'cs', `{"${currentUserId}"}`);
+            studentsQuery.filter('students.assigned_teachers', 'cs', `{"${currentUserId}"}`);
         }
 
-        const { data: students, error: studentError } = await studentsQuery;
-        if (studentError) throw studentError;
+        const [studentsRes, annualRecordsRes, teachersRes] = await Promise.all([
+            studentsQuery,
+            supabaseAdmin
+                .from('tuition_annual_records')
+                .select('*')
+                .eq('year', year),
+            supabaseAdmin
+                .from('users')
+                .select('id, name')
+                .eq('role', 'teacher')
+        ]);
 
-        // 3. 연도별 수납 기록 조회 (특정 연도 전체)
-        const { data: annualRecords, error: paymentError } = await supabaseAdmin
-            .from('tuition_annual_records')
-            .select('*')
-            .eq('year', year);
-        if (paymentError) throw paymentError;
+        if (studentsRes.error) throw studentsRes.error;
+        if (annualRecordsRes.error) throw annualRecordsRes.error;
 
-        // 4. 강사 목록 조회 (ID -> 이름 매핑용)
-        const { data: allTeachers } = await supabaseAdmin
-            .from('users')
-            .select('id, name')
-            .eq('role', 'teacher');
+        const students = studentsRes.data;
+        const annualRecords = annualRecordsRes.data;
+        const allTeachers = teachersRes.data;
         const teacherMap = new Map(allTeachers?.map((t: any) => [t.id as string, t.name as string]) || []);
 
         const annualRecordMap = new Map(annualRecords?.map((r: any) => [r.student_id, r]) || []);
@@ -291,7 +294,7 @@ export async function getTuitionYearlySummary(year: number, currentUserId: strin
             canManageAll = userData?.can_manage_all_payments || false;
         }
 
-        // 2. 모든 학생 목록 조회 (휴강/종료 포함)
+        // 2. 모든 학생 목록 조회 쿼리 구성
         let studentsQuery = supabaseAdmin
             .from('users')
             .select(`
@@ -318,23 +321,27 @@ export async function getTuitionYearlySummary(year: number, currentUserId: strin
             studentsQuery = studentsQuery.filter('students.assigned_teachers', 'cs', `{"${currentUserId}"}`);
         }
 
-        const { data: students, error: studentError } = await studentsQuery;
-        if (studentError) throw studentError;
-
-        // 3. 해당 연도의 모든 수납 기록 조회
-        const { data: annualRecords, error: paymentError } = await supabaseAdmin
+        // 3. 병렬 데이터 조회 시작
+        const studentsPromise = studentsQuery;
+        const annualRecordsPromise = supabaseAdmin
             .from('tuition_annual_records')
             .select('*')
             .eq('year', year);
-        if (paymentError) throw paymentError;
-
-        // 4. 강사 목록 조회 (ID -> 이름 매핑용)
-        const { data: allTeachers } = await supabaseAdmin
+        const allTeachersPromise = supabaseAdmin
             .from('users')
             .select('id, name')
             .eq('role', 'teacher');
-        const teacherMap = new Map(allTeachers?.map((t: any) => [t.id as string, t.name as string]) || []);
 
+        const [
+            { data: students, error: studentError },
+            { data: annualRecords, error: paymentError },
+            { data: allTeachers }
+        ] = await Promise.all([studentsPromise, annualRecordsPromise, allTeachersPromise]);
+
+        if (studentError) throw studentError;
+        if (paymentError) throw paymentError;
+
+        const teacherMap = new Map(allTeachers?.map((t: any) => [t.id as string, t.name as string]) || []);
         const annualRecordMap = new Map(annualRecords?.map((r: any) => [r.student_id, r]) || []);
 
         // 5. 데이터 가공 및 정렬 (재원생 우선, 하단에 휴강/종료생)

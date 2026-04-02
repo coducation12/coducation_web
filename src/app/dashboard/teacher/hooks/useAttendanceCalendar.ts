@@ -1,8 +1,14 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
 import { AttendanceStatus } from '../components/types';
 import { useToast } from '@/hooks/use-toast';
 import { AttendanceRecord } from '../components/attendance-calendar/types';
+import { 
+    getMonthlyAttendance, 
+    saveDailyAttendance, 
+    deleteAttendanceSessionAction, 
+    getDailyAttendance 
+} from '@/lib/actions';
 
 export function useAttendanceCalendar(
     studentId: string, 
@@ -16,19 +22,29 @@ export function useAttendanceCalendar(
     const [editingDay, setEditingDay] = useState<AttendanceRecord | null>(null);
     const [isSaving, setIsSaving] = useState(false);
     const { toast } = useToast();
+    
+    // 마지막으로 요청한 정보를 저장하여 중복 요청 방지
+    const lastRequestRef = useRef<string>('');
 
-    const loadMonthlyAttendance = async () => {
+    const loadMonthlyAttendance = useCallback(async (force: boolean = false) => {
         if (!studentId) return;
+
+        const year = currentMonth.getFullYear();
+        const month = currentMonth.getMonth();
+        const requestId = `${studentId}-${year}-${month}-${teacherId}`;
+        
+        // 이미 같은 데이터를 요청 중이거나 요청한 적이 있다면 (강제 새로고침이 아닐 때) 건너뜀
+        if (!force && lastRequestRef.current === requestId && !loading) {
+            return;
+        }
 
         try {
             setLoading(true);
-            const year = currentMonth.getFullYear();
-            const month = currentMonth.getMonth();
+            lastRequestRef.current = requestId;
 
             const startDateStr = `${year}-${String(month + 1).padStart(2, '0')}-01`;
             const endDateStr = `${year}-${String(month + 1).padStart(2, '0')}-${new Date(year, month + 1, 0).getDate()}`;
 
-            const { getMonthlyAttendance } = await import('@/lib/actions');
             const result = await getMonthlyAttendance(studentId, startDateStr, endDateStr, teacherId);
 
             if (!result.success) throw new Error(result.error);
@@ -59,17 +75,28 @@ export function useAttendanceCalendar(
         } finally {
             setLoading(false);
         }
-    };
+    }, [studentId, currentMonth, teacherId]);
 
     useEffect(() => {
         loadMonthlyAttendance();
-    }, [studentId, currentMonth, teacherId, refreshTrigger]);
+    }, [loadMonthlyAttendance, refreshTrigger]);
 
-    const handleSaveDay = async (teacherId?: string | null) => {
+    const handleSaveDay = async (targetTeacherId?: string | null) => {
         if (!editingDay) return;
+
+        const previousRecords = { ...attendanceRecords };
+        const dateStr = editingDay.date;
 
         try {
             setIsSaving(true);
+            
+            // 1. 낙관적 업데이트: UI 즉시 반영
+            const optimisticRecord: AttendanceRecord = { ...editingDay };
+            setAttendanceRecords(prev => ({
+                ...prev,
+                [dateStr]: [optimisticRecord]
+            }));
+
             const attendanceData: any = {
                 id: editingDay.id,
                 student_id: studentId,
@@ -77,15 +104,26 @@ export function useAttendanceCalendar(
                 status: editingDay.status,
                 memo: editingDay.memo,
                 session_type: editingDay.session_type || 'regular',
-                teacher_id: teacherId || null,
+                teacher_id: targetTeacherId || teacherId || null,
                 start_time: editingDay.start_time || null,
                 end_time: editingDay.end_time || null,
             };
 
-            const { saveDailyAttendance } = await import('@/lib/actions');
-            const result = await saveDailyAttendance(attendanceData);
+            const result = await saveDailyAttendance(attendanceData) as any;
 
             if (!result.success) throw new Error(result.error);
+
+            // 2. 부분 업데이트: 생성된 ID 등이 있을 수 있으므로 결과 반영
+            if (result.id) {
+                const finalRecord: AttendanceRecord = {
+                    ...optimisticRecord,
+                    id: result.id
+                };
+                setAttendanceRecords(prev => ({
+                    ...prev,
+                    [dateStr]: [finalRecord]
+                }));
+            }
 
             toast({
                 title: "변경사항 저장 완료",
@@ -93,9 +131,10 @@ export function useAttendanceCalendar(
             });
 
             setEditingDay(null);
-            loadMonthlyAttendance();
             if (onRefresh) onRefresh();
         } catch (error: any) {
+            // 실패 시 롤백
+            setAttendanceRecords(previousRecords);
             console.error('저장 실패:', JSON.stringify(error, null, 2));
             toast({
                 title: "저장 실패",
@@ -111,9 +150,19 @@ export function useAttendanceCalendar(
         if (!editingDay || !editingDay.id) return;
         if (!confirm(`${editingDay.date} 기록을 삭제하시겠습니까?`)) return;
 
+        const previousRecords = { ...attendanceRecords };
+        const dateStr = editingDay.date;
+
         try {
             setIsSaving(true);
-            const { deleteAttendanceSessionAction } = await import('@/lib/actions');
+            
+            // 1. 낙관적 업데이트: UI 즉시 제거
+            setAttendanceRecords(prev => {
+                const newRecords = { ...prev };
+                delete newRecords[dateStr];
+                return newRecords;
+            });
+
             const result = await deleteAttendanceSessionAction(
                 studentId,
                 editingDay.date,
@@ -128,9 +177,10 @@ export function useAttendanceCalendar(
             });
 
             setEditingDay(null);
-            loadMonthlyAttendance();
             if (onRefresh) onRefresh();
         } catch (error: any) {
+            // 실패 시 롤백
+            setAttendanceRecords(previousRecords);
             console.error('삭제 실패:', JSON.stringify(error, null, 2));
             toast({
                 title: "삭제 실패",
@@ -142,13 +192,12 @@ export function useAttendanceCalendar(
         }
     };
 
-    const nextMonth = () => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1));
-    const prevMonth = () => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1));
+    const nextMonth = () => setCurrentMonth(prev => new Date(prev.getFullYear(), prev.getMonth() + 1, 1));
+    const prevMonth = () => setCurrentMonth(prev => new Date(prev.getFullYear(), prev.getMonth() - 1, 1));
 
     const openTodayDetail = async (isMakeup: boolean = false, initialStatus?: AttendanceStatus) => {
         const todayStr = new Date().toLocaleDateString('en-CA');
         
-        // 1. 우선 전달받은 초기 상태로 즉시 UI 설정 (동기화 지연 방지)
         setEditingDay({ 
             date: todayStr, 
             status: initialStatus || 'present', 
@@ -159,22 +208,16 @@ export function useAttendanceCalendar(
         });
 
         try {
-            const { getDailyAttendance } = await import('@/lib/actions');
             const result = await getDailyAttendance(studentId, todayStr, isMakeup ? 'makeup' : 'regular');
             const data = result.data;
 
             if (data) {
-                // 2. DB에 데이터가 있는 경우 상태 업데이트
-                // 단, 전달받은 initialStatus가 'present'/'absent'인데 DB가 'unregistered'라면 
-                // 아직 DB 저장이 완료되지 않은 상태일 수 있으므로 initialStatus 유지 고려
-                
                 setAttendanceRecords(prev => ({
                     ...prev,
                     [todayStr]: [data]
                 }));
 
                 setEditingDay(prev => {
-                    // 이미 사용자가 수동으로 변경했거나, initialStatus가 더 최신일 가능성 체크
                     const finalStatus = (data.status === 'unregistered' && initialStatus && initialStatus !== 'unregistered')
                         ? initialStatus 
                         : (data.status as AttendanceStatus);
@@ -196,6 +239,10 @@ export function useAttendanceCalendar(
         }
     };
 
+    const refresh = useCallback(() => {
+        loadMonthlyAttendance(true);
+    }, [loadMonthlyAttendance]);
+
     return {
         currentMonth,
         setCurrentMonth,
@@ -209,6 +256,6 @@ export function useAttendanceCalendar(
         nextMonth,
         prevMonth,
         openTodayDetail,
-        refresh: loadMonthlyAttendance
+        refresh
     };
 }

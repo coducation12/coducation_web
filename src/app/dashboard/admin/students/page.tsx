@@ -280,22 +280,6 @@ export default function AdminStudentsPage() {
                                                 <button className="text-cyan-100 hover:text-cyan-300 transition-colors cursor-pointer">
                                                     {student.name}
                                                 </button>
-                                                <div onClick={(e) => e.stopPropagation()}>
-                                                    <AttendanceCalendarModal
-                                                        studentId={student.id}
-                                                        studentName={student.name || ''}
-                                                        customTrigger={
-                                                            <Button 
-                                                                variant="ghost" 
-                                                                size="icon" 
-                                                                className="h-6 w-6 text-purple-400 hover:bg-purple-500/10"
-                                                                title="출결 캘린더 확인"
-                                                            >
-                                                                <Calendar className="h-4 w-4" />
-                                                            </Button>
-                                                        }
-                                                    />
-                                                </div>
                                             </div>
                                         </TableCell>
                                         <TableCell className="text-cyan-300 py-2 sm:py-4">

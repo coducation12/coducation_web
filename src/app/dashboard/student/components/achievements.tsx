@@ -133,7 +133,7 @@ export function Achievements({ studentId }: { studentId: string }) {
               className="flex items-center justify-between p-4 bg-slate-900/30 border border-fuchsia-500/10 rounded-2xl hover:bg-fuchsia-500/10 hover:border-fuchsia-500/40 transition-all group cursor-pointer active:scale-[0.98]"
             >
               <div className="min-w-0 mr-4">
-                <h4 className="text-sm font-black text-fuchsia-100 group-hover:text-white truncate italic tracking-tight">{item.title}</h4>
+                <h4 className="text-sm font-black text-fuchsia-100 group-hover:text-white truncate italic tracking-tight pr-1">{item.title}</h4>
                 <div className="text-[10px] text-fuchsia-500/40 font-bold uppercase tracking-widest mt-0.5">{item.parentTitle}</div>
               </div>
               <div className="text-right shrink-0">

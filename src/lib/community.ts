@@ -17,10 +17,10 @@ async function getCurrentUser() {
 export async function getCommunityPosts(page: number = 1, limit: number = 10, searchQuery?: string): Promise<{ posts: CommunityPost[], totalCount: number, totalPages: number }> {
   const { userId } = await getCurrentUser();
 
-  // 검색 조건 설정
-  let query = supabase
+  // 🟢 최적화: RLS 우회를 위해 supabaseAdmin을 사용합니다.
+  let query = supabaseAdmin
     .from('community_posts')
-    .select('*', { count: 'exact', head: true })
+    .select('*, users(name)', { count: 'exact', head: true })
     .eq('is_deleted', false);
 
   // 검색어가 있으면 제목, 내용, 작성자 이름에서 검색
@@ -34,8 +34,8 @@ export async function getCommunityPosts(page: number = 1, limit: number = 10, se
   const totalPages = Math.ceil((totalCount || 0) / limit);
   const offset = (page - 1) * limit;
 
-  // 게시글 데이터 가져오기
-  let postsQuery = supabase
+  // 게시글 데이터 가져오기 (관리자 권한 사용)
+  let postsQuery = supabaseAdmin
     .from('community_posts')
     .select(`
       id,
@@ -77,7 +77,7 @@ export async function getCommunityPosts(page: number = 1, limit: number = 10, se
 
   // 모든 게시글의 댓글 수를 한 번에 가져오기
   const postIds = sortedPosts.map((post: any) => post.id);
-  const { data: commentCounts } = await supabase
+  const { data: commentCounts } = await supabaseAdmin
     .from('community_comments')
     .select('post_id')
     .in('post_id', postIds)
@@ -116,7 +116,7 @@ export async function getCommunityPosts(page: number = 1, limit: number = 10, se
 
 // 특정 게시글 가져오기
 export async function getCommunityPost(postId: string): Promise<CommunityPost | null> {
-  const { data: post, error } = await supabase
+  const { data: post, error } = await supabaseAdmin
     .from('community_posts')
     .select(`
       id,
@@ -140,8 +140,8 @@ export async function getCommunityPost(postId: string): Promise<CommunityPost | 
     return null;
   }
 
-  // 댓글 수 가져오기
-  const { count: commentsCount } = await supabase
+  // 댓글 수 가져오기 (관리자 권한 사용)
+  const { count: commentsCount } = await supabaseAdmin
     .from('community_comments')
     .select('*', { count: 'exact', head: true })
     .eq('post_id', post.id)
@@ -237,7 +237,7 @@ export async function updateCommunityPost(postId: string, title: string, content
 
 // 게시글의 댓글 가져오기
 export async function getCommunityComments(postId: string): Promise<CommunityComment[]> {
-  const { data: comments, error } = await supabase
+  const { data: comments, error } = await supabaseAdmin
     .from('community_comments')
     .select(`
       id,

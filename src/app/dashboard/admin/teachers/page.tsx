@@ -10,7 +10,7 @@ import Image from "next/image";
 import { supabase } from "@/lib/supabase";
 import AddTeacherModal from "./components/AddTeacherModal";
 import EditTeacherModal from "./components/EditTeacherModal";
-import { deleteTeacher, updateTeacherLabelColor, toggleTeacherTuitionPermission } from "@/lib/actions";
+import { deleteTeacher, updateTeacherLabelColor, toggleTeacherTuitionPermission, getAllTeachersForAdmin } from "@/lib/actions";
 import { Checkbox } from "@/components/ui/checkbox";
 import { DashboardPageWrapper } from "@/components/common/DashboardPageWrapper";
 import { useToast } from "@/hooks/use-toast";
@@ -91,43 +91,20 @@ export default function AdminTeachersPage() {
 
     const fetchTeachers = async () => {
         try {
-            // users와 teachers 테이블 조인해서 강사 정보 가져오기
-            const { data, error } = await supabase
-                .from('users')
-                .select(`
-                    id, name, email, phone, username, created_at, profile_image_url,
-                    can_manage_all_payments,
-                    teachers (
-                        bio, certs, career, subject, position, label_color
-                    )
-                `)
-                .eq('role', 'teacher');
-
-            if (error) {
-                console.error('Error fetching teachers:', error);
+            setLoading(true);
+            const result = await getAllTeachersForAdmin();
+            
+            if (result.success && result.data) {
+                setTeachers(result.data);
+            } else {
+                console.error('Error fetching teachers via server action:', result.error);
                 setTeachers([]);
-                return;
+                toast({
+                    title: "데이터 로드 실패",
+                    description: result.error || "강사 정보를 불러오는 중 오류가 발생했습니다.",
+                    variant: "destructive",
+                });
             }
-
-            const mappedTeachers = (data || []).map((teacher: any) => {
-                const t = Array.isArray(teacher.teachers) ? teacher.teachers[0] : teacher.teachers;
-
-                return {
-                    id: teacher.id,
-                    name: teacher.name || '이름 없음',
-                    email: teacher.email || '',
-                    phone: teacher.phone || '',
-                    subject: t?.subject || '코딩 교육',
-                    position: t?.position || '강사',
-                    status: '활성' as const,
-                    createdAt: teacher.created_at,
-                    image: teacher.profile_image_url || '',
-                    labelColor: t?.label_color || '#00fff7',
-                    canManageAllPayments: teacher.can_manage_all_payments || false
-                };
-            });
-
-            setTeachers(mappedTeachers);
         } catch (error) {
             console.error('Exception fetching teachers:', error);
             setTeachers([]);

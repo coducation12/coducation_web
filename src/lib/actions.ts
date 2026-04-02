@@ -131,7 +131,7 @@ export async function login(formData: FormData) {
         }
 
         // users 테이블에서 사용자 정보 조회 (이메일 또는 username으로 조회)
-        const { data: user, error: userError } = await supabase
+        const { data: user, error: userError } = await supabaseAdmin
           .from('users')
           .select('id, username, role, status, email')
           .or(`email.eq.${email},username.eq.${email}`)
@@ -163,7 +163,7 @@ export async function login(formData: FormData) {
       const password = formData.get('password') as string;
 
       try {
-        const { data: user, error } = await supabase
+        const { data: user, error } = await supabaseAdmin
           .from('users')
           .select('id, username, role, password, status')
           .eq('username', username)
@@ -469,7 +469,7 @@ export async function addStudent(formData: FormData, isSignup: boolean = false) 
 
     if (userError) {
       // 학부모 계정 롤백
-      await supabase.from('users').delete().eq('id', parentData.id);
+      await supabaseAdmin.from('users').delete().eq('id', parentData.id);
       return { success: false, error: userError.message };
     }
 
@@ -3129,13 +3129,13 @@ export async function getNewStudentSignupRequests(teacherId?: string) {
     const teacherIds = (data || []).map((request: any) => request.assigned_teacher_id).filter(Boolean);
 
     // 학생 정보 조회
-    const { data: studentsData } = await supabase
+    const { data: studentsData } = await supabaseAdmin
       .from('users')
       .select('id, username, name, birth_year, phone')
       .in('id', studentIds);
 
     // 담당 교사 정보 조회
-    const { data: teachersData } = await supabase
+    const { data: teachersData } = await supabaseAdmin
       .from('users')
       .select('id, name')
       .in('id', teacherIds);

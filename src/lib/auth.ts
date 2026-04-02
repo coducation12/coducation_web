@@ -1,6 +1,6 @@
 import { cookies } from 'next/headers';
 import { User } from '@/types';
-import { supabase } from './supabase';
+import { supabase, supabaseAdmin } from './supabase';
 
 // 하이브리드 인증 시스템: 학생은 DB, 강사/관리자는 Auth 사용
 export async function getAuthenticatedUser(): Promise<User | null> {
@@ -45,7 +45,7 @@ export async function getAuthenticatedUser(): Promise<User | null> {
     }
 
     // DB에서 사용자 정보 조회 (학생이거나, Admin/Teacher 토큰 검증이 성공한 경우만 여기까지 도달)
-    const { data, error } = await supabase
+    const { data, error } = await supabaseAdmin
       .from('users')
       .select('*')
       .eq('id', userId)

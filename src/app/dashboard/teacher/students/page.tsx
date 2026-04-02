@@ -265,13 +265,18 @@ export default function TeacherStudentsPage() {
                                     <TableCell className="text-cyan-300 px-2 hidden lg:table-cell">
                                         {student.academy || '-'}
                                     </TableCell>
-                                    <TableCell className="text-cyan-300 px-2 whitespace-nowrap">
+                                    <TableCell className="text-cyan-300 px-2 py-2 whitespace-nowrap">
                                         {student.type === 'signup_request' ? (
                                             <span className="text-cyan-400 text-xs sm:text-[13px]">가입요청</span>
                                         ) : (
-                                            <div className="flex items-center space-x-1 sm:space-x-2">
-                                                <Phone className="w-3 h-3 sm:w-4 sm:h-4 opacity-50" />
-                                                <span className="text-xs sm:text-[13px]">{student.phone}</span>
+                                            <div className="flex flex-col gap-0.5">
+                                                <div className="flex items-center space-x-1 sm:space-x-2">
+                                                    <Phone className="w-3 h-3 sm:w-4 sm:h-4 text-cyan-400 opacity-70" />
+                                                    <span className="text-cyan-100 font-medium text-xs sm:text-[13px]">{student.phone}</span>
+                                                </div>
+                                                <div className="text-[10px] sm:text-[11px] text-cyan-500/80">
+                                                    학부모: {student.parentPhone || "-"}
+                                                </div>
                                             </div>
                                         )}
                                     </TableCell>

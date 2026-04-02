@@ -301,10 +301,15 @@ export default function AdminStudentsPage() {
                                         <TableCell className="text-cyan-300 py-2 sm:py-4">
                                             {student.academy || '-'}
                                         </TableCell>
-                                        <TableCell className="text-cyan-300 py-2 sm:py-4">
-                                            <div className="flex items-center space-x-2">
-                                                <Phone className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                                                <span>{student.phone}</span>
+                                        <TableCell className="text-cyan-300 py-2 sm:py-3">
+                                            <div className="flex flex-col gap-0.5">
+                                                <div className="flex items-center space-x-2">
+                                                    <Phone className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-cyan-400" />
+                                                    <span className="text-cyan-100 font-medium">{student.phone}</span>
+                                                </div>
+                                                <div className="text-[10px] sm:text-[11px] text-cyan-500/80">
+                                                    학부모: {student.parentPhone || "-"}
+                                                </div>
                                             </div>
                                         </TableCell>
                                         <TableCell className="text-cyan-300 py-2 sm:py-4">

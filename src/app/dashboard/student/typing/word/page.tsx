@@ -6,6 +6,7 @@ import { StudentHeading, StudentCard, StudentText, studentButtonStyles } from ".
 import { cn } from "@/lib/utils";
 import { useRouter, useSearchParams } from 'next/navigation';
 import { saveTypingResult } from '@/lib/actions';
+import { koreanWords, englishWords } from '@/constants/typing-data';
 
 // 한글 자모 분해 함수
 function decomposeHangul(char: string): string[] {
@@ -48,102 +49,6 @@ interface WordTiming {
   cpm?: number;
 }
 
-// 한글 단어 500개 목록
-const koreanWords = [
-  '가방', '가위', '가을', '가족', '가지', '간식', '갈비', '감기', '감자', '감사',
-  '강물', '강아지', '개구리', '개미', '거리', '거북이', '거울', '건강', '건물', '게임',
-  '겨울', '결혼', '경찰', '경제', '계산', '계획', '고기', '고래', '고양이', '고추',
-  '곡식', '골목', '공간', '공기', '공부', '공원', '공장', '과일', '나라', '나무',
-  '나비', '나이', '나중', '낙지', '난로', '날개', '날씨', '남자', '남편', '낭만',
-  '내일', '냄비', '냄새', '노래', '노인', '논문', '놀이터', '농사', '농장', '누나',
-  '눈물', '뉴스', '능력', '늘봄', '내복', '낙관', '나락', '나루', '내외', '냉면',
-  '낙원', '노을', '노랑', '노선', '다리', '다방', '다리미', '다섯', '단계', '단어',
-  '달력', '달빛', '닭고기', '답장', '당근', '대문', '대학', '대화', '대표', '대한',
-  '더위', '도구', '도시', '도움', '돈', '돌', '동물', '동네', '동전', '동화',
-  '돼지', '두부', '두유', '두통', '드라마', '들판', '등불', '등산', '등잔', '디자인',
-  '라디오', '라면', '라벨', '라이터', '라운드', '라일락', '라이벌', '라켓', '라이브', '락커',
-  '램프', '레몬', '레벨', '레스토랑', '렌즈', '로봇', '로켓', '로망', '로션', '롯데',
-  '루머', '리듬', '리더', '리모콘', '리본', '리스트', '리포트', '라운지', '라틴', '레일',
-  '레고', '레인지', '라텍스', '레이스', '레드', '라운드', '마당', '마늘', '마라톤', '마법',
-  '마술', '마음', '마을', '마이크', '마차', '마크', '막대', '만남', '만두', '만화',
-  '만족', '말', '말씀', '말투', '망고', '망원경', '맛집', '매듭', '매력', '매일',
-  '매점', '매출', '맥주', '맨션', '머리', '머리카락', '먼지', '메뉴', '메달', '메모',
-  '메시지', '메이크업', '바구니', '바나나', '바늘', '바다', '바닥', '바람', '바위', '바지',
-  '바탕', '박물관', '박사', '반대', '발견', '발목', '발표', '밤하늘', '밥그릇', '밥상',
-  '방송', '방학', '방법', '배구', '배낭', '배달', '배우', '배추', '백과', '백신',
-  '버스', '버튼', '번역', '번호', '벌금', '벌레', '법원', '법칙', '사과', '사람',
-  '시장', '소문', '숲속', '사랑', '사막', '사슴', '사실', '사전', '사진', '사회',
-  '사탕', '사투리', '사원', '사이', '사장', '사정', '사촌', '사표', '사업', '상자',
-  '상처', '상태', '상추', '상품', '상황', '새벽', '새소리', '새집', '생활', '생일',
-  '생각', '생명', '서랍', '서점', '아이', '아기', '아빠', '아저씨', '아줌마', '아침',
-  '아파트', '아프다', '아시아', '아이스', '악기', '안경', '안내', '안방', '안전', '안쪽',
-  '안팎', '알약', '알코올', '알림', '암벽', '앞길', '애인', '야구', '야채', '약속',
-  '양말', '양식', '양파', '얘기', '어깨', '어머니', '어제', '언덕', '언어', '얼굴',
-  '자격', '자극', '자기', '자네', '자녀', '자동차', '자랑', '자료', '자리', '자막',
-  '자매', '자부심', '자세', '자연', '자원', '자율', '자전거', '자정', '자존심', '자주',
-  '작가', '작문', '작업', '작용', '작품', '잔디', '잔소리', '잡지', '장갑', '장기',
-  '장난', '장례', '장비', '장소', '장식', '장인', '차고', '차량', '차림', '차별',
-  '차선', '차원', '차표', '차이', '차장', '차질', '차칸', '차트', '차합', '차향',
-  '착각', '찬물', '찬송', '찰흙', '참새', '참치', '참가', '참조', '참외', '참전',
-  '참패', '찻집', '챔피언', '책상', '책임', '책자', '철도', '철학', '철판', '청소',
-  '카메라', '카드', '카톡', '케이블', '케이크', '케이팝', '커피', '컴퓨터', '컨트롤', '컬러',
-  '컬럼', '컵라면', '코끼리', '코러스', '코미디', '코스', '코치', '코트', '코팅', '콘서트',
-  '콜라', '콜센터', '쿠키', '쿠폰', '퀴즈', '퀵서비스', '퀸', '퀀텀', '클래스', '클럽',
-  '타자', '타이머', '타이어', '타입', '타자기', '타투', '타이틀', '타워', '타협', '탁구',
-  '탁자', '탄생', '탄소', '탈출', '탐험', '탑승', '태권도', '태도', '태양', '태풍',
-  '택배', '택시', '테니스', '테이블', '테이프', '텍스트', '토끼', '토론', '토마토', '튜브',
-  '파도', '파란', '파란색', '파리', '파인애플', '파일', '파출소', '판단', '판사', '팔꿈치',
-  '팔도', '팔월', '팝송', '패션', '팩스', '팬더', '페인트', '펜', '펜션', '편지',
-  '평가', '평소', '평양', '포도', '포스터', '포장', '포함', '폰트', '표정', '표현',
-  '학교', '학생', '하늘', '하루', '하지만', '하품', '하얀색', '하다', '한글', '한복',
-  '한식', '한옥', '한자', '할머니', '할아버지', '합격', '항공', '항구', '항상', '항해',
-  '해답', '해물', '해변', '해석', '해양', '해외', '해일', '해커', '해커톤', '핸드폰',
-  '헬기', '헬스', '혁명', '현관', '현대', '현실', '청년', '청춘', '체육', '체험',
-  '캐릭터', '카센터', '타이핑', '택일', '프린터', '프로그램', '휴가', '휴지', '휴식', '휴대폰'
-];
-
-// 영어 단어 500개 목록
-const englishWords = [
-  'apple', 'bread', 'pizza', 'coffee', 'sugar', 'water', 'milk', 'juice', 'rice', 'meat',
-  'fish', 'pasta', 'noodle', 'salad', 'soup', 'cake', 'candy', 'cookie', 'cheese', 'butter',
-  'toast', 'honey', 'jam', 'egg', 'lunch', 'dinner', 'snack', 'drink', 'meal', 'fruit',
-  'banana', 'grape', 'peach', 'melon', 'pear', 'plum', 'berry', 'lemon', 'orange', 'onion',
-  'carrot', 'potato', 'tomato', 'pepper', 'garlic', 'ginger', 'beef', 'pork', 'chicken', 'lamb',
-  'dog', 'cat', 'bird', 'duck', 'cow', 'pig', 'sheep', 'horse', 'lion', 'tiger',
-  'bear', 'wolf', 'fox', 'deer', 'rabbit', 'monkey', 'mouse', 'rat', 'frog', 'snake',
-  'whale', 'shark', 'dolphin', 'seal', 'crab', 'ant', 'bee', 'butterfly', 'spider', 'tree',
-  'leaf', 'flower', 'grass', 'plant', 'seed', 'root', 'branch', 'wood', 'forest', 'river',
-  'lake', 'pond', 'sea', 'ocean', 'island', 'mountain', 'valley', 'hill', 'beach', 'house',
-  'home', 'room', 'yard', 'garden', 'park', 'school', 'class', 'office', 'store', 'shop',
-  'market', 'mall', 'bank', 'hotel', 'motel', 'cafe', 'bar', 'club', 'cinema', 'theater',
-  'museum', 'library', 'station', 'airport', 'harbor', 'bridge', 'road', 'street', 'alley', 'hall',
-  'church', 'temple', 'palace', 'castle', 'tower', 'roomy', 'loft', 'shed', 'barn', 'factory',
-  'farm', 'field', 'court', 'clinic', 'hospital', 'kitchen', 'bath', 'toilet', 'man', 'woman',
-  'boy', 'girl', 'baby', 'child', 'parent', 'father', 'mother', 'brother', 'sister', 'uncle',
-  'aunt', 'cousin', 'friend', 'neighbor', 'teacher', 'student', 'doctor', 'nurse', 'police', 'pilot',
-  'driver', 'farmer', 'worker', 'chef', 'cook', 'singer', 'actor', 'artist', 'writer', 'poet',
-  'judge', 'lawyer', 'clerk', 'mayor', 'leader', 'coach', 'guide', 'guard', 'army', 'soldier',
-  'king', 'queen', 'prince', 'princess', 'president', 'doctorate', 'monk', 'nun', 'pen', 'pencil',
-  'eraser', 'paper', 'book', 'notebook', 'bag', 'box', 'clock', 'watch', 'phone', 'radio',
-  'camera', 'video', 'tv', 'lamp', 'light', 'fan', 'bell', 'ring', 'cup', 'glass',
-  'plate', 'bowl', 'fork', 'spoon', 'knife', 'chair', 'table', 'desk', 'sofa', 'bed',
-  'pillow', 'blanket', 'sheet', 'shoes', 'shirt', 'pants', 'coat', 'dress', 'hat', 'cap',
-  'mask', 'ball', 'toy', 'game', 'dice', 'card', 'coin', 'day', 'week', 'month',
-  'year', 'hour', 'minute', 'second', 'time', 'spring', 'summer', 'autumn', 'winter', 'season',
-  'holiday', 'vacation', 'trip', 'travel', 'tour', 'event', 'party', 'festival', 'birthday', 'wedding',
-  'meeting', 'lesson', 'course', 'test', 'exam', 'quiz', 'score', 'grade', 'level', 'stage',
-  'match', 'round', 'final', 'start', 'begin', 'end', 'stop', 'finish', 'early', 'late',
-  'soon', 'now', 'past', 'future', 'run', 'walk', 'jump', 'sit', 'stand', 'sleep',
-  'wake', 'eat', 'read', 'write', 'draw', 'sing', 'play', 'work', 'study', 'learn',
-  'teach', 'think', 'know', 'find', 'lose', 'open', 'close', 'move', 'turn', 'push',
-  'pull', 'help', 'save', 'make', 'build', 'create', 'break', 'fix', 'call', 'show',
-  'look', 'see', 'hear', 'speak', 'talk', 'say', 'smile', 'cry', 'laugh', 'love',
-  'big', 'small', 'long', 'short', 'fast', 'slow', 'hot', 'cold', 'warm', 'cool',
-  'happy', 'sad', 'angry', 'glad', 'good', 'bad', 'new', 'old', 'young', 'true',
-  'false', 'right', 'wrong', 'easy', 'hard', 'soft', 'loud', 'quiet', 'bright', 'dark',
-  'clean', 'dirty', 'empty', 'full', 'rich', 'poor', 'kind', 'mean', 'nice', 'funny',
-  'serious', 'strong', 'weak', 'smart', 'dull', 'safe', 'danger'
-];
 
 export const dynamic = 'force-dynamic';
 

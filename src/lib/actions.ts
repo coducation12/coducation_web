@@ -1346,7 +1346,6 @@ export async function saveTypingResult(data: {
   language: 'korean' | 'english';
 }) {
   try {
-    // 현재 로그인한 사용자 정보 가져오기
     const cookieStore = await cookies();
     const userId = cookieStore.get('user_id')?.value;
 
@@ -1354,21 +1353,42 @@ export async function saveTypingResult(data: {
       return { success: false, error: '로그인이 필요합니다.' };
     }
 
-    const today = new Date().toISOString().split('T')[0];
+    // 한국 시간(KST) 기준으로 오늘 날짜 구하기
+    const now = new Date();
+    const kstOffset = 9 * 60 * 60 * 1000;
+    const kstDate = new Date(now.getTime() + kstOffset);
+    const today = kstDate.toISOString().split('T')[0];
 
-    // 1. 학생의 출석 스케줄 및 담당 강사 정보 조회
-    const { data: student, error: studentError } = await supabaseAdmin
-      .from('students')
-      .select('attendance_schedule')
-      .eq('user_id', userId)
-      .single();
+    const isKorean = data.language === 'korean';
+    const speedColumn = isKorean ? 'korean_typing_speed' : 'english_typing_speed';
 
-    if (studentError) {
-      console.error('학생 정보 조회 실패:', studentError);
+    // 1 & 3. 학생 정보와 기존 세션 정보를 병렬로 조회
+    const [studentResponse, sessionResponse] = await Promise.all([
+      supabaseAdmin
+        .from('students')
+        .select('attendance_schedule')
+        .eq('user_id', userId)
+        .single(),
+      supabaseAdmin
+        .from('attendance_sessions')
+        .select(`id, ${speedColumn}, teacher_id`)
+        .eq('student_id', userId)
+        .eq('date', today)
+        .eq('session_type', 'regular')
+        .maybeSingle()
+    ]);
+
+    const { data: student, error: studentError } = studentResponse;
+    const { data: existingSession, error: selectError } = sessionResponse;
+
+    if (studentError) console.error('학생 정보 조회 실패:', studentError);
+    if (selectError) {
+      console.error('기존 세션 조회 실패:', selectError);
+      return { success: false, error: selectError.message };
     }
 
-    // 2. 오늘 요일에 해당하는 담당 강사 찾기
-    const dayOfWeek = new Date().getDay(); // 0: 일요일, 1: 월요일, ...
+    // 오늘 요일 담당 강사 찾기
+    const dayOfWeek = kstDate.getUTCDay(); // KST 기준 요일
     const dayNames = ['일', '월', '화', '수', '목', '금', '토'];
     const todayName = dayNames[dayOfWeek];
     
@@ -1377,25 +1397,10 @@ export async function saveTypingResult(data: {
       teacherId = student.attendance_schedule[todayName].teacherId;
     }
 
-    const isKorean = data.language === 'korean';
-    const speedColumn = isKorean ? 'korean_typing_speed' : 'english_typing_speed';
-
-    // 3. 기존 기록 확인
-    const { data: existingSession, error: selectError } = await supabaseAdmin
-      .from('attendance_sessions')
-      .select(`id, ${speedColumn}, teacher_id`)
-      .eq('student_id', userId)
-      .eq('date', today)
-      .eq('session_type', 'regular')
-      .maybeSingle();
-
-    if (selectError) {
-      console.error('기존 세션 조회 실패:', selectError);
-      return { success: false, error: selectError.message };
-    }
+    const updates = [];
 
     if (existingSession) {
-      // 기존 기록이 있으면 속도가 더 빠를 때만 업데이트
+      // 기존 기록이 있고 현재 속도가 더 빠를 때만 업데이트 준비
       const existingSpeed = existingSession[speedColumn] || 0;
       if (data.speed > existingSpeed) {
         const updateData: any = {
@@ -1403,44 +1408,48 @@ export async function saveTypingResult(data: {
           updated_at: new Date().toISOString()
         };
         
-        // 기존 세션에 강사가 없는데 오늘 스케줄상 강사가 있다면 업데이트
         if (!existingSession.teacher_id && teacherId) {
           updateData.teacher_id = teacherId;
         }
 
-        const { error: updateError } = await supabaseAdmin
-          .from('attendance_sessions')
-          .update(updateData)
-          .eq('id', existingSession.id);
-
-        if (updateError) {
-          console.error('타자연습 결과 업데이트 실패:', updateError);
-          return { success: false, error: updateError.message };
-        }
+        updates.push(
+          supabaseAdmin
+            .from('attendance_sessions')
+            .update(updateData)
+            .eq('id', existingSession.id)
+        );
       }
     } else {
-      // 새로운 세션 생성
-      const { error: insertError } = await supabaseAdmin
-        .from('attendance_sessions')
-        .insert({
-          student_id: userId,
-          date: today,
-          session_type: 'regular',
-          status: 'present',
-          [speedColumn]: data.speed,
-          teacher_id: teacherId,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        });
-
-      if (insertError) {
-        console.error('타자연습 결과 저장 실패:', insertError);
-        return { success: false, error: insertError.message };
-      }
+      // 새로운 세션 생성 준비
+      updates.push(
+        supabaseAdmin
+          .from('attendance_sessions')
+          .insert({
+            student_id: userId,
+            date: today,
+            session_type: 'regular',
+            status: 'present',
+            [speedColumn]: data.speed,
+            teacher_id: teacherId,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          })
+      );
     }
 
-    // 타자 연습 완료 XP 부여 (200 XP)
-    await addStudentXP(userId, 200, '타자 연습 완료');
+    // 타자 연습 완료 XP 부여는 항상 실행하도록 병렬 큐에 추가
+    // (다만 세션 업데이트가 필요한 경우와 함께 실행)
+    const dbOperations = [...updates, addStudentXP(userId, 200, '타자 연습 완료')];
+    
+    // 모든 DB 작업을 병렬로 실행
+    const results = await Promise.all(dbOperations);
+    
+    // 에러 체크
+    for (const res of results) {
+      if ('error' in res && res.error) {
+        console.error('DB 작업 중 오류 발생:', res.error);
+      }
+    }
 
     return { success: true };
   } catch (error) {
@@ -3522,25 +3531,39 @@ export const getStudentProgress = cache(async (studentId: string) => {
  */
 export async function addStudentXP(studentId: string, amount: number, reason: string) {
   try {
-    const { data: student, error: fetchError } = await supabaseAdmin
-      .from('students')
-      .select('total_xp')
-      .eq('user_id', studentId)
-      .single();
+    // RPC를 사용하여 원자적으로 XP 증가 (성능 최적화 및 동시성 해결)
+    const { data: updatedStudent, error: updateError } = await supabaseAdmin
+      .rpc('increment_student_xp', { 
+        target_user_id: studentId, 
+        amount: amount 
+      });
 
-    if (fetchError) throw fetchError;
+    if (updateError) {
+      // RPC가 없는 경우 대비한 Fallback (이전 방식)
+      console.warn('increment_student_xp RPC가 없어 Fallback 로직 실행:', updateError.message);
+      
+      const { data: student, error: fetchError } = await supabaseAdmin
+        .from('students')
+        .select('total_xp')
+        .eq('user_id', studentId)
+        .single();
 
-    const newXP = (student?.total_xp || 0) + amount;
+      if (fetchError) throw fetchError;
 
-    const { error: updateError } = await supabaseAdmin
-      .from('students')
-      .update({ total_xp: newXP })
-      .eq('user_id', studentId);
+      const newXP = (student?.total_xp || 0) + amount;
 
-    if (updateError) throw updateError;
+      const { error: updateOldError } = await supabaseAdmin
+        .from('students')
+        .update({ total_xp: newXP })
+        .eq('user_id', studentId);
+
+      if (updateOldError) throw updateOldError;
+      
+      return { success: true, total_xp: newXP };
+    }
     
     console.log(`XP 지급 완료: ${studentId}에게 ${amount} XP 부여 (사유: ${reason})`);
-    return { success: true, total_xp: newXP };
+    return { success: true, total_xp: updatedStudent?.[0]?.total_xp };
   } catch (error) {
     console.error('XP 지급 중 오류:', error);
     return { success: false, error: 'XP 지급에 실패했습니다.' };

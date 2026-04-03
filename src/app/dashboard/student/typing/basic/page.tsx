@@ -901,14 +901,14 @@ export default function BasicPage() {
 
       <div className="relative z-10 w-full h-full flex flex-col p-3 pt-16 sm:p-4 sm:pt-18 lg:p-6 lg:pt-6">
         {/* 헤더 */}
-        <div className="flex items-center justify-between mb-2 sm:mb-3 lg:mb-4">
+        <div className="flex items-center justify-between mb-1 sm:mb-2 lg:mb-4">
           <button
             onClick={() => router.back()}
-            className="p-1.5 sm:p-2 hover:bg-cyan-500/20 rounded-lg transition-colors border border-cyan-500/30"
+            className="p-1 px-2 hover:bg-cyan-500/20 rounded-lg transition-colors border border-cyan-500/30"
           >
-            <ArrowLeft className="w-5 h-5 sm:w-6 sm:h-6 text-cyan-400" />
+            <ArrowLeft className="w-5 h-5 text-cyan-400" />
           </button>
-          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-cyan-400 via-blue-400 to-purple-400 bg-clip-text text-transparent">
+          <h1 className="text-xl sm:text-2xl lg:text-4xl font-bold bg-gradient-to-r from-cyan-400 via-blue-400 to-purple-400 bg-clip-text text-transparent">
             자리연습
           </h1>
           <div className="flex items-center gap-2">
@@ -924,8 +924,8 @@ export default function BasicPage() {
         <div className="max-w-6xl mx-auto w-full flex-1 flex flex-col">
 
           {/* 연습할 자리 선택 */}
-          <div className="flex justify-center mb-2 sm:mb-3 lg:mb-4">
-            <div className="flex flex-wrap gap-2 sm:gap-3 justify-center">
+          <div className="flex justify-center mb-1 sm:mb-2 lg:mb-4">
+            <div className="flex flex-wrap gap-1 sm:gap-2 justify-center">
               {[
                 { id: 'basic' as const, name: '기본자리' },
                 { id: 'left-upper' as const, name: '왼손윗자리' },
@@ -938,7 +938,7 @@ export default function BasicPage() {
                   key={position.id}
                   onClick={() => handlePositionChange(position.id)}
                   className={cn(
-                    "px-4 py-2 rounded-lg font-medium transition-all duration-200 border",
+                    "px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg text-sm sm:text-base font-medium transition-all duration-200 border",
                     currentPosition === position.id
                       ? "bg-gradient-to-r from-cyan-500 to-blue-500 text-white shadow-lg shadow-cyan-500/25 border-cyan-400"
                       : "bg-slate-800/60 text-cyan-300 border-cyan-500/30 hover:bg-slate-700/60 hover:border-cyan-400"
@@ -951,34 +951,34 @@ export default function BasicPage() {
           </div>
 
           {/* 메인 연습 영역 */}
-          <div className="flex-1 flex flex-col items-center justify-center mb-1 sm:mb-2 animate-in fade-in-0 slide-in-from-bottom-4 duration-500">
+          <div className="flex-1 flex flex-col items-center justify-center min-h-0 mb-1 animate-in fade-in-0 slide-in-from-bottom-4 duration-500">
             {/* 이전 단어 CPM 표시 (단어연습 부분에서만, 고정 공간) */}
             {currentCharIndex >= 50 && (
-              <div className="mb-1 text-center h-4 sm:h-5 lg:h-6 flex items-center justify-center">
+              <div className="mb-0.5 text-center h-4 flex items-center justify-center">
                 {lastWordCPM !== null ? (
-                  <div className="text-cyan-400 text-lg sm:text-xl font-bold">
+                  <div className="text-cyan-400 text-base sm:text-lg font-bold">
                     {lastWordCPM} CPM
                   </div>
                 ) : (
-                  <div className="h-4 sm:h-5 lg:h-6"></div> // 빈 공간 유지
+                  <div className="h-4"></div> // 빈 공간 유지
                 )}
               </div>
             )}
 
             {/* 현재 입력할 글자와 다음 글자 */}
-            <div className="flex items-center justify-center gap-3 sm:gap-4 lg:gap-6 mb-1 sm:mb-2 relative">
+            <div className="flex-shrink-0 flex items-center justify-center gap-2 sm:gap-4 lg:gap-6 mb-1 sm:mb-2 relative">
               {/* 현재 입력할 글자 - 항상 중앙에 (반응형) */}
-              <div className="bg-gradient-to-br from-cyan-500 to-blue-600 rounded-2xl sm:rounded-3xl p-4 sm:p-6 lg:p-8 shadow-2xl shadow-cyan-500/25 border border-cyan-400/50 transition-all duration-300 animate-in zoom-in-95 fade-in-0 duration-300">
+              <div className="flex-shrink-0 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-xl sm:rounded-3xl p-3 sm:p-6 lg:p-4 xl:p-6 shadow-2xl shadow-cyan-500/25 border border-cyan-400/50 transition-all duration-300 animate-in zoom-in-95 fade-in-0 duration-300">
                 <div className="text-center">
                   <div className={cn(
-                    "text-xs sm:text-sm mb-2 sm:mb-3 lg:mb-4 opacity-80",
-                    isWrong ? "text-red-800" : "text-cyan-100"
+                    "text-[10px] sm:text-xs mb-1 sm:mb-2 lg:mb-4 opacity-80",
+                    isWrong ? "text-red-100" : "text-cyan-100"
                   )}>
                     {isWrong ? "틀렸습니다!" : currentCharIndex < 10 ? "입력할 자리" : "입력할 단어"}
                   </div>
                   <div className={cn(
-                    "text-3xl sm:text-4xl lg:text-5xl xl:text-7xl font-bold leading-none transition-colors duration-150",
-                    isWrong ? "text-red-800" : "text-white"
+                    "text-2xl sm:text-4xl lg:text-5xl xl:text-7xl font-bold leading-none transition-colors duration-150",
+                    isWrong ? "text-red-100" : "text-white"
                   )}>
                     {currentChar}
                   </div>
@@ -987,10 +987,10 @@ export default function BasicPage() {
 
               {/* 다음 입력할 글자 - 오른쪽에 작게 */}
               {nextChar && (
-                <div className="bg-transparent rounded-xl sm:rounded-2xl p-3 sm:p-4 lg:p-6 border border-slate-600/50 absolute right-0 top-1/2 transform -translate-y-1/2 translate-x-[100%] sm:translate-x-[120%]">
+                <div className="flex-shrink-0 bg-transparent rounded-xl p-2 sm:p-4 lg:p-3 xl:p-4 border border-slate-600/50 absolute right-0 top-1/2 transform -translate-y-1/2 translate-x-[100%] sm:translate-x-[120%]">
                   <div className="text-center">
-                    <div className="text-slate-400 text-xs mb-1 sm:mb-2 opacity-80">다음 자리</div>
-                    <div className="text-slate-300 text-2xl sm:text-3xl lg:text-4xl font-bold leading-none">
+                    <div className="text-slate-400 text-[10px] sm:text-xs mb-0.5 sm:mb-2 opacity-80">다음 자리</div>
+                    <div className="text-slate-300 text-xl sm:text-3xl lg:text-2xl xl:text-4xl font-bold leading-none">
                       {nextChar}
                     </div>
                   </div>
@@ -1001,12 +1001,12 @@ export default function BasicPage() {
 
 
             {/* 단어 입력 필드 - 항상 공간 확보 */}
-            <div className="mb-1 sm:mb-2 text-center">
+            <div className="mb-0.5 sm:mb-1 text-center">
               <div className="bg-transparent">
                 {/* 입력 필드 */}
-                <div className="mb-1 sm:mb-2">
+                <div className="mb-0.5 sm:mb-1">
                   {/* 글자별 표시를 위한 커스텀 입력 디스플레이 */}
-                  <div className="w-full max-w-xl sm:max-w-2xl mx-auto px-2 py-1 sm:py-2 text-center text-2xl sm:text-3xl lg:text-5xl font-bold min-h-[40px] sm:min-h-[50px] lg:min-h-[60px] flex items-center justify-center">
+                  <div className="w-full max-w-xl sm:max-w-2xl mx-auto px-2 py-0.5 sm:py-1 text-center text-xl sm:text-3xl lg:text-4xl xl:text-5xl font-bold min-h-[30px] sm:min-h-[40px] lg:min-h-[50px] flex items-center justify-center">
                     {currentCharIndex >= 50 ? (
                       <>
                         {userInput.split('').map((char, index) => {
@@ -1061,28 +1061,28 @@ export default function BasicPage() {
             </div>
 
             {/* 가상 키보드 (모바일에서 숨김) */}
-            <div className="hidden lg:block bg-slate-800/90 backdrop-blur-sm rounded-2xl xl:rounded-3xl p-3 xl:p-4 shadow-2xl border border-cyan-500/30 animate-in fade-in-0 slide-in-from-bottom-2 duration-700 delay-200">
+            <div className="hidden lg:block bg-slate-800/90 backdrop-blur-sm rounded-xl xl:rounded-3xl p-2 xl:p-4 shadow-2xl border border-cyan-500/30 animate-in fade-in-0 slide-in-from-bottom-2 duration-700 delay-200">
               {/* 진행도 막대바 */}
-              <div className="mb-3">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-cyan-300 text-sm">
+              <div className="mb-1.5 sm:mb-3">
+                <div className="flex items-center justify-between mb-1 sm:mb-2">
+                  <span className="text-cyan-300 text-[10px] sm:text-xs">
                     {currentCharIndex < 50 ? '1단계: 자리 연습' : '2단계: 단어 연습'}
                   </span>
                   <div className="flex items-center gap-3">
                     {isPaused && (
-                      <div className="flex items-center gap-1 text-orange-400 text-sm">
-                        <div className="w-2 h-2 bg-orange-400 rounded-full animate-pulse"></div>
+                      <div className="flex items-center gap-1 text-orange-400 text-[10px] sm:text-xs">
+                        <div className="w-1.5 h-1.5 bg-orange-400 rounded-full animate-pulse"></div>
                         일시정지됨
                       </div>
                     )}
-                    <span className="text-cyan-300 text-sm">
+                    <span className="text-cyan-300 text-[10px] sm:text-xs">
                       {currentCharIndex + 1} / 100
                     </span>
                   </div>
                 </div>
-                <div className="w-full bg-slate-700 rounded-full h-3">
+                <div className="w-full bg-slate-700 rounded-full h-2 sm:h-3">
                   <div
-                    className="bg-gradient-to-r from-cyan-500 to-blue-500 h-3 rounded-full transition-all duration-300"
+                    className="bg-gradient-to-r from-cyan-500 to-blue-500 h-2 sm:h-3 rounded-full transition-all duration-300"
                     style={{ width: `${((currentCharIndex + 1) / 100) * 100}%` }}
                   ></div>
                 </div>
@@ -1103,32 +1103,32 @@ export default function BasicPage() {
               {/* 실제 키보드와 동일한 레이아웃 */}
               <div className="flex flex-col items-center">
                 {/* 첫 번째 행: 숫자와 기호 */}
-                <div className="flex space-x-1 mb-2">
-                  <div className="w-12 h-12 rounded-lg border-2 flex items-center justify-center text-xs font-bold border-cyan-500/50 bg-slate-700 text-cyan-300 shadow-sm hover:bg-slate-600 hover:border-cyan-400 transition-all duration-200 cursor-pointer">
+                <div className="flex keyboard-row-gap mb-1 sm:mb-2">
+                  <div className="responsive-key rounded-lg border-2 flex items-center justify-center text-xs font-bold border-cyan-500/50 bg-slate-700 text-cyan-300 shadow-sm hover:bg-slate-600 hover:border-cyan-400 transition-all duration-200 cursor-pointer">
                     ~
                   </div>
                   {['! 1', '@ 2', '# 3', '$ 4', '% 5', '^ 6', '& 7', '* 8', '( 9', ') 0'].map((key, index) => (
-                    <div key={index} className="w-12 h-12 rounded-lg border-2 flex flex-col items-center justify-center text-xs font-bold border-cyan-500/50 bg-slate-700 text-cyan-300 shadow-sm hover:bg-slate-600 hover:border-cyan-400 transition-all duration-200 cursor-pointer">
+                    <div key={index} className="responsive-key rounded-lg border-2 flex flex-col items-center justify-center text-xs font-bold border-cyan-500/50 bg-slate-700 text-cyan-300 shadow-sm hover:bg-slate-600 hover:border-cyan-400 transition-all duration-200 cursor-pointer">
                       <span className="text-cyan-400 text-xs">{key.split(' ')[0]}</span>
                       <span className="font-bold text-sm">{key.split(' ')[1]}</span>
                     </div>
                   ))}
-                  <div className="w-12 h-12 rounded-lg border-2 flex flex-col items-center justify-center text-xs font-bold border-cyan-500/50 bg-slate-700 text-cyan-300 shadow-sm hover:bg-slate-600 hover:border-cyan-400 transition-all duration-200 cursor-pointer">
+                  <div className="responsive-key rounded-lg border-2 flex flex-col items-center justify-center text-xs font-bold border-cyan-500/50 bg-slate-700 text-cyan-300 shadow-sm hover:bg-slate-600 hover:border-cyan-400 transition-all duration-200 cursor-pointer">
                     <span className="text-cyan-400 text-xs">-</span>
                     <span className="font-bold text-sm">-</span>
                   </div>
-                  <div className="w-12 h-12 rounded-lg border-2 flex flex-col items-center justify-center text-xs font-bold border-cyan-500/50 bg-slate-700 text-cyan-300 shadow-sm hover:bg-slate-600 hover:border-cyan-400 transition-all duration-200 cursor-pointer">
+                  <div className="responsive-key rounded-lg border-2 flex flex-col items-center justify-center text-xs font-bold border-cyan-500/50 bg-slate-700 text-cyan-300 shadow-sm hover:bg-slate-600 hover:border-cyan-400 transition-all duration-200 cursor-pointer">
                     <span className="text-cyan-400 text-xs">+</span>
                     <span className="font-bold text-sm">=</span>
                   </div>
-                  <div className="w-20 h-12 rounded-lg border-2 flex items-center justify-center text-xs font-bold border-cyan-500/50 bg-slate-700 text-cyan-300 shadow-sm hover:bg-slate-600 hover:border-cyan-400 transition-all duration-200 cursor-pointer">
+                  <div className="responsive-key-wide w-20 rounded-lg border-2 flex items-center justify-center text-xs font-bold border-cyan-500/50 bg-slate-700 text-cyan-300 shadow-sm hover:bg-slate-600 hover:border-cyan-400 transition-all duration-200 cursor-pointer">
                     ⌫
                   </div>
                 </div>
 
                 {/* 두 번째 행: Tab과 자음/모음 */}
-                <div className="flex space-x-1 mb-2">
-                  <div className="w-16 h-12 rounded-lg border-2 flex items-center justify-start pl-2 text-xs font-bold border-cyan-500/50 bg-slate-700 text-cyan-300 shadow-sm hover:bg-slate-600 hover:border-cyan-400 transition-all duration-200 cursor-pointer">
+                <div className="flex keyboard-row-gap mb-1 sm:mb-2">
+                  <div className="responsive-key-wide w-16 rounded-lg border-2 flex items-center justify-start pl-2 text-xs font-bold border-cyan-500/50 bg-slate-700 text-cyan-300 shadow-sm hover:bg-slate-600 hover:border-cyan-400 transition-all duration-200 cursor-pointer">
                     Tab
                   </div>
                   {(language === 'korean' ? ['ㅂ', 'ㅈ', 'ㄷ', 'ㄱ', 'ㅅ', 'ㅛ', 'ㅕ', 'ㅑ', 'ㅐ', 'ㅔ'] : ['Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P']).map((key, index) => (
@@ -1136,7 +1136,7 @@ export default function BasicPage() {
                       key={index}
                       onClick={() => handleKeyPress(key)}
                       className={cn(
-                        "w-12 h-12 rounded-lg border-2 flex items-center justify-center text-sm font-bold shadow-sm hover:bg-slate-600 transition-all duration-200 cursor-pointer",
+                        "responsive-key rounded-lg border-2 flex items-center justify-center text-sm font-bold shadow-sm hover:bg-slate-600 transition-all duration-200 cursor-pointer",
                         isKeyHighlighted(key) === 'current' && "border-pink-400 bg-pink-400/20 text-pink-300 shadow-[0_0_15px_0_rgba(236,72,153,0.5)] scale-105",
                         isKeyHighlighted(key) === 'position' && "border-blue-400 bg-blue-400/20 text-blue-300 shadow-[0_0_10px_0_rgba(59,130,246,0.4)]",
                         isKeyHighlighted(key) === 'normal' && "border-cyan-500/50 bg-slate-700 text-cyan-300 hover:border-cyan-400"
@@ -1146,20 +1146,20 @@ export default function BasicPage() {
                     </div>
                   ))}
                   {['{ [', '} ]'].map((key, index) => (
-                    <div key={index} className="w-12 h-12 rounded-lg border-2 flex flex-col items-center justify-center text-xs font-bold border-cyan-500/50 bg-slate-700 text-cyan-300 shadow-sm hover:bg-slate-600 hover:border-cyan-400 transition-all duration-200 cursor-pointer">
+                    <div key={index} className="responsive-key rounded-lg border-2 flex flex-col items-center justify-center text-xs font-bold border-cyan-500/50 bg-slate-700 text-cyan-300 shadow-sm hover:bg-slate-600 hover:border-cyan-400 transition-all duration-200 cursor-pointer">
                       <span className="text-cyan-400 text-xs">{key.split(' ')[0]}</span>
                       <span className="font-bold text-sm">{key.split(' ')[1]}</span>
                     </div>
                   ))}
-                  <div className="w-16 h-12 rounded-lg border-2 flex flex-col items-center justify-center text-xs font-bold border-cyan-500/50 bg-slate-700 text-cyan-300 shadow-sm hover:bg-slate-600 hover:border-cyan-400 transition-all duration-200 cursor-pointer">
+                  <div className="responsive-key-wide w-16 rounded-lg border-2 flex flex-col items-center justify-center text-xs font-bold border-cyan-500/50 bg-slate-700 text-cyan-300 shadow-sm hover:bg-slate-600 hover:border-cyan-400 transition-all duration-200 cursor-pointer">
                     <span className="text-cyan-400 text-xs">|</span>
                     <span className="font-bold text-sm">\</span>
                   </div>
                 </div>
 
                 {/* 세 번째 행: Caps Lock과 자음/모음, Enter */}
-                <div className="flex space-x-1 mb-2 justify-center">
-                  <div className="w-20 h-12 rounded-lg border-2 flex items-center justify-start pl-2 text-xs font-bold border-cyan-500/50 bg-slate-700 text-cyan-300 shadow-sm hover:bg-slate-600 hover:border-cyan-400 transition-all duration-200 cursor-pointer">
+                <div className="flex keyboard-row-gap mb-1 sm:mb-2 justify-center">
+                  <div className="responsive-key-wide w-20 rounded-lg border-2 flex items-center justify-start pl-2 text-xs font-bold border-cyan-500/50 bg-slate-700 text-cyan-300 shadow-sm hover:bg-slate-600 hover:border-cyan-400 transition-all duration-200 cursor-pointer">
                     Caps
                   </div>
                   {(language === 'korean' ? ['ㅁ', 'ㄴ', 'ㅇ', 'ㄹ', 'ㅎ', 'ㅗ', 'ㅓ', 'ㅏ', 'ㅣ'] : ['A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L']).map((key, index) => (
@@ -1167,7 +1167,7 @@ export default function BasicPage() {
                       key={index}
                       onClick={() => handleKeyPress(key)}
                       className={cn(
-                        "w-12 h-12 rounded-lg border-2 flex items-center justify-center text-sm font-bold shadow-sm hover:bg-slate-600 transition-all duration-200 cursor-pointer",
+                        "responsive-key rounded-lg border-2 flex items-center justify-center text-sm font-bold shadow-sm hover:bg-slate-600 transition-all duration-200 cursor-pointer",
                         isKeyHighlighted(key) === 'current' && "border-pink-400 bg-pink-400/20 text-pink-300 shadow-[0_0_15px_0_rgba(236,72,153,0.5)] scale-105",
                         isKeyHighlighted(key) === 'position' && "border-blue-400 bg-blue-400/20 text-blue-300 shadow-[0_0_10px_0_rgba(59,130,246,0.4)]",
                         isKeyHighlighted(key) === 'normal' && "border-cyan-500/50 bg-slate-700 text-cyan-300 hover:border-cyan-400"
@@ -1179,7 +1179,7 @@ export default function BasicPage() {
                   <div
                     onClick={() => handleKeyPress(';')}
                     className={cn(
-                      "w-12 h-12 rounded-lg border-2 flex flex-col items-center justify-center text-xs font-bold shadow-sm hover:bg-slate-600 transition-all duration-200 cursor-pointer",
+                      "responsive-key rounded-lg border-2 flex flex-col items-center justify-center text-xs font-bold shadow-sm hover:bg-slate-600 transition-all duration-200 cursor-pointer",
                       (isKeyHighlighted(';') === 'current' || isKeyHighlighted(':') === 'current') && "border-pink-400 bg-pink-400/20 text-pink-300 shadow-[0_0_15px_0_rgba(236,72,153,0.5)] scale-105",
                       isKeyHighlighted(';') === 'position' && "border-blue-400 bg-blue-400/20 text-blue-300 shadow-[0_0_10px_0_rgba(59,130,246,0.4)]",
                       (isKeyHighlighted(';') === 'normal' && isKeyHighlighted(':') === 'normal' && isKeyHighlighted(';') !== 'position') && "border-cyan-500/50 bg-slate-700 text-cyan-300 hover:border-cyan-400"
@@ -1191,7 +1191,7 @@ export default function BasicPage() {
                   <div
                     onClick={() => handleKeyPress("'")}
                     className={cn(
-                      "w-12 h-12 rounded-lg border-2 flex flex-col items-center justify-center text-xs font-bold shadow-sm hover:bg-slate-600 transition-all duration-200 cursor-pointer",
+                      "responsive-key rounded-lg border-2 flex flex-col items-center justify-center text-xs font-bold shadow-sm hover:bg-slate-600 transition-all duration-200 cursor-pointer",
                       (isKeyHighlighted("'") === 'current' || isKeyHighlighted('"') === 'current') && "border-pink-400 bg-pink-400/20 text-pink-300 shadow-[0_0_15px_0_rgba(236,72,153,0.5)] scale-105",
                       (isKeyHighlighted("'") === 'normal' && isKeyHighlighted('"') === 'normal') && "border-cyan-500/50 bg-slate-700 text-cyan-300 hover:border-cyan-400"
                     )}
@@ -1199,15 +1199,15 @@ export default function BasicPage() {
                     <span className="text-cyan-400 text-xs">"</span>
                     <span className="font-bold text-sm">'</span>
                   </div>
-                  <div className="w-20 h-12 rounded-lg border-2 flex items-center justify-center text-xs font-bold border-cyan-500/50 bg-slate-700 text-cyan-300 shadow-sm hover:bg-slate-600 hover:border-cyan-400 transition-all duration-200 cursor-pointer">
+                  <div className="responsive-key-wide w-20 rounded-lg border-2 flex items-center justify-center text-xs font-bold border-cyan-500/50 bg-slate-700 text-cyan-300 shadow-sm hover:bg-slate-600 hover:border-cyan-400 transition-all duration-200 cursor-pointer">
                     ↵
                   </div>
                 </div>
 
                 {/* 네 번째 행: Shift와 자음/모음, 기호 */}
-                <div className="flex space-x-1 mb-2 justify-center">
+                <div className="flex keyboard-row-gap mb-1 sm:mb-2 justify-center">
                   <div className={cn(
-                    "w-24 h-12 rounded-lg border-2 flex items-center justify-start pl-2 text-xs font-bold shadow-sm hover:bg-slate-600 transition-all duration-200 cursor-pointer",
+                    "responsive-key-wide w-24 rounded-lg border-2 flex items-center justify-start pl-2 text-xs font-bold shadow-sm hover:bg-slate-600 transition-all duration-200 cursor-pointer",
                     isKeyHighlighted('Shift') === 'shift' && "border-orange-400 bg-orange-400/20 text-orange-300 shadow-[0_0_15px_0_rgba(251,146,60,0.5)] scale-105",
                     isKeyHighlighted('Shift') === 'normal' && "border-cyan-500/50 bg-slate-700 text-cyan-300 hover:border-cyan-400"
                   )}>
@@ -1218,7 +1218,7 @@ export default function BasicPage() {
                       key={index}
                       onClick={() => handleKeyPress(key)}
                       className={cn(
-                        "w-12 h-12 rounded-lg border-2 flex items-center justify-center text-sm font-bold shadow-sm hover:bg-slate-600 transition-all duration-200 cursor-pointer",
+                        "responsive-key rounded-lg border-2 flex items-center justify-center text-sm font-bold shadow-sm hover:bg-slate-600 transition-all duration-200 cursor-pointer",
                         isKeyHighlighted(key) === 'current' && "border-pink-400 bg-pink-400/20 text-pink-300 shadow-[0_0_15px_0_rgba(236,72,153,0.5)] scale-105",
                         isKeyHighlighted(key) === 'position' && "border-blue-400 bg-blue-400/20 text-blue-300 shadow-[0_0_10px_0_rgba(59,130,246,0.4)]",
                         isKeyHighlighted(key) === 'normal' && "border-cyan-500/50 bg-slate-700 text-cyan-300 hover:border-cyan-400"
@@ -1235,7 +1235,7 @@ export default function BasicPage() {
                         key={index}
                         onClick={() => handleKeyPress(baseKey)}
                         className={cn(
-                          "w-12 h-12 rounded-lg border-2 flex flex-col items-center justify-center text-xs font-bold shadow-sm hover:bg-slate-600 transition-all duration-200 cursor-pointer",
+                          "responsive-key rounded-lg border-2 flex flex-col items-center justify-center text-xs font-bold shadow-sm hover:bg-slate-600 transition-all duration-200 cursor-pointer",
                           (isKeyHighlighted(baseKey) === 'current' || isKeyHighlighted(shiftKey) === 'current') && "border-pink-400 bg-pink-400/20 text-pink-300 shadow-[0_0_15px_0_rgba(236,72,153,0.5)] scale-105",
                           isKeyHighlighted(baseKey) === 'position' && "border-blue-400 bg-blue-400/20 text-blue-300 shadow-[0_0_10px_0_rgba(59,130,246,0.4)]",
                           (isKeyHighlighted(baseKey) === 'normal' && isKeyHighlighted(shiftKey) === 'normal' && isKeyHighlighted(baseKey) !== 'position') && "border-cyan-500/50 bg-slate-700 text-cyan-300 hover:border-cyan-400"
@@ -1247,7 +1247,7 @@ export default function BasicPage() {
                     );
                   })}
                   <div className={cn(
-                    "w-24 h-12 rounded-lg border-2 flex items-center justify-end pr-2 text-xs font-bold shadow-sm hover:bg-slate-600 transition-all duration-200 cursor-pointer",
+                    "responsive-key-wide w-24 rounded-lg border-2 flex items-center justify-end pr-2 text-xs font-bold shadow-sm hover:bg-slate-600 transition-all duration-200 cursor-pointer",
                     isKeyHighlighted('Shift') === 'shift' && "border-orange-400 bg-orange-400/20 text-orange-300 shadow-[0_0_15px_0_rgba(251,146,60,0.5)] scale-105",
                     isKeyHighlighted('Shift') === 'normal' && "border-cyan-500/50 bg-slate-700 text-cyan-300 hover:border-cyan-400"
                   )}>
@@ -1257,19 +1257,19 @@ export default function BasicPage() {
 
                 {/* 다섯 번째 행: 기능키들 */}
                 <div className="flex space-x-1 justify-center">
-                  <div className="w-20 h-12 rounded-lg border-2 flex items-center justify-center text-xs font-bold border-cyan-500/50 bg-slate-600 text-cyan-200 shadow-sm hover:bg-slate-500 hover:border-cyan-400 transition-all duration-200 cursor-pointer">
+                  <div className="responsive-key-wide w-20 rounded-lg border-2 flex items-center justify-center text-xs font-bold border-cyan-500/50 bg-slate-600 text-cyan-200 shadow-sm hover:bg-slate-500 hover:border-cyan-400 transition-all duration-200 cursor-pointer">
                     Ctrl
                   </div>
-                  <div className="w-20 h-12 rounded-lg border-2 flex items-center justify-center text-xs font-bold border-cyan-500/50 bg-slate-600 text-cyan-200 shadow-sm hover:bg-slate-500 hover:border-cyan-400 transition-all duration-200 cursor-pointer">
+                  <div className="responsive-key-wide w-20 rounded-lg border-2 flex items-center justify-center text-xs font-bold border-cyan-500/50 bg-slate-600 text-cyan-200 shadow-sm hover:bg-slate-500 hover:border-cyan-400 transition-all duration-200 cursor-pointer">
                     Alt
                   </div>
-                  <div className="w-80 h-12 rounded-lg border-2 flex items-center justify-center text-xs font-bold border-cyan-500/50 bg-slate-600 text-cyan-200 shadow-sm hover:bg-slate-500 hover:border-cyan-400 transition-all duration-200 cursor-pointer">
+                  <div className="responsive-key-wide w-80 rounded-lg border-2 flex items-center justify-center text-xs font-bold border-cyan-500/50 bg-slate-600 text-cyan-200 shadow-sm hover:bg-slate-500 hover:border-cyan-400 transition-all duration-200 cursor-pointer">
                     Space
                   </div>
-                  <div className="w-20 h-12 rounded-lg border-2 flex items-center justify-center text-xs font-bold border-cyan-500/50 bg-slate-600 text-cyan-200 shadow-sm hover:bg-slate-500 hover:border-cyan-400 transition-all duration-200 cursor-pointer">
+                  <div className="responsive-key-wide w-20 rounded-lg border-2 flex items-center justify-center text-xs font-bold border-cyan-500/50 bg-slate-600 text-cyan-200 shadow-sm hover:bg-slate-500 hover:border-cyan-400 transition-all duration-200 cursor-pointer">
                     Alt
                   </div>
-                  <div className="w-20 h-12 rounded-lg border-2 flex items-center justify-center text-xs font-bold border-cyan-500/50 bg-slate-600 text-cyan-200 shadow-sm hover:bg-slate-500 hover:border-cyan-400 transition-all duration-200 cursor-pointer">
+                  <div className="responsive-key-wide w-20 rounded-lg border-2 flex items-center justify-center text-xs font-bold border-cyan-500/50 bg-slate-600 text-cyan-200 shadow-sm hover:bg-slate-500 hover:border-cyan-400 transition-all duration-200 cursor-pointer">
                     Ctrl
                   </div>
                 </div>

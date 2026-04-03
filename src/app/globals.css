@@ -491,4 +491,56 @@ input::-ms-clear {
     scrollbar-width: thin;
     scrollbar-color: rgba(34, 211, 238, 0.3) transparent;
   }
+
+  /* 세로 해상도 대응을 위한 반응형 유틸리티 */
+  :root {
+    --kb-key-size: 3rem;
+    --kb-gap: 0.25rem;
+  }
+
+  @media (max-height: 900px) {
+    :root {
+      --kb-key-size: 2.75rem;
+      --kb-gap: 0.2rem;
+    }
+  }
+
+  @media (max-height: 800px) {
+    :root {
+      --kb-key-size: 2.5rem;
+      --kb-gap: 0.15rem;
+    }
+  }
+
+  @media (max-height: 700px) {
+    :root {
+      --kb-key-size: 2.25rem;
+      --kb-gap: 0.1rem;
+    }
+  }
+
+  @media (max-height: 600px) {
+    :root {
+      --kb-key-size: 2rem;
+      --kb-gap: 0.1rem;
+    }
+  }
+
+  .responsive-key {
+    width: var(--kb-key-size);
+    height: var(--kb-key-size);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease-in-out;
+  }
+
+  .responsive-key-wide {
+    height: var(--kb-key-size);
+    transition: all 0.2s ease-in-out;
+  }
+
+  .keyboard-row-gap {
+    gap: var(--kb-gap);
+  }
 }

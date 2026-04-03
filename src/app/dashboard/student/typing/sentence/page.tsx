@@ -111,14 +111,25 @@ export default function SentencePage() {
     return words[nextIndex % words.length];
   }, [currentCharIndex, words]);
 
-  const calculateResult = useCallback(async () => {
-    const totalItems = inputHistory.length;
-    const correctItems = correctHistory.filter(Boolean).length;
+  const calculateResult = useCallback(async (
+    finalInputHistory?: string[],
+    finalCorrectHistory?: boolean[],
+    finalWordTimings?: WordTiming[],
+    finalKeyPresses?: number
+  ) => {
+    // 인자로 전달된 값이 있으면 사용, 없으면 상태값 사용 (React 상태 업데이트 지연 대응)
+    const currentInputHistory = finalInputHistory || inputHistory;
+    const currentCorrectHistory = finalCorrectHistory || correctHistory;
+    const currentWordTimings = finalWordTimings || wordTimings;
+    const currentKeyPresses = finalKeyPresses || totalKeyPresses;
+
+    const totalItems = currentInputHistory.length;
+    const correctItems = currentCorrectHistory.filter(Boolean).length;
     const accuracy = totalItems > 0 ? Math.round((correctItems / totalItems) * 100) : 0;
 
     let averageCPM = 0;
-    if (wordTimings.length > 0) {
-      const validTimings = wordTimings.filter(timing => timing.cpm && timing.cpm > 0);
+    if (currentWordTimings.length > 0) {
+      const validTimings = currentWordTimings.filter(timing => timing.cpm && timing.cpm > 0);
       if (validTimings.length > 0) {
         const totalCPM = validTimings.reduce((sum, timing) => sum + (timing.cpm || 0), 0);
         averageCPM = Math.round(totalCPM / validTimings.length);
@@ -137,8 +148,8 @@ export default function SentencePage() {
     const clampedTimeMinutes = Math.max(0.1, totalTimeMinutes);
 
     let totalTypedCharacters = 0;
-    for (let i = 0; i < inputHistory.length; i++) {
-      const inputWord = inputHistory[i] || '';
+    for (let i = 0; i < currentInputHistory.length; i++) {
+      const inputWord = currentInputHistory[i] || '';
       if (language === 'korean') {
         totalTypedCharacters += inputWord.split('').reduce((sum, char) => {
           return sum + decomposeHangul(char).length;
@@ -153,7 +164,7 @@ export default function SentencePage() {
       speed: finalCPM,
       wpm: finalWPM,
       time: Math.round(clampedTimeMinutes * 60),
-      totalKeyPresses: totalKeyPresses,
+      totalKeyPresses: currentKeyPresses,
       actualCharacters: totalTypedCharacters
     };
 
@@ -173,10 +184,15 @@ export default function SentencePage() {
     setShowResultModal(true);
   }, [inputHistory, correctHistory, totalKeyPresses, startTime, language, wordTimings]);
 
-  const moveToNextPosition = useCallback(() => {
+  const moveToNextPosition = useCallback((
+    finalInputHistory?: string[],
+    finalCorrectHistory?: boolean[],
+    finalWordTimings?: WordTiming[],
+    finalKeyPresses?: number
+  ) => {
     const nextIndex = currentCharIndex + 1;
     if (nextIndex >= 20) {
-      calculateResult();
+      calculateResult(finalInputHistory, finalCorrectHistory, finalWordTimings, finalKeyPresses);
     } else {
       setCurrentCharIndex(nextIndex);
       setTimeout(() => {
@@ -314,10 +330,14 @@ export default function SentencePage() {
     } else {
       keyPressCount = userInput.length;
     }
-    setTotalKeyPresses(prev => prev + keyPressCount);
+    
+    // 최신 상태값 계산 (React 상태 지연 방지용)
+    const nextTotalKeyPresses = totalKeyPresses + keyPressCount;
+    setTotalKeyPresses(nextTotalKeyPresses);
 
     const endTime = Date.now();
     let wordCPM = 0;
+    let updatedWordTimings = [...wordTimings];
 
     if (wordStartTimeRef.current) {
       const duration = endTime - wordStartTimeRef.current;
@@ -346,20 +366,25 @@ export default function SentencePage() {
         duration: duration,
         cpm: wordCPM
       };
-      setWordTimings(prev => [...prev, wordTiming]);
-    } else {
-      wordCPM = 60;
+      updatedWordTimings.push(wordTiming);
+      setWordTimings(updatedWordTimings);
     }
 
     setLastWordCPM(wordCPM);
-    setInputHistory(prev => [...prev, userInput]);
-    setCorrectHistory(prev => [...prev, isCorrect]);
+    
+    const nextInputHistory = [...inputHistory, userInput];
+    const nextCorrectHistory = [...correctHistory, isCorrect];
+    
+    setInputHistory(nextInputHistory);
+    setCorrectHistory(nextCorrectHistory);
     setUserInput('');
     setIsWrong(false);
     setCurrentWordStartTime(null);
     wordStartTimeRef.current = null;
-    moveToNextPosition();
-  }, [userInput, currentWord, currentWordStartTime, moveToNextPosition, language]);
+    
+    // 최신 데이터를 인자로 전달하여 레이스 컨디션 방지
+    moveToNextPosition(nextInputHistory, nextCorrectHistory, updatedWordTimings, nextTotalKeyPresses);
+  }, [userInput, currentWord, totalKeyPresses, inputHistory, correctHistory, wordTimings, moveToNextPosition, language]);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -369,17 +394,21 @@ export default function SentencePage() {
         inputElement.focus();
       }
 
-      if (event.key === 'Enter') { // 단문 연습에서는 스페이스바를 허용하고 엔터로만 넘어감
-        event.preventDefault();
-        event.stopPropagation();
-        
-        // 문장의 90% 이상을 입력했을 때만 다음으로 넘어감 (부정행위 방지)
+      if (event.key === 'Enter' || event.key === ' ') { 
         const currentSentence = words[currentCharIndex];
         const completionRate = userInput.length / (currentSentence?.length || 1);
         
+        // 90% 이상 입력했을 때만 다음으로 넘어감 (부정행위 방지 및 단문 특성 반영)
         if (completionRate >= 0.9) {
+          event.preventDefault();
+          event.stopPropagation();
           checkWordInput();
+        } else if (event.key === 'Enter') {
+          // 엔터 키의 경우 기존처럼 항상 방지하고, 90% 미만이면 무시
+          event.preventDefault();
+          event.stopPropagation();
         }
+        // 스페이스바의 경우 90% 미만이면 그대로 문장 내 공백으로 입력되도록 통과시킴
       }
     };
 
@@ -427,48 +456,72 @@ export default function SentencePage() {
         <div className="absolute bottom-20 left-20 w-20 h-20 border-2 border-cyan-400 transform rotate-12 animate-pulse" style={{ animationDelay: '2s' }}></div>
       </div>
 
-      <div className="relative z-10 w-full h-full flex flex-col p-3 pt-16 sm:p-4 sm:pt-18 lg:p-6 lg:pt-6">
-        <div className="flex items-center justify-between mb-2 sm:mb-3 lg:mb-4">
+      <div className="relative z-10 w-full h-full flex flex-col p-2 pt-14 sm:p-4 sm:pt-16 lg:p-6 lg:pt-6">
+        <div className="flex items-center justify-between mb-1 sm:mb-2 lg:mb-4">
           <button
             onClick={() => router.back()}
-            className="p-1.5 sm:p-2 hover:bg-cyan-500/20 rounded-lg transition-colors border border-cyan-500/30"
+            className="p-1 px-2 hover:bg-cyan-500/20 rounded-lg transition-colors border border-cyan-500/30"
           >
-            <ArrowLeft className="w-5 h-5 sm:w-6 sm:h-6 text-cyan-400" />
+            <ArrowLeft className="w-5 h-5 text-cyan-400" />
           </button>
-          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-cyan-400 via-blue-400 to-purple-400 bg-clip-text text-transparent">
+          <h1 className="text-lg sm:text-2xl lg:text-4xl font-bold bg-gradient-to-r from-cyan-400 via-blue-400 to-purple-400 bg-clip-text text-transparent">
             단문연습
           </h1>
           <div className="flex items-center gap-2">
-            <div className="text-xs text-cyan-300 bg-cyan-500/10 px-2 py-1 rounded border border-cyan-500/20">
+            <div className="text-[10px] sm:text-xs text-cyan-300 bg-cyan-500/10 px-2 py-1 rounded border border-cyan-500/20">
               {language === 'korean' ? '한글 모드' : '영어 모드'}
             </div>
-            <div className="text-xs text-slate-400">
+            <div className="text-[10px] sm:text-xs text-slate-400">
               한영전환: <span className="text-cyan-400 font-mono">한/영</span>
             </div>
           </div>
         </div>
 
-        <div className="max-w-[1440px] mx-auto w-full flex-1 flex flex-col pt-8 px-4 sm:px-6">
+        <div className="max-w-[1440px] mx-auto w-full flex-1 flex flex-col pt-2 sm:pt-4 lg:pt-8 px-2 sm:px-6 min-h-0">
           {mounted && words.length > 0 ? (
-            <div className="flex-1 flex flex-col items-center justify-start mb-1 sm:mb-2 animate-in fade-in-0 slide-in-from-bottom-4 duration-500">
-              <div className="mb-4 text-center h-4 sm:h-5 lg:h-6 flex items-center justify-center">
+            <div className="flex-1 flex flex-col items-center justify-center mb-1 animate-in fade-in-0 slide-in-from-bottom-4 duration-500 min-h-0">
+              <div className="mb-1 sm:mb-2 text-center h-4 flex items-center justify-center">
                 {lastWordCPM !== null ? (
-                  <div className="text-cyan-400 text-lg sm:text-xl font-bold">
+                  <div className="text-cyan-400 text-base sm:text-lg font-bold">
                     {lastWordCPM} CPM
                   </div>
                 ) : (
-                  <div className="h-4 sm:h-5 lg:h-6"></div>
+                  <div className="h-4"></div>
                 )}
               </div>
 
-              {/* 문장 박스 영역 (5개 문장 노출) */}
-              <div className="w-full mb-10 bg-slate-800/40 backdrop-blur-md rounded-3xl p-6 sm:p-10 lg:p-16 border border-cyan-500/20 shadow-2xl overflow-hidden self-stretch transition-all duration-500">
-                <div className="flex flex-col-reverse gap-4 transition-all duration-500">
-                  {/* 현재 입력 중인 문장과 그 아래의 입력창 */}
-                  <div className="relative mt-4 pt-4 border-t border-cyan-500/20 overflow-hidden">
+              {/* 문장 박스 영역 (예제 4개 + 현재 1개) */}
+              <div className="w-full mb-2 sm:mb-4 lg:mb-6 bg-slate-800/40 backdrop-blur-md rounded-2xl sm:rounded-3xl p-3 sm:p-6 lg:p-8 xl:p-10 border border-cyan-500/20 shadow-2xl overflow-hidden self-stretch transition-all duration-500 flex-1 flex flex-col min-h-0">
+                {/* 예제 문장들 (공간 부족 시 먼저 줄어들거나 가려지는 영역) */}
+                <div className="flex-1 min-h-0 flex flex-col-reverse gap-1 sm:gap-2 transition-all duration-500 overflow-hidden">
+                  {[1, 2, 3, 4].map((offset) => {
+                    const targetIndex = currentCharIndex + offset;
+                    const hasWord = targetIndex < words.length;
+
+                    const opacity = 1 - (offset * 0.2);
+                    const scale = 1 - (offset * 0.05);
+
+                    return (
+                      <div
+                        key={offset}
+                        className="font-mono text-xs sm:text-xl font-medium leading-normal whitespace-nowrap text-left text-white/20 transition-all duration-500 min-h-[1.2em] sm:min-h-[1.5em]"
+                        style={{
+                          opacity: hasWord ? opacity : 0,
+                          transform: `scale(${scale})`,
+                          transformOrigin: 'left bottom',
+                        }}
+                      >
+                        {hasWord ? words[targetIndex] : '\u00A0'}
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* 현재 입력 중인 문장과 그 아래의 입력창 (항상 보여야 하는 핵심 영역) */}
+                <div className="flex-shrink-0 relative mt-2 pt-2 sm:mt-4 sm:pt-4 border-t border-cyan-500/20 overflow-hidden">
                     <div
                       className={cn(
-                        "font-mono text-xl sm:text-2xl lg:text-3xl font-medium leading-normal whitespace-nowrap transition-all duration-300 text-left",
+                        "font-mono text-base sm:text-2xl lg:text-3xl font-medium leading-normal whitespace-nowrap transition-all duration-300 text-left",
                         isWrong ? "text-red-300 scale-[1.01]" : "text-white/40"
                       )}
                     >
@@ -476,7 +529,7 @@ export default function SentencePage() {
                     </div>
 
                     <div
-                      className="font-mono text-xl sm:text-2xl lg:text-3xl font-medium leading-normal whitespace-nowrap min-h-[1.2em] flex text-left items-center tracking-normal mt-2"
+                      className="font-mono text-base sm:text-2xl lg:text-3xl font-medium leading-normal whitespace-nowrap min-h-[1.2em] flex text-left items-center tracking-normal mt-1 sm:mt-2"
                     >
                       {userInput.split('').map((char, index) => {
                         const isCorrect = index < words[currentCharIndex].length && char === words[currentCharIndex][index];
@@ -497,28 +550,6 @@ export default function SentencePage() {
                     </div>
                   </div>
 
-                  {[1, 2, 3, 4].map((offset) => {
-                    const targetIndex = currentCharIndex + offset;
-                    const hasWord = targetIndex < words.length;
-
-                    const opacity = 1 - (offset * 0.2);
-                    const scale = 1 - (offset * 0.05);
-
-                    return (
-                      <div
-                        key={offset}
-                        className="font-mono text-lg sm:text-xl lg:text-2xl font-medium leading-normal whitespace-nowrap text-left text-white/20 transition-all duration-500 min-h-[1.5em]"
-                        style={{
-                          opacity: hasWord ? opacity : 0,
-                          transform: `scale(${scale})`,
-                          transformOrigin: 'left bottom',
-                        }}
-                      >
-                        {hasWord ? words[targetIndex] : '\u00A0'}
-                      </div>
-                    );
-                  })}
-                </div>
 
                 <input
                   ref={(input) => {
@@ -549,46 +580,46 @@ export default function SentencePage() {
                 />
               </div>
 
-              <div className="hidden lg:block bg-slate-800/90 backdrop-blur-sm rounded-2xl xl:rounded-3xl p-3 xl:p-4 shadow-2xl border border-cyan-500/30 w-full max-w-5xl mx-auto animate-in fade-in-0 slide-in-from-bottom-2 duration-700 delay-200">
-                <div className="mb-3">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-cyan-300 text-sm">단문 연습</span>
-                    <span className="text-cyan-300 text-sm">{currentCharIndex + 1} / 20</span>
+              <div className="hidden lg:block bg-slate-800/90 backdrop-blur-sm rounded-xl xl:rounded-3xl p-2 xl:p-4 shadow-2xl border border-cyan-500/30 w-full max-w-5xl mx-auto animate-in fade-in-0 slide-in-from-bottom-2 duration-700 delay-200">
+                <div className="mb-1.5 sm:mb-3">
+                  <div className="flex items-center justify-between mb-1 sm:mb-2">
+                    <span className="text-cyan-300 text-[10px] sm:text-xs">단문 연습</span>
+                    <span className="text-cyan-300 text-[10px] sm:text-xs">{currentCharIndex + 1} / 20</span>
                   </div>
-                  <div className="w-full bg-slate-700 rounded-full h-3">
+                  <div className="w-full bg-slate-700 rounded-full h-2 sm:h-3">
                     <div
-                      className="bg-gradient-to-r from-cyan-500 to-blue-500 h-3 rounded-full transition-all duration-300"
+                      className="bg-gradient-to-r from-cyan-500 to-blue-500 h-2 sm:h-3 rounded-full transition-all duration-300"
                       style={{ width: `${((currentCharIndex + 1) / 20) * 100}%` }}
                     ></div>
                   </div>
                 </div>
 
                 <div className="flex flex-col items-center">
-                  <div className="flex space-x-1 mb-2">
-                    <div className="w-12 h-12 rounded-lg border-2 flex items-center justify-center text-xs font-bold border-cyan-500/50 bg-slate-700 text-cyan-300 shadow-sm hover:bg-slate-600 hover:border-cyan-400 transition-all duration-200 cursor-pointer">
+                  <div className="flex keyboard-row-gap mb-1 sm:mb-2">
+                    <div className="responsive-key rounded-lg border-2 flex items-center justify-center text-xs font-bold border-cyan-500/50 bg-slate-700 text-cyan-300 shadow-sm hover:bg-slate-600 hover:border-cyan-400 transition-all duration-200 cursor-pointer">
                       ~
                     </div>
                     {['! 1', '@ 2', '# 3', '$ 4', '% 5', '^ 6', '& 7', '* 8', '( 9', ') 0'].map((key, index) => (
-                      <div key={index} className="w-12 h-12 rounded-lg border-2 flex flex-col items-center justify-center text-xs font-bold border-cyan-500/50 bg-slate-700 text-cyan-300 shadow-sm hover:bg-slate-600 hover:border-cyan-400 transition-all duration-200 cursor-pointer">
+                      <div key={index} className="responsive-key rounded-lg border-2 flex flex-col items-center justify-center text-xs font-bold border-cyan-500/50 bg-slate-700 text-cyan-300 shadow-sm hover:bg-slate-600 hover:border-cyan-400 transition-all duration-200 cursor-pointer">
                         <span className="text-cyan-400 text-xs">{key.split(' ')[0]}</span>
                         <span className="font-bold text-sm">{key.split(' ')[1]}</span>
                       </div>
                     ))}
-                    <div className="w-12 h-12 rounded-lg border-2 flex flex-col items-center justify-center text-xs font-bold border-cyan-500/50 bg-slate-700 text-cyan-300 shadow-sm hover:bg-slate-600 hover:border-cyan-400 transition-all duration-200 cursor-pointer">
+                    <div className="responsive-key rounded-lg border-2 flex flex-col items-center justify-center text-xs font-bold border-cyan-500/50 bg-slate-700 text-cyan-300 shadow-sm hover:bg-slate-600 hover:border-cyan-400 transition-all duration-200 cursor-pointer">
                       <span className="text-cyan-400 text-xs">-</span>
                       <span className="font-bold text-sm">-</span>
                     </div>
-                    <div className="w-12 h-12 rounded-lg border-2 flex flex-col items-center justify-center text-xs font-bold border-cyan-500/50 bg-slate-700 text-cyan-300 shadow-sm hover:bg-slate-600 hover:border-cyan-400 transition-all duration-200 cursor-pointer">
+                    <div className="responsive-key rounded-lg border-2 flex flex-col items-center justify-center text-xs font-bold border-cyan-500/50 bg-slate-700 text-cyan-300 shadow-sm hover:bg-slate-600 hover:border-cyan-400 transition-all duration-200 cursor-pointer">
                       <span className="text-cyan-400 text-xs">+</span>
                       <span className="font-bold text-sm">=</span>
                     </div>
-                    <div className="w-20 h-12 rounded-lg border-2 flex items-center justify-center text-xs font-bold border-cyan-500/50 bg-slate-700 text-cyan-300 shadow-sm hover:bg-slate-600 hover:border-cyan-400 transition-all duration-200 cursor-pointer">
+                    <div className="responsive-key-wide w-20 rounded-lg border-2 flex items-center justify-center text-xs font-bold border-cyan-500/50 bg-slate-700 text-cyan-300 shadow-sm hover:bg-slate-600 hover:border-cyan-400 transition-all duration-200 cursor-pointer">
                       ⌫
                     </div>
                   </div>
 
-                  <div className="flex space-x-1 mb-2">
-                    <div className="w-16 h-12 rounded-lg border-2 flex items-center justify-start pl-2 text-xs font-bold border-cyan-500/50 bg-slate-700 text-cyan-300 shadow-sm hover:bg-slate-600 hover:border-cyan-400 transition-all duration-200 cursor-pointer">
+                  <div className="flex keyboard-row-gap mb-1 sm:mb-2">
+                    <div className="responsive-key-wide w-16 rounded-lg border-2 flex items-center justify-start pl-2 text-xs font-bold border-cyan-500/50 bg-slate-700 text-cyan-300 shadow-sm hover:bg-slate-600 hover:border-cyan-400 transition-all duration-200 cursor-pointer">
                       Tab
                     </div>
                     {(language === 'korean' ? ['ㅂ', 'ㅈ', 'ㄷ', 'ㄱ', 'ㅅ', 'ㅛ', 'ㅕ', 'ㅑ', 'ㅐ', 'ㅔ'] : ['Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P']).map((key, index) => {
@@ -603,7 +634,7 @@ export default function SentencePage() {
                         <div
                           key={index}
                           className={cn(
-                            "w-12 h-12 rounded-lg border-2 flex items-center justify-center text-sm font-bold shadow-sm transition-all duration-200",
+                            "responsive-key rounded-lg border-2 flex items-center justify-center text-sm font-bold shadow-sm transition-all duration-200",
                             key === targetKey && "border-pink-400 bg-pink-400/20 text-pink-300 shadow-[0_0_15px_0_rgba(236,72,153,0.5)] scale-105",
                             key !== targetKey && "border-cyan-500/50 bg-slate-700 text-cyan-300"
                           )}
@@ -613,19 +644,19 @@ export default function SentencePage() {
                       );
                     })}
                     {['{ [', '} ]'].map((key, index) => (
-                      <div key={index} className="w-12 h-12 rounded-lg border-2 flex flex-col items-center justify-center text-xs font-bold border-cyan-500/50 bg-slate-700 text-cyan-300 cursor-pointer">
+                      <div key={index} className="responsive-key rounded-lg border-2 flex flex-col items-center justify-center text-xs font-bold border-cyan-500/50 bg-slate-700 text-cyan-300 cursor-pointer">
                         <span className="text-cyan-400 text-xs">{key.split(' ')[0]}</span>
                         <span className="font-bold text-sm">{key.split(' ')[1]}</span>
                       </div>
                     ))}
-                    <div className="w-16 h-12 rounded-lg border-2 flex flex-col items-center justify-center text-xs font-bold border-cyan-500/50 bg-slate-700 text-cyan-300 cursor-pointer">
+                    <div className="responsive-key-wide w-16 rounded-lg border-2 flex flex-col items-center justify-center text-xs font-bold border-cyan-500/50 bg-slate-700 text-cyan-300 cursor-pointer">
                       <span className="text-cyan-400 text-xs">|</span>
                       <span className="font-bold text-sm">\</span>
                     </div>
                   </div>
 
-                  <div className="flex space-x-1 mb-2 justify-center">
-                    <div className="w-20 h-12 rounded-lg border-2 flex items-center justify-start pl-2 text-xs font-bold border-cyan-500/50 bg-slate-700 text-cyan-300">
+                  <div className="flex keyboard-row-gap mb-1 sm:mb-2 justify-center">
+                    <div className="responsive-key-wide w-20 rounded-lg border-2 flex items-center justify-start pl-2 text-xs font-bold border-cyan-500/50 bg-slate-700 text-cyan-300">
                       Caps
                     </div>
                     {(language === 'korean' ? ['ㅁ', 'ㄴ', 'ㅇ', 'ㄹ', 'ㅎ', 'ㅗ', 'ㅓ', 'ㅏ', 'ㅣ'] : ['A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L']).map((key, index) => {
@@ -640,7 +671,7 @@ export default function SentencePage() {
                         <div
                           key={index}
                           className={cn(
-                            "w-12 h-12 rounded-lg border-2 flex items-center justify-center text-sm font-bold shadow-sm transition-all duration-200",
+                            "responsive-key rounded-lg border-2 flex items-center justify-center text-sm font-bold shadow-sm transition-all duration-200",
                             key === targetKey && "border-pink-400 bg-pink-400/20 text-pink-300 shadow-[0_0_15px_0_rgba(236,72,153,0.5)] scale-105",
                             key !== targetKey && "border-cyan-500/50 bg-slate-700 text-cyan-300"
                           )}
@@ -649,21 +680,21 @@ export default function SentencePage() {
                         </div>
                       );
                     })}
-                    <div className="w-12 h-12 rounded-lg border-2 flex flex-col items-center justify-center text-xs font-bold border-cyan-500/50 bg-slate-700 text-cyan-300 cursor-pointer">
+                    <div className="responsive-key rounded-lg border-2 flex flex-col items-center justify-center text-xs font-bold border-cyan-500/50 bg-slate-700 text-cyan-300 cursor-pointer">
                       <span className="text-cyan-400 text-xs">:</span>
                       <span className="font-bold text-sm">;</span>
                     </div>
-                    <div className="w-12 h-12 rounded-lg border-2 flex flex-col items-center justify-center text-xs font-bold border-cyan-500/50 bg-slate-700 text-cyan-300 cursor-pointer">
+                    <div className="responsive-key rounded-lg border-2 flex flex-col items-center justify-center text-xs font-bold border-cyan-500/50 bg-slate-700 text-cyan-300 cursor-pointer">
                       <span className="text-cyan-400 text-xs">"</span>
                       <span className="font-bold text-sm">'</span>
                     </div>
-                    <div className="w-20 h-12 rounded-lg border-2 flex items-center justify-center text-xs font-bold border-cyan-500/50 bg-slate-700 text-cyan-300">
+                    <div className="responsive-key-wide w-20 rounded-lg border-2 flex items-center justify-center text-xs font-bold border-cyan-500/50 bg-slate-700 text-cyan-300">
                       ↵
                     </div>
                   </div>
 
-                  <div className="flex space-x-1 mb-2 justify-center">
-                    <div className="w-24 h-12 rounded-lg border-2 flex items-center justify-start pl-2 text-xs font-bold border-cyan-500/50 bg-slate-700 text-cyan-300">
+                  <div className="flex keyboard-row-gap mb-1 sm:mb-2 justify-center">
+                    <div className="responsive-key-wide w-24 rounded-lg border-2 flex items-center justify-start pl-2 text-xs font-bold border-cyan-500/50 bg-slate-700 text-cyan-300">
                       Shift
                     </div>
                     {(language === 'korean' ? ['ㅋ', 'ㅌ', 'ㅊ', 'ㅍ', 'ㅠ', 'ㅜ', 'ㅡ'] : ['Z', 'X', 'C', 'V', 'B', 'N', 'M']).map((key, index) => {
@@ -678,7 +709,7 @@ export default function SentencePage() {
                         <div
                           key={index}
                           className={cn(
-                            "w-12 h-12 rounded-lg border-2 flex items-center justify-center text-sm font-bold shadow-sm transition-all duration-200",
+                            "responsive-key rounded-lg border-2 flex items-center justify-center text-sm font-bold shadow-sm transition-all duration-200",
                             key === targetKey && "border-pink-400 bg-pink-400/20 text-pink-300 shadow-[0_0_15px_0_rgba(236,72,153,0.5)] scale-105",
                             key !== targetKey && "border-cyan-500/50 bg-slate-700 text-cyan-300"
                           )}
@@ -687,21 +718,21 @@ export default function SentencePage() {
                         </div>
                       );
                     })}
-                    <div className="w-36 h-12 rounded-lg border-2 flex items-center justify-center text-xs font-bold border-cyan-500/50 bg-slate-700 text-cyan-300">
+                    <div className="responsive-key-wide w-36 rounded-lg border-2 flex items-center justify-center text-xs font-bold border-cyan-500/50 bg-slate-700 text-cyan-300">
                       Shift
                     </div>
                   </div>
 
                   <div className="flex space-x-1 justify-center">
-                    <div className="w-16 h-12 rounded-lg border-2 flex items-center justify-center text-xs font-bold border-cyan-500/50 bg-slate-700 text-cyan-300">
+                    <div className="responsive-key-wide w-16 rounded-lg border-2 flex items-center justify-center text-xs font-bold border-cyan-500/50 bg-slate-700 text-cyan-300">
                       Ctrl
                     </div>
-                    <div className="w-16 h-12 rounded-lg border-2 flex items-center justify-center text-xs font-bold border-cyan-500/50 bg-slate-700 text-cyan-300">
+                    <div className="responsive-key-wide w-16 rounded-lg border-2 flex items-center justify-center text-xs font-bold border-cyan-500/50 bg-slate-700 text-cyan-300">
                       Alt
                     </div>
                     <div
                       className={cn(
-                        "w-72 h-12 rounded-lg border-2 flex items-center justify-center text-xs font-bold shadow-sm transition-all duration-200",
+                        "responsive-key-wide w-72 rounded-lg border-2 flex items-center justify-center text-xs font-bold shadow-sm transition-all duration-200",
                         (language === 'korean' ? (currentJamos[currentJamoIndex] === ' ') : (currentWord[userInput.length] === ' '))
                           ? "border-pink-400 bg-pink-400/20 text-pink-300 shadow-[0_0_15px_0_rgba(236,72,153,0.5)] scale-105"
                           : "border-cyan-500/50 bg-slate-700 text-cyan-300"
@@ -709,10 +740,10 @@ export default function SentencePage() {
                     >
                       Space
                     </div>
-                    <div className="w-16 h-12 rounded-lg border-2 flex items-center justify-center text-xs font-bold border-cyan-500/50 bg-slate-700 text-cyan-300">
+                    <div className="responsive-key-wide w-16 rounded-lg border-2 flex items-center justify-center text-xs font-bold border-cyan-500/50 bg-slate-700 text-cyan-300">
                       Alt
                     </div>
-                    <div className="w-16 h-12 rounded-lg border-2 flex items-center justify-center text-xs font-bold border-cyan-500/50 bg-slate-700 text-cyan-300">
+                    <div className="responsive-key-wide w-16 rounded-lg border-2 flex items-center justify-center text-xs font-bold border-cyan-500/50 bg-slate-700 text-cyan-300">
                       Ctrl
                     </div>
                   </div>

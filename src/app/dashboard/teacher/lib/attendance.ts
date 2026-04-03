@@ -47,7 +47,8 @@ export const getAttendanceData = async (date: Date, teacherId?: string | null): 
                 const slotTeacherId = daySchedule.teacherId || daySchedule.teacher_id;
                 const isAssignedToMe = teacherId && slotTeacherId?.toLowerCase() === teacherId.toLowerCase();
                 
-                if (isAssignedToMe || !teacherId) {
+                // teacherId가 제공된 경우 본인 수업만 필터링, 제공되지 않은 경우(관리자 등) 전체 표시
+                if ((teacherId && isAssignedToMe) || !teacherId) {
                     const regularSession = studentSessions.find(s => s.session_type === 'regular');
                     sessions.push({
                         id: `${userId}-regular`,
@@ -68,7 +69,7 @@ export const getAttendanceData = async (date: Date, teacherId?: string | null): 
             // B. 보강 수업 확인 및 추가
             studentSessions.filter((s: any) => 
                 s.session_type === 'makeup' && 
-                (!teacherId || s.teacher_id?.toLowerCase() === teacherId.toLowerCase())
+                ((teacherId && s.teacher_id?.toLowerCase() === teacherId.toLowerCase()) || !teacherId)
             ).forEach((session: any) => {
                 sessions.push({
                     id: `${userId}-makeup-${session.id}`,
@@ -99,8 +100,8 @@ export const getAttendanceData = async (date: Date, teacherId?: string | null): 
                         .filter(k => {
                             const dayNum = parseInt(k);
                             if (isNaN(dayNum)) return false;
+                            const slotTeacherId = schedule[k]?.teacherId || schedule[k]?.teacher_id;
                             if (teacherId) {
-                                const slotTeacherId = schedule[k]?.teacherId || schedule[k]?.teacher_id;
                                 return slotTeacherId?.toLowerCase() === teacherId.toLowerCase();
                             }
                             return true;

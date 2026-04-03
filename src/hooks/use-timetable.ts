@@ -18,6 +18,7 @@ export interface TimetableStudent {
             teacherId?: string;
         };
     };
+    isSpecialEducation?: boolean;
 }
 
 export interface TimetableOptions {
@@ -114,6 +115,7 @@ export const useTimetable = (options?: TimetableOptions) => {
                         assignedTeachers: assignedTeachers,
                         academy: student.users?.academy || '미지정',
                         enrollmentDate: student.enrollment_start_date,
+                        isSpecialEducation: student.is_special_education,
                         schedule: filteredSchedule
                     };
                 });

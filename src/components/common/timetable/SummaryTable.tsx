@@ -109,11 +109,12 @@ export function SummaryTable({
                                                                 key={student.id}
                                                                 onMouseEnter={() => onHover(student.id)}
                                                                 onMouseLeave={() => onHover(null)}
-                                                                className={`shrink-0 pl-1 pr-1.5 sm:pl-2 sm:pr-2.5 py-[1px] rounded-r-[2px] text-[9px] sm:text-[12px] font-bold transition-all duration-200 cursor-pointer border-l-[3px] sm:border-l-[4px] border-y border-r border-y-transparent border-r-transparent whitespace-nowrap
+                                                                 className={`shrink-0 pl-1 pr-1.5 sm:pl-2 sm:pr-2.5 py-[1px] rounded-r-[2px] text-[9px] sm:text-[12px] font-bold transition-all duration-200 cursor-pointer border-l-[3px] sm:border-l-[4px] border-t border-r border-t-transparent border-r-transparent whitespace-nowrap
                                                                     ${isNewStudent
                                                                         ? 'text-amber-100 bg-amber-500/40 shadow-[0_0_12px_rgba(245,158,11,0.4)]'
                                                                         : 'text-cyan-200 bg-cyan-900/40 hover:bg-cyan-800/60'}
                                                                     ${isHovered ? 'ring-2 ring-cyan-400 z-10 scale-105 shadow-[0_0_10px_rgba(34,211,238,0.3)]' : ''}
+                                                                    ${student.isSpecialEducation ? 'border-b-2 !border-b-orange-500' : 'border-b border-b-transparent'}
                                                                 `}
                                                                 style={{ borderLeftColor: academyColor }}
                                                             >
@@ -140,11 +141,12 @@ export function SummaryTable({
                                                                 key={student.id}
                                                                 onMouseEnter={() => onHover(student.id)}
                                                                 onMouseLeave={() => onHover(null)}
-                                                                className={`shrink-0 pl-1 pr-1.5 sm:pl-2 sm:pr-2.5 py-[1px] rounded-r-[2px] text-[9px] sm:text-[12px] font-bold transition-all duration-200 cursor-pointer border-l-[3px] sm:border-l-[4px] border-y border-r border-y-transparent border-r-transparent whitespace-nowrap
+                                                                 className={`shrink-0 pl-1 pr-1.5 sm:pl-2 sm:pr-2.5 py-[1px] rounded-r-[2px] text-[9px] sm:text-[12px] font-bold transition-all duration-200 cursor-pointer border-l-[3px] sm:border-l-[4px] border-t border-r border-t-transparent border-r-transparent whitespace-nowrap
                                                                     ${isNewStudent
                                                                         ? 'text-amber-100 bg-amber-500/40 shadow-[0_0_12px_rgba(245,158,11,0.4)]'
                                                                         : 'text-cyan-200 bg-cyan-900/40 hover:bg-cyan-800/60'}
                                                                     ${isHovered ? 'ring-2 ring-cyan-400 z-10 scale-105 shadow-[0_0_10px_rgba(34,211,238,0.3)]' : ''}
+                                                                    ${student.isSpecialEducation ? 'border-b-2 !border-b-orange-500' : 'border-b border-b-transparent'}
                                                                 `}
                                                                 style={{ borderLeftColor: academyColor }}
                                                             >

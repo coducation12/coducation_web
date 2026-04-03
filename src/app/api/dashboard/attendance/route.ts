@@ -39,11 +39,12 @@ export async function GET(request: NextRequest) {
             if (sessionRes.error) throw sessionRes.error;
             if (studentsRes.error) throw studentsRes.error;
         } else {
-            // 강사 계정: 세션 먼저 조회 후 연관 학생 조회
+            // 강사 계정: 본인 세션만 조회 후 연관 학생 조회
             const { data: sData, error: sError } = await supabaseAdmin
                 .from('attendance_sessions')
                 .select('id, student_id, status, session_type, start_time, end_time, teacher_id, korean_typing_speed, english_typing_speed, memo')
-                .eq('date', dateStr);
+                .eq('date', dateStr)
+                .eq('teacher_id', userId);
             
             if (sError) throw sError;
             sessionData = sData;

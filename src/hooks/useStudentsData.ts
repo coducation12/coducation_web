@@ -29,6 +29,7 @@ export interface Student {
     assignedTeacherName?: string;
     assignedTeachers?: Array<{ id: string, name: string }>;
     academy: string;
+    is_special_education?: boolean;
 }
 
 export interface ClassSchedule {
@@ -172,7 +173,8 @@ export function useStudentsData() {
                             };
                         }) : [],
                     academy: item.users?.academy || '코딩메이커',
-                    monthlyAttendanceCount: item.monthlyAttendanceCount || 0
+                    monthlyAttendanceCount: item.monthlyAttendanceCount || 0,
+                    is_special_education: item.is_special_education || false
                 };
             });
 
@@ -208,6 +210,7 @@ export function useStudentsData() {
             // 쉼표 제거 후 숫자만 전송
             const tuitionFee = studentData.tuition_fee?.toString().replace(/,/g, '') || '0';
             formData.append('tuition_fee', tuitionFee);
+            formData.append('is_special_education', studentData.is_special_education ? 'true' : 'false');
 
             const result = await addStudent(formData);
 
@@ -256,6 +259,7 @@ export function useStudentsData() {
             // 쉼표 제거 후 숫자만 전송
             const tuitionFee = studentData.tuition_fee?.toString().replace(/,/g, '') || '0';
             formData.append('tuition_fee', tuitionFee);
+            formData.append('is_special_education', studentData.is_special_education ? 'true' : 'false');
 
             const result = await updateStudent(formData);
 

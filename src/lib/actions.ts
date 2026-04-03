@@ -388,7 +388,8 @@ export async function addStudent(formData: FormData, isSignup: boolean = false) 
       enrollment_date: formData.get('enrollment_date') as string,
       memo: formData.get('memo') as string,
       status: formData.get('status') as string,
-      tuition_fee: formData.get('tuition_fee') ? parseInt(formData.get('tuition_fee')?.toString().replace(/,/g, '') || '0') : 0
+      tuition_fee: formData.get('tuition_fee') ? parseInt(formData.get('tuition_fee')?.toString().replace(/,/g, '') || '0') : 0,
+      is_special_education: formData.get('is_special_education') === 'true'
     };
 
     // 이름과 출생년도로 기본 아이디 생성 및 중복 시 접미사 부여
@@ -554,6 +555,7 @@ export async function addStudent(formData: FormData, isSignup: boolean = false) 
       learning_progress: initialProgress,
       memo: studentDataFinal.memo || null,
       tuition_fee: studentDataFinal.tuition_fee || 0,
+      is_special_education: studentDataFinal.is_special_education || false,
       enrollment_start_date: studentDataFinal.enrollment_date || new Date().toISOString().split('T')[0],
       created_at: new Date().toISOString()
     };
@@ -608,7 +610,8 @@ export async function updateStudent(formData: FormData) {
       memo: formData.get('memo') as string,
       academy: formData.get('academy') as string,
       tuition_fee: formData.get('tuition_fee') ? parseInt(formData.get('tuition_fee')?.toString().replace(/,/g, '') || '0') : 0,
-      classSchedules: formData.get('classSchedules') ? JSON.parse(formData.get('classSchedules') as string) : []
+      classSchedules: formData.get('classSchedules') ? JSON.parse(formData.get('classSchedules') as string) : [],
+      is_special_education: formData.get('is_special_education') === 'true'
     };
 
     // 1. 학생 계정 정보 및 ID 확인
@@ -779,7 +782,8 @@ export async function updateStudent(formData: FormData) {
       learning_progress: updatedProgress,
       memo: studentData.memo || null,
       tuition_fee: studentData.tuition_fee || 0,
-      enrollment_start_date: studentData.enrollment_date || null
+      enrollment_start_date: studentData.enrollment_date || null,
+      is_special_education: studentData.is_special_education || false
     };
 
     if (currentUserRole === 'admin') {
@@ -837,6 +841,7 @@ export const getStudentDetailsForEdit = cache(async (userId: string, requestingT
                 sub_subject,
                 memo,
                 tuition_fee,
+                is_special_education,
                 users!students_user_id_fkey ( 
                     id, 
                     name, 
@@ -1079,11 +1084,16 @@ export const getMonthlyAttendance = cache(async (studentId: string, startDateStr
       .gte('date', startDateStr)
       .lte('date', endDateStr);
 
-    /* 캘린더에서는 해당 학생의 모든 출결 내역을 보여주기 위해 강사 필터링 제거
-    if (teacherId && teacherId.trim() !== '') {
+    const cookieStore = await cookies();
+    const userRole = cookieStore.get('user_role')?.value;
+    const userId = cookieStore.get('user_id')?.value;
+
+    // 강사 계정인 경우 본인의 기록만 조회하도록 강제 (이미 teacherId가 넘어오지만 서버에서 한 번 더 검증)
+    if (userRole === 'teacher' && userId) {
+      query = query.eq('teacher_id', userId);
+    } else if (teacherId && teacherId.trim() !== '') {
       query = query.eq('teacher_id', teacherId);
     }
-    */
 
     const { data, error } = await query;
 
@@ -1103,11 +1113,22 @@ export const getDailyAttendance = cache(async (studentId: string, dateStr: strin
   try {
     const { data, error } = await supabaseAdmin
       .from('attendance_sessions')
-      .select('id, date, status, memo, session_type, start_time, end_time')
+      .select('id, date, status, memo, session_type, start_time, end_time, teacher_id')
       .eq('student_id', studentId)
       .eq('date', dateStr)
       .eq('session_type', sessionType)
       .maybeSingle();
+
+    if (data) {
+      const cookieStore = await cookies();
+      const userRole = cookieStore.get('user_role')?.value;
+      const userId = cookieStore.get('user_id')?.value;
+
+      // 강사 계정인데 다른 강사의 기록이라면 접근 차단
+      if (userRole === 'teacher' && data.teacher_id && data.teacher_id !== userId) {
+        return { success: true, data: null }; // 데이터가 없는 것처럼 반환하여 리킹 방지
+      }
+    }
 
     if (error) {
       console.error('getDailyAttendance db error:', error);

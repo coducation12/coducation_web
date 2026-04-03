@@ -30,6 +30,7 @@ export async function GET(request: NextRequest) {
                 learning_progress,
                 memo,
                 tuition_fee,
+                is_special_education,
                 users!students_user_id_fkey ( 
                     id, 
                     name, 

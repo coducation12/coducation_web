@@ -37,6 +37,7 @@ interface Student {
     classSchedules?: ClassSchedule[];
     assignedTeachers?: Array<{ id: string, name: string }>; // 객체 배열로 복구
     category?: string;
+    is_special_education?: boolean;
 }
 
 interface StudentModalProps {
@@ -126,7 +127,8 @@ export default function StudentModal({ mode, student, isOpen, onClose, onSave, t
         classSchedules: [
             { day: "", startTime: "", endTime: "", teacherId: "" },
             { day: "", startTime: "", endTime: "", teacherId: "" }
-        ] as ClassSchedule[]
+        ] as ClassSchedule[],
+        is_special_education: false
     });
 
     const [curriculums, setCurriculums] = useState<any[]>([]);
@@ -143,7 +145,7 @@ export default function StudentModal({ mode, student, isOpen, onClose, onSave, t
             if (result.success) {
                 setCurriculums(result.data || []);
                 const uniqueCategories = Array.from(new Set((result.data || []).map((c: any) => c.category))).filter(Boolean) as string[];
-                setCategories(uniqueCategories);
+                setCategories([...uniqueCategories, "기타"]);
             }
         };
         fetchCurriculumData();
@@ -159,6 +161,8 @@ export default function StudentModal({ mode, student, isOpen, onClose, onSave, t
                 const matchedCurriculum = curriculums.find(c => c.title === resolvedSubject);
                 if (matchedCurriculum) {
                     resolvedCategory = matchedCurriculum.category;
+                } else {
+                    resolvedCategory = "기타";
                 }
             }
 
@@ -182,7 +186,8 @@ export default function StudentModal({ mode, student, isOpen, onClose, onSave, t
                         ...s,
                         teacherId: s.teacherId || defaultTeacherId
                     }))
-                    : [{ day: "", startTime: "", endTime: "", teacherId: defaultTeacherId }]
+                    : [{ day: "", startTime: "", endTime: "", teacherId: defaultTeacherId }],
+                is_special_education: student.is_special_education || false
             };
             setFormData(initialData);
             setOriginalData(initialData);
@@ -213,7 +218,8 @@ export default function StudentModal({ mode, student, isOpen, onClose, onSave, t
                 classSchedules: [
                     { day: "", startTime: "", endTime: "", teacherId: defaultTeacherId },
                     { day: "", startTime: "", endTime: "", teacherId: defaultTeacherId }
-                ]
+                ],
+                is_special_education: false
             });
         }
     }, [mode, student, dialogOpen, teachers.length, curriculums.length]);
@@ -333,7 +339,8 @@ export default function StudentModal({ mode, student, isOpen, onClose, onSave, t
             memo: "메모",
             academy: "소속 학원",
             tuition_fee: "기준 학원비",
-            password: "비밀번호"
+            password: "비밀번호",
+            is_special_education: "특수교육대상자"
         };
 
         for (const key in labels) {
@@ -577,18 +584,27 @@ export default function StudentModal({ mode, student, isOpen, onClose, onSave, t
                         </div>
                         <div className="space-y-2">
                             <Label className="text-cyan-300 flex items-center gap-2 text-sm">과목</Label>
-                            <Select 
-                                value={formData.sub_subject} 
-                                onValueChange={(v) => handleInputChange("sub_subject", v)}
-                                disabled={!formData.subject}
-                            >
-                                <SelectTrigger className="bg-cyan-950/30 border-cyan-500/30 disabled:opacity-50">
-                                    <SelectValue placeholder={formData.subject ? "과목 선택" : "분류를 먼저 선택하세요"} />
-                                </SelectTrigger>
-                                <SelectContent className="bg-[#0f172a] border-cyan-500/30">
-                                    {subjectsForCategory.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-                                </SelectContent>
-                            </Select>
+                            {formData.subject === "기타" ? (
+                                <Input
+                                    value={formData.sub_subject}
+                                    onChange={(e) => handleInputChange("sub_subject", e.target.value)}
+                                    placeholder="강의 이름을 입력하세요"
+                                    className="bg-cyan-950/30 border-cyan-500/30 focus:border-cyan-400"
+                                />
+                            ) : (
+                                <Select
+                                    value={formData.sub_subject}
+                                    onValueChange={(v) => handleInputChange("sub_subject", v)}
+                                    disabled={!formData.subject}
+                                >
+                                    <SelectTrigger className="bg-cyan-950/30 border-cyan-500/30 disabled:opacity-50">
+                                        <SelectValue placeholder={formData.subject ? "과목 선택" : "분류를 먼저 선택하세요"} />
+                                    </SelectTrigger>
+                                    <SelectContent className="bg-[#0f172a] border-cyan-500/30">
+                                        {subjectsForCategory.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                                    </SelectContent>
+                                </Select>
+                            )}
                         </div>
                         <div className="space-y-2">
                             <Label className="text-cyan-300 flex items-center gap-2 text-sm">상태</Label>
@@ -698,9 +714,23 @@ export default function StudentModal({ mode, student, isOpen, onClose, onSave, t
 
                     {/* 6행: 기타 메모 */}
                     <div className="space-y-2 border-t border-cyan-500/10 pt-4">
-                        <Label className="text-cyan-300 flex items-center gap-2 text-sm">
-                            <MessageSquare className="w-4 h-4" /> 기타 메모
-                        </Label>
+                        <div className="flex items-center justify-between">
+                            <Label className="text-cyan-300 flex items-center gap-2 text-sm">
+                                <MessageSquare className="w-4 h-4" /> 기타 메모
+                            </Label>
+                            <div className="flex items-center gap-2">
+                                <input
+                                    type="checkbox"
+                                    id="is_special_education"
+                                    checked={formData.is_special_education}
+                                    onChange={(e) => setFormData(prev => ({ ...prev, is_special_education: e.target.checked }))}
+                                    className="w-4 h-4 bg-cyan-950/30 border-cyan-500/30 accent-cyan-500 rounded"
+                                />
+                                <Label htmlFor="is_special_education" className="text-xs text-orange-400 font-bold cursor-pointer hover:text-orange-300">
+                                    특수교육대상자
+                                </Label>
+                            </div>
+                        </div>
                         <Textarea
                             value={formData.memo}
                             onChange={(e) => handleInputChange("memo", e.target.value)}

@@ -112,6 +112,16 @@ export default function StudentProgressModal({ isOpen, onClose, studentId, stude
     };
 
     const updatePercentage = (id: string, val: number) => {
+        // 진행 중인 항목이 100%가 되는 경우 확인창 표시
+        if (val === 100) {
+            const item = progress.find(p => p.id === id);
+            if (item && item.status !== 'completed') {
+                if (!confirm('학습을 완료 상태로 변경하시겠습니까? 완료 시 완료 목록으로 이동합니다.')) {
+                    return;
+                }
+            }
+        }
+
         setProgress(prev => prev.map(p => {
             if (p.id === id) {
                 // 이미 완료된 항목을 수정하는 경우
@@ -122,7 +132,7 @@ export default function StudentProgressModal({ isOpen, onClose, studentId, stude
                     return { ...p, percentage: val };
                 }
 
-                // 진행 중인 항목이 100%가 되는 경우 (알림창 없이 즉시 이동)
+                // 진행 중인 항목이 100%가 되는 경우
                 if (val === 100) {
                     return { ...p, percentage: 100, status: 'completed' };
                 }

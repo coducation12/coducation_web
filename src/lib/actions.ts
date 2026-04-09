@@ -3655,6 +3655,10 @@ export async function updateStudentProgress(studentId: string, progressData: any
       return { success: false, error: `진도 정보 저장 실패: ${error.message}` };
     }
 
+    // 캐시 갱신
+    revalidatePath('/dashboard/teacher', 'layout');
+    revalidatePath('/dashboard/student', 'layout');
+
     return { success: true };
   } catch (error) {
     console.error('진도 정보 저장 중 오류:', error);
@@ -3716,7 +3720,9 @@ export async function createPortfolioEntry(
       id: crypto.randomUUID(),
       date: new Date().toISOString().split('T')[0],
       ...entryData,
-      isShared: shareToCommunity
+      isShared: shareToCommunity,
+      postId: null as string | null,
+      isPosted: false
     };
 
     targetProgress.results = [newItem, ...(targetProgress.results || [])];
@@ -3761,6 +3767,9 @@ export async function createPortfolioEntry(
         console.error('커뮤니티 게시 실패:', postError);
       }
     }
+
+    // 캐시 갱신
+    revalidatePath('/dashboard/student', 'layout');
 
     return { success: true, newItem };
   } catch (error: any) {

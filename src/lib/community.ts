@@ -15,69 +15,68 @@ async function getCurrentUser() {
 
 // 모든 게시글 가져오기 (페이지네이션 및 검색 지원)
 export async function getCommunityPosts(page: number = 1, limit: number = 10, searchQuery?: string): Promise<{ posts: CommunityPost[], totalCount: number, totalPages: number }> {
-  const { userId } = await getCurrentUser();
-
   // 🟢 최적화: RLS 우회를 위해 supabaseAdmin을 사용합니다.
-  let query = supabaseAdmin
+  // 1. 일반 게시글 수 가져오기 (관리자 글 제외)
+  let countQuery = supabaseAdmin
     .from('community_posts')
-    .select('*, users(name)', { count: 'exact', head: true })
-    .eq('is_deleted', false);
+    .select('id, users!inner(role)', { count: 'exact', head: true })
+    .eq('is_deleted', false)
+    .neq('users.role', 'admin');
 
   // 검색어가 있으면 제목, 내용, 작성자 이름에서 검색
   if (searchQuery && searchQuery.trim()) {
-    query = query.or(`title.ilike.%${searchQuery.trim()}%,content.ilike.%${searchQuery.trim()}%,users.name.ilike.%${searchQuery.trim()}%`);
+    countQuery = countQuery.or(`title.ilike.%${searchQuery.trim()}%,content.ilike.%${searchQuery.trim()}%,users.name.ilike.%${searchQuery.trim()}%`);
   }
 
-  // 전체 게시글 수 가져오기
-  const { count: totalCount } = await query;
+  const { count: totalCount } = await countQuery;
 
   const totalPages = Math.ceil((totalCount || 0) / limit);
   const offset = (page - 1) * limit;
 
-  // 게시글 데이터 가져오기 (관리자 권한 사용)
+  // 2. 관리자 고정 게시글 가져오기 (첫 페이지일 때만)
+  let pinnedPosts: any[] = [];
+  if (page === 1) {
+    const { data: adminPosts } = await supabaseAdmin
+      .from('community_posts')
+      .select(`
+        id, title, content, images, user_id, created_at, show_on_main,
+        users!inner (name, role, profile_image_url)
+      `)
+      .eq('is_deleted', false)
+      .eq('users.role', 'admin')
+      .order('created_at', { ascending: false });
+    
+    if (adminPosts) pinnedPosts = adminPosts;
+  }
+
+  // 3. 일반 게시글 가져오기 (페이지네이션 적용, 관리자 글 제외)
   let postsQuery = supabaseAdmin
     .from('community_posts')
     .select(`
-      id,
-      title,
-      content,
-      images,
-      user_id,
-      created_at,
-      show_on_main,
-      users!community_posts_user_id_fkey (
-        name,
-        role,
-        profile_image_url
-      )
+      id, title, content, images, user_id, created_at, show_on_main,
+      users!inner (name, role, profile_image_url)
     `)
-    .eq('is_deleted', false);
+    .eq('is_deleted', false)
+    .neq('users.role', 'admin');
 
-  // 검색어가 있으면 제목, 내용, 작성자 이름에서 검색
   if (searchQuery && searchQuery.trim()) {
     postsQuery = postsQuery.or(`title.ilike.%${searchQuery.trim()}%,content.ilike.%${searchQuery.trim()}%,users.name.ilike.%${searchQuery.trim()}%`);
   }
 
-  const { data: posts, error } = await postsQuery
+  const { data: normalPosts, error } = await postsQuery
     .order('created_at', { ascending: false })
     .range(offset, offset + limit - 1);
 
   if (error) {
     console.error('Error fetching posts:', error);
-    return { posts: [], totalCount: 0, totalPages: 0 };
+    return { posts: [], totalCount: totalCount || 0, totalPages: totalPages || 0 };
   }
 
-  // 클라이언트 사이드에서 관리자 게시글을 최상단으로 정렬
-  const sortedPosts = posts.sort((a: any, b: any) => {
-    // 관리자 게시글을 최상단에 배치
-    if (a.users?.role === 'admin' && b.users?.role !== 'admin') return -1;
-    if (a.users?.role !== 'admin' && b.users?.role === 'admin') return 1;
-    // 같은 타입 내에서는 최신순
-    return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-  });
+  // 첫 페이지인 경우 고정 게시글과 합침
+  const allPosts = page === 1 ? [...pinnedPosts, ...(normalPosts || [])] : (normalPosts || []);
 
   // 모든 게시글의 댓글 수를 한 번에 가져오기
-  const postIds = sortedPosts.map((post: any) => post.id);
+  const postIds = allPosts.map((post: any) => post.id);
   const { data: commentCounts } = await supabaseAdmin
     .from('community_comments')
     .select('post_id')
@@ -91,7 +90,7 @@ export async function getCommunityPosts(page: number = 1, limit: number = 10, se
   }, {} as Record<string, number>) || {};
 
   // 게시글 데이터와 댓글 수 결합
-  const postsWithCounts = sortedPosts.map((post: any) => ({
+  const postsWithCounts = allPosts.map((post: any) => ({
     id: post.id,
     title: post.title,
     content: post.content,
@@ -106,7 +105,8 @@ export async function getCommunityPosts(page: number = 1, limit: number = 10, se
     },
     created_at: post.created_at,
     comments_count: commentCountMap[post.id] || 0,
-    show_on_main: post.show_on_main || false
+    show_on_main: post.show_on_main || false,
+    is_pinned: post.users?.role === 'admin'
   }));
 
   return {

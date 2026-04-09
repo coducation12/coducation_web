@@ -734,7 +734,7 @@ export async function updateStudent(formData: FormData) {
       birth_year: birthYearInt,
       academy: studentData.academy || '코딩메이커',
       status: studentData.status === '휴강' ? 'suspended' :
-        studentData.status === '종료' ? 'terminated' : 
+        studentData.status === '종료' ? 'inactive' : 
         studentData.status === '상담' ? 'consulting' : 'active'
     };
     

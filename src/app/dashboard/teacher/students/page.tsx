@@ -8,11 +8,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Mail, Phone, CheckCircle, XCircle, Clock, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
+import { Mail, Phone, CheckCircle, XCircle, Clock, ArrowUpDown, ArrowUp, ArrowDown, LineChart, FileEdit, Calendar } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/lib/supabase";
 import StudentModal from "@/components/common/StudentModal";
 import { AttendanceCalendarModal } from "../components/AttendanceCalendarModal";
+import StudentProgressModal from "../components/StudentProgressModal";
 import { useToast } from "@/hooks/use-toast";
 import { DashboardPageWrapper } from "@/components/common/DashboardPageWrapper";
 import { useStudentsData, Student, ClassSchedule } from "@/hooks/useStudentsData";
@@ -38,6 +39,15 @@ export default function TeacherStudentsPage() {
     const [sortField, setSortField] = useState<string | null>("name");
     const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
     const { toast } = useToast();
+    
+    // 학생 진도 모달 관련 상태
+    const [isProgressModalOpen, setIsProgressModalOpen] = useState(false);
+    const [selectedStudentForProgress, setSelectedStudentForProgress] = useState<{ id: string, name: string } | null>(null);
+
+    const handleProgressClick = (userId: string, userName: string) => {
+        setSelectedStudentForProgress({ id: userId, name: userName });
+        setIsProgressModalOpen(true);
+    };
 
 
 
@@ -106,7 +116,7 @@ export default function TeacherStudentsPage() {
     // 모든 학생 데이터 (기존 학생만)
     const allStudents = (students || []).map(student => ({
         ...student,
-        type: 'existing',
+        type: 'existing' as const,
         status: student.status || 'active',
         uniqueKey: `existing-${student.id}` // 고유 키 생성
     }));
@@ -196,10 +206,10 @@ export default function TeacherStudentsPage() {
                                         </div>
                                     </TableHead>
                                     <TableHead
-                                        className="text-cyan-200 cursor-pointer hover:text-cyan-100 transition-colors select-none px-1 sm:px-2 text-[10px] sm:text-xs md:text-sm"
+                                        className="text-cyan-200 cursor-pointer hover:text-cyan-100 transition-colors select-none px-1 sm:px-2 text-center text-[10px] sm:text-xs md:text-sm"
                                         onClick={() => handleSort('phone')}
                                     >
-                                        <div className="flex items-center gap-0.5 sm:gap-1 whitespace-nowrap">
+                                        <div className="flex items-center justify-center gap-0.5 sm:gap-1 whitespace-nowrap">
                                             연락처
                                             {getSortIcon('phone')}
                                         </div>
@@ -223,20 +233,20 @@ export default function TeacherStudentsPage() {
                                         </div>
                                     </TableHead>
                                     <TableHead
-                                        className="text-cyan-200 cursor-pointer hover:text-cyan-100 transition-colors select-none px-1 sm:px-2 text-center text-[10px] sm:text-xs md:text-sm"
+                                        className="text-cyan-200 cursor-pointer hover:text-cyan-100 transition-colors select-none px-2 sm:px-6 text-center text-[10px] sm:text-xs md:text-sm"
                                         onClick={() => handleSort('monthlyAttendanceCount')}
                                     >
-                                        <div className="flex items-center justify-center gap-0.5 sm:gap-1 whitespace-nowrap">
-                                            출석
+                                        <div className="flex items-center justify-center gap-0.5 sm:gap-2 whitespace-nowrap">
+                                            출석 / 진도
                                             {getSortIcon('monthlyAttendanceCount')}
                                         </div>
                                     </TableHead>
                                     <TableHead
-                                        className="text-cyan-200 cursor-pointer hover:text-cyan-100 transition-colors select-none px-1 sm:px-2 hidden xl:table-cell text-[10px] sm:text-xs md:text-sm"
+                                        className="text-cyan-200 cursor-pointer hover:text-cyan-100 transition-colors select-none px-2 sm:px-6 hidden xl:table-cell text-[10px] sm:text-xs md:text-sm"
                                         onClick={() => handleSort('joinDate')}
                                     >
-                                        <div className="flex items-center gap-0.5 sm:gap-2 whitespace-nowrap">
-                                            가입일
+                                        <div className="flex items-center gap-0.5 sm:gap-3 whitespace-nowrap">
+                                            등록일
                                             {getSortIcon('joinDate')}
                                         </div>
                                     </TableHead>
@@ -265,11 +275,11 @@ export default function TeacherStudentsPage() {
                                     <TableCell className="text-cyan-300 px-2 hidden lg:table-cell">
                                         {student.academy || '-'}
                                     </TableCell>
-                                    <TableCell className="text-cyan-300 px-2 py-2 whitespace-nowrap">
+                                    <TableCell className="text-cyan-300 px-2 sm:px-6 py-2 whitespace-nowrap text-center">
                                         {student.type === 'signup_request' ? (
                                             <span className="text-cyan-400 text-xs sm:text-[13px]">가입요청</span>
                                         ) : (
-                                            <div className="flex flex-col gap-0.5">
+                                            <div className="flex flex-col gap-0.5 items-center">
                                                 <div className="flex items-center space-x-1 sm:space-x-2">
                                                     <Phone className="w-3 h-3 sm:w-4 sm:h-4 text-cyan-400 opacity-70" />
                                                     <span className="text-cyan-100 font-medium text-xs sm:text-[13px]">{student.phone}</span>
@@ -297,8 +307,8 @@ export default function TeacherStudentsPage() {
                                             {student.type === 'signup_request' || student.status === '승인대기' ? '대기' : student.status}
                                         </Badge>
                                     </TableCell>
-                                    <TableCell className="text-center px-2" onClick={(e) => e.stopPropagation()}>
-                                        <div className="flex items-center justify-center gap-1 sm:gap-2">
+                                    <TableCell className="text-center px-2 sm:px-6" onClick={(e) => e.stopPropagation()}>
+                                        <div className="flex items-center justify-center gap-1 sm:gap-4">
                                             <Badge
                                                 variant="outline"
                                                 className={`hidden sm:flex font-bold px-1 sm:px-2 py-0 h-5 sm:h-6 text-[10px] sm:text-xs ${
@@ -313,10 +323,24 @@ export default function TeacherStudentsPage() {
                                                 studentId={student.id}
                                                 studentName={student.name}
                                                 teacherId={currentUserId}
+                                                customTrigger={
+                                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-cyan-400 hover:bg-cyan-500/10" title="출결 캘린더">
+                                                        <Calendar className="h-4 w-4" />
+                                                    </Button>
+                                                }
                                             />
+                                            <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                className="h-8 w-8 text-cyan-400 hover:bg-cyan-500/10"
+                                                onClick={() => handleProgressClick(student.id, student.name)}
+                                                title="진도/성과 기록"
+                                            >
+                                                <LineChart className="h-4 w-4" />
+                                            </Button>
                                         </div>
                                     </TableCell>
-                                    <TableCell className="text-cyan-300 px-2 hidden xl:table-cell">
+                                    <TableCell className="text-cyan-300 px-2 sm:px-6 hidden xl:table-cell">
                                         {student.type === 'signup_request' ?
                                             (student.requested_at ? new Date(student.requested_at).toLocaleDateString() : '-') :
                                             student.joinDate
@@ -342,6 +366,15 @@ export default function TeacherStudentsPage() {
                 teachers={teachers as any}
                 currentUserId={currentUserId || undefined}
             />
+
+            {selectedStudentForProgress && (
+                <StudentProgressModal
+                    isOpen={isProgressModalOpen}
+                    onClose={() => setIsProgressModalOpen(false)}
+                    studentId={selectedStudentForProgress.id}
+                    studentName={selectedStudentForProgress.name}
+                />
+            )}
         </DashboardPageWrapper>
     );
 }

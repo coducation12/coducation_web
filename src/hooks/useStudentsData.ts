@@ -30,6 +30,8 @@ export interface Student {
     assignedTeachers?: Array<{ id: string, name: string }>;
     academy: string;
     is_special_education?: boolean;
+    type?: 'existing' | 'signup_request';
+    requested_at?: string;
 }
 
 export interface ClassSchedule {
@@ -144,7 +146,10 @@ export function useStudentsData() {
                             (item.users?.status === 'inactive' || item.users?.status === '종료') ? '종료' : 
                             (item.users?.status === 'consulting' || item.users?.status === '상담') ? '상담' :
                             (item.users?.status === 'pending') ? '승인대기' : '수강',
-                    joinDate: item.users?.created_at ? new Date(item.users.created_at).toLocaleDateString() : '-',
+                    joinDate: item.users?.created_at ? (() => {
+                        const d = new Date(item.users.created_at);
+                        return `${d.getFullYear()}. ${String(d.getMonth() + 1).padStart(2, '0')}. ${String(d.getDate()).padStart(2, '0')}.`;
+                    })() : '-',
                     lastLogin: '2024-01-15',
                     studentId: item.users?.username || '-',
                     enrollment_date: item.enrollment_start_date || '',

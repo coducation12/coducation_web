@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Mail, Phone, CheckCircle, XCircle, Clock, ArrowUpDown, ArrowUp, ArrowDown, Trash2, Search, Calendar } from "lucide-react";
+import { Mail, Phone, CheckCircle, XCircle, Clock, ArrowUpDown, ArrowUp, ArrowDown, Trash2, Search, Calendar, LineChart } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
@@ -19,6 +19,7 @@ import { DashboardPageWrapper } from "@/components/common/DashboardPageWrapper";
 import { getTeacherColorSet } from "@/lib/colors";
 import { useStudentsData, Student, ClassSchedule } from "@/hooks/useStudentsData";
 import { AttendanceCalendarModal } from "@/app/dashboard/teacher/components/AttendanceCalendarModal";
+import StudentProgressModal from "../../teacher/components/StudentProgressModal";
 
 export const dynamic = 'force-dynamic';
 
@@ -44,6 +45,15 @@ export default function AdminStudentsPage() {
     const [sortField, setSortField] = useState<string | null>("name");
     const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
     const { toast } = useToast();
+
+    // 학생 진도 모달 관련 상태
+    const [isProgressModalOpen, setIsProgressModalOpen] = useState(false);
+    const [selectedStudentForProgress, setSelectedStudentForProgress] = useState<{ id: string, name: string } | null>(null);
+
+    const handleProgressClick = (userId: string, userName: string) => {
+        setSelectedStudentForProgress({ id: userId, name: userName });
+        setIsProgressModalOpen(true);
+    };
 
     // 정렬 함수
     const handleSort = (field: string) => {
@@ -212,10 +222,10 @@ export default function AdminStudentsPage() {
                                         </div>
                                     </TableHead>
                                     <TableHead
-                                        className="text-cyan-200 cursor-pointer hover:text-cyan-100 transition-colors select-none px-1 sm:px-2 text-[10px] sm:text-xs md:text-sm whitespace-nowrap"
+                                        className="text-cyan-200 cursor-pointer hover:text-cyan-100 transition-colors select-none px-1 sm:px-2 text-center text-[10px] sm:text-xs md:text-sm whitespace-nowrap"
                                         onClick={() => handleSort('phone')}
                                     >
-                                        <div className="flex items-center gap-0.5 sm:gap-1">
+                                        <div className="flex items-center justify-center gap-0.5 sm:gap-1">
                                             연락처
                                             {getSortIcon('phone')}
                                         </div>
@@ -254,11 +264,11 @@ export default function AdminStudentsPage() {
                                             {getSortIcon('status')}
                                         </div>
                                     </TableHead>
-                                    <TableHead className="text-cyan-200 text-[10px] sm:text-xs md:text-sm px-1 sm:px-2 whitespace-nowrap">
-                                        가입일
+                                    <TableHead className="text-cyan-200 text-[10px] sm:text-xs md:text-sm px-2 sm:px-6 whitespace-nowrap">
+                                        등록일
                                     </TableHead>
-                                    <TableHead className="text-cyan-200 text-[10px] sm:text-xs md:text-sm px-1 sm:px-2 text-center whitespace-nowrap">
-                                        스케줄
+                                    <TableHead className="text-cyan-200 text-[10px] sm:text-xs md:text-sm px-2 sm:px-6 text-center whitespace-nowrap">
+                                        스케줄 / 진도
                                     </TableHead>
                                 </TableRow>
                             </TableHeader>
@@ -285,9 +295,9 @@ export default function AdminStudentsPage() {
                                         <TableCell className="text-cyan-300 py-2 sm:py-4">
                                             {student.academy || '-'}
                                         </TableCell>
-                                        <TableCell className="text-cyan-300 py-2 sm:py-3">
-                                            <div className="flex flex-col gap-0.5">
-                                                <div className="flex items-center space-x-2">
+                                        <TableCell className="text-cyan-300 py-2 sm:py-3 px-2 sm:px-6 text-center">
+                                            <div className="flex flex-col gap-0.5 items-center">
+                                                <div className="flex items-center justify-center space-x-2">
                                                     <Phone className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-cyan-400" />
                                                     <span className="text-cyan-100 font-medium">{student.phone}</span>
                                                 </div>
@@ -405,20 +415,29 @@ export default function AdminStudentsPage() {
                                                 )}
                                             </Badge>
                                         </TableCell>
-                                        <TableCell className="text-cyan-300 py-2 sm:py-4">
+                                        <TableCell className="text-cyan-300 py-2 sm:py-4 px-2 sm:px-6">
                                             {student.joinDate}
                                         </TableCell>
-                                        <TableCell className="py-2 sm:py-4 text-center">
-                                            <div onClick={(e) => e.stopPropagation()}>
+                                        <TableCell className="py-2 sm:py-4 px-2 sm:px-6 text-center">
+                                            <div className="flex items-center justify-center gap-1 sm:gap-2" onClick={(e) => e.stopPropagation()}>
                                                 <AttendanceCalendarModal
                                                     studentId={student.id}
                                                     studentName={student.name || ''}
                                                     customTrigger={
-                                                        <Button size="sm" variant="ghost" className="h-8 w-8 p-0 text-purple-400 hover:text-purple-300">
-                                                            <Calendar className="w-4 h-4" />
+                                                        <Button variant="ghost" size="icon" className="h-8 w-8 text-cyan-400 hover:bg-cyan-500/10" title="출결 캘린더">
+                                                            <Calendar className="h-4 w-4" />
                                                         </Button>
                                                     }
                                                 />
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    className="h-8 w-8 text-cyan-400 hover:bg-cyan-500/10"
+                                                    onClick={() => handleProgressClick(student.id, student.name)}
+                                                    title="진도/성과 기록"
+                                                >
+                                                    <LineChart className="h-4 w-4" />
+                                                </Button>
                                             </div>
                                         </TableCell>
                                     </TableRow>
@@ -488,6 +507,15 @@ export default function AdminStudentsPage() {
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
+
+            {selectedStudentForProgress && (
+                <StudentProgressModal
+                    isOpen={isProgressModalOpen}
+                    onClose={() => setIsProgressModalOpen(false)}
+                    studentId={selectedStudentForProgress.id}
+                    studentName={selectedStudentForProgress.name}
+                />
+            )}
         </DashboardPageWrapper>
     );
 }

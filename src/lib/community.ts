@@ -44,6 +44,7 @@ export async function getCommunityPosts(page: number = 1, limit: number = 10, se
       images,
       user_id,
       created_at,
+      show_on_main,
       users!community_posts_user_id_fkey (
         name,
         role,
@@ -104,7 +105,8 @@ export async function getCommunityPosts(page: number = 1, limit: number = 10, se
       profile_image_url: post.users?.profile_image_url
     },
     created_at: post.created_at,
-    comments_count: commentCountMap[post.id] || 0
+    comments_count: commentCountMap[post.id] || 0,
+    show_on_main: post.show_on_main || false
   }));
 
   return {
@@ -125,6 +127,7 @@ export async function getCommunityPost(postId: string): Promise<CommunityPost | 
       images,
       user_id,
       created_at,
+      show_on_main,
       users!community_posts_user_id_fkey (
         name,
         role,
@@ -161,7 +164,8 @@ export async function getCommunityPost(postId: string): Promise<CommunityPost | 
       profile_image_url: post.users?.profile_image_url
     },
     created_at: post.created_at,
-    comments_count: commentsCount || 0
+    comments_count: commentsCount || 0,
+    show_on_main: post.show_on_main || false
   };
 }
 
@@ -365,4 +369,70 @@ export async function deleteCommunityComment(commentId: string) {
     console.error('Error deleting comment:', error);
     throw new Error('댓글 삭제에 실패했습니다.');
   }
+}
+
+// 메인 화면 노출 여부 토글
+export async function toggleShowOnMain(postId: string, show: boolean) {
+  const { userRole } = await getCurrentUser();
+
+  if (userRole !== 'teacher' && userRole !== 'admin') {
+    throw new Error('권한이 없습니다.');
+  }
+
+  const { error } = await supabaseAdmin
+    .from('community_posts')
+    .update({ show_on_main: show })
+    .eq('id', postId);
+
+  if (error) {
+    console.error('Error toggling show_on_main:', error);
+    throw new Error('노출 설정 변경에 실패했습니다.');
+  }
+
+  return { success: true };
+}
+
+// 메인 화면용 공개 게시글 가져오기
+export async function getMainDisplayPosts(): Promise<CommunityPost[]> {
+  const { data: posts, error } = await supabaseAdmin
+    .from('community_posts')
+    .select(`
+      id,
+      title,
+      content,
+      images,
+      user_id,
+      created_at,
+      show_on_main,
+      users!community_posts_user_id_fkey (
+        name,
+        role,
+        profile_image_url
+      )
+    `)
+    .eq('is_deleted', false)
+    .eq('show_on_main', true)
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    console.error('Error fetching main display posts:', error);
+    return [];
+  }
+
+  return posts.map((post: any) => ({
+    id: post.id,
+    title: post.title,
+    content: post.content,
+    images: post.images || [],
+    user_id: post.user_id,
+    author: {
+      id: post.user_id,
+      name: post.users?.name || '익명',
+      role: post.users?.role || 'student',
+      profile_image_url: post.users?.profile_image_url
+    },
+    created_at: post.created_at,
+    comments_count: 0, // 메인에서는 댓글 수 표시 안 함
+    show_on_main: post.show_on_main
+  }));
 }

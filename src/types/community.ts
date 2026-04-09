@@ -20,6 +20,7 @@ export interface CommunityPost {
   author: User;
   created_at: string;
   comments_count: number;
+  show_on_main?: boolean;
 }
 
 export interface CommunityComment {

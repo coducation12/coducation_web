@@ -1,5 +1,6 @@
 import { HeroSection } from '@/components/hero/hero-section';
 import { AcademySection } from '@/components/landing/academy-section';
+import { StudentWorksSection } from '@/components/landing/student-works-section';
 import { CurriculumSection } from '@/components/landing/curriculum-section';
 import { InstructorsSection } from '@/components/landing/instructors-section';
 import PromoModal from '@/components/common/PromoModal';
@@ -18,6 +19,7 @@ export default async function Home() {
       />
       <HeroSection />
       <AcademySection />
+      <StudentWorksSection />
       <InstructorsSection />
       <CurriculumSection />
     </div>

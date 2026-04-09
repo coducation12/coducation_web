@@ -24,7 +24,7 @@ export function CurriculumCard({ curriculum }: CurriculumCardProps) {
       <div className="absolute top-0 right-0 -mr-12 -mt-12 w-32 h-32 bg-cyan-500/5 blur-[60px] group-hover:bg-cyan-500/10 transition-colors" />
       
       {/* Image Section - Height increased from h-48 to h-64 for better vertical ratio */}
-      <div className="relative h-64 w-full overflow-hidden bg-slate-900/50 flex items-center justify-center">
+      <div className="relative h-48 w-full overflow-hidden bg-slate-900/50 flex items-center justify-center">
         {curriculum.image ? (
           <img 
             src={curriculum.image} 
@@ -43,25 +43,11 @@ export function CurriculumCard({ curriculum }: CurriculumCardProps) {
         </div>
       </div>
 
-      <CardContent className="p-6">
-        {/* Category Tag */}
-        {curriculum.category && (
-          <div className="text-[10px] font-black text-cyan-600 uppercase tracking-[0.2em] mb-2">
-            {curriculum.category}
-          </div>
-        )}
-        
+      <CardContent className="p-4">
         {/* Title */}
-        <h3 className="text-xl font-bold text-slate-100 group-hover:text-cyan-400 transition-colors line-clamp-1 mb-2">
+        <h3 className="text-lg font-bold text-slate-100 group-hover:text-cyan-400 transition-colors line-clamp-1 text-center">
           {curriculum.title}
         </h3>
-        
-        {/* Description */}
-        <p className="text-sm text-slate-400 line-clamp-2 leading-relaxed h-10">
-          {curriculum.description || 'Coducation의 전문 교육 과정입니다.'}
-        </p>
-
-        {/* Footer Info removed as per user request */}
       </CardContent>
     </Card>
   );

@@ -222,10 +222,10 @@ export default function AdminStudentsPage() {
                                         </div>
                                     </TableHead>
                                     <TableHead
-                                        className="text-cyan-200 cursor-pointer hover:text-cyan-100 transition-colors select-none px-1 sm:px-2 text-center text-[10px] sm:text-xs md:text-sm whitespace-nowrap"
+                                        className="text-cyan-200 cursor-pointer hover:text-cyan-100 transition-colors select-none px-1 sm:px-4 text-left text-[10px] sm:text-xs md:text-sm whitespace-nowrap"
                                         onClick={() => handleSort('phone')}
                                     >
-                                        <div className="flex items-center justify-center gap-0.5 sm:gap-1">
+                                        <div className="flex items-center justify-start gap-0.5 sm:gap-1">
                                             연락처
                                             {getSortIcon('phone')}
                                         </div>
@@ -295,9 +295,9 @@ export default function AdminStudentsPage() {
                                         <TableCell className="text-cyan-300 py-2 sm:py-4">
                                             {student.academy || '-'}
                                         </TableCell>
-                                        <TableCell className="text-cyan-300 py-2 sm:py-3 px-2 sm:px-6 text-center">
-                                            <div className="flex flex-col gap-0.5 items-center">
-                                                <div className="flex items-center justify-center space-x-2">
+                                        <TableCell className="text-cyan-300 py-2 sm:py-3 px-1 sm:px-4 text-left">
+                                            <div className="flex flex-col gap-0.5 items-start">
+                                                <div className="flex items-center justify-start space-x-2">
                                                     <Phone className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-cyan-400" />
                                                     <span className="text-cyan-100 font-medium">{student.phone}</span>
                                                 </div>

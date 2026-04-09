@@ -389,6 +389,13 @@ export default function SentencePage() {
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (showResultModal) return;
+
+      // 화살표 및 이동 키 차단 (백스페이스만 허용)
+      if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End'].includes(event.key)) {
+        event.preventDefault();
+        return;
+      }
+
       const inputElement = document.querySelector('input[type="text"]') as HTMLInputElement;
       if (inputElement && document.activeElement !== inputElement) {
         inputElement.focus();
@@ -397,18 +404,25 @@ export default function SentencePage() {
       if (event.key === 'Enter' || event.key === ' ') { 
         const currentSentence = words[currentCharIndex];
         const completionRate = userInput.length / (currentSentence?.length || 1);
+        const isTypedFullLength = userInput.length >= (currentSentence?.length || 0);
         
-        // 90% 이상 입력했을 때만 다음으로 넘어감 (부정행위 방지 및 단문 특성 반영)
-        if (completionRate >= 0.9) {
+        // 엔터 키: 90% 이상 입력했을 때 다음으로 넘어감
+        if (event.key === 'Enter' && completionRate >= 0.9) {
           event.preventDefault();
           event.stopPropagation();
           checkWordInput();
-        } else if (event.key === 'Enter') {
-          // 엔터 키의 경우 기존처럼 항상 방지하고, 90% 미만이면 무시
+        } 
+        // 스페이스바: 지정된 자리수(전체 길이) 이상 입력했을 때만 다음으로 넘어감
+        else if (event.key === ' ' && isTypedFullLength) {
+          event.preventDefault();
+          event.stopPropagation();
+          checkWordInput();
+        }
+        // 엔터 키인데 조건 미달인 경우 또는 스페이스바인데 조건 미달인 경우
+        else if (event.key === 'Enter') {
           event.preventDefault();
           event.stopPropagation();
         }
-        // 스페이스바의 경우 90% 미만이면 그대로 문장 내 공백으로 입력되도록 통과시킴
       }
     };
 

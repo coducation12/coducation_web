@@ -49,13 +49,10 @@ export function PostForm({
     setImages(prev => [...prev, imageUrl]);
   };
 
-  const handleImageRemove = async (imageUrl: string) => {
-    try {
-      await deleteImageFromStorageClient(imageUrl);
-      setImages(prev => prev.filter(url => url !== imageUrl));
-    } catch (error) {
-      alert('이미지 삭제에 실패했습니다.');
-    }
+  const handleImageRemove = (imageUrl: string) => {
+    // 🟠 중요: 저장소에서 실제로 삭제하지 않습니다. 
+    // 학생 진도 소스나 다른 곳에서 여전히 참조 중일 수 있기 때문입니다.
+    setImages(prev => prev.filter(url => url !== imageUrl));
   };
 
   return (

@@ -68,12 +68,50 @@ export function ImageUploader({
     }
   };
 
+  const handlePaste = async (event: React.ClipboardEvent) => {
+    if (disabled || uploading || images.length >= maxImages) return;
+
+    const items = event.clipboardData.items;
+    const pastedFiles: File[] = [];
+
+    for (let i = 0; i < items.length; i++) {
+      if (items[i].type.indexOf('image') !== -1) {
+        const file = items[i].getAsFile();
+        if (file) pastedFiles.push(file);
+      }
+    }
+
+    if (pastedFiles.length === 0) return;
+
+    setUploading(true);
+    try {
+      for (let i = 0; i < pastedFiles.length && images.length + i < maxImages; i++) {
+        const file = pastedFiles[i];
+        
+        const validation = validateImageFile(file);
+        if (!validation.isValid) {
+          alert(validation.error);
+          continue;
+        }
+
+        const compressedFile = await compressImage(file);
+        const imageUrl = await uploadImageToStorageClient(compressedFile);
+        onImageUpload(imageUrl);
+      }
+    } catch (error) {
+      console.error('Paste upload failed:', error);
+      alert('이미지 붙여넣기에 실패했습니다.');
+    } finally {
+      setUploading(false);
+    }
+  };
+
   const handleRemoveImage = (imageUrl: string) => {
     onImageRemove(imageUrl);
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4" onPaste={handlePaste}>
       {/* 업로드 버튼 */}
       <div className="flex items-center gap-2">
         <Button
@@ -135,6 +173,7 @@ export function ImageUploader({
           <ImageIcon className="w-12 h-12 text-cyan-400/50 mx-auto mb-2" />
           <p className="text-cyan-300 text-sm">
             JPG, PNG, WebP 파일을 업로드하세요<br />
+            또는 스크린샷 <b>붙여넣기(Ctrl+V)</b> 가능<br />
             최대 {maxImages}개, 각 10MB 이하
           </p>
         </div>

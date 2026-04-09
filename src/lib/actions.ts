@@ -3591,25 +3591,27 @@ export async function updateStudentProgress(studentId: string, progressData: any
         // 이미 게시되었거나 공유 설정이 안 된 경우 건너뜀
         if (!res.isShared || res.isPosted) continue;
 
-        try {
-          // 커뮤니티 게시글 생성
-          const contentText = `${res.description || ''}\n\n${res.url ? `링크: ${res.url}` : ''}`;
-          
-          await supabaseAdmin
-            .from('community_posts')
-            .insert({
-              user_id: studentId,
-              title: `[${cur.title}] ${res.title}`,
-              content: contentText,
-              images: res.imageUrl ? [res.imageUrl] : []
-            });
-          
-          // 게시 완료 플래그 설정 (중복 게시 방지)
+        // 커뮤니티 게시글 생성
+        const contentText = `${res.description || ''}\n\n${res.url ? `링크: ${res.url}` : ''}`;
+        
+        const { data: postData, error: postError } = await supabaseAdmin
+          .from('community_posts')
+          .insert({
+            user_id: studentId,
+            title: `[${cur.title}] ${res.title}`,
+            content: contentText,
+            images: res.imageUrl ? [res.imageUrl] : []
+          })
+          .select('id')
+          .single();
+        
+        if (!postError && postData) {
+          // 게시 완료 및 게시글 ID 저장
+          res.postId = postData.id;
           res.isPosted = true;
           sharedAny = true;
-        } catch (postError) {
+        } else if (postError) {
           console.error('커뮤니티 게시 실패:', postError);
-          // 포트폴리오 저장은 성공했으므로 오류를 던지지는 않음
         }
       }
     }
@@ -3741,18 +3743,22 @@ export async function createPortfolioEntry(
       
       const contentText = `${entryData.description}\n\n${entryData.url ? `링크: ${entryData.url}` : ''}`;
       
-      const { error: postError } = await supabaseAdmin
+      const { data: postData, error: postError } = await supabaseAdmin
         .from('community_posts')
         .insert({
           user_id: studentId,
           title: entryData.title,
           content: contentText,
           images: entryData.imageUrl ? [entryData.imageUrl] : []
-        });
+        })
+        .select('id')
+        .single();
 
-      if (postError) {
+      if (!postError && postData) {
+        newItem.postId = postData.id;
+        newItem.isPosted = true;
+      } else if (postError) {
         console.error('커뮤니티 게시 실패:', postError);
-        // 포트폴리오 저장은 성공했으므로 오류를 던지지는 않음
       }
     }
 

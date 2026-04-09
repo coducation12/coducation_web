@@ -236,6 +236,60 @@ export async function updateCommunityPost(postId: string, title: string, content
     throw new Error('게시글 수정에 실패했습니다.');
   }
 
+  // [포트폴리오 동기화] 이 게시글과 연결된 학생의 진도 기록이 있다면 함께 업데이트
+  try {
+    // 해당 postId를 포함하고 있는 학생들 검색 (JSONB 데이터 내 검색)
+    // 팁: 성능을 위해 먼저 대략적인 필터링 후 메모리에서 정밀 필터링 수행
+    const { data: studentsLinked } = await supabaseAdmin
+      .from('students')
+      .select('user_id, learning_progress')
+      .not('learning_progress', 'is', null);
+
+    if (studentsLinked) {
+      for (const student of studentsLinked) {
+        let isUpdated = false;
+        const learningProgress = student.learning_progress as any[];
+        
+        if (!Array.isArray(learningProgress)) continue;
+
+        const updatedProgress = learningProgress.map(cur => {
+          if (!cur.results || !Array.isArray(cur.results)) return cur;
+          
+          const updatedResults = cur.results.map((res: any) => {
+            if (res.postId === postId) {
+              isUpdated = true;
+              // 제목에서 [과정명] 머리글 제거 시도
+              const cleanTitle = title.replace(/^\[.*?\]\s*/, '');
+              // 내용에서 링크 부분 제외하고 설명만 추출 시도
+              const cleanDescription = content.split('\n\n링크:')[0];
+              
+              return {
+                ...res,
+                title: cleanTitle,
+                description: cleanDescription,
+                imageUrl: (images && images.length > 0) ? images[0] : res.imageUrl
+              };
+            }
+            return res;
+          });
+          
+          return { ...cur, results: updatedResults };
+        });
+
+        if (isUpdated) {
+          await supabaseAdmin
+            .from('students')
+            .update({ learning_progress: updatedProgress })
+            .eq('user_id', student.user_id);
+          console.log(`Portfolio synced for student: ${student.user_id}`);
+        }
+      }
+    }
+  } catch (syncError) {
+    console.error('Portfolio sync failed:', syncError);
+    // 메인 게시글 수정은 성공했으므로 동기화 실패로 에러를 던지지는 않음
+  }
+
   return data;
 }
 

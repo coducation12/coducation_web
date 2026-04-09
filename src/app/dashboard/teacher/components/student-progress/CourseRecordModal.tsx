@@ -62,11 +62,9 @@ export default function CourseRecordModal({
         }
     }, [isOpen, progressId, courses]);
 
-    const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (!file) return;
-
+    const uploadImage = async (file: File) => {
         try {
+            setLoading(true);
             const formData = new FormData();
             formData.append('file', file);
             formData.append('folder', 'progress');
@@ -75,6 +73,27 @@ export default function CourseRecordModal({
             toast({ title: "업로드 성공", description: "이미지가 업로드되었습니다." });
         } catch (error) {
             toast({ title: "업로드 실패", description: "이미지 업로드 중 오류가 발생했습니다.", variant: "destructive" });
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) await uploadImage(file);
+    };
+
+    const handlePaste = async (e: React.ClipboardEvent) => {
+        // 클립보드 아이템 확인
+        const items = e.clipboardData.items;
+        for (let i = 0; i < items.length; i++) {
+            if (items[i].type.indexOf('image') !== -1) {
+                const file = items[i].getAsFile();
+                if (file) {
+                    await uploadImage(file);
+                    break; // 한 번에 하나만 업로드
+                }
+            }
         }
     };
 
@@ -120,7 +139,7 @@ export default function CourseRecordModal({
 
     return (
         <Dialog open={isOpen} onOpenChange={resetAndClose}>
-            <DialogContent className="max-w-2xl bg-[#0c1425] border-cyan-500/30 text-cyan-50 shadow-2xl shadow-cyan-500/20">
+            <DialogContent onPaste={handlePaste} className="max-w-2xl bg-[#0c1425] border-cyan-500/30 text-cyan-50 shadow-2xl shadow-cyan-500/20">
                 <DialogHeader>
                     <DialogTitle className="text-xl font-black text-cyan-100 italic tracking-tight flex items-center gap-2">
                         <BookOpen className="w-5 h-5 text-cyan-400" />
@@ -193,7 +212,7 @@ export default function CourseRecordModal({
                                             <div className="p-3 bg-cyan-500/5 rounded-full border border-cyan-500/10">
                                                 <ImageIcon className="w-6 h-6" />
                                             </div>
-                                            <span className="text-[10px] font-bold uppercase tracking-wider">이미지 업로드</span>
+                                            <span className="text-[10px] font-bold uppercase tracking-wider">이미지 업로드 또는 Ctrl+V</span>
                                             <input type="file" className="hidden" onChange={handleImageUpload} accept="image/*" />
                                         </label>
                                     )}

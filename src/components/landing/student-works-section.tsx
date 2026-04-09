@@ -15,7 +15,9 @@ const maskName = (name: string) => {
 
 export function StudentWorksSection() {
   const [allPosts, setAllPosts] = useState<CommunityPost[]>([]);
-  const [displayPosts, setDisplayPosts] = useState<(CommunityPost | null)[]>(Array(8).fill(null));
+  const [displayPosts, setDisplayPosts] = useState<(CommunityPost | null)[]>(Array(12).fill(null));
+  const [waitingPool, setWaitingPool] = useState<CommunityPost[]>([]);
+  const [nextSlot, setNextSlot] = useState(0);
   const [loading, setLoading] = useState(true);
 
   // 데이터 로드
@@ -27,9 +29,13 @@ export function StudentWorksSection() {
         const filteredPosts = posts.filter(p => p.images && p.images.length > 0);
         setAllPosts(filteredPosts);
         
-        // 초기 표시 데이터 설정 (최대 8개)
-        const initial = Array(8).fill(null).map((_, i) => filteredPosts[i] || null);
+        // 초기 표시 데이터 설정 (최대 12개)
+        const initialCount = 12;
+        const initial = filteredPosts.slice(0, initialCount);
+        const waiting = filteredPosts.slice(initialCount);
+        
         setDisplayPosts(initial);
+        setWaitingPool(waiting);
       } catch (error) {
         console.error('Failed to fetch student works:', error);
       } finally {
@@ -39,31 +45,41 @@ export function StudentWorksSection() {
     fetchPosts();
   }, []);
 
-  // 랜덤 교체 로직
+  // 공평한 순환 교체 로직 (Fair Rotation)
   useEffect(() => {
-    if (allPosts.length <= 8) return;
-
-    const interval = setInterval(() => {
-      // 0~7 사이의 랜덤 인덱스 선택 (교체할 슬롯)
-      const slotIndex = Math.floor(Math.random() * 8);
+    if (allPosts.length <= 12 || waitingPool.length === 0) return;
+    
+    // 4~6초 사이의 랜덤한 간격으로 교체 (약간의 변동성을 주어 더 자연스럽게 보임)
+    const randomDelay = 4000 + Math.random() * 2000;
+    
+    const timeout = setTimeout(() => {
+      // 1. 대기열의 첫 번째 게시물 가져오기
+      const [nextPost, ...remainingPool] = waitingPool;
       
-      // 현재 메인에 없는 포스트들 중에서 랜덤으로 하나 선택
-      const currentIds = new Set(displayPosts.filter(p => p !== null).map(p => p?.id));
-      const pool = allPosts.filter(p => !currentIds.has(p.id));
-      
-      if (pool.length > 0) {
-        const nextPost = pool[Math.floor(Math.random() * pool.length)];
+      setDisplayPosts(prev => {
+        const nextDisplay = [...prev];
+        const currentPostInSlot = nextDisplay[nextSlot];
         
-        setDisplayPosts(prev => {
-          const next = [...prev];
-          next[slotIndex] = nextPost;
-          return next;
-        });
-      }
-    }, 4000); // 4초마다 하나씩 교체
+        // 2. 현재 슬롯에 새로운 게시물 배치
+        nextDisplay[nextSlot] = nextPost;
+        
+        // 3. 기존 게시물을 대기열 끝으로 이동 (자동으로 중복 방지 및 순환 구조 형성)
+        if (currentPostInSlot) {
+          setWaitingPool([...remainingPool, currentPostInSlot]);
+        } else {
+          setWaitingPool(remainingPool);
+        }
+        
+        return nextDisplay;
+      });
+      
+      // 4. 다음 교체할 슬롯 결정 (0~11 순차 순환 - 모든 슬롯 공평하게 교체)
+      setNextSlot(prev => (prev + 1) % 12);
+      
+    }, randomDelay);
 
-    return () => clearInterval(interval);
-  }, [allPosts, displayPosts]);
+    return () => clearTimeout(timeout);
+  }, [allPosts.length, waitingPool, nextSlot]);
 
   if (loading) {
     return (
@@ -100,7 +116,7 @@ export function StudentWorksSection() {
           </p>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
+        <div className="grid grid-cols-3 md:grid-cols-4 gap-1.5 sm:gap-4 md:gap-6">
           {displayPosts.map((post, index) => (
             <div key={index} className="aspect-square relative overflow-hidden group border border-cyan-400/20 bg-cyan-900/10 rounded-lg">
               <AnimatePresence mode="wait">
@@ -121,11 +137,11 @@ export function StudentWorksSection() {
                     />
                     {/* 오버레이 */}
                     <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-100 transition-opacity">
-                      <div className="absolute bottom-0 left-0 w-full p-4 text-center">
-                        <div className="text-[10px] md:text-xs text-cyan-400 font-bold mb-1 opacity-70 truncate px-2">
+                      <div className="absolute bottom-0 left-0 w-full p-2 sm:p-4 text-center">
+                        <div className="text-[8px] md:text-xs text-cyan-400 font-bold mb-0.5 sm:mb-1 opacity-70 truncate px-1 sm:px-2">
                            {post.title}
                         </div>
-                        <div className="text-sm md:text-lg font-bold text-white tracking-widest">
+                        <div className="text-[10px] sm:text-sm md:text-lg font-bold text-white tracking-widest leading-tight">
                           {maskName(post.author.name)}
                         </div>
                       </div>

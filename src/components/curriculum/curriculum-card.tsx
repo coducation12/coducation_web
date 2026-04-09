@@ -23,8 +23,8 @@ export function CurriculumCard({ curriculum }: CurriculumCardProps) {
       {/* Background Glow */}
       <div className="absolute top-0 right-0 -mr-12 -mt-12 w-32 h-32 bg-cyan-500/5 blur-[60px] group-hover:bg-cyan-500/10 transition-colors" />
       
-      {/* Image Section - Height increased from h-48 to h-64 for better vertical ratio */}
-      <div className="relative h-48 w-full overflow-hidden bg-slate-900/50 flex items-center justify-center">
+      {/* Image Section - Height reduced for mobile density */}
+      <div className="relative h-28 sm:h-48 w-full overflow-hidden bg-slate-900/50 flex items-center justify-center">
         {curriculum.image ? (
           <img 
             src={curriculum.image} 
@@ -32,20 +32,20 @@ export function CurriculumCard({ curriculum }: CurriculumCardProps) {
             className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
           />
         ) : (
-          <BookOpen className="w-12 h-12 text-slate-800" />
+          <BookOpen className="w-10 h-10 sm:w-12 sm:h-12 text-slate-800" />
         )}
         
         {/* Floating Badge */}
-        <div className="absolute top-4 left-4">
-          <Badge className={cn("px-3 py-1 font-bold rounded-lg border", levelColors[curriculum.level as keyof typeof levelColors] || levelColors['기초'])}>
+        <div className="absolute top-2 left-2 sm:top-4 sm:left-4">
+          <Badge className={cn("px-1.5 py-0.5 sm:px-3 sm:py-1 text-[10px] sm:text-xs font-bold rounded sm:rounded-lg border", levelColors[curriculum.level as keyof typeof levelColors] || levelColors['기초'])}>
             {curriculum.level}
           </Badge>
         </div>
       </div>
 
-      <CardContent className="p-4">
+      <CardContent className="p-2 sm:p-4">
         {/* Title */}
-        <h3 className="text-lg font-bold text-slate-100 group-hover:text-cyan-400 transition-colors line-clamp-1 text-center">
+        <h3 className="text-sm sm:text-lg font-bold text-slate-100 group-hover:text-cyan-400 transition-colors line-clamp-1 text-center">
           {curriculum.title}
         </h3>
       </CardContent>

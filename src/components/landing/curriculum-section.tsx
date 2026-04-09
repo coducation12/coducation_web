@@ -155,8 +155,8 @@ export function CurriculumSection() {
                                 >
                                     <CarouselContent>
                                         {groupedCurriculums[level].map((curriculum) => (
-                                            <CarouselItem key={curriculum.id} className="basis-full md:basis-1/2 lg:basis-1/4">
-                                                <div className="p-1">
+                                            <CarouselItem key={curriculum.id} className="basis-1/2 lg:basis-1/4 pl-2 md:pl-4">
+                                                <div className="h-full">
                                                     <CurriculumCard curriculum={curriculum} />
                                                 </div>
                                             </CarouselItem>

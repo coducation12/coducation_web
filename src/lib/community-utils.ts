@@ -1,9 +1,12 @@
 // 클라이언트에서 사용할 유틸리티 함수들
 
-// 날짜 포맷팅 함수 (한국 시간 기준)
+// 날짜 포맷팅 함수 (표준 UTC 기준 데이터를 로컬 시간으로 표시)
 export const formatDate = (dateString: string) => {
-  // 저장된 시간이 이미 KST라고 가정하고 처리
-  const date = new Date(dateString);
+  // DB에서 오는 문자열에 타임존 정보가 없을 경우를 대비해 UTC(Z) 추가 보완
+  const normalizedString = dateString.includes('T') && !dateString.endsWith('Z') && !dateString.includes('+') 
+    ? `${dateString}Z` 
+    : dateString;
+  const date = new Date(normalizedString);
   const now = new Date();
   
   const diffInMs = now.getTime() - date.getTime();

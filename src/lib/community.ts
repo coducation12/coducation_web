@@ -177,10 +177,6 @@ export async function createCommunityPost(title: string, content: string, images
     throw new Error('로그인이 필요합니다.');
   }
 
-  // 한국 시간으로 현재 시각 계산
-  const now = new Date();
-  const kstTime = new Date(now.getTime() + (9 * 60 * 60 * 1000)).toISOString();
-
   const { data, error } = await supabaseAdmin
     .from('community_posts')
     .insert({
@@ -188,7 +184,7 @@ export async function createCommunityPost(title: string, content: string, images
       content,
       images: images || [],
       user_id: userId,
-      created_at: kstTime
+      created_at: new Date().toISOString()
     })
     .select()
     .single();
@@ -342,17 +338,13 @@ export async function createCommunityComment(postId: string, content: string) {
     throw new Error('로그인이 필요합니다.');
   }
 
-  // 한국 시간으로 현재 시각 계산
-  const now = new Date();
-  const kstTime = new Date(now.getTime() + (9 * 60 * 60 * 1000)).toISOString();
-
   const { data, error } = await supabaseAdmin
     .from('community_comments')
     .insert({
       post_id: postId,
       content,
       user_id: userId,
-      created_at: kstTime
+      created_at: new Date().toISOString()
     })
     .select()
     .single();

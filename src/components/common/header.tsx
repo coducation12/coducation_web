@@ -3,8 +3,10 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import Image from 'next/image';
+import { getCurrentUserClient } from '@/lib/client-auth';
+import { User } from '@/types';
 
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -20,6 +22,42 @@ const navLinks = [
 export function Header() {
   const pathname = usePathname();
   const [activeLink, setActiveLink] = useState('');
+  const [user, setUser] = useState<User | null>(null);
+  const [isAuthLoading, setIsAuthLoading] = useState(true);
+
+  // 현재 사용자 로드
+  useEffect(() => {
+    const loadUser = async () => {
+      try {
+        const currentUser = await getCurrentUserClient();
+        setUser(currentUser);
+      } catch (error) {
+        console.error('Failed to load user in header:', error);
+      } finally {
+        setIsAuthLoading(false);
+      }
+    };
+    loadUser();
+  }, []);
+
+  // 역할에 따른 대시보드 경로 및 버튼 정보 계산
+  const authButton = useMemo(() => {
+    if (isAuthLoading) return { label: '...', href: '/login' };
+    
+    if (!user) return { label: '로그인', href: '/login' };
+
+    const rolePathMap: Record<string, string> = {
+      admin: '/dashboard/admin',
+      teacher: '/dashboard/teacher',
+      student: '/dashboard/student',
+      parent: '/dashboard/parent'
+    };
+
+    return {
+      label: '대시보드',
+      href: rolePathMap[user.role] || '/dashboard'
+    };
+  }, [user, isAuthLoading]);
 
   const handleSmoothScroll = (e: React.MouseEvent<HTMLAnchorElement>, targetId: string) => {
     e.preventDefault();
@@ -133,8 +171,8 @@ export function Header() {
           ))}
         </nav>
         <div className="flex items-center justify-end space-x-2 ml-auto md:ml-0">
-          <Button asChild>
-            <Link href="/login">로그인</Link>
+          <Button asChild className="bg-sky-500 hover:bg-sky-600 font-bold transition-all duration-300">
+            <Link href={authButton.href}>{authButton.label}</Link>
           </Button>
         </div>
       </div>

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
     Dialog, 
     DialogContent, 
@@ -24,6 +24,7 @@ import {
 import { ImageIcon, Link as LinkIcon, Save, X, Globe, Lock, BookOpen } from 'lucide-react';
 import { uploadImageToStorage } from '@/lib/image-upload';
 import { useToast } from "@/hooks/use-toast";
+import { compressImage, validateImageFile } from '@/lib/image-compression';
 
 interface CourseRecordModalProps {
     isOpen: boolean;
@@ -46,6 +47,7 @@ export default function CourseRecordModal({
 }: CourseRecordModalProps) {
     const { toast } = useToast();
     const [loading, setLoading] = useState(false);
+    const fileInputRef = useRef<HTMLInputElement>(null);
     
     // 상태 관리
     const [currentProgressId, setCurrentProgressId] = useState(progressId);
@@ -65,16 +67,33 @@ export default function CourseRecordModal({
     const uploadImage = async (file: File) => {
         try {
             setLoading(true);
+            
+            // 🟢 최적화: 이미지 유효성 검사 추가
+            const validation = validateImageFile(file);
+            if (!validation.isValid) {
+                toast({ title: "검증 실패", description: validation.error, variant: "destructive" });
+                return;
+            }
+
+            // 🟢 최적화: 커뮤니티처럼 이미지 압축 후 업로드
+            const compressedFile = await compressImage(file);
+
             const formData = new FormData();
-            formData.append('file', file);
+            formData.append('file', compressedFile);
             formData.append('folder', 'progress');
             const url = await uploadImageToStorage(formData);
+            
             setImageUrl(url);
-            toast({ title: "업로드 성공", description: "이미지가 업로드되었습니다." });
+            toast({ title: "업로드 성공", description: "이미지가 압축되어 업로드되었습니다." });
         } catch (error) {
+            console.error('Image upload error:', error);
             toast({ title: "업로드 실패", description: "이미지 업로드 중 오류가 발생했습니다.", variant: "destructive" });
         } finally {
             setLoading(false);
+            // 🟢 최적화: 파일 입력 필드 초기화 (동일 파일 재선택 가능하도록)
+            if (fileInputRef.current) {
+                fileInputRef.current.value = '';
+            }
         }
     };
 
@@ -208,13 +227,25 @@ export default function CourseRecordModal({
                                             </button>
                                         </>
                                     ) : (
-                                        <label className="flex flex-col items-center gap-2 cursor-pointer text-cyan-700 hover:text-cyan-400 transition-all">
+                                        <div 
+                                            className="flex flex-col items-center gap-2 cursor-pointer text-cyan-700 hover:text-cyan-400 transition-all w-full h-full justify-center"
+                                            onClick={() => fileInputRef.current?.click()}
+                                        >
                                             <div className="p-3 bg-cyan-500/5 rounded-full border border-cyan-500/10">
                                                 <ImageIcon className="w-6 h-6" />
                                             </div>
-                                            <span className="text-[10px] font-bold uppercase tracking-wider">이미지 업로드 또는 Ctrl+V</span>
-                                            <input type="file" className="hidden" onChange={handleImageUpload} accept="image/*" />
-                                        </label>
+                                            <div className="text-center">
+                                                <span className="text-[10px] font-bold uppercase tracking-wider block">이미지 선택</span>
+                                                <span className="text-[8px] opacity-40 block mt-0.5">또는 스크린샷 붙여넣기 (Ctrl+V)</span>
+                                            </div>
+                                            <input 
+                                                ref={fileInputRef}
+                                                type="file" 
+                                                className="hidden" 
+                                                onChange={handleImageUpload} 
+                                                accept="image/*" 
+                                            />
+                                        </div>
                                     )}
                                 </div>
                             </div>

@@ -36,9 +36,10 @@ interface TeacherProfileClientProps {
     birth_year?: number;
     role: string;
   };
+  initialTeacherData?: any;
 }
 
-export default function TeacherProfileClient({ user }: TeacherProfileClientProps) {
+export default function TeacherProfileClient({ user, initialTeacherData }: TeacherProfileClientProps) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [formData, setFormData] = useState({
@@ -46,12 +47,16 @@ export default function TeacherProfileClient({ user }: TeacherProfileClientProps
     email: user.email || '',
     phone: user.phone || '',
     academy: user.academy || '',
-    position: '',
-    bio: '',
+    position: initialTeacherData?.position || '',
+    bio: initialTeacherData?.bio || '',
     profile_image_url: user.profile_image_url || ''
   });
-  const [certificates, setCertificates] = useState<Certificate[]>([]);
-  const [careers, setCareers] = useState<Career[]>([]);
+  const [certificates, setCertificates] = useState<Certificate[]>(
+    Array.isArray(initialTeacherData?.certs) ? initialTeacherData.certs : []
+  );
+  const [careers, setCareers] = useState<Career[]>(
+    Array.isArray(initialTeacherData?.career) ? initialTeacherData.career : []
+  );
   const [passwordData, setPasswordData] = useState({
     newPassword: '',
     confirmPassword: ''
@@ -59,8 +64,14 @@ export default function TeacherProfileClient({ user }: TeacherProfileClientProps
   const [changingPassword, setChangingPassword] = useState(false);
 
   useEffect(() => {
-    fetchTeacherInfo();
-  }, []);
+    // 🌍 서버에서 데이터를 이미 받았으므로, initialTeacherData가 없을 때만 조회를 시도하거나
+    // 최신 상태를 유지하기 위해 필요할 때만 호출합니다.
+    if (!initialTeacherData) {
+      fetchTeacherInfo();
+    } else {
+      setLoading(false);
+    }
+  }, [initialTeacherData]);
 
   const fetchTeacherInfo = async () => {
     try {

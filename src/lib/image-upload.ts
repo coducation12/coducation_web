@@ -1,6 +1,6 @@
 'use server'
 
-import { supabase } from '@/lib/supabase'
+import { supabase, supabaseAdmin } from '@/lib/supabase'
 
 // Supabase Storage에 이미지 업로드 (FormData 사용)
 export async function uploadImageToStorage(formData: FormData): Promise<string> {
@@ -12,22 +12,23 @@ export async function uploadImageToStorage(formData: FormData): Promise<string> 
       throw new Error('파일이 제공되지 않았습니다.');
     }
 
-    // 파일명 생성 (타임스탬프 + 랜덤 문자열)
     const timestamp = Date.now();
-    const randomString = Math.random().toString(36).substring(2, 15);
-    const fileExtension = file.name.split('.').pop() || 'jpg';
-    const fileName = `${timestamp}_${randomString}.${fileExtension}`;
+    const randomString = Math.random().toString(36).substring(2, 8);
+    const fileExtension = (file.name.split('.').pop() || 'jpg').toLowerCase();
+    const cleanFileName = file.name.replace(/\s+/g, '_').split('.')[0] || 'upload';
+    
+    const fileName = `${timestamp}_${cleanFileName}_${randomString}.${fileExtension}`;
     const filePath = `${folder}/${fileName}`;
 
     // File을 ArrayBuffer로 변환
     const arrayBuffer = await file.arrayBuffer();
     const uint8Array = new Uint8Array(arrayBuffer);
 
-    // Supabase Storage에 업로드
-    const { data, error } = await supabase.storage
+    // 🟢 최적화: 서버 액션에서는 supabaseAdmin을 사용하여 권한 제약 없이 업로드합니다.
+    const { data, error } = await supabaseAdmin.storage
       .from('content-images')
       .upload(filePath, uint8Array, {
-        cacheControl: '3600',
+        cacheControl: '31536000',
         upsert: false,
         contentType: file.type
       });
@@ -38,7 +39,7 @@ export async function uploadImageToStorage(formData: FormData): Promise<string> 
     }
 
     // 공개 URL 가져오기
-    const { data: urlData } = supabase.storage
+    const { data: urlData } = supabaseAdmin.storage
       .from('content-images')
       .getPublicUrl(filePath);
 

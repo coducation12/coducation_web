@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { login } from '@/lib/actions'
+import { getCurrentUserClient } from '@/lib/client-auth'
 import Image from 'next/image'
 
 function LoginForm() {
@@ -36,6 +37,28 @@ function LoginForm() {
       setError('비활성화된 계정입니다. 관리자에게 문의해주세요.')
     }
   }, [searchParams])
+  
+  // 이미 로그인된 사용자인 경우 대시보드로 리다이렉트
+  useEffect(() => {
+    const checkUser = async () => {
+      try {
+        const user = await getCurrentUserClient();
+        if (user) {
+          const rolePathMap: Record<string, string> = {
+            admin: '/dashboard/admin',
+            teacher: '/dashboard/teacher',
+            student: '/dashboard/student',
+            parent: '/dashboard/parent'
+          };
+          const redirectPath = rolePathMap[user.role] || '/dashboard';
+          router.push(redirectPath);
+        }
+      } catch (error) {
+        console.error('Auth check error:', error);
+      }
+    };
+    checkUser();
+  }, [router]);
 
   // 로고 더블클릭으로 탭 전환
   const handleLogoDoubleClick = () => {

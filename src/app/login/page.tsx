@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { login } from '@/lib/actions'
-import { getCurrentUserClient } from '@/lib/client-auth'
+import { getCurrentUserClient, logoutClient } from '@/lib/client-auth'
 import Image from 'next/image'
 
 function LoginForm() {
@@ -52,9 +52,13 @@ function LoginForm() {
           };
           const redirectPath = rolePathMap[user.role] || '/dashboard';
           router.push(redirectPath);
+        } else {
+          // 세션이 없거나 유효하지 않은 경우 클라이언트 사이드 정리 수행
+          // 루프 방지를 위해 불필요한 로그는 제거
+          logoutClient();
         }
       } catch (error) {
-        console.error('Auth check error:', error);
+        // Auth check error - silent fail
       }
     };
     checkUser();

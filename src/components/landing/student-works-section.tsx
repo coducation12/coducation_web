@@ -13,12 +13,25 @@ const maskName = (name: string) => {
   return name[0] + '○' + name.slice(2);
 };
 
+// 배열 무작위 셔플 (Fisher-Yates)
+const shuffleArray = <T,>(array: T[]): T[] => {
+  const shuffled = [...array];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled;
+};
+
 export function StudentWorksSection() {
   const [allPosts, setAllPosts] = useState<CommunityPost[]>([]);
   const [displayPosts, setDisplayPosts] = useState<(CommunityPost | null)[]>(Array(12).fill(null));
   const [waitingPool, setWaitingPool] = useState<CommunityPost[]>([]);
-  const [nextSlot, setNextSlot] = useState(0);
   const [loading, setLoading] = useState(true);
+
+  // 랜덤 교체를 위해 0~11번 인덱스를 섞어 관리
+  const [shuffledIndices, setShuffledIndices] = useState<number[]>([]);
+  const [indexPointer, setIndexPointer] = useState(0);
 
   // 데이터 로드
   useEffect(() => {
@@ -27,15 +40,21 @@ export function StudentWorksSection() {
         const posts = await getMainDisplayPosts();
         // 이미지가 있는 포스트만 필터링
         const filteredPosts = posts.filter(p => p.images && p.images.length > 0);
-        setAllPosts(filteredPosts);
         
-        // 초기 표시 데이터 설정 (최대 12개)
+        // 초기 데이터 무작위 셔플
+        const shuffledAll = shuffleArray(filteredPosts);
+        setAllPosts(shuffledAll);
+        
+        // 초기 표시 데이터 설정 (무작위 12개)
         const initialCount = 12;
-        const initial = filteredPosts.slice(0, initialCount);
-        const waiting = filteredPosts.slice(initialCount);
+        const initial = shuffledAll.slice(0, initialCount);
+        const waiting = shuffledAll.slice(initialCount);
         
         setDisplayPosts(initial);
         setWaitingPool(waiting);
+
+        // 교체할 인덱스 순서 초기화
+        setShuffledIndices(shuffleArray(Array.from({ length: 12 }, (_, i) => i)));
       } catch (error) {
         console.error('Failed to fetch student works:', error);
       } finally {
@@ -45,25 +64,28 @@ export function StudentWorksSection() {
     fetchPosts();
   }, []);
 
-  // 공평한 순환 교체 로직 (Fair Rotation)
+  // 공평한 랜덤 교체 로직 (Fair Random Rotation)
   useEffect(() => {
-    if (allPosts.length <= 12 || waitingPool.length === 0) return;
+    if (allPosts.length <= 12 || waitingPool.length === 0 || shuffledIndices.length === 0) return;
     
-    // 4~6초 사이의 랜덤한 간격으로 교체 (약간의 변동성을 주어 더 자연스럽게 보임)
+    // 4~6초 사이의 랜덤한 간격으로 교체
     const randomDelay = 4000 + Math.random() * 2000;
     
     const timeout = setTimeout(() => {
-      // 1. 대기열의 첫 번째 게시물 가져오기
+      // 1. 현재 랜덤 순서에 해당하는 슬롯 번호 가져오기
+      const targetSlot = shuffledIndices[indexPointer];
+      
+      // 2. 대기열의 첫 번째 게시물 가져오기
       const [nextPost, ...remainingPool] = waitingPool;
       
       setDisplayPosts(prev => {
         const nextDisplay = [...prev];
-        const currentPostInSlot = nextDisplay[nextSlot];
+        const currentPostInSlot = nextDisplay[targetSlot];
         
-        // 2. 현재 슬롯에 새로운 게시물 배치
-        nextDisplay[nextSlot] = nextPost;
+        // 3. 해당 슬롯에 새로운 게시물 배치
+        nextDisplay[targetSlot] = nextPost;
         
-        // 3. 기존 게시물을 대기열 끝으로 이동 (자동으로 중복 방지 및 순환 구조 형성)
+        // 4. 기존 게시물을 대기열 끝으로 이동 (중복 방지 순환 구조)
         if (currentPostInSlot) {
           setWaitingPool([...remainingPool, currentPostInSlot]);
         } else {
@@ -73,13 +95,20 @@ export function StudentWorksSection() {
         return nextDisplay;
       });
       
-      // 4. 다음 교체할 슬롯 결정 (0~11 순차 순환 - 모든 슬롯 공평하게 교체)
-      setNextSlot(prev => (prev + 1) % 12);
+      // 5. 다음 교체 위치 결정 (인덱스 포인터 이동 및 필요시 재셔플)
+      setIndexPointer(prev => {
+        const next = prev + 1;
+        if (next >= 12) {
+          setShuffledIndices(shuffleArray(Array.from({ length: 12 }, (_, i) => i)));
+          return 0;
+        }
+        return next;
+      });
       
     }, randomDelay);
 
     return () => clearTimeout(timeout);
-  }, [allPosts.length, waitingPool, nextSlot]);
+  }, [allPosts.length, waitingPool, shuffledIndices, indexPointer]);
 
   if (loading) {
     return (

@@ -148,11 +148,24 @@ export async function login(formData: FormData) {
           return { success: false, error: '계정이 아직 승인되지 않았습니다.' };
         }
 
-        // 쿠키에 사용자 정보 저장
+        // 쿠키에 사용자 정보 저장 (7일간 유지)
         const cookieStore = await cookies();
-        cookieStore.set('user_id', user.id, { httpOnly: true, path: '/' });
-        cookieStore.set('user_role', user.role, { httpOnly: true, path: '/' });
-        cookieStore.set('auth_token', authData.session?.access_token || '', { httpOnly: true, path: '/' });
+        const COOKIE_OPTIONS = { 
+          httpOnly: true, 
+          path: '/', 
+          maxAge: 60 * 60 * 24 * 7, // 7일
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: 'lax' as const
+        };
+
+        cookieStore.set('user_id', user.id, COOKIE_OPTIONS);
+        cookieStore.set('user_role', user.role, COOKIE_OPTIONS);
+        cookieStore.set('auth_token', authData.session?.access_token || '', COOKIE_OPTIONS);
+        
+        // Refresh Token 저장 (세션 갱신용)
+        if (authData.session?.refresh_token) {
+          cookieStore.set('refresh_token', authData.session.refresh_token, COOKIE_OPTIONS);
+        }
 
         return { success: true, redirect: '/dashboard' };
       } catch (error) {
@@ -206,8 +219,15 @@ export async function login(formData: FormData) {
         // 비밀번호가 있으면 검증
         if (user.password && await bcrypt.compare(password, user.password)) {
           const cookieStore = await cookies();
-          cookieStore.set('user_id', user.id, { httpOnly: true, path: '/' });
-          cookieStore.set('user_role', user.role, { httpOnly: true, path: '/' });
+          const COOKIE_OPTIONS = { 
+            httpOnly: true, 
+            path: '/', 
+            maxAge: 60 * 60 * 24 * 7, // 7일
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'lax' as const
+          };
+          cookieStore.set('user_id', user.id, COOKIE_OPTIONS);
+          cookieStore.set('user_role', user.role, COOKIE_OPTIONS);
           return { success: true, redirect: '/dashboard' };
         } else {
           return { success: false, error: '비밀번호가 올바르지 않습니다.' };
@@ -313,6 +333,7 @@ export async function logout() {
     cookieStore.delete('user_id');
     cookieStore.delete('user_role');
     cookieStore.delete('auth_token');
+    cookieStore.delete('refresh_token');
   }
 
   return { success: true, redirect: '/login' };

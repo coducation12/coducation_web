@@ -26,26 +26,56 @@ export const getAuthenticatedUser = cache(async (): Promise<User | null> => {
         const { data: { user: authUser }, error: authError } = await supabase.auth.getUser(authToken);
 
         if (authError || !authUser) {
-          // 토큰이 만료되었거나 유효하지 않은 경우
-          if (authError?.message?.includes('expired') || authError?.status === 401) {
-            console.warn('인증 세션이 만료되었습니다.');
+          // 토큰이 만료되었거나 유효하지 않은 경우 refresh_token으로 갱신 시도
+          const refreshToken = cookieStore.get('refresh_token')?.value;
+          
+          if (refreshToken) {
+            console.log('Access token 만료됨. Refresh token으로 세션 갱신 시도 중...');
+            const { data: refreshData, error: refreshError } = await supabase.auth.setSession({
+              access_token: authToken,
+              refresh_token: refreshToken
+            });
+
+            if (!refreshError && refreshData.session) {
+              console.log('세션 갱신 성공');
+              // 새로운 토큰들을 쿠키에 저장
+              const COOKIE_OPTIONS = { 
+                httpOnly: true, 
+                path: '/', 
+                maxAge: 60 * 60 * 24 * 7, // 7일
+                secure: process.env.NODE_ENV === 'production',
+                sameSite: 'lax' as const
+              };
+              
+              cookieStore.set('auth_token', refreshData.session.access_token, COOKIE_OPTIONS);
+              if (refreshData.session.refresh_token) {
+                cookieStore.set('refresh_token', refreshData.session.refresh_token, COOKIE_OPTIONS);
+              }
+              
+              // 갱신된 정보로 다시 진행 가능하나, 이미 getUser에서 실패했으므로 
+              // refreshData.user를 사용하여 계속 진행
+              if (!refreshData.user) return null;
+            } else {
+              console.error('Refresh token으로 세션 갱신 실패:', refreshError);
+              return null;
+            }
           } else {
-            console.error('Auth 토큰 검증 실패:', authError);
+            if (authError?.message?.includes('expired') || authError?.status === 401) {
+              console.warn('인증 세션이 만료되었습니다.');
+            } else {
+              console.error('Auth 토큰 검증 실패:', authError);
+            }
+            return null;
           }
-          return null; // 검증 실패 시 즉시 리턴하여 권한 탈취 차단
         }
       } catch (err: any) {
-        // AuthApiError 등 예외 발생 시 (특히 토큰 만료)
-        if (err.message?.includes('expired')) {
-          console.warn('세션 만료 (Exception caught)');
-        } else {
-          console.error('Auth 검증 중 예외 발생:', err);
-        }
-        return null; // 예외 발생 시에도 즉각 차단
+        // AuthApiError 등 예외 발생 시
+        console.error('Auth 검증 중 예외 발생:', err);
+        return null;
       }
     }
 
-    // DB에서 사용자 정보 조회 (학생이거나, Admin/Teacher 토큰 검증이 성공한 경우만 여기까지 도달)
+    // DB에서 사용자 정보 조회 (학생이거나, Admin/Teacher 토큰 검증이 성공하거나 갱신된 경우만 여기까지 도달)
     const { data, error } = await supabaseAdmin
       .from('users')
       .select('*')
@@ -80,4 +110,5 @@ export async function logout() {
   cookieStore.delete('user_id');
   cookieStore.delete('user_role');
   cookieStore.delete('auth_token');
+  cookieStore.delete('refresh_token');
 }

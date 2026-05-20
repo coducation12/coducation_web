@@ -7,6 +7,7 @@ import { LayoutDashboard, BookOpen, Keyboard, Users, Menu, LogOut, User } from "
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { logout } from "@/lib/actions";
 import { logoutClient } from "@/lib/client-auth";
 import { useProfileImage } from "@/hooks/use-profile-image";
 
@@ -33,7 +34,12 @@ export function StudentSidebar({ user }: StudentSidebarProps) {
   const handleLogout = async () => {
     try {
       await logoutClient();
-      router.push("/");
+      const result = await logout();
+      if (result.success && result.redirect) {
+        window.location.href = result.redirect;
+      } else {
+        router.push("/");
+      }
     } catch (error) {
       console.error("로그아웃 실패:", error);
       // 에러가 발생해도 메인화면으로 이동

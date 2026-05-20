@@ -153,7 +153,6 @@ export async function login(formData: FormData) {
         const COOKIE_OPTIONS = { 
           httpOnly: true, 
           path: '/', 
-          maxAge: 60 * 60 * 24 * 7, // 7일
           secure: process.env.NODE_ENV === 'production',
           sameSite: 'lax' as const
         };
@@ -222,7 +221,6 @@ export async function login(formData: FormData) {
           const COOKIE_OPTIONS = { 
             httpOnly: true, 
             path: '/', 
-            maxAge: 60 * 60 * 24 * 7, // 7일
             secure: process.env.NODE_ENV === 'production',
             sameSite: 'lax' as const
           };

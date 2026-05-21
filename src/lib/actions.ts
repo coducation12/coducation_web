@@ -3529,6 +3529,37 @@ export async function updateTeacherLabelColor(teacherId: string, color: string) 
 }
 
 /**
+ * 학생 대시보드 통합 데이터 조회
+ */
+export const getStudentDashboardData = cache(async (studentId: string) => {
+  try {
+    const { data, error } = await supabaseAdmin
+      .from('students')
+      .select('learning_progress, achievement_records, typing_stats, total_xp, todolist')
+      .eq('user_id', studentId)
+      .single();
+
+    if (error) {
+      return { success: false, error: `대시보드 정보 조회 실패: ${error.message}` };
+    }
+
+    return { 
+      success: true, 
+      data: {
+        learning_progress: data.learning_progress || [],
+        achievement_records: data.achievement_records || { attained: [], targets: [], awards: [] },
+        typing_stats: data.typing_stats || { ko: { maxSpeed: 0 }, en: { maxSpeed: 0 } },
+        total_xp: data.total_xp || 0,
+        todolist: data.todolist || []
+      } 
+    };
+  } catch (error) {
+    console.error('대시보드 정보 조회 중 오류:', error);
+    return { success: false, error: '대시보드 정보를 조회하는 중 오류가 발생했습니다.' };
+  }
+});
+
+/**
  * 학생 진도 및 성과 정보 조회
  */
 export const getStudentProgress = cache(async (studentId: string) => {

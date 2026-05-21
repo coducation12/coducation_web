@@ -8,7 +8,7 @@ import { Trophy, Star, Zap } from "lucide-react";
 import { Achievements } from "@/app/dashboard/student/components/achievements";
 import { StudentHeading } from "@/app/dashboard/student/components/StudentThemeProvider";
 import { DashboardPageWrapper } from "@/components/common/DashboardPageWrapper";
-import { supabaseAdmin } from "@/lib/supabase";
+import { getStudentDashboardData, getTypingRecords, getMonthlyAttendance } from "@/lib/actions";
 
 export const dynamic = 'force-dynamic';
 
@@ -19,14 +19,33 @@ export default async function StudentDashboardPage() {
         return <div>사용자 정보를 불러올 수 없습니다.</div>;
     }
 
-    // 학생 데이터 조회 (XP 및 레벨링용)
-    const { data: student } = await supabaseAdmin
-        .from('students')
-        .select('total_xp')
-        .eq('user_id', user.id)
-        .single();
+    // 출석 조회를 위한 현재 달(KST 기준)의 시작일과 종료일 계산
+    const utc = Date.now();
+    const kst = new Date(utc + 9 * 60 * 60 * 1000);
+    const year = kst.getFullYear();
+    const month = kst.getMonth();
+    const startDateStr = `${year}-${String(month + 1).padStart(2, '0')}-01`;
+    const endDateStr = `${year}-${String(month + 1).padStart(2, '0')}-${new Date(year, month + 1, 0).getDate()}`;
 
-    const totalXp = student?.total_xp || 0;
+    // 서버 사이드에서 모든 대시보드 데이터를 병렬로 사전 조회 ( waterfall 제거 )
+    const [dashboardDataRes, typingRecordsRes, attendanceDataRes] = await Promise.all([
+        getStudentDashboardData(user.id),
+        getTypingRecords(user.id, 365),
+        getMonthlyAttendance(user.id, startDateStr, endDateStr)
+    ]);
+
+    const dashboardData = dashboardDataRes.success && dashboardDataRes.data ? dashboardDataRes.data : {
+        learning_progress: [],
+        achievement_records: { attained: [], targets: [], awards: [] },
+        typing_stats: { ko: { maxSpeed: 0 }, en: { maxSpeed: 0 } },
+        total_xp: 0,
+        todolist: []
+    };
+
+    const typingRecords = typingRecordsRes.success && typingRecordsRes.data ? typingRecordsRes.data : [];
+    const attendanceData = attendanceDataRes.success && attendanceDataRes.data ? attendanceDataRes.data : [];
+
+    const totalXp = dashboardData.total_xp || 0;
     const level = Math.floor(totalXp / 1000) + 1;
     const xpIntoLevel = totalXp % 1000;
     const progressToNext = (xpIntoLevel / 1000) * 100;
@@ -67,27 +86,27 @@ export default async function StudentDashboardPage() {
                 {/* [Column 1] 학습 현황 및 업적 - 모바일 1순위 */}
                 <div className="flex flex-col gap-4 sm:gap-8 order-1 h-full min-h-0">
                     <DashboardCard className="flex-1 p-4 sm:p-6 border-cyan-500/10 bg-slate-900/20 backdrop-blur-sm min-h-[400px] lg:min-h-[500px] flex flex-col overflow-hidden">
-                         <LearningProgress studentId={user.id} vertical />
+                         <LearningProgress studentId={user.id} vertical initialData={dashboardData} />
                     </DashboardCard>
                 </div>
 
-                {/* [Column 2] 포트폴리오 및 타자 기록 - 모바일 2순위 (이제 타자보다 포트폴리오 강조) */}
+                {/* [Column 2] 포트폴리오 및 타자 기록 - 모바일 2순위 */}
                 <div className="flex flex-col gap-4 sm:gap-8 order-2 lg:order-2 h-full min-h-0">
                     <DashboardCard className="flex-1 p-4 sm:p-6 border-cyan-500/10 bg-slate-900/20 backdrop-blur-sm min-h-[400px] lg:min-h-[500px] flex flex-col overflow-hidden">
-                        <Achievements studentId={user.id} />
+                        <Achievements studentId={user.id} initialData={dashboardData} />
                     </DashboardCard>
                     <DashboardCard className="p-4 sm:p-5 border-cyan-500/10 bg-slate-900/20 backdrop-blur-sm h-[280px] lg:h-[320px] overflow-hidden shrink-0">
-                        <TypingChart studentId={user.id} />
+                        <TypingChart studentId={user.id} initialData={typingRecords} />
                     </DashboardCard>
                 </div>
 
-                {/* [Column 3] 출석 및 할 일 - 모바일 3순위 (데스크톱 맨 오른쪽) */}
+                {/* [Column 3] 출석 및 할 일 - 모바일 3순위 */}
                 <div className="flex flex-col gap-4 sm:gap-8 order-3 lg:order-3 md:col-span-2 lg:col-span-1 h-full min-h-0">
                     <DashboardCard className="p-4 sm:p-5 border-cyan-500/10 bg-slate-900/20 backdrop-blur-sm h-[380px] lg:h-[440px] overflow-hidden shrink-0">
-                         <AttendanceCalendar studentId={user.id} />
+                         <AttendanceCalendar studentId={user.id} initialData={attendanceData} />
                     </DashboardCard>
                     <DashboardCard className="p-4 sm:p-5 border-cyan-500/10 bg-slate-900/20 backdrop-blur-sm flex-1 min-h-[350px] lg:min-h-[430px] overflow-hidden">
-                        <GoalsCard studentId={user.id} fixedInput />
+                        <GoalsCard studentId={user.id} fixedInput initialData={dashboardData.todolist} />
                     </DashboardCard>
                 </div>
 

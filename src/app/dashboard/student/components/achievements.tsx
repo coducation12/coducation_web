@@ -28,18 +28,46 @@ interface PortfolioItem {
   parentTitle: string;
 }
 
-export function Achievements({ studentId }: { studentId: string }) {
+interface AchievementsProps {
+  studentId: string;
+  initialData?: {
+    learning_progress?: any[];
+  };
+}
+
+export function Achievements({ studentId, initialData }: AchievementsProps) {
   const { toast } = useToast();
-  const [portfolioItems, setPortfolioItems] = useState<PortfolioItem[]>([]);
-  const [rawProgress, setRawProgress] = useState<any[]>([]); // 코스 선택용 원본 데이터
+
+  const getDerivedPortfolioItems = (progress: any[]) => {
+    return progress.flatMap(p => 
+      (p.results || []).map((r: any) => ({ 
+        ...r, 
+        parentTitle: p.title,
+        title: r.title || r.name || '제목 없음'
+      }))
+    ).sort((a, b) => new Date(b.uploadedAt || b.date || 0).getTime() - new Date(a.uploadedAt || a.date || 0).getTime());
+  };
+
+  const [rawProgress, setRawProgress] = useState<any[]>(
+    initialData?.learning_progress || []
+  );
+  const [portfolioItems, setPortfolioItems] = useState<PortfolioItem[]>(
+    initialData?.learning_progress ? getDerivedPortfolioItems(initialData.learning_progress) : []
+  );
   const [selectedItem, setSelectedItem] = useState<PortfolioItem | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isRecordModalOpen, setIsRecordModalOpen] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(!initialData);
 
   useEffect(() => {
-    fetchPortfolio();
-  }, [studentId]);
+    if (initialData) {
+      setRawProgress(initialData.learning_progress || []);
+      setPortfolioItems(getDerivedPortfolioItems(initialData.learning_progress || []));
+      setIsLoading(false);
+    } else {
+      fetchPortfolio();
+    }
+  }, [studentId, initialData]);
 
   async function fetchPortfolio() {
     setIsLoading(true);
@@ -51,14 +79,7 @@ export function Achievements({ studentId }: { studentId: string }) {
       const progress = (result.data?.learning_progress as any[]) || [];
       setRawProgress(progress);
 
-      const items = progress.flatMap(p => 
-        (p.results || []).map((r: any) => ({ 
-          ...r, 
-          parentTitle: p.title,
-          title: r.title || r.name || '제목 없음'
-        }))
-      ).sort((a, b) => new Date(b.uploadedAt || b.date || 0).getTime() - new Date(a.uploadedAt || a.date || 0).getTime());
-      
+      const items = getDerivedPortfolioItems(progress);
       setPortfolioItems(items);
     } catch (e) {
       console.error('포트폴리오 조회 실패:', e);

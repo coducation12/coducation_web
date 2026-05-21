@@ -27,14 +27,26 @@ function aggregateTypingData(rawData: any[], totalDays: number): TypingLog[] {
   }));
 }
 
-export function TypingChart({ studentId }: { studentId: string }) {
-  const [data, setData] = useState<TypingLog[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+interface TypingChartProps {
+  studentId: string;
+  initialData?: any[];
+}
+
+export function TypingChart({ studentId, initialData }: TypingChartProps) {
+  const [data, setData] = useState<TypingLog[]>(
+    initialData ? aggregateTypingData(initialData, 365) : []
+  );
+  const [isLoading, setIsLoading] = useState(!initialData);
 
   useEffect(() => {
-    fetchData();
+    if (initialData) {
+      setData(aggregateTypingData(initialData, 365));
+      setIsLoading(false);
+    } else {
+      fetchData();
+    }
     // eslint-disable-next-line
-  }, [studentId]);
+  }, [studentId, initialData]);
 
   async function fetchData() {
     setIsLoading(true);

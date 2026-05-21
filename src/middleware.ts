@@ -51,7 +51,7 @@ export const config = {
     ],
 };
 
-export function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest) {
     const { pathname } = request.nextUrl;
 
     // 루트 경로("/")이거나 대시보드 내부가 아니면 통과

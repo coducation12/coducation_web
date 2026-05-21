@@ -15,16 +15,38 @@ interface AttendanceRecord {
 
 interface AttendanceCalendarProps {
   studentId: string;
+  initialData?: any[];
 }
 
-export function AttendanceCalendar({ studentId }: AttendanceCalendarProps) {
+export function AttendanceCalendar({ studentId, initialData }: AttendanceCalendarProps) {
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [attendanceRecords, setAttendanceRecords] = useState<Record<string, AttendanceRecord[]>>({});
-  const [isLoading, setIsLoading] = useState(true);
+
+  const parseAttendanceRecords = (rawData: any[]) => {
+    const recordMap: Record<string, AttendanceRecord[]> = {};
+    rawData.forEach((item: any) => {
+      if (!recordMap[item.date]) recordMap[item.date] = [];
+      recordMap[item.date].push(item);
+    });
+    return recordMap;
+  };
+
+  const [attendanceRecords, setAttendanceRecords] = useState<Record<string, AttendanceRecord[]>>(
+    initialData ? parseAttendanceRecords(initialData) : {}
+  );
+  const [isLoading, setIsLoading] = useState(!initialData);
+
+  const utc = Date.now();
+  const kst = new Date(utc + 9 * 60 * 60 * 1000);
+  const isInitialMonth = currentDate.getMonth() === kst.getMonth() && currentDate.getFullYear() === kst.getFullYear();
 
   useEffect(() => {
-    fetchAttendanceData();
-  }, [currentDate, studentId]);
+    if (initialData && isInitialMonth) {
+      setAttendanceRecords(parseAttendanceRecords(initialData));
+      setIsLoading(false);
+    } else {
+      fetchAttendanceData();
+    }
+  }, [currentDate, studentId, initialData]);
 
   const fetchAttendanceData = async () => {
     setIsLoading(true);
@@ -37,14 +59,9 @@ export function AttendanceCalendar({ studentId }: AttendanceCalendarProps) {
       const result = await getMonthlyAttendance(studentId, startDateStr, endDateStr);
       
       if (result.success && result.data) {
-        const recordMap: Record<string, AttendanceRecord[]> = {};
-        result.data.forEach((item: any) => {
-          if (!recordMap[item.date]) recordMap[item.date] = [];
-          recordMap[item.date].push(item);
-        });
-        setAttendanceRecords(recordMap);
+        setAttendanceRecords(parseAttendanceRecords(result.data));
       } else {
-        console.error('출석 데이터 조회 실패:', result.error);
+        console.error('출석 데이터 조회 실패:', result?.error);
         setAttendanceRecords({});
       }
     } catch (error) {

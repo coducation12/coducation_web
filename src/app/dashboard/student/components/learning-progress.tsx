@@ -78,16 +78,40 @@ const getTheme = (category: string) => {
   const key = Object.keys(CATEGORY_THEMES).find(k => category.includes(k)) || '기본';
   return CATEGORY_THEMES[key];
 };
+interface LearningProgressProps {
+  studentId: string;
+  vertical?: boolean;
+  initialData?: {
+    learning_progress?: LearningItem[];
+    achievement_records?: {
+      attained?: AttainedCert[];
+      awards?: AwardItem[];
+    };
+  };
+}
 
-export function LearningProgress({ studentId, vertical }: { studentId: string, vertical?: boolean }) {
-  const [progressList, setProgressList] = useState<LearningItem[]>([]);
-  const [attained, setAttained] = useState<AttainedCert[]>([]);
-  const [awards, setAwards] = useState<AwardItem[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+export function LearningProgress({ studentId, vertical, initialData }: LearningProgressProps) {
+  const [progressList, setProgressList] = useState<LearningItem[]>(
+    initialData?.learning_progress || []
+  );
+  const [attained, setAttained] = useState<AttainedCert[]>(
+    initialData?.achievement_records?.attained || []
+  );
+  const [awards, setAwards] = useState<AwardItem[]>(
+    initialData?.achievement_records?.awards || []
+  );
+  const [isLoading, setIsLoading] = useState(!initialData);
 
   useEffect(() => {
-    fetchData();
-  }, [studentId]);
+    if (initialData) {
+      setProgressList(initialData.learning_progress || []);
+      setAttained(initialData.achievement_records?.attained || []);
+      setAwards(initialData.achievement_records?.awards || []);
+      setIsLoading(false);
+    } else {
+      fetchData();
+    }
+  }, [studentId, initialData]);
 
   const fetchData = async () => {
     try {
@@ -109,7 +133,6 @@ export function LearningProgress({ studentId, vertical }: { studentId: string, v
       setIsLoading(false);
     }
   };
-
   const ongoing = progressList.filter(p => p.status === 'ongoing');
   const completed = progressList.filter(p => p.status === 'completed');
   const allAchievementsCount = attained.length + awards.length;

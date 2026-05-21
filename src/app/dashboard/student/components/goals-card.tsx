@@ -13,16 +13,28 @@ interface Goal {
   isCompleted: boolean; // 완료 여부만
 }
 
-export function GoalsCard({ studentId, fixedInput, readOnly }: { studentId: string, fixedInput?: boolean, readOnly?: boolean }) {
-  const [goals, setGoals] = useState<Goal[]>([]);
+interface GoalsCardProps {
+  studentId: string;
+  fixedInput?: boolean;
+  readOnly?: boolean;
+  initialData?: Goal[];
+}
+
+export function GoalsCard({ studentId, fixedInput, readOnly, initialData }: GoalsCardProps) {
+  const [goals, setGoals] = useState<Goal[]>(initialData || []);
   const [newGoal, setNewGoal] = useState('');
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(!initialData);
   const [isAdding, setIsAdding] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetchGoals();
-  }, [studentId]);
+    if (initialData) {
+      setGoals(initialData);
+      setIsLoading(false);
+    } else {
+      fetchGoals();
+    }
+  }, [studentId, initialData]);
 
   const fetchGoals = async () => {
     try {

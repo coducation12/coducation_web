@@ -35,6 +35,8 @@ function LoginForm() {
       setError('수강이 종료된 계정입니다. 관리자에게 문의해주세요.')
     } else if (errorParam === 'inactive') {
       setError('비활성화된 계정입니다. 관리자에게 문의해주세요.')
+    } else if (errorParam === 'session_expired') {
+      setError('날짜가 변경되어 세션이 만료되었습니다. 다시 로그인해 주세요.')
     }
   }, [searchParams])
   

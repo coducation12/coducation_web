@@ -15,6 +15,18 @@ export const getAuthenticatedUser = cache(async (): Promise<User | null> => {
       return null;
     }
 
+    // 날짜 변경 체크 (KST 기준)
+    const loginDate = cookieStore.get('login_date')?.value;
+    if (loginDate) {
+      const utc = Date.now();
+      const kst = new Date(utc + 9 * 60 * 60 * 1000);
+      const currentDate = kst.toISOString().split('T')[0];
+      if (loginDate !== currentDate) {
+        console.log(`[RSC] 날짜 변경 감지 (${loginDate} -> ${currentDate}). 세션 만료 처리.`);
+        return null;
+      }
+    }
+
     if (userRole === 'teacher' || userRole === 'admin') {
       if (!authToken) {
         console.warn(`보안 경고: ${userRole} 권한 요청이나 auth_token이 없습니다. 접근을 차단합니다.`);
@@ -23,58 +35,24 @@ export const getAuthenticatedUser = cache(async (): Promise<User | null> => {
 
       try {
         // Auth 토큰으로 사용자 검증
+        // 미들웨어가 이미 만료 토큰을 갱신해주었으므로, 여기서는 토큰 유효성만 확인합니다.
         const { data: { user: authUser }, error: authError } = await supabase.auth.getUser(authToken);
 
         if (authError || !authUser) {
-          // 토큰이 만료되었거나 유효하지 않은 경우 refresh_token으로 갱신 시도
-          const refreshToken = cookieStore.get('refresh_token')?.value;
-          
-          if (refreshToken) {
-            console.log('Access token 만료됨. Refresh token으로 세션 갱신 시도 중...');
-            const { data: refreshData, error: refreshError } = await supabase.auth.setSession({
-              access_token: authToken,
-              refresh_token: refreshToken
-            });
-
-            if (!refreshError && refreshData.session) {
-              console.log('세션 갱신 성공');
-              // 새로운 토큰들을 쿠키에 저장
-              const COOKIE_OPTIONS = { 
-                httpOnly: true, 
-                path: '/', 
-                secure: process.env.NODE_ENV === 'production',
-                sameSite: 'lax' as const
-              };
-              
-              cookieStore.set('auth_token', refreshData.session.access_token, COOKIE_OPTIONS);
-              if (refreshData.session.refresh_token) {
-                cookieStore.set('refresh_token', refreshData.session.refresh_token, COOKIE_OPTIONS);
-              }
-              
-              // 갱신된 정보로 다시 진행 가능하나, 이미 getUser에서 실패했으므로 
-              // refreshData.user를 사용하여 계속 진행
-              if (!refreshData.user) return null;
-            } else {
-              console.error('Refresh token으로 세션 갱신 실패:', refreshError);
-              return null;
-            }
+          if (authError?.message?.includes('expired') || authError?.status === 401) {
+            console.warn('인증 세션이 만료되었습니다. 미들웨어에서 갱신되지 않은 토큰입니다.');
           } else {
-            if (authError?.message?.includes('expired') || authError?.status === 401) {
-              console.warn('인증 세션이 만료되었습니다.');
-            } else {
-              console.error('Auth 토큰 검증 실패:', authError);
-            }
-            return null;
+            console.error('Auth 토큰 검증 실패:', authError);
           }
+          return null;
         }
       } catch (err: any) {
-        // AuthApiError 등 예외 발생 시
         console.error('Auth 검증 중 예외 발생:', err);
         return null;
       }
     }
 
-    // DB에서 사용자 정보 조회 (학생이거나, Admin/Teacher 토큰 검증이 성공하거나 갱신된 경우만 여기까지 도달)
+    // DB에서 사용자 정보 조회 (학생이거나, Admin/Teacher 토큰 검증이 성공한 경우만 여기까지 도달)
     const { data, error } = await supabaseAdmin
       .from('users')
       .select('*')
@@ -82,6 +60,12 @@ export const getAuthenticatedUser = cache(async (): Promise<User | null> => {
       .single();
 
     if (error || !data) return null;
+
+    // 실시간 정지/비활성화 상태 검증
+    if (data.status !== 'active') {
+      console.warn(`보안 경고: 사용자 ${data.username}의 계정이 비활성화 상태(${data.status})입니다. 접근을 차단합니다.`);
+      return null;
+    }
 
     return data as User;
   } catch (error) {

@@ -148,7 +148,7 @@ export async function login(formData: FormData) {
           return { success: false, error: '계정이 아직 승인되지 않았습니다.' };
         }
 
-        // 쿠키에 사용자 정보 저장 (7일간 유지)
+        // 쿠키에 사용자 정보 저장 (브라우저 종료 시 로그아웃되도록 maxAge 미지정)
         const cookieStore = await cookies();
         const COOKIE_OPTIONS = { 
           httpOnly: true, 
@@ -157,9 +157,15 @@ export async function login(formData: FormData) {
           sameSite: 'lax' as const
         };
 
+        // KST 기준 오늘 날짜 구하기
+        const utc = Date.now();
+        const kst = new Date(utc + 9 * 60 * 60 * 1000);
+        const currentDateString = kst.toISOString().split('T')[0];
+
         cookieStore.set('user_id', user.id, COOKIE_OPTIONS);
         cookieStore.set('user_role', user.role, COOKIE_OPTIONS);
         cookieStore.set('auth_token', authData.session?.access_token || '', COOKIE_OPTIONS);
+        cookieStore.set('login_date', currentDateString, COOKIE_OPTIONS);
         
         // Refresh Token 저장 (세션 갱신용)
         if (authData.session?.refresh_token) {
@@ -224,8 +230,15 @@ export async function login(formData: FormData) {
             secure: process.env.NODE_ENV === 'production',
             sameSite: 'lax' as const
           };
+
+          // KST 기준 오늘 날짜 구하기
+          const utc = Date.now();
+          const kst = new Date(utc + 9 * 60 * 60 * 1000);
+          const currentDateString = kst.toISOString().split('T')[0];
+
           cookieStore.set('user_id', user.id, COOKIE_OPTIONS);
           cookieStore.set('user_role', user.role, COOKIE_OPTIONS);
+          cookieStore.set('login_date', currentDateString, COOKIE_OPTIONS);
           return { success: true, redirect: '/dashboard' };
         } else {
           return { success: false, error: '비밀번호가 올바르지 않습니다.' };

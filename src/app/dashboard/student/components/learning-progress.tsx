@@ -124,7 +124,7 @@ export function LearningProgress({ studentId, vertical, initialData }: LearningP
       setProgressList(progress);
 
       // 2. 업적 (자격증/수상)
-      const records = result.data?.achievement_records || {};
+      const records: any = result.data?.achievement_records || {};
       setAttained(records.attained || []);
       setAwards(records.awards || []);
     } catch (error) {

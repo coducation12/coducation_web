@@ -36,18 +36,29 @@ export const getAuthenticatedUser = cache(async (): Promise<User | null> => {
       try {
         // Auth 토큰으로 사용자 검증
         // 미들웨어가 이미 만료 토큰을 갱신해주었으므로, 여기서는 토큰 유효성만 확인합니다.
-        const { data: { user: authUser }, error: authError } = await supabase.auth.getUser(authToken);
+        // data가 null일 수 있으므로 구조분해할당 시 TypeError가 나지 않도록 안전하게 한 단계씩 획득합니다.
+        const response = await supabase.auth.getUser(authToken);
+        const authUser = response?.data?.user;
+        const authError = response?.error;
 
         if (authError || !authUser) {
-          if (authError?.message?.includes('expired') || authError?.status === 401) {
-            console.warn('인증 세션이 만료되었습니다. 미들웨어에서 갱신되지 않은 토큰입니다.');
+          const errMsg = authError?.message || '';
+          if (
+            errMsg.includes('expired') || 
+            errMsg.includes('session missing') || 
+            errMsg.includes('Session') || 
+            authError?.status === 401
+          ) {
+            console.warn(`[RSC] 인증 세션 만료 또는 부재 (${errMsg}). 로그인 페이지로 유도합니다.`);
           } else {
-            console.error('Auth 토큰 검증 실패:', authError);
+            // Next.js 개발 환경에서 console.error로 Error 객체를 그대로 찍으면 화면 전체가 크래시 오버레이로 덮이므로 warn을 사용하고 안전하게 문자열 형태로 남깁니다.
+            console.warn(`[RSC] Auth 토큰 검증 실패: ${errMsg}`, authError?.status);
           }
           return null;
         }
       } catch (err: any) {
-        console.error('Auth 검증 중 예외 발생:', err);
+        // Next.js 개발 환경에서 console.error로 Error 객체를 그대로 찍으면 화면 전체가 크래시 오버레이로 덮이므로 warn을 사용하고 안전하게 문자열 형태로 남깁니다.
+        console.warn('[RSC] Auth 검증 중 예외 발생:', err?.message || String(err));
         return null;
       }
     }

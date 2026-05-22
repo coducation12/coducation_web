@@ -103,6 +103,55 @@ export async function updateUserPassword(userId: string, newPassword: string) {
   }
 }
 
+export async function updateStudentPassword(currentPassword: string, newPassword: string) {
+  try {
+    const cookieStore = await cookies();
+    const userId = cookieStore.get('user_id')?.value;
+    const userRole = cookieStore.get('user_role')?.value;
+
+    if (!userId || !userRole || (userRole !== 'student' && userRole !== 'parent')) {
+      return { success: false, error: '권한이 없습니다. 다시 로그인해주세요.' };
+    }
+
+    if (newPassword.length < 6) {
+      return { success: false, error: '새 비밀번호는 최소 6자 이상이어야 합니다.' };
+    }
+
+    // 1. users 테이블에서 기존 비밀번호 해시 조회 (Service Role 사용)
+    const { data: user, error: fetchError } = await supabaseAdmin
+      .from('users')
+      .select('password')
+      .eq('id', userId)
+      .single();
+
+    if (fetchError || !user) {
+      return { success: false, error: '사용자 정보를 찾을 수 없습니다.' };
+    }
+
+    // 2. 현재 비밀번호 비교
+    const match = await bcrypt.compare(currentPassword, user.password);
+    if (!match) {
+      return { success: false, error: '현재 비밀번호가 올바르지 않습니다.' };
+    }
+
+    // 3. 새 비밀번호 해싱 및 업데이트
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    const { error: updateError } = await supabaseAdmin
+      .from('users')
+      .update({ password: hashedPassword })
+      .eq('id', userId);
+
+    if (updateError) {
+      return { success: false, error: '비밀번호 변경에 실패했습니다.' };
+    }
+
+    return { success: true };
+  } catch (error: any) {
+    console.error('Student password update error:', error);
+    return { success: false, error: error.message || '오류가 발생했습니다.' };
+  }
+}
+
 export async function login(formData: FormData) {
   try {
     const userType = formData.get('userType') as string;
@@ -581,10 +630,8 @@ export async function addStudent(formData: FormData, isSignup: boolean = false) 
       assigned_teachers: currentUserRole === 'teacher' && currentUserId ? [currentUserId] : [],
       parent_id: parentData.id,
       current_curriculum_id: null,
-      attendance_schedule: Object.keys(attendanceSchedule).length > 0 ? attendanceSchedule : null,
       main_subject: studentDataFinal.subject || null,
       sub_subject: studentDataFinal.sub_subject || null,
-      learning_progress: initialProgress,
       memo: studentDataFinal.memo || null,
       tuition_fee: studentDataFinal.tuition_fee || 0,
       is_special_education: studentDataFinal.is_special_education || false,
@@ -601,6 +648,46 @@ export async function addStudent(formData: FormData, isSignup: boolean = false) 
       await supabaseAdmin.from('users').delete().eq('id', userData.id);
       await supabaseAdmin.from('users').delete().eq('id', parentData.id);
       return { success: false, error: studentError.message };
+    }
+
+    // 5. student_schedules 테이블에 스케줄 데이터 INSERT (1:N 정규화)
+    if (Object.keys(attendanceSchedule).length > 0) {
+      const scheduleInserts = Object.entries(attendanceSchedule).map(([dayNumber, value]: [string, any]) => ({
+        student_id: userData.id,
+        day_of_week: parseInt(dayNumber),
+        start_time: value.startTime,
+        end_time: value.endTime,
+        teacher_id: value.teacherId && value.teacherId !== 'none' ? value.teacherId : null
+      }));
+
+      const { error: scheduleError } = await supabaseAdmin
+        .from('student_schedules')
+        .insert(scheduleInserts);
+
+      if (scheduleError) {
+        console.error('시간표 스케줄 등록 실패:', scheduleError);
+      }
+    }
+
+    // 5-2. student_progresses 테이블에 초기 학습 진도 등록
+    if (initialProgress.length > 0) {
+      const progressInserts = initialProgress.map((p: any) => ({
+        id: p.id,
+        student_id: userData.id,
+        category: p.category,
+        title: p.title,
+        status: p.status,
+        percentage: 0,
+        xp_awarded: false
+      }));
+
+      const { error: progressError } = await supabaseAdmin
+        .from('student_progresses')
+        .insert(progressInserts);
+
+      if (progressError) {
+        console.error('초기 학습 진도 등록 실패:', progressError);
+      }
     }
 
     revalidatePath('/dashboard/admin/students', 'page');
@@ -659,33 +746,47 @@ export async function updateStudent(formData: FormData) {
 
     // 2. 권한 확인 (강사의 경우 본인 담당 요일만 수정 가능)
     let finalAttendanceSchedule: any = {};
-    const { data: currentStudent, error: studentFetchError } = await supabaseAdmin
-      .from('students')
-      .select('attendance_schedule, assigned_teachers, learning_progress')
-      .eq('user_id', existingUser.id)
-      .single();
+    const [studentProfileRes, schedulesRes, progressRes] = await Promise.all([
+      supabaseAdmin
+        .from('students')
+        .select('assigned_teachers')
+        .eq('user_id', existingUser.id)
+        .single(),
+      supabaseAdmin
+        .from('student_schedules')
+        .select('day_of_week, start_time, end_time, teacher_id')
+        .eq('student_id', existingUser.id),
+      supabaseAdmin
+        .from('student_progresses')
+        .select('*')
+        .eq('student_id', existingUser.id)
+    ]);
 
-    if (studentFetchError) {
-      console.error('학생 정보를 가져오는데 실패했습니다:', studentFetchError);
+    if (studentProfileRes.error) {
+      console.error('학생 정보를 가져오는데 실패했습니다:', studentProfileRes.error);
       return { success: false, error: '학생 정보를 가져오는데 실패했습니다.' };
     }
 
-    console.log('기존 스케줄:', JSON.stringify(currentStudent.attendance_schedule));
+    const currentStudent = studentProfileRes.data;
+    const currentProgress = progressRes.data || [];
+
+    console.log('기존 스케줄 수:', schedulesRes.data?.length || 0);
     console.log('폼 전송 스케줄:', JSON.stringify(studentData.classSchedules));
 
-    // 기존 스케줄 복사 (정규화 포함: 요일 이름 -> 인덱스)
-    const rawExistingSchedule = currentStudent.attendance_schedule || {};
+    // 기존 스케줄 복사 (관계형 student_schedules 데이터를 UI에서 쓰던 객체 구조로 맵핑)
     const existingSchedule: any = {};
-    const reverseDayMap: { [key: string]: string } = {
-      'monday': '1', 'tuesday': '2', 'wednesday': '3',
-      'thursday': '4', 'friday': '5', 'saturday': '6', 'sunday': '0',
-      '월': '1', '화': '2', '수': '3', '목': '4', '금': '5', '토': '6', '일': '0'
-    };
-
-    Object.entries(rawExistingSchedule).forEach(([key, value]) => {
-      const normalizedKey = reverseDayMap[key.toLowerCase()] || key;
-      existingSchedule[normalizedKey] = value;
-    });
+    if (schedulesRes.data) {
+      schedulesRes.data.forEach((s: any) => {
+        // 시간 포맷 정리 (HH:MM:SS -> HH:MM)
+        const startTime = s.start_time ? s.start_time.substring(0, 5) : '';
+        const endTime = s.end_time ? s.end_time.substring(0, 5) : '';
+        existingSchedule[s.day_of_week.toString()] = {
+          startTime: startTime,
+          endTime: endTime,
+          teacherId: s.teacher_id || 'none'
+        };
+      });
+    }
 
     // 새 스케줄 생성
     const newScheduleFromForm: any = {};
@@ -781,25 +882,34 @@ export async function updateStudent(formData: FormData) {
     }
 
     // learning_progress 동기화
-    let updatedProgress = currentStudent.learning_progress || [];
-    if (studentData.subject || studentData.sub_subject) {
-      const ongoingIndex = updatedProgress.findIndex((p: any) => p.status !== 'completed');
-      if (ongoingIndex !== -1) {
-        updatedProgress[ongoingIndex] = {
-          ...updatedProgress[ongoingIndex],
-          title: studentData.sub_subject || updatedProgress[ongoingIndex].title,
-          category: studentData.subject || updatedProgress[ongoingIndex].category
-        };
-      } else if (studentData.subject) {
-        updatedProgress.push({
-          id: crypto.randomUUID(),
-          title: studentData.sub_subject || studentData.subject,
-          category: studentData.subject,
-          status: 'ongoing',
-          started_at: new Date().toISOString()
-        });
+    const updateProgressPromise = (async () => {
+      if (studentData.subject || studentData.sub_subject) {
+        const ongoingItem = currentProgress.find((p: any) => p.status !== 'completed');
+        if (ongoingItem) {
+          const { error } = await supabaseAdmin
+            .from('student_progresses')
+            .update({
+              title: studentData.sub_subject || ongoingItem.title,
+              category: studentData.subject || ongoingItem.category
+            })
+            .eq('id', ongoingItem.id);
+          if (error) throw error;
+        } else if (studentData.subject) {
+          const { error } = await supabaseAdmin
+            .from('student_progresses')
+            .insert({
+              id: crypto.randomUUID(),
+              student_id: existingUser.id,
+              title: studentData.sub_subject || studentData.subject,
+              category: studentData.subject,
+              status: 'ongoing',
+              percentage: 0,
+              xp_awarded: false
+            });
+          if (error) throw error;
+        }
       }
-    }
+    })();
 
     const assignedTeacherIds = Array.from(new Set(
       Object.values(finalAttendanceSchedule)
@@ -808,10 +918,8 @@ export async function updateStudent(formData: FormData) {
     )) as string[];
 
     const studentUpdateData: any = {
-      attendance_schedule: finalAttendanceSchedule,
       main_subject: studentData.subject || null,
       sub_subject: studentData.sub_subject || null,
-      learning_progress: updatedProgress,
       memo: studentData.memo || null,
       tuition_fee: studentData.tuition_fee || 0,
       enrollment_start_date: studentData.enrollment_date || null,
@@ -822,11 +930,51 @@ export async function updateStudent(formData: FormData) {
       studentUpdateData.assigned_teachers = assignedTeacherIds;
     }
 
+    // student_schedules 다중 Insert 준비
+    const schedulesToInsert = Object.entries(finalAttendanceSchedule).map(([dayStr, sVal]: [string, any]) => {
+      let startTime = sVal.startTime || '';
+      let endTime = sVal.endTime || '';
+      
+      if (startTime && startTime.length === 5) {
+        startTime = `${startTime}:00`;
+      }
+      if (endTime && endTime.length === 5) {
+        endTime = `${endTime}:00`;
+      }
+
+      return {
+        student_id: existingUser.id,
+        day_of_week: parseInt(dayStr),
+        start_time: startTime,
+        end_time: endTime,
+        teacher_id: sVal.teacherId && sVal.teacherId !== 'none' ? sVal.teacherId : null
+      };
+    });
+
+    const updateSchedulesPromise = (async () => {
+      const { error: deleteError } = await supabaseAdmin
+        .from('student_schedules')
+        .delete()
+        .eq('student_id', existingUser.id);
+      
+      if (deleteError) throw deleteError;
+
+      if (schedulesToInsert.length > 0) {
+        const { error: insertError } = await supabaseAdmin
+          .from('student_schedules')
+          .insert(schedulesToInsert);
+        
+        if (insertError) throw insertError;
+      }
+    })();
+
     // 모든 업데이트를 병렬로 실행
-    const [userResult, parentResult, studentResult] = await Promise.all([
+    const [userResult, parentResult, studentResult, _scheduleResult, _progressResult] = await Promise.all([
       supabaseAdmin.from('users').update(userUpdateData).eq('id', existingUser.id),
       supabaseAdmin.from('users').update(parentUpdateData).eq('username', parentUsername),
-      supabaseAdmin.from('students').update(studentUpdateData).eq('user_id', existingUser.id)
+      supabaseAdmin.from('students').update(studentUpdateData).eq('user_id', existingUser.id),
+      updateSchedulesPromise,
+      updateProgressPromise
     ]);
 
     if (userResult.error) throw userResult.error;
@@ -860,40 +1008,68 @@ export const getStudentDetailsForEdit = cache(async (userId: string, requestingT
       ? currentUserId 
       : (requestingTeacherId || '');
 
-    const { data: item, error } = await supabaseAdmin
-      .from('students')
-      .select(`
-                user_id, 
-                parent_id, 
-                current_curriculum_id, 
-                enrollment_start_date, 
-                attendance_schedule,
-                assigned_teachers,
-                main_subject,
-                sub_subject,
-                memo,
-                tuition_fee,
-                is_special_education,
-                users!students_user_id_fkey ( 
-                    id, 
-                    name, 
-                    username, 
-                    phone, 
-                    birth_year, 
-                    academy, 
-                    created_at, 
-                    email, 
-                    status,
-                    assigned_teacher_id
-                ), 
-                parent:users!students_parent_id_fkey ( phone )
-            `)
-      .eq('user_id', userId)
-      .maybeSingle();
+    const [studentResult, schedulesResult] = await Promise.all([
+      supabaseAdmin
+        .from('students')
+        .select(`
+                  user_id, 
+                  parent_id, 
+                  current_curriculum_id, 
+                  enrollment_start_date, 
+                  assigned_teachers,
+                  main_subject,
+                  sub_subject,
+                  memo,
+                  tuition_fee,
+                  is_special_education,
+                  users!students_user_id_fkey ( 
+                      id, 
+                      name, 
+                      username, 
+                      phone, 
+                      birth_year, 
+                      academy, 
+                      created_at, 
+                      email, 
+                      status,
+                      assigned_teacher_id
+                  ), 
+                  parent:users!students_parent_id_fkey ( phone )
+              `)
+        .eq('user_id', userId)
+        .maybeSingle(),
+      supabaseAdmin
+        .from('student_schedules')
+        .select('day_of_week, start_time, end_time, teacher_id')
+        .eq('student_id', userId)
+    ]);
+
+    const { data: item, error } = studentResult;
+    const { data: schedulesData } = schedulesResult;
 
     if (error || !item) {
       return { success: false, error: '학생 정보를 찾을 수 없습니다.' };
     }
+
+    const activeTeacherIdLower = activeTeacherId?.toLowerCase()?.trim();
+    const classSchedules = (schedulesData || [])
+      .filter((sched: any) => {
+        if (activeTeacherIdLower && activeTeacherIdLower !== '') {
+          return sched.teacher_id?.toLowerCase() === activeTeacherIdLower;
+        }
+        return true;
+      })
+      .map((sched: any) => {
+        const dayMap: { [key: number]: string } = {
+          0: 'sunday', 1: 'monday', 2: 'tuesday', 3: 'wednesday', 4: 'thursday', 5: 'friday', 6: 'saturday'
+        };
+        return {
+          day: dayMap[sched.day_of_week] || String(sched.day_of_week),
+          startTime: sched.start_time || '',
+          endTime: sched.end_time || '',
+          teacherId: sched.teacher_id || ''
+        };
+      });
 
     // StudentModal에서 기대하는 Student 타입으로 변환
     const student = {
@@ -914,27 +1090,7 @@ export const getStudentDetailsForEdit = cache(async (userId: string, requestingT
       memo: item.memo || '',
       tuition_fee: item.tuition_fee || 0,
       academy: item.users?.academy || '코딩메이커',
-      classSchedules: item.attendance_schedule ? Object.entries(item.attendance_schedule)
-        .filter(([day, schedule]: [string, any]) => {
-          // 요청한 강사가 있는 경우, 해당 강사의 스케줄만 필터링
-          // teacherId가 ''(빈 문자열)인 경우도 필터링을 수행하도록 수정
-          if (activeTeacherId && activeTeacherId.trim() !== '') {
-            const scheduleTeacherId = schedule.teacherId || schedule.teacher_id;
-            return scheduleTeacherId?.toLowerCase() === activeTeacherId.toLowerCase();
-          }
-          return true;
-        })
-        .map(([day, schedule]: [string, any]) => {
-          const dayMap: { [key: string]: string } = {
-            '0': 'sunday', '1': 'monday', '2': 'tuesday', '3': 'wednesday', '4': 'thursday', '5': 'friday', '6': 'saturday'
-          };
-          return {
-            day: dayMap[day] || day,
-            startTime: schedule.startTime || '',
-            endTime: schedule.endTime || '',
-            teacherId: schedule.teacherId || ''
-          };
-        }) : []
+      classSchedules
     };
 
     return { success: true, data: student };
@@ -1307,6 +1463,33 @@ export async function deleteDailyAttendance(id: string) {
   }
 }
 
+// 활성 상태(active)인 학생의 ID와 이름만 조회하는 초경량 Server Action (보강 등록용)
+export async function getActiveStudentsList() {
+  try {
+    const { data, error } = await supabaseAdmin
+      .from('students')
+      .select('user_id, users!students_user_id_fkey(name)');
+
+    if (error) {
+      console.error('getActiveStudentsList db error:', error);
+      return { success: false, error: '학생 목록을 가져오는데 실패했습니다.' };
+    }
+
+    // users.status가 active인 항목 필터링 (조인 조건 한계 보완)
+    const filtered = (data || [])
+      .filter((s: any) => s.users?.name)
+      .map((s: any) => ({
+        id: s.user_id,
+        name: s.users.name
+      }));
+
+    return { success: true, data: filtered };
+  } catch (error) {
+    console.error('getActiveStudentsList error:', error);
+    return { success: false, error: '서버 오류가 발생했습니다.' };
+  }
+}
+
 // 커리큘럼 수정 서버 액션
 export async function updateCurriculum(formData: FormData) {
   try {
@@ -1394,13 +1577,17 @@ export async function saveTypingResult(data: {
     const isKorean = data.language === 'korean';
     const speedColumn = isKorean ? 'korean_typing_speed' : 'english_typing_speed';
 
-    // 1 & 3. 학생 정보와 기존 세션 정보를 병렬로 조회
-    const [studentResponse, sessionResponse] = await Promise.all([
+    // KST 요일 (0: 일요일 ~ 6: 토요일)
+    const dayOfWeek = kstDate.getUTCDay();
+
+    // 1 & 3. 학생 스케줄과 기존 세션 정보를 병렬로 조회
+    const [scheduleResponse, sessionResponse] = await Promise.all([
       supabaseAdmin
-        .from('students')
-        .select('attendance_schedule')
-        .eq('user_id', userId)
-        .single(),
+        .from('student_schedules')
+        .select('teacher_id')
+        .eq('student_id', userId)
+        .eq('day_of_week', dayOfWeek)
+        .maybeSingle(),
       supabaseAdmin
         .from('attendance_sessions')
         .select(`id, ${speedColumn}, teacher_id`)
@@ -1410,24 +1597,16 @@ export async function saveTypingResult(data: {
         .maybeSingle()
     ]);
 
-    const { data: student, error: studentError } = studentResponse;
+    const { data: scheduleData, error: scheduleError } = scheduleResponse;
     const { data: existingSession, error: selectError } = sessionResponse;
 
-    if (studentError) console.error('학생 정보 조회 실패:', studentError);
+    if (scheduleError) console.error('학생 스케줄 정보 조회 실패:', scheduleError);
     if (selectError) {
       console.error('기존 세션 조회 실패:', selectError);
       return { success: false, error: selectError.message };
     }
 
-    // 오늘 요일 담당 강사 찾기
-    const dayOfWeek = kstDate.getUTCDay(); // KST 기준 요일
-    const dayNames = ['일', '월', '화', '수', '목', '금', '토'];
-    const todayName = dayNames[dayOfWeek];
-    
-    let teacherId = null;
-    if (student?.attendance_schedule && student.attendance_schedule[todayName]) {
-      teacherId = student.attendance_schedule[todayName].teacherId;
-    }
+    const teacherId = scheduleData?.teacher_id || null;
 
     const updates = [];
 
@@ -1490,113 +1669,91 @@ export async function saveTypingResult(data: {
   }
 }
 
-// 타자연습 기록 조회 서버 액션
-// 학생 할 일 목록(To-Do List) 조회
+// 학생 할 일 목록(To-Do List) 조회 (🟢 관계형 student_todos 최적화 완료)
 export async function getStudentGoals(studentId: string) {
   try {
     const { data, error } = await supabaseAdmin
-      .from('students')
-      .select('todolist')
-      .eq('user_id', studentId)
-      .maybeSingle();
+      .from('student_todos')
+      .select('id, title, is_completed')
+      .eq('student_id', studentId)
+      .order('created_at', { ascending: true });
 
     if (error) {
       console.error('할 일 목록 조회 실패:', error);
       return { success: false, error: error.message };
     }
 
-    return { success: true, data: data?.todolist || [] };
+    const mappedData = (data || []).map((item: any) => ({
+      id: item.id,
+      title: item.title,
+      isCompleted: item.is_completed
+    }));
+
+    return { success: true, data: mappedData };
   } catch (error) {
     console.error('할 일 목록 조회 중 오류:', error);
     return { success: false, error: '할 일 목록을 불러오는 중 오류가 발생했습니다.' };
   }
 }
 
-// 학생 할 일 추가
+// 학생 할 일 추가 (🟢 관계형 student_todos 최적화 완료)
 export async function addStudentGoal(studentId: string, title: string) {
   try {
-    // 기존 목록 조회
-    const { data, error: fetchError } = await supabaseAdmin
-      .from('students')
-      .select('todolist')
-      .eq('user_id', studentId)
-      .maybeSingle();
+    const { error } = await supabaseAdmin
+      .from('student_todos')
+      .insert({ student_id: studentId, title, is_completed: false });
 
-    if (fetchError) throw fetchError;
+    if (error) throw error;
 
-    const currentTodolist = data?.todolist || [];
-    const updatedTodolist = [...currentTodolist, { title, isCompleted: false }];
-
-    // 업데이트
-    const { error: updateError } = await supabaseAdmin
-      .from('students')
-      .update({ todolist: updatedTodolist })
-      .eq('user_id', studentId);
-
-    if (updateError) throw updateError;
-
-    return { success: true, data: updatedTodolist };
+    const listResult = await getStudentGoals(studentId);
+    return { success: true, data: listResult.data || [] };
   } catch (error: any) {
     console.error('할 일 추가 실패:', error);
     return { success: false, error: error.message || '할 일을 추가하는 중 오류가 발생했습니다.' };
   }
 }
 
-// 학생 할 일 상태 토글
-export async function toggleStudentGoal(studentId: string, goalIndex: number) {
+// 학생 할 일 상태 토글 (🟢 관계형 student_todos 최적화 완료 - goalId UUID 사용)
+export async function toggleStudentGoal(studentId: string, goalId: string) {
   try {
-    const { data, error: fetchError } = await supabaseAdmin
-      .from('students')
-      .select('todolist')
-      .eq('user_id', studentId)
-      .maybeSingle();
+    const { data: existing, error: findError } = await supabaseAdmin
+      .from('student_todos')
+      .select('is_completed')
+      .eq('id', goalId)
+      .eq('student_id', studentId)
+      .single();
 
-    if (fetchError) throw fetchError;
-
-    const currentTodolist = data?.todolist || [];
-    const updatedTodolist = currentTodolist.map((goal: any, index: number) => {
-      if (index === goalIndex) {
-        return { ...goal, isCompleted: !goal.isCompleted };
-      }
-      return goal;
-    });
+    if (findError) throw findError;
 
     const { error: updateError } = await supabaseAdmin
-      .from('students')
-      .update({ todolist: updatedTodolist })
-      .eq('user_id', studentId);
+      .from('student_todos')
+      .update({ is_completed: !existing.is_completed })
+      .eq('id', goalId)
+      .eq('student_id', studentId);
 
     if (updateError) throw updateError;
 
-    return { success: true, data: updatedTodolist };
+    const listResult = await getStudentGoals(studentId);
+    return { success: true, data: listResult.data || [] };
   } catch (error: any) {
     console.error('할 일 상태 변경 실패:', error);
     return { success: false, error: error.message || '상태를 변경하는 중 오류가 발생했습니다.' };
   }
 }
 
-// 학생 할 일 삭제
-export async function deleteStudentGoal(studentId: string, goalIndex: number) {
+// 학생 할 일 삭제 (🟢 관계형 student_todos 최적화 완료 - goalId UUID 사용)
+export async function deleteStudentGoal(studentId: string, goalId: string) {
   try {
-    const { data, error: fetchError } = await supabaseAdmin
-      .from('students')
-      .select('todolist')
-      .eq('user_id', studentId)
-      .maybeSingle();
+    const { error } = await supabaseAdmin
+      .from('student_todos')
+      .delete()
+      .eq('id', goalId)
+      .eq('student_id', studentId);
 
-    if (fetchError) throw fetchError;
+    if (error) throw error;
 
-    const currentTodolist = data?.todolist || [];
-    const updatedTodolist = currentTodolist.filter((_: any, index: number) => index !== goalIndex);
-
-    const { error: updateError } = await supabaseAdmin
-      .from('students')
-      .update({ todolist: updatedTodolist })
-      .eq('user_id', studentId);
-
-    if (updateError) throw updateError;
-
-    return { success: true, data: updatedTodolist };
+    const listResult = await getStudentGoals(studentId);
+    return { success: true, data: listResult.data || [] };
   } catch (error: any) {
     console.error('할 일 삭제 실패:', error);
     return { success: false, error: error.message || '할 일을 삭제하는 중 오류가 발생했습니다.' };
@@ -3192,7 +3349,6 @@ export async function createStudentSignupRequest(studentData: {
         assigned_teachers: studentData.assignedTeacherId ? [studentData.assignedTeacherId] : [],
         parent_id: parentData.id,
         current_curriculum_id: null,
-        attendance_schedule: null,
         created_at: new Date().toISOString()
       });
 
@@ -3533,27 +3689,89 @@ export async function updateTeacherLabelColor(teacherId: string, color: string) 
  */
 export const getStudentDashboardData = cache(async (studentId: string) => {
   try {
-    const { data, error } = await supabaseAdmin
-      .from('students')
-      .select('learning_progress, achievement_records, typing_stats, total_xp, todolist')
-      .eq('user_id', studentId)
-      .single();
+    // 병렬로 신규 관계형 테이블 및 기존 students 컬럼들 조회
+    const [progressRes, achievementsRes, todosRes, studentProfileRes, typingStatsRes] = await Promise.all([
+      supabaseAdmin
+        .from('student_progresses')
+        .select('id, category, title, percentage, status, results, xp_awarded, created_at')
+        .eq('student_id', studentId)
+        .order('created_at', { ascending: true }),
+      supabaseAdmin
+        .from('student_achievements')
+        .select('id, type, title, date, xp_awarded, created_at')
+        .eq('student_id', studentId)
+        .order('created_at', { ascending: true }),
+      supabaseAdmin
+        .from('student_todos')
+        .select('id, title, is_completed, created_at')
+        .eq('student_id', studentId)
+        .order('created_at', { ascending: true }),
+      supabaseAdmin
+        .from('students')
+        .select('total_xp')
+        .eq('user_id', studentId)
+        .single(),
+      supabaseAdmin
+        .from('typing_weekly_stats')
+        .select('year_week, stats_data')
+        .eq('student_id', studentId)
+        .order('year_week', { ascending: false })
+        .limit(12)
+    ]);
 
-    if (error) {
-      return { success: false, error: `대시보드 정보 조회 실패: ${error.message}` };
+    if (studentProfileRes.error) {
+      return { success: false, error: `대시보드 정보 조회 실패: ${studentProfileRes.error.message}` };
     }
+
+    // 자격증(certificate)과 수상내역(award) 구조에 맞게 분할 매핑
+    const attained = (achievementsRes.data || []).filter((a: any) => a.type === 'certificate').map((a: any) => ({
+      id: a.id,
+      title: a.title,
+      date: a.date,
+      xpAwarded: a.xp_awarded
+    }));
+    const awards = (achievementsRes.data || []).filter((a: any) => a.type === 'award').map((a: any) => ({
+      id: a.id,
+      title: a.title,
+      date: a.date,
+      xpAwarded: a.xp_awarded
+    }));
+
+    // 최근 12개 주차의 데이터 중 가장 최신(첫 번째) 데이터를 기본 typing_stats로 사용
+    const latestTypingStats = typingStatsRes.data && typingStatsRes.data[0]
+      ? typingStatsRes.data[0].stats_data
+      : { ko: { maxSpeed: 0 }, en: { maxSpeed: 0 } };
+
+    // 주간 타자 통계 흐름을 함께 전달
+    const weeklyTypingStats = (typingStatsRes.data || []).map((w: any) => ({
+      week: w.year_week,
+      stats: w.stats_data
+    })).reverse(); // 시간 순 정렬
 
     return { 
       success: true, 
       data: {
-        learning_progress: data.learning_progress || [],
-        achievement_records: data.achievement_records || { attained: [], targets: [], awards: [] },
-        typing_stats: data.typing_stats || { ko: { maxSpeed: 0 }, en: { maxSpeed: 0 } },
-        total_xp: data.total_xp || 0,
-        todolist: data.todolist || []
+        learning_progress: (progressRes.data || []).map((p: any) => ({
+          id: p.id,
+          category: p.category,
+          title: p.title,
+          percentage: p.percentage,
+          status: p.status,
+          results: p.results || [],
+          xpAwarded: p.xp_awarded
+        })),
+        achievement_records: { attained, targets: [], awards },
+        typing_stats: latestTypingStats,
+        weekly_typing_stats: weeklyTypingStats,
+        total_xp: studentProfileRes.data.total_xp || 0,
+        todolist: (todosRes.data || []).map((t: any) => ({
+          id: t.id,
+          title: t.title,
+          isCompleted: t.is_completed
+        }))
       } 
     };
-  } catch (error) {
+  } catch (error: any) {
     console.error('대시보드 정보 조회 중 오류:', error);
     return { success: false, error: '대시보드 정보를 조회하는 중 오류가 발생했습니다.' };
   }
@@ -3564,26 +3782,75 @@ export const getStudentDashboardData = cache(async (studentId: string) => {
  */
 export const getStudentProgress = cache(async (studentId: string) => {
   try {
-    const { data, error } = await supabaseAdmin
-      .from('students')
-      .select('learning_progress, achievement_records, typing_stats, total_xp')
-      .eq('user_id', studentId)
-      .single();
+    const [progressRes, achievementsRes, studentProfileRes, typingStatsRes] = await Promise.all([
+      supabaseAdmin
+        .from('student_progresses')
+        .select('id, category, title, percentage, status, results, xp_awarded, created_at')
+        .eq('student_id', studentId)
+        .order('created_at', { ascending: true }),
+      supabaseAdmin
+        .from('student_achievements')
+        .select('id, type, title, date, xp_awarded, created_at')
+        .eq('student_id', studentId)
+        .order('created_at', { ascending: true }),
+      supabaseAdmin
+        .from('students')
+        .select('total_xp')
+        .eq('user_id', studentId)
+        .single(),
+      supabaseAdmin
+        .from('typing_weekly_stats')
+        .select('year_week, stats_data')
+        .eq('student_id', studentId)
+        .order('year_week', { ascending: false })
+        .limit(12)
+    ]);
 
-    if (error) {
-      return { success: false, error: `진도 정보 조회 실패: ${error.message}` };
+    if (studentProfileRes.error) {
+      return { success: false, error: `진도 정보 조회 실패: ${studentProfileRes.error.message}` };
     }
+
+    const attained = (achievementsRes.data || []).filter((a: any) => a.type === 'certificate').map((a: any) => ({
+      id: a.id,
+      title: a.title,
+      date: a.date,
+      xpAwarded: a.xp_awarded
+    }));
+    const awards = (achievementsRes.data || []).filter((a: any) => a.type === 'award').map((a: any) => ({
+      id: a.id,
+      title: a.title,
+      date: a.date,
+      xpAwarded: a.xp_awarded
+    }));
+
+    const latestTypingStats = typingStatsRes.data && typingStatsRes.data[0]
+      ? typingStatsRes.data[0].stats_data
+      : { ko: { maxSpeed: 0 }, en: { maxSpeed: 0 } };
+
+    const weeklyTypingStats = (typingStatsRes.data || []).map((w: any) => ({
+      week: w.year_week,
+      stats: w.stats_data
+    })).reverse();
 
     return { 
       success: true, 
       data: {
-        learning_progress: data.learning_progress || [],
-        achievement_records: data.achievement_records || { attained: [], targets: [] },
-        typing_stats: data.typing_stats || { ko: { maxSpeed: 0 }, en: { maxSpeed: 0 } },
-        total_xp: data.total_xp || 0
+        learning_progress: (progressRes.data || []).map((p: any) => ({
+          id: p.id,
+          category: p.category,
+          title: p.title,
+          percentage: p.percentage,
+          status: p.status,
+          results: p.results || [],
+          xpAwarded: p.xp_awarded
+        })),
+        achievement_records: { attained, targets: [], awards },
+        typing_stats: latestTypingStats,
+        weekly_typing_stats: weeklyTypingStats,
+        total_xp: studentProfileRes.data.total_xp || 0
       } 
     };
-  } catch (error) {
+  } catch (error: any) {
     console.error('진도 정보 조회 중 오류:', error);
     return { success: false, error: '진도 정보 조회 중 오류가 발생했습니다.' };
   }
@@ -3638,13 +3905,15 @@ export async function addStudentXP(studentId: string, amount: number, reason: st
  */
 export async function updateStudentProgress(studentId: string, progressData: any) {
   try {
+    const learningProgress = progressData.learning_progress || [];
+    const achievementRecords = progressData.achievement_records || { attained: [], awards: [] };
+
     // 현재 학습 중(ongoing)인 과목 추출하여 main_subject, sub_subject 동기화
-    const ongoingItems = (progressData.learning_progress || []).filter((p: any) => p.status === 'ongoing');
+    const ongoingItems = learningProgress.filter((p: any) => p.status === 'ongoing');
     const main_subject = ongoingItems[0]?.category || ongoingItems[0]?.title || null;
     const sub_subject = ongoingItems[1]?.category || ongoingItems[1]?.title || null;
 
     // [공유 로직] 진도 내 결과물 중 커뮤니티 공유 대상(isShared) 데이터가 있으면 게시글 생성
-    const learningProgress = progressData.learning_progress || [];
     let sharedAny = false;
 
     for (const cur of learningProgress) {
@@ -3691,7 +3960,6 @@ export async function updateStudentProgress(studentId: string, progressData: any
     }
 
     // 2. 자격증 취득 보상 (10,000 XP)
-    const achievementRecords = progressData.achievement_records || { attained: [] };
     if (achievementRecords.attained) {
       for (const cert of achievementRecords.attained) {
         // 날짜가 있고 아직 XP가 지급되지 않은 항목
@@ -3702,20 +3970,137 @@ export async function updateStudentProgress(studentId: string, progressData: any
       }
     }
 
-    const { error } = await supabaseAdmin
+    // 🟢 관계형 student_progresses 및 student_achievements 갱신 (Reconciliation)
+    
+    // 1) student_progresses 테이블 갱신
+    // incoming IDs 수집
+    const incomingProgressIds = learningProgress.map((p: any) => p.id).filter(Boolean);
+    
+    // 먼저 삭제 처리 (기존에 있었으나 incoming에 없는 항목 삭제)
+    if (incomingProgressIds.length > 0) {
+      const { error: deleteProgError } = await supabaseAdmin
+        .from('student_progresses')
+        .delete()
+        .eq('student_id', studentId)
+        .not('id', 'in', `(${incomingProgressIds.map((id: string) => `'${id}'`).join(',')})`);
+      if (deleteProgError) throw deleteProgError;
+    } else {
+      const { error: deleteProgAllError } = await supabaseAdmin
+        .from('student_progresses')
+        .delete()
+        .eq('student_id', studentId);
+      if (deleteProgAllError) throw deleteProgAllError;
+    }
+
+    // incoming 항목들 UPSERT
+    if (learningProgress.length > 0) {
+      const progressesToUpsert = learningProgress.map((p: any) => ({
+        id: p.id || crypto.randomUUID(),
+        student_id: studentId,
+        category: p.category || '',
+        title: p.title || '',
+        percentage: p.percentage || 0,
+        status: p.status || 'ongoing',
+        results: p.results || [],
+        xp_awarded: p.xpAwarded || false
+      }));
+
+      const { error: upsertProgError } = await supabaseAdmin
+        .from('student_progresses')
+        .upsert(progressesToUpsert);
+      if (upsertProgError) throw upsertProgError;
+    }
+
+    // 2) student_achievements 테이블 갱신
+    const combinedAchievements = [
+      ...(achievementRecords.attained || []).map((a: any) => ({
+        id: a.id || crypto.randomUUID(),
+        student_id: studentId,
+        type: 'certificate',
+        title: a.title || '',
+        date: a.date || null,
+        xp_awarded: a.xpAwarded || false
+      })),
+      ...(achievementRecords.awards || []).map((a: any) => ({
+        id: a.id || crypto.randomUUID(),
+        student_id: studentId,
+        type: 'award',
+        title: a.title || '',
+        date: a.date || null,
+        xp_awarded: a.xpAwarded || false
+      }))
+    ];
+
+    const incomingAchIds = combinedAchievements.map((a: any) => a.id).filter(Boolean);
+
+    // 먼저 삭제 처리
+    if (incomingAchIds.length > 0) {
+      const { error: deleteAchError } = await supabaseAdmin
+        .from('student_achievements')
+        .delete()
+        .eq('student_id', studentId)
+        .not('id', 'in', `(${incomingAchIds.map((id: string) => `'${id}'`).join(',')})`);
+      if (deleteAchError) throw deleteAchError;
+    } else {
+      const { error: deleteAchAllError } = await supabaseAdmin
+        .from('student_achievements')
+        .delete()
+        .eq('student_id', studentId);
+      if (deleteAchAllError) throw deleteAchAllError;
+    }
+
+    // upsert 실행
+    if (combinedAchievements.length > 0) {
+      const { error: upsertAchError } = await supabaseAdmin
+        .from('student_achievements')
+        .upsert(combinedAchievements);
+      if (upsertAchError) throw upsertAchError;
+    }
+
+    // 3) typing_weekly_stats 테이블에 통계 upsert (CQRS 모델)
+    if (progressData.typing_stats) {
+      // ISO 8601 주차 구하기 (KST 기준)
+      const now = new Date();
+      const kstOffset = 9 * 60 * 60 * 1000;
+      const kstDate = new Date(now.getTime() + kstOffset);
+      
+      const getISOWeekString = (date: Date) => {
+        const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+        const dayNum = d.getUTCDay() || 7;
+        d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+        const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+        const weekNo = Math.ceil((((d.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
+        const weekStr = weekNo < 10 ? `0${weekNo}` : `${weekNo}`;
+        return `${d.getUTCFullYear()}-W${weekStr}`;
+      };
+
+      const currentWeekStr = getISOWeekString(kstDate); // 'YYYY-Www' (예: '2026-W21')
+
+      const { error: upsertTypingError } = await supabaseAdmin
+        .from('typing_weekly_stats')
+        .upsert({
+          student_id: studentId,
+          year_week: currentWeekStr,
+          stats_data: progressData.typing_stats,
+          updated_at: new Date().toISOString()
+        }, {
+          onConflict: 'student_id,year_week'
+        });
+      if (upsertTypingError) throw upsertTypingError;
+    }
+
+    // 4) students 테이블 컬럼 갱신
+    const { error: updateStudentError } = await supabaseAdmin
       .from('students')
       .update({
-        learning_progress: learningProgress,
-        achievement_records: achievementRecords,
-        typing_stats: progressData.typing_stats,
         total_xp: (progressData.total_xp || 0) + totalXpBonus,
         main_subject: main_subject,
         sub_subject: sub_subject
       })
       .eq('user_id', studentId);
 
-    if (error) {
-      return { success: false, error: `진도 정보 저장 실패: ${error.message}` };
+    if (updateStudentError) {
+      throw updateStudentError;
     }
 
     // 캐시 갱신
@@ -3723,9 +4108,9 @@ export async function updateStudentProgress(studentId: string, progressData: any
     revalidatePath('/dashboard/student', 'layout');
 
     return { success: true };
-  } catch (error) {
+  } catch (error: any) {
     console.error('진도 정보 저장 중 오류:', error);
-    return { success: false, error: '진도 정보 저장 중 오류가 발생했습니다.' };
+    return { success: false, error: error.message || '진도 정보 저장 중 오류가 발생했습니다.' };
   }
 }
 
@@ -3760,56 +4145,43 @@ export async function createPortfolioEntry(
   shareToCommunity: boolean
 ) {
   try {
-    // 1. 학생 데이터 조회
-    const { data: student, error: fetchError } = await supabaseAdmin
-      .from('students')
-      .select('learning_progress, user_id')
-      .eq('user_id', studentId)
+    // 1. 특정 학습 과정 조회
+    const { data: progressItem, error: fetchError } = await supabaseAdmin
+      .from('student_progresses')
+      .select('id, title, results')
+      .eq('id', progressId)
+      .eq('student_id', studentId)
       .single();
 
-    if (fetchError || !student) {
-      throw new Error(`학생 조회 실패: ${fetchError?.message}`);
-    }
-
-    const progress = student.learning_progress as any[] || [];
-    const targetProgress = progress.find(p => p.id === progressId);
-
-    if (!targetProgress) {
-        throw new Error('해당 학습 과정을 찾을 수 없습니다.');
+    if (fetchError || !progressItem) {
+      throw new Error(`학습 과정 조회 실패: ${fetchError?.message || '해당 학습 과정을 찾을 수 없습니다.'}`);
     }
 
     // 2. 새로운 결과물 아이템 생성
     const newItem = {
       id: crypto.randomUUID(),
       date: new Date().toISOString().split('T')[0],
+      uploadedAt: new Date().toISOString(),
       ...entryData,
       isShared: shareToCommunity,
       postId: null as string | null,
       isPosted: false
     };
 
-    targetProgress.results = [newItem, ...(targetProgress.results || [])];
+    const results = [newItem, ...(progressItem.results || [])];
 
-    // 3. 학생 데이터 업데이트
+    // 3. student_progresses 테이블 업데이트
     const { error: updateError } = await supabaseAdmin
-      .from('students')
-      .update({ learning_progress: progress })
-      .eq('user_id', studentId);
+      .from('student_progresses')
+      .update({ results })
+      .eq('id', progressId);
 
     if (updateError) {
-      throw new Error(`진도 업데이트 실패: ${updateError.message}`);
+      throw new Error(`진도 결과물 업데이트 실패: ${updateError.message}`);
     }
 
     // 4. 커뮤니티 공유 (체크된 경우)
     if (shareToCommunity) {
-      const { data: userData } = await supabaseAdmin
-        .from('users')
-        .select('name')
-        .eq('id', studentId)
-        .single();
-      
-      const teacherName = "(강사 기록)"; // 또는 현재 세션의 강사 이름
-      
       const contentText = `${entryData.description}\n\n${entryData.url ? `링크: ${entryData.url}` : ''}`;
       
       const { data: postData, error: postError } = await supabaseAdmin
@@ -3826,6 +4198,12 @@ export async function createPortfolioEntry(
       if (!postError && postData) {
         newItem.postId = postData.id;
         newItem.isPosted = true;
+        
+        // isPosted 상태 업데이트를 위해 DB에 다시 한 번 반영
+        await supabaseAdmin
+          .from('student_progresses')
+          .update({ results })
+          .eq('id', progressId);
       } else if (postError) {
         console.error('커뮤니티 게시 실패:', postError);
       }

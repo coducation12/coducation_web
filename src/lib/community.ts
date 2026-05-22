@@ -16,16 +16,40 @@ async function getCurrentUser() {
 // 모든 게시글 가져오기 (페이지네이션 및 검색 지원)
 export async function getCommunityPosts(page: number = 1, limit: number = 10, searchQuery?: string): Promise<{ posts: CommunityPost[], totalCount: number, totalPages: number }> {
   // 🟢 최적화: RLS 우회를 위해 supabaseAdmin을 사용합니다.
+  
+  let orFilter = '';
+  
+  // 검색어가 있을 경우: 작성자명에 해당하는 유저 ID 목록을 먼저 찾은 뒤 flat OR 필터로 변환
+  if (searchQuery && searchQuery.trim()) {
+    const trimmed = searchQuery.trim();
+    try {
+      const { data: matchedUsers } = await supabaseAdmin
+        .from('users')
+        .select('id')
+        .ilike('name', `%${trimmed}%`);
+      
+      const matchedUserIds = matchedUsers?.map((u: any) => u.id) || [];
+      
+      orFilter = `title.ilike.%${trimmed}%,content.ilike.%${trimmed}%`;
+      if (matchedUserIds.length > 0) {
+        orFilter += `,user_id.in.(${matchedUserIds.join(',')})`;
+      }
+    } catch (err) {
+      console.error('Failed to pre-fetch matched users for search:', err);
+      // 유저 매칭 실패 시 제목/내용 필터로만 세팅
+      orFilter = `title.ilike.%${trimmed}%,content.ilike.%${trimmed}%`;
+    }
+  }
+
   // 1. 일반 게시글 수 가져오기 (관리자 글 제외)
   let countQuery = supabaseAdmin
     .from('community_posts')
-    .select('id, users!inner(role)', { count: 'exact', head: true })
+    .select('id, users!inner(name, role)', { count: 'exact', head: true })
     .eq('is_deleted', false)
     .neq('users.role', 'admin');
 
-  // 검색어가 있으면 제목, 내용, 작성자 이름에서 검색
-  if (searchQuery && searchQuery.trim()) {
-    countQuery = countQuery.or(`title.ilike.%${searchQuery.trim()}%,content.ilike.%${searchQuery.trim()}%,users.name.ilike.%${searchQuery.trim()}%`);
+  if (orFilter) {
+    countQuery = countQuery.or(orFilter);
   }
 
   const { count: totalCount } = await countQuery;
@@ -59,8 +83,8 @@ export async function getCommunityPosts(page: number = 1, limit: number = 10, se
     .eq('is_deleted', false)
     .neq('users.role', 'admin');
 
-  if (searchQuery && searchQuery.trim()) {
-    postsQuery = postsQuery.or(`title.ilike.%${searchQuery.trim()}%,content.ilike.%${searchQuery.trim()}%,users.name.ilike.%${searchQuery.trim()}%`);
+  if (orFilter) {
+    postsQuery = postsQuery.or(orFilter);
   }
 
   const { data: normalPosts, error } = await postsQuery
@@ -234,50 +258,43 @@ export async function updateCommunityPost(postId: string, title: string, content
 
   // [포트폴리오 동기화] 이 게시글과 연결된 학생의 진도 기록이 있다면 함께 업데이트
   try {
-    // 해당 postId를 포함하고 있는 학생들 검색 (JSONB 데이터 내 검색)
-    // 팁: 성능을 위해 먼저 대략적인 필터링 후 메모리에서 정밀 필터링 수행
-    const { data: studentsLinked } = await supabaseAdmin
-      .from('students')
-      .select('user_id, learning_progress')
-      .not('learning_progress', 'is', null);
+    // 해당 postId를 포함하고 있는 학생 진도 기록 검색
+    const { data: progressLinked } = await supabaseAdmin
+      .from('student_progresses')
+      .select('id, student_id, results')
+      .not('results', 'is', null);
 
-    if (studentsLinked) {
-      for (const student of studentsLinked) {
+    if (progressLinked) {
+      for (const progress of progressLinked) {
         let isUpdated = false;
-        const learningProgress = student.learning_progress as any[];
+        const results = progress.results as any[];
         
-        if (!Array.isArray(learningProgress)) continue;
+        if (!Array.isArray(results)) continue;
 
-        const updatedProgress = learningProgress.map(cur => {
-          if (!cur.results || !Array.isArray(cur.results)) return cur;
-          
-          const updatedResults = cur.results.map((res: any) => {
-            if (res.postId === postId) {
-              isUpdated = true;
-              // 제목에서 [과정명] 머리글 제거 시도
-              const cleanTitle = title.replace(/^\[.*?\]\s*/, '');
-              // 내용에서 링크 부분 제외하고 설명만 추출 시도
-              const cleanDescription = content.split('\n\n링크:')[0];
-              
-              return {
-                ...res,
-                title: cleanTitle,
-                description: cleanDescription,
-                imageUrl: (images && images.length > 0) ? images[0] : res.imageUrl
-              };
-            }
-            return res;
-          });
-          
-          return { ...cur, results: updatedResults };
+        const updatedResults = results.map((res: any) => {
+          if (res.postId === postId) {
+            isUpdated = true;
+            // 제목에서 [과정명] 머리글 제거 시도
+            const cleanTitle = title.replace(/^\[.*?\]\s*/, '');
+            // 내용에서 링크 부분 제외하고 설명만 추출 시도
+            const cleanDescription = content.split('\n\n링크:')[0];
+            
+            return {
+              ...res,
+              title: cleanTitle,
+              description: cleanDescription,
+              imageUrl: (images && images.length > 0) ? images[0] : res.imageUrl
+            };
+          }
+          return res;
         });
 
         if (isUpdated) {
           await supabaseAdmin
-            .from('students')
-            .update({ learning_progress: updatedProgress })
-            .eq('user_id', student.user_id);
-          console.log(`Portfolio synced for student: ${student.user_id}`);
+            .from('student_progresses')
+            .update({ results: updatedResults })
+            .eq('id', progress.id);
+          console.log(`Portfolio synced for student progress: ${progress.id}`);
         }
       }
     }

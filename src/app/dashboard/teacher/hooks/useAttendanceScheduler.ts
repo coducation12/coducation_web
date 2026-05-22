@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import { Student, AttendanceStatus, AttendanceSession } from "../components/types";
 import { getAttendanceData } from "../lib/attendance";
-import { saveAttendanceSessionAction, deleteAttendanceSessionAction } from "@/lib/actions";
+import { saveAttendanceSessionAction, deleteAttendanceSessionAction, getActiveStudentsList } from "@/lib/actions";
 
 // 자동 결석 처리 함수
 const processAutoAbsence = (students: Student[], currentDate: Date): Student[] => {
@@ -49,21 +49,14 @@ export const useAttendanceScheduler = (teacherId?: string) => {
     const [refreshTrigger, setRefreshTrigger] = useState(0);
     const [updatingIds, setUpdatingIds] = useState<Set<string>>(new Set());
 
-    // 모든 활성 학생 목록 가져오기 (보강 등록용)
+    // 모든 활성 학생 목록 가져오기 (보강 등록용 - 🟢 초경량 Server Action 최적화 완료)
     useEffect(() => {
         const fetchAllStudents = async () => {
             try {
-                const today = new Date().toLocaleDateString('en-CA');
-                const res = await fetch(`/api/dashboard/attendance?date=${today}`);
-                if (!res.ok) return;
+                const result = await getActiveStudentsList();
+                if (!result.success) return;
 
-                const { students } = await res.json();
-
-                const activeList = (students || [])
-                    .map((s: any) => ({
-                        id: s.user_id,
-                        name: s.users?.name || '알 수 없음'
-                    }))
+                const activeList = (result.data || [])
                     .sort((a: any, b: any) => a.name.localeCompare(b.name, 'ko-KR'));
                 setAllActiveStudents(activeList);
             } catch (err) {

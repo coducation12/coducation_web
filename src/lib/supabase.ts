@@ -93,12 +93,7 @@ export interface Database {
           current_curriculum_id?: string;
           enrollment_start_date: string;
           enrollment_end_date?: string;
-          attendance_schedule?: any;
-          learning_progress?: any;
-          achievement_records?: any;
-          typing_stats?: any;
           total_xp?: number;
-          todolist?: any;
           created_at: string;
         };
         Insert: {
@@ -109,10 +104,6 @@ export interface Database {
           current_curriculum_id?: string;
           enrollment_start_date: string;
           enrollment_end_date?: string;
-          attendance_schedule?: any;
-          learning_progress?: any;
-          achievement_records?: any;
-          typing_stats?: any;
           total_xp?: number;
           created_at?: string;
         };
@@ -124,11 +115,175 @@ export interface Database {
           current_curriculum_id?: string;
           enrollment_start_date?: string;
           enrollment_end_date?: string;
-          attendance_schedule?: any;
-          learning_progress?: any;
-          achievement_records?: any;
-          typing_stats?: any;
           total_xp?: number;
+          created_at?: string;
+        };
+      };
+      student_schedules: {
+        Row: {
+          id: string;
+          student_id: string;
+          day_of_week: number;
+          start_time: string;
+          end_time: string;
+          teacher_id: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          student_id: string;
+          day_of_week: number;
+          start_time: string;
+          end_time: string;
+          teacher_id?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          student_id?: string;
+          day_of_week?: number;
+          start_time?: string;
+          end_time?: string;
+          teacher_id?: string | null;
+          created_at?: string;
+        };
+      };
+      typing_logs: {
+        Row: {
+          id: string;
+          student_id: string;
+          language: string;
+          wpm: number;
+          accuracy: number;
+          elapsed_seconds: number;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          student_id: string;
+          language: string;
+          wpm: number;
+          accuracy: number;
+          elapsed_seconds: number;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          student_id?: string;
+          language?: string;
+          wpm?: number;
+          accuracy?: number;
+          elapsed_seconds?: number;
+          created_at?: string;
+        };
+      };
+      typing_weekly_stats: {
+        Row: {
+          id: string;
+          student_id: string;
+          year_week: string;
+          stats_data: any;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          student_id: string;
+          year_week: string;
+          stats_data: any;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          student_id?: string;
+          year_week?: string;
+          stats_data?: any;
+          updated_at?: string;
+        };
+      };
+      student_todos: {
+        Row: {
+          id: string;
+          student_id: string;
+          title: string;
+          is_completed: boolean;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          student_id: string;
+          title: string;
+          is_completed?: boolean;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          student_id?: string;
+          title?: string;
+          is_completed?: boolean;
+          created_at?: string;
+        };
+      };
+      student_progresses: {
+        Row: {
+          id: string;
+          student_id: string;
+          category: string;
+          title: string;
+          percentage: number;
+          status: string;
+          results: any;
+          xp_awarded: boolean;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          student_id: string;
+          category: string;
+          title: string;
+          percentage?: number;
+          status?: string;
+          results?: any;
+          xp_awarded?: boolean;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          student_id?: string;
+          category?: string;
+          title?: string;
+          percentage?: number;
+          status?: string;
+          results?: any;
+          xp_awarded?: boolean;
+          created_at?: string;
+        };
+      };
+      student_achievements: {
+        Row: {
+          id: string;
+          student_id: string;
+          type: 'certificate' | 'award';
+          title: string;
+          date: string | null;
+          xp_awarded: boolean;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          student_id: string;
+          type: 'certificate' | 'award';
+          title: string;
+          date?: string | null;
+          xp_awarded?: boolean;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          student_id?: string;
+          type?: 'certificate' | 'award';
+          title?: string;
+          date?: string | null;
+          xp_awarded?: boolean;
           created_at?: string;
         };
       };

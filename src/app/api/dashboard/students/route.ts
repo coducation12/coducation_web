@@ -23,11 +23,9 @@ export async function GET(request: NextRequest) {
                 parent_id, 
                 current_curriculum_id, 
                 enrollment_start_date, 
-                attendance_schedule,
                 assigned_teachers,
                 main_subject,
                 sub_subject,
-                learning_progress,
                 memo,
                 tuition_fee,
                 is_special_education,
@@ -67,7 +65,9 @@ export async function GET(request: NextRequest) {
             return NextResponse.json({ error: 'Database error' }, { status: 500 });
         }
 
-        // 2. 당월 출석 횟수 계산 (로그인한 강사의 수업만)
+        const studentIds = (data || []).map((s: any) => s.user_id);
+
+        // 2. 당월 출석 횟수 계산, 시간표 스케줄 데이터, 학습 진도 조회를 병렬로 실행
         const now = new Date();
         const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toLocaleDateString('en-CA');
         const lastDayOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).toLocaleDateString('en-CA');
@@ -79,22 +79,69 @@ export async function GET(request: NextRequest) {
             .gte('date', firstDayOfMonth)
             .lte('date', lastDayOfMonth);
 
-        // 강사인 경우 본인이 담당한(체크한) 수업만 카운트
         if (userRole === 'teacher') {
             attendanceQuery = attendanceQuery.eq('teacher_id', userId);
         }
 
-        const { data: sessions, error: sessionsError } = await attendanceQuery;
+        const [attendanceRes, schedulesRes, progressRes] = await Promise.all([
+            attendanceQuery,
+            studentIds.length > 0 ? supabaseAdmin
+                .from('student_schedules')
+                .select('student_id, day_of_week, start_time, end_time, teacher_id')
+                .in('student_id', studentIds) : Promise.resolve({ data: [], error: null }),
+            studentIds.length > 0 ? supabaseAdmin
+                .from('student_progresses')
+                .select('student_id, id, category, title, percentage, status, results, xp_awarded, created_at')
+                .in('student_id', studentIds) : Promise.resolve({ data: [], error: null })
+        ]);
 
         const attendanceCounts: Record<string, number> = {};
-        if (sessions) {
-            sessions.forEach((s: any) => {
+        if (attendanceRes.data) {
+            attendanceRes.data.forEach((s: any) => {
                 attendanceCounts[s.student_id] = (attendanceCounts[s.student_id] || 0) + 1;
             });
         }
 
-        const dataWithCounts = data.map((student: any) => ({
+        const scheduleMap = new Map<string, any>();
+        if (schedulesRes.data) {
+            schedulesRes.data.forEach((s: any) => {
+                const studentId = s.student_id;
+                if (!scheduleMap.has(studentId)) {
+                    scheduleMap.set(studentId, {});
+                }
+                const schedObj = scheduleMap.get(studentId);
+                schedObj[s.day_of_week.toString()] = {
+                    startTime: s.start_time ? s.start_time.substring(0, 5) : '',
+                    endTime: s.end_time ? s.end_time.substring(0, 5) : '',
+                    teacherId: s.teacher_id || 'none'
+                };
+            });
+        }
+
+        const progressMap = new Map<string, any[]>();
+        if (progressRes.data) {
+            progressRes.data.forEach((p: any) => {
+                const studentId = p.student_id;
+                if (!progressMap.has(studentId)) {
+                    progressMap.set(studentId, []);
+                }
+                progressMap.get(studentId)!.push({
+                    id: p.id,
+                    category: p.category,
+                    title: p.title,
+                    percentage: p.percentage,
+                    status: p.status,
+                    results: p.results || [],
+                    xpAwarded: p.xp_awarded,
+                    created_at: p.created_at
+                });
+            });
+        }
+
+        const dataWithCounts = (data || []).map((student: any) => ({
             ...student,
+            learning_progress: progressMap.get(student.user_id) || [],
+            attendance_schedule: scheduleMap.get(student.user_id) || {},
             monthlyAttendanceCount: attendanceCounts[student.user_id] || 0
         }));
 

@@ -4,7 +4,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { login } from '@/lib/actions'
+import { login, logout } from '@/lib/actions'
 import { getCurrentUserClient, logoutClient } from '@/lib/client-auth'
 import Image from 'next/image'
 
@@ -20,8 +20,21 @@ function LoginForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
 
-  // URL 파라미터에서 오류 확인
+  // URL 파라미터에서 오류 및 세션 초기화(clear) 확인
   useEffect(() => {
+    const clearParam = searchParams.get('clear');
+    if (clearParam === 'true') {
+      const performClear = async () => {
+        try {
+          await logout();
+          logoutClient();
+        } catch (e) {
+          // silent fail
+        }
+      };
+      performClear();
+    }
+
     const errorParam = searchParams.get('error')
     if (errorParam === 'true') {
       setError('로그인에 실패했습니다. 아이디/이메일과 비밀번호를 확인해주세요.')

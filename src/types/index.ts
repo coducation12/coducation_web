@@ -23,7 +23,6 @@ export interface Student {
   current_curriculum_id?: string;
   enrollment_start_date: string;
   enrollment_end_date?: string;
-  attendance_schedule?: any;
   created_at: string;
 }
 

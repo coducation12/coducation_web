@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { User, Camera, Lock, Save } from 'lucide-react'
 import { toast } from '@/hooks/use-toast'
+import { updateStudentPassword } from '@/lib/actions'
 
 interface StudentProfileClientProps {
   user: {
@@ -163,36 +164,10 @@ export function StudentProfileClient({ user }: StudentProfileClientProps) {
     setPasswordLoading(true)
 
     try {
-      // 현재 비밀번호 확인
-      const { data: userData, error: fetchError } = await supabase
-        .from('users')
-        .select('password')
-        .eq('id', user.id)
-        .single()
+      const result = await updateStudentPassword(currentPassword, newPassword)
 
-      if (fetchError || !userData) {
-        setPasswordError('사용자 정보를 불러올 수 없습니다.')
-        return
-      }
-
-      // bcrypt를 사용한 비밀번호 확인 (클라이언트에서는 bcryptjs 사용)
-      const bcrypt = await import('bcryptjs')
-      const match = await bcrypt.compare(currentPassword, userData.password)
-
-      if (!match) {
-        setPasswordError('현재 비밀번호가 올바르지 않습니다.')
-        return
-      }
-
-      // 새 비밀번호 해시 후 업데이트
-      const hashed = await bcrypt.hash(newPassword, 10)
-      const { error: updateError } = await supabase
-        .from('users')
-        .update({ password: hashed })
-        .eq('id', user.id)
-
-      if (updateError) {
-        setPasswordError('비밀번호 변경에 실패했습니다.')
+      if (!result.success) {
+        setPasswordError(result.error || '비밀번호 변경에 실패했습니다.')
         return
       }
 

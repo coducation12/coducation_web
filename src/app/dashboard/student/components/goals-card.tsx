@@ -9,6 +9,7 @@ import { StudentSectionTitle, StudentText, studentButtonStyles, studentInputStyl
 import { getStudentGoals, addStudentGoal, toggleStudentGoal, deleteStudentGoal as deleteStudentGoalAction } from "@/lib/actions";
 
 interface Goal {
+  id: string;
   title: string;        // 할 일 제목만
   isCompleted: boolean; // 완료 여부만
 }
@@ -78,10 +79,10 @@ export function GoalsCard({ studentId, fixedInput, readOnly, initialData }: Goal
     }
   };
 
-  const toggleGoal = async (goalIndex: number) => {
+  const toggleGoal = async (goalId: string) => {
     try {
       setError(null);
-      const result = await toggleStudentGoal(studentId, goalIndex);
+      const result = await toggleStudentGoal(studentId, goalId);
 
       if (result.success) {
         setGoals(result.data || []);
@@ -95,10 +96,10 @@ export function GoalsCard({ studentId, fixedInput, readOnly, initialData }: Goal
     }
   };
 
-  const deleteGoal = async (goalIndex: number) => {
+  const deleteGoal = async (goalId: string) => {
     try {
       setError(null);
-      const result = await deleteStudentGoalAction(studentId, goalIndex);
+      const result = await deleteStudentGoalAction(studentId, goalId);
 
       if (result.success) {
         setGoals(result.data || []);
@@ -170,12 +171,12 @@ export function GoalsCard({ studentId, fixedInput, readOnly, initialData }: Goal
           <div className="space-y-4 flex-1 flex flex-col min-h-[200px] md:min-h-0">
             {/* 할 일 목록 */}
             <div className="space-y-2 flex-1 overflow-y-auto scrollbar-hide min-h-0">
-              {allGoals.map((goal, index) => (
-                <div key={index} className="flex items-center gap-3 p-3 rounded-lg bg-cyan-400/5 border border-cyan-400/20 hover:bg-cyan-400/10 transition-colors">
+              {allGoals.map((goal) => (
+                <div key={goal.id} className="flex items-center gap-3 p-3 rounded-lg bg-cyan-400/5 border border-cyan-400/20 hover:bg-cyan-400/10 transition-colors">
                   {!readOnly && (
                     <Checkbox
                       checked={goal.isCompleted}
-                      onCheckedChange={() => toggleGoal(index)}
+                      onCheckedChange={() => toggleGoal(goal.id)}
                       className="text-cyan-400 border-cyan-400"
                     />
                   )}
@@ -190,7 +191,7 @@ export function GoalsCard({ studentId, fixedInput, readOnly, initialData }: Goal
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => deleteGoal(index)}
+                      onClick={() => deleteGoal(goal.id)}
                       className="h-6 w-6 p-0 text-cyan-400/60 hover:text-red-400 hover:bg-red-400/10"
                     >
                       <Trash2 className="w-3 h-3" />

@@ -85,7 +85,7 @@ export function AttendanceCalendarModal({
     if (mode === 'detail') {
         return (
             <>
-                <div onClick={handleOpenDetail} className="cursor-pointer">
+                <div onClick={handleOpenDetail} className="cursor-pointer inline-block">
                     {customTrigger}
                 </div>
                 <DayEditor

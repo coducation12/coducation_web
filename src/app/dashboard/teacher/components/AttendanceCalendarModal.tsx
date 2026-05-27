@@ -95,6 +95,10 @@ export function AttendanceCalendarModal({
                     onSave={() => handleSaveDay(teacherId)}
                     onDelete={handleDeleteDay}
                     setEditingDay={setEditingDay}
+                    studentId={studentId}
+                    studentName={studentName}
+                    teacherId={teacherId}
+                    onRefresh={refresh}
                 />
             </>
         );
@@ -195,6 +199,10 @@ export function AttendanceCalendarModal({
                 onSave={() => handleSaveDay(teacherId)}
                 onDelete={handleDeleteDay}
                 setEditingDay={setEditingDay}
+                studentId={studentId}
+                studentName={studentName}
+                teacherId={teacherId}
+                onRefresh={refresh}
             />
         </>
     );

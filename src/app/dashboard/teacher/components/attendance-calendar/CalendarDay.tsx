@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { AttendanceRecord } from './types';
 import { STATUS_CONFIG } from '../types';
+import { getHoliday } from '@/lib/holiday-utils';
 
 interface CalendarDayProps {
     day: number;
@@ -17,6 +18,25 @@ export const CalendarDay = React.memo(({
     records,
     onEditDay
 }: CalendarDayProps) => {
+    // 공휴일 여부 및 요일 계산
+    const { holidayName, numberColorClass } = useMemo(() => {
+        const hName = getHoliday(dateStr);
+        const dayOfWeek = new Date(dateStr).getDay();
+        const isSunday = dayOfWeek === 0;
+        const isSaturday = dayOfWeek === 6;
+
+        let colorClass = 'text-cyan-500/40 opacity-70 group-hover:opacity-100 transition-opacity';
+        if (isToday) {
+            colorClass = 'text-cyan-100 font-bold';
+        } else if (isSunday || hName) {
+            colorClass = 'text-red-500/70 group-hover:text-red-400 transition-colors font-bold';
+        } else if (isSaturday) {
+            colorClass = 'text-blue-500/70 group-hover:text-blue-400 transition-colors font-bold';
+        }
+
+        return { holidayName: hName, numberColorClass: colorClass };
+    }, [dateStr, isToday]);
+
     return (
         <div
             onClick={() => onEditDay(dateStr, records[0])}
@@ -28,10 +48,18 @@ export const CalendarDay = React.memo(({
                 <div className="absolute inset-x-0 top-0 h-1 bg-cyan-400/50 z-20 pointer-events-none"></div>
             )}
 
-            <div className="flex justify-between items-start mb-1 relative z-10 shrink-0">
-                <span className={`text-[10px] sm:text-[11px] font-black tracking-tighter ${isToday ? 'text-cyan-100' : 'text-cyan-500/40 opacity-70 group-hover:opacity-100 transition-opacity'}`}>
-                    {String(day).padStart(2, '0')}
-                </span>
+            <div className="flex justify-between items-start mb-1 relative z-10 shrink-0 min-h-[16px] sm:min-h-[20px]">
+                <div className="flex items-center gap-1 truncate max-w-[70%]">
+                    <span className={`text-[10px] sm:text-[11px] font-black tracking-tighter ${numberColorClass}`}>
+                        {String(day).padStart(2, '0')}
+                    </span>
+                    {holidayName && (
+                        <span className="text-[7px] sm:text-[8px] px-1 py-0.5 rounded bg-red-950/60 border border-red-500/30 text-red-400 font-bold shrink-0 truncate max-w-[45px] sm:max-w-[65px]" title={holidayName}>
+                            {holidayName}
+                        </span>
+                    )}
+                </div>
+                
                 <div className="flex gap-0.5">
                     {records.map((r, idx) => (
                         <div key={idx} className={`w-1 h-1 sm:w-1.5 sm:h-1.5 rounded-full ${STATUS_CONFIG[r.status].color} shadow-[0_0_5px_rgba(0,0,0,0.5)]`}></div>

@@ -30,13 +30,28 @@ interface StudentInfo {
 
 interface MakeupSessionModalProps {
     students: StudentInfo[];
-    teacherId?: string;
+    teacherId?: string | null;
     onSuccess: () => void;
+    open?: boolean;
+    onOpenChange?: (open: boolean) => void;
+    defaultStudentId?: string;
+    defaultDate?: string;
 }
 
-export function MakeupSessionModal({ students, teacherId, onSuccess }: MakeupSessionModalProps) {
+export function MakeupSessionModal({ 
+    students, 
+    teacherId, 
+    onSuccess,
+    open: externalOpen,
+    onOpenChange: externalOnOpenChange,
+    defaultStudentId,
+    defaultDate
+}: MakeupSessionModalProps) {
     const { toast } = useToast();
-    const [open, setOpen] = useState(false);
+    const [internalOpen, setInternalOpen] = useState(false);
+    const open = externalOpen !== undefined ? externalOpen : internalOpen;
+    const setOpen = externalOnOpenChange !== undefined ? externalOnOpenChange : setInternalOpen;
+
     const [loading, setLoading] = useState(false);
     const [isMounted, setIsMounted] = useState(false);
     const [selectedStudent, setSelectedStudent] = useState<string>('');
@@ -48,6 +63,14 @@ export function MakeupSessionModal({ students, teacherId, onSuccess }: MakeupSes
     useEffect(() => {
         setIsMounted(true);
     }, []);
+
+    // 모달이 열릴 때 기본값 주입
+    useEffect(() => {
+        if (open) {
+            if (defaultStudentId) setSelectedStudent(defaultStudentId);
+            if (defaultDate) setDate(defaultDate);
+        }
+    }, [open, defaultStudentId, defaultDate]);
 
     if (!isMounted) return null;
 
@@ -85,7 +108,8 @@ export function MakeupSessionModal({ students, teacherId, onSuccess }: MakeupSes
             setOpen(false);
             onSuccess();
             // Reset form
-            setSelectedStudent('');
+            if (defaultStudentId) setSelectedStudent(defaultStudentId);
+            else setSelectedStudent('');
             setMemo('');
         } catch (error: any) {
             console.error('보강 수업 등록 실패:', error);
@@ -99,6 +123,98 @@ export function MakeupSessionModal({ students, teacherId, onSuccess }: MakeupSes
         }
     };
 
+    const dialogContent = (
+        <DialogContent className="max-w-md bg-cyan-950 border-cyan-500/30 text-cyan-100 shadow-[0_0_40px_rgba(0,0,0,0.8)]">
+            <DialogHeader>
+                <DialogTitle className="text-xl font-bold text-cyan-100 drop-shadow-[0_0_4px_#00fff7]">
+                    보강 수업 등록
+                </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+                <div className="space-y-2">
+                    <Label className="text-cyan-300">학생 선택</Label>
+                    <Select value={selectedStudent} onValueChange={setSelectedStudent} disabled={!!defaultStudentId}>
+                        <SelectTrigger className="bg-cyan-900/40 border-cyan-500/30 text-cyan-100">
+                            <SelectValue placeholder="학생을 선택하세요" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-cyan-950 border-cyan-500/30 text-cyan-100">
+                            {students.map((s) => (
+                                <SelectItem key={s.id} value={s.id}>
+                                    {s.name}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                </div>
+
+                <div className="space-y-2">
+                    <Label className="text-cyan-300">보강 날짜</Label>
+                    <Input
+                        type="date"
+                        value={date}
+                        onChange={(e) => setDate(e.target.value)}
+                        className="bg-cyan-900/40 border-cyan-500/30 text-cyan-100"
+                        disabled={!!defaultDate}
+                    />
+                </div>
+
+                <div className="space-y-2">
+                    <Label className="text-cyan-300">수업 시간</Label>
+                    <div className="flex items-center gap-2">
+                        <Input
+                            type="time"
+                            value={startTime}
+                            onChange={(e) => setStartTime(e.target.value)}
+                            className="bg-cyan-900/40 border-cyan-500/30 text-cyan-100 flex-1"
+                        />
+                        <span className="text-cyan-500">~</span>
+                        <Input
+                            type="time"
+                            value={endTime}
+                            onChange={(e) => setEndTime(e.target.value)}
+                            className="bg-cyan-900/40 border-cyan-500/30 text-cyan-100 flex-1"
+                        />
+                    </div>
+                </div>
+
+                <div className="space-y-2">
+                    <Label className="text-cyan-300">보강 사유 / 메모</Label>
+                    <Textarea
+                        placeholder="예: 어제 결석으로 인한 보강 진행"
+                        value={memo}
+                        onChange={(e) => setMemo(e.target.value)}
+                        className="bg-cyan-900/40 border-cyan-500/30 text-cyan-100 placeholder:text-cyan-600/50 min-h-[100px]"
+                    />
+                </div>
+
+                <div className="flex justify-end gap-3 pt-4">
+                    <Button
+                        variant="ghost"
+                        onClick={() => setOpen(false)}
+                        className="text-cyan-400 hover:text-cyan-100 hover:bg-cyan-900/40"
+                    >
+                        취소
+                    </Button>
+                    <Button
+                        className="bg-cyan-600 hover:bg-cyan-500 text-white shadow-[0_0_10px_rgba(6,182,212,0.3)] min-w-[120px]"
+                        onClick={handleSubmit}
+                        disabled={loading}
+                    >
+                        {loading ? '등록 중...' : '보강 등록하기'}
+                    </Button>
+                </div>
+            </div>
+        </DialogContent>
+    );
+
+    if (externalOpen !== undefined) {
+        return (
+            <Dialog open={open} onOpenChange={setOpen}>
+                {dialogContent}
+            </Dialog>
+        );
+    }
+
     return (
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
@@ -107,86 +223,7 @@ export function MakeupSessionModal({ students, teacherId, onSuccess }: MakeupSes
                     보강 등록
                 </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-md bg-cyan-950 border-cyan-500/30 text-cyan-100">
-                <DialogHeader>
-                    <DialogTitle className="text-xl font-bold text-cyan-100 drop-shadow-[0_0_4px_#00fff7]">
-                        보강 수업 등록
-                    </DialogTitle>
-                </DialogHeader>
-                <div className="space-y-4 py-4">
-                    <div className="space-y-2">
-                        <Label className="text-cyan-300">학생 선택</Label>
-                        <Select value={selectedStudent} onValueChange={setSelectedStudent}>
-                            <SelectTrigger className="bg-cyan-900/40 border-cyan-500/30 text-cyan-100">
-                                <SelectValue placeholder="학생을 선택하세요" />
-                            </SelectTrigger>
-                            <SelectContent className="bg-cyan-950 border-cyan-500/30 text-cyan-100">
-                                {students.map((s) => (
-                                    <SelectItem key={s.id} value={s.id}>
-                                        {s.name}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                    </div>
-
-                    <div className="space-y-2">
-                        <Label className="text-cyan-300">보강 날짜</Label>
-                        <Input
-                            type="date"
-                            value={date}
-                            onChange={(e) => setDate(e.target.value)}
-                            className="bg-cyan-900/40 border-cyan-500/30 text-cyan-100"
-                        />
-                    </div>
-
-                    <div className="space-y-2">
-                        <Label className="text-cyan-300">수업 시간</Label>
-                        <div className="flex items-center gap-2">
-                            <Input
-                                type="time"
-                                value={startTime}
-                                onChange={(e) => setStartTime(e.target.value)}
-                                className="bg-cyan-900/40 border-cyan-500/30 text-cyan-100 flex-1"
-                            />
-                            <span className="text-cyan-500">~</span>
-                            <Input
-                                type="time"
-                                value={endTime}
-                                onChange={(e) => setEndTime(e.target.value)}
-                                className="bg-cyan-900/40 border-cyan-500/30 text-cyan-100 flex-1"
-                            />
-                        </div>
-                    </div>
-
-                    <div className="space-y-2">
-                        <Label className="text-cyan-300">보강 사유 / 메모</Label>
-                        <Textarea
-                            placeholder="예: 어제 결석으로 인한 보강 진행"
-                            value={memo}
-                            onChange={(e) => setMemo(e.target.value)}
-                            className="bg-cyan-900/40 border-cyan-500/30 text-cyan-100 placeholder:text-cyan-600/50 min-h-[100px]"
-                        />
-                    </div>
-
-                    <div className="flex justify-end gap-3 pt-4">
-                        <Button
-                            variant="ghost"
-                            onClick={() => setOpen(false)}
-                            className="text-cyan-400 hover:text-cyan-100 hover:bg-cyan-900/40"
-                        >
-                            취소
-                        </Button>
-                        <Button
-                            className="bg-cyan-600 hover:bg-cyan-500 text-white shadow-[0_0_10px_rgba(6,182,212,0.3)] min-w-[120px]"
-                            onClick={handleSubmit}
-                            disabled={loading}
-                        >
-                            {loading ? '등록 중...' : '보강 등록하기'}
-                        </Button>
-                    </div>
-                </div>
-            </DialogContent>
+            {dialogContent}
         </Dialog>
     );
 }

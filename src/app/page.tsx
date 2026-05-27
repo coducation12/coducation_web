@@ -1,4 +1,5 @@
 import { HeroSection } from '@/components/hero/hero-section';
+import { BusinessSection } from '@/components/landing/business-section';
 import { AcademySection } from '@/components/landing/academy-section';
 import { StudentWorksSection } from '@/components/landing/student-works-section';
 import { CurriculumSection } from '@/components/landing/curriculum-section';
@@ -18,6 +19,7 @@ export default async function Home() {
         imageUrl={content?.promo_image}
       />
       <HeroSection />
+      <BusinessSection initialBusinessAreas={content?.business_areas} />
       <AcademySection />
       <StudentWorksSection />
       <InstructorsSection />

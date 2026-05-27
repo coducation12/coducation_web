@@ -1963,7 +1963,7 @@ export async function updateContent(formData: FormData) {
     }
 
     // JSON 필드 처리
-    const jsonFields = ['academy_features', 'academy_slides'];
+    const jsonFields = ['academy_features', 'academy_slides', 'business_areas'];
     jsonFields.forEach(field => {
       if (formData.has(field)) {
         try {

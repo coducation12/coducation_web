@@ -4,6 +4,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import AcademyContentSettings from "@/components/admin/content/AcademyContentSettings";
 import CurriculumSettings from "@/components/admin/content/CurriculumSettings";
 import PromoModalSettings from "@/components/admin/content/PromoModalSettings";
+import BusinessContentSettings from "@/components/admin/content/BusinessContentSettings";
 
 export const dynamic = 'force-dynamic';
 
@@ -25,7 +26,8 @@ export default async function ContentManagePage() {
     featured_card_2_image_2: content?.featured_card_2_image_2 || '',
     featured_card_2_link: content?.featured_card_2_link || '',
     promo_active: content?.promo_active || false,
-    promo_image: content?.promo_image || ''
+    promo_image: content?.promo_image || '',
+    business_areas: content?.business_areas || []
   };
 
   return (
@@ -47,12 +49,17 @@ export default async function ContentManagePage() {
       <Tabs defaultValue="academy" className="space-y-4">
         <TabsList>
           <TabsTrigger value="academy">학원 소개</TabsTrigger>
+          <TabsTrigger value="business">사업 영역</TabsTrigger>
           <TabsTrigger value="curriculum">교육 과정</TabsTrigger>
           <TabsTrigger value="promo">프로모션</TabsTrigger>
         </TabsList>
 
         <TabsContent value="academy">
           <AcademyContentSettings initialData={initialData} />
+        </TabsContent>
+
+        <TabsContent value="business">
+          <BusinessContentSettings initialData={initialData} />
         </TabsContent>
 
         <TabsContent value="curriculum">

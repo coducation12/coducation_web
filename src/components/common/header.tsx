@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/button';
 
 const navLinks = [
   { href: '/#home', label: '홈', id: 'home' },
+  { href: '/#business-areas', label: '사업영역', id: 'business-areas' },
   { href: '/#academy', label: '학원안내', id: 'academy' },
   { href: '/#student-works', label: '학생작품', id: 'student-works' },
   { href: '/#instructors', label: '강사진', id: 'instructors' },

@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import { getContent } from "@/lib/actions";
-import { getTimetableSnapshot } from "@/lib/actions/timetable-snapshot";
+import { getTimetableSnapshot, createTimetableSnapshot } from "@/lib/actions/timetable-snapshot";
 
 export interface TimetableStudent {
     id: string;
@@ -124,9 +124,19 @@ export const useTimetable = (options?: TimetableOptions) => {
             setTeacherNames(Object.fromEntries(teacherMap.entries()));
 
             const { data: contentResult } = await getContent();
-            if (contentResult?.unit_threshold) {
-                setUnitThreshold(contentResult.unit_threshold.toString());
-            }
+            const threshold = contentResult?.unit_threshold?.toString() || '8';
+            setUnitThreshold(threshold);
+
+            // 현재 월인 경우에만 백그라운드에서 실시간 데이터를 자동으로 덮어씌워 스냅샷을 생성/갱신합니다.
+            const now = new Date();
+            const currentYear = now.getFullYear();
+            const currentMonth = now.getMonth() + 1;
+
+            createTimetableSnapshot(currentYear, currentMonth, {
+                students: convertedStudents,
+                teacherNames: Object.fromEntries(teacherMap.entries()),
+                unitThreshold: threshold
+            }).catch(err => console.error("Failed to auto-save timetable snapshot in background:", err));
         } catch (error) {
             console.error('시간표 데이터 로드 실패:', error);
             // 에러 발생 시에도 빈 상태로 초기화하여 로딩 종료

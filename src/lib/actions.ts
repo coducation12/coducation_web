@@ -3119,8 +3119,8 @@ export async function deleteStudent(studentId: string) {
       return { success: false, error: '관리자만 학생을 삭제할 수 있습니다.' };
     }
 
-    // 1. 학생 정보 조회
-    const { data: studentData, error: studentError } = await supabase
+    // 1. 학생 정보 조회 (supabaseAdmin 사용하여 RLS 우회)
+    const { data: studentData, error: studentError } = await supabaseAdmin
       .from('users')
       .select('id, username, name')
       .eq('id', studentId)
@@ -3131,9 +3131,9 @@ export async function deleteStudent(studentId: string) {
       return { success: false, error: '학생을 찾을 수 없습니다.' };
     }
 
-    // 2. 학부모 계정 ID 조회 (학생 ID에 'p'를 붙인 username으로 찾기)
+    // 2. 학부모 계정 ID 조회 (학생 ID에 'p'를 붙인 username으로 찾기, supabaseAdmin 사용하여 RLS 우회)
     const parentUsername = `${studentData.username}p`;
-    const { data: parentData, error: parentError } = await supabase
+    const { data: parentData, error: parentError } = await supabaseAdmin
       .from('users')
       .select('id')
       .eq('username', parentUsername)
@@ -3144,10 +3144,10 @@ export async function deleteStudent(studentId: string) {
       console.warn('학부모 계정을 찾을 수 없습니다:', parentError);
     }
 
-    // 3. 관련 데이터 삭제 (CASCADE로 자동 삭제되지만 명시적으로 처리)
+    // 3. 관련 데이터 삭제 (supabaseAdmin 사용하여 RLS 우회 및 외래 키 제약 극복)
 
     // 3-1. 학생 출결 세션 삭제 (attendance_sessions)
-    const { error: attendanceError } = await supabase
+    const { error: attendanceError } = await supabaseAdmin
       .from('attendance_sessions')
       .delete()
       .eq('student_id', studentId);
@@ -3156,18 +3156,107 @@ export async function deleteStudent(studentId: string) {
       console.warn('학생 출결 세션 삭제 실패:', attendanceError);
     }
 
-    // 3-2. 학생 학습 로그 삭제 (레거시 테이블 제거 대상 - 필요 시 삭제)
-    /* 
-    const { error: learningLogsError } = await supabase
-      .from('student_learning_logs')
+    // 3-2. 학생 학습 스케줄 삭제 (student_schedules)
+    const { error: schedulesError } = await supabaseAdmin
+      .from('student_schedules')
       .delete()
       .eq('student_id', studentId);
-    */
 
-    // 3-3. 수납 기록 삭제 (tuition_annual_records 삭제는 CASCADE 정책에 따라 자동 처리됨)
+    if (schedulesError) {
+      console.warn('학생 학습 스케줄 삭제 실패:', schedulesError);
+    }
 
-    // 3-4. 커뮤니티 게시글 삭제 (soft delete)
-    const { error: postsError } = await supabase
+    // 3-3. 학생 학습 진도 삭제 (student_progresses)
+    const { error: progressError } = await supabaseAdmin
+      .from('student_progresses')
+      .delete()
+      .eq('student_id', studentId);
+
+    if (progressError) {
+      console.warn('학생 학습 진도 삭제 실패:', progressError);
+    }
+
+    // 3-4. 학생 할 일 삭제 (student_todos)
+    const { error: todosError } = await supabaseAdmin
+      .from('student_todos')
+      .delete()
+      .eq('student_id', studentId);
+
+    if (todosError) {
+      console.warn('학생 할 일 삭제 실패:', todosError);
+    }
+
+    // 3-5. 학생 업적 및 자격증 삭제 (student_achievements)
+    const { error: achievementsError } = await supabaseAdmin
+      .from('student_achievements')
+      .delete()
+      .eq('student_id', studentId);
+
+    if (achievementsError) {
+      console.warn('학생 업적 삭제 실패:', achievementsError);
+    }
+
+    // 3-6. 학생 타자 통계 및 로그 삭제
+    const { error: typingStatsError } = await supabaseAdmin
+      .from('typing_weekly_stats')
+      .delete()
+      .eq('student_id', studentId);
+
+    if (typingStatsError) {
+      console.warn('학생 타자 통계 삭제 실패:', typingStatsError);
+    }
+
+    const { error: typingLogsError } = await supabaseAdmin
+      .from('typing_logs')
+      .delete()
+      .eq('student_id', studentId);
+
+    if (typingLogsError) {
+      console.warn('학생 타자 로그 삭제 실패:', typingLogsError);
+    }
+
+    // 3-7. 학생 수납 기록 삭제 (tuition_annual_records)
+    const { error: tuitionError } = await supabaseAdmin
+      .from('tuition_annual_records')
+      .delete()
+      .eq('student_id', studentId);
+
+    if (tuitionError) {
+      console.warn('학생 수납 기록 삭제 실패:', tuitionError);
+    }
+
+    // 3-8. 상담 문의 삭제 (consultations)
+    const { error: consultStudentError } = await supabaseAdmin
+      .from('consultations')
+      .delete()
+      .eq('student_id', studentId);
+
+    if (consultStudentError) {
+      console.warn('학생 관련 상담 문의 삭제 실패:', consultStudentError);
+    }
+
+    const { error: consultUserError } = await supabaseAdmin
+      .from('consultations')
+      .delete()
+      .eq('user_id', studentId);
+
+    if (consultUserError) {
+      console.warn('학생 아이디 기반 상담 문의 삭제 실패:', consultUserError);
+    }
+
+    if (parentData) {
+      const { error: consultParentError } = await supabaseAdmin
+        .from('consultations')
+        .delete()
+        .eq('user_id', parentData.id);
+
+      if (consultParentError) {
+        console.warn('학부모 관련 상담 문의 삭제 실패:', consultParentError);
+      }
+    }
+
+    // 3-9. 커뮤니티 게시글 삭제 (soft delete)
+    const { error: postsError } = await supabaseAdmin
       .from('community_posts')
       .update({ is_deleted: true })
       .eq('user_id', studentId);
@@ -3176,8 +3265,8 @@ export async function deleteStudent(studentId: string) {
       console.warn('커뮤니티 게시글 삭제 실패:', postsError);
     }
 
-    // 3-5. 커뮤니티 댓글 삭제 (soft delete)
-    const { error: commentsError } = await supabase
+    // 3-10. 커뮤니티 댓글 삭제 (soft delete)
+    const { error: commentsError } = await supabaseAdmin
       .from('community_comments')
       .update({ is_deleted: true })
       .eq('user_id', studentId);
@@ -3186,8 +3275,8 @@ export async function deleteStudent(studentId: string) {
       console.warn('커뮤니티 댓글 삭제 실패:', commentsError);
     }
 
-    // 4. students 테이블에서 학생 상세 정보 삭제
-    const { error: studentDetailError } = await supabase
+    // 4. students 테이블에서 학생 상세 정보 삭제 (supabaseAdmin 사용하여 RLS 우회)
+    const { error: studentDetailError } = await supabaseAdmin
       .from('students')
       .delete()
       .eq('user_id', studentId);
@@ -3197,9 +3286,9 @@ export async function deleteStudent(studentId: string) {
       return { success: false, error: '학생 상세 정보 삭제에 실패했습니다.' };
     }
 
-    // 5. 학부모 계정 삭제 (있는 경우)
+    // 5. 학부모 계정 삭제 (있는 경우, supabaseAdmin 사용하여 RLS 우회)
     if (parentData) {
-      const { error: parentDeleteError } = await supabase
+      const { error: parentDeleteError } = await supabaseAdmin
         .from('users')
         .delete()
         .eq('id', parentData.id);
@@ -3209,8 +3298,8 @@ export async function deleteStudent(studentId: string) {
       }
     }
 
-    // 6. 학생 계정 삭제
-    const { error: studentDeleteError } = await supabase
+    // 6. 학생 계정 삭제 (supabaseAdmin 사용하여 RLS 우회)
+    const { error: studentDeleteError } = await supabaseAdmin
       .from('users')
       .delete()
       .eq('id', studentId);
@@ -3219,6 +3308,13 @@ export async function deleteStudent(studentId: string) {
       console.error('학생 계정 삭제 실패:', studentDeleteError);
       return { success: false, error: '학생 계정 삭제에 실패했습니다.' };
     }
+
+    // 캐시 재검증 및 화면 새로고침 유도
+    revalidatePath('/dashboard/admin/students', 'page');
+    revalidatePath('/dashboard/teacher/students', 'page');
+    revalidatePath('/dashboard/teacher', 'page');
+    revalidatePath('/dashboard/admin/timetable', 'page');
+    revalidatePath('/dashboard/teacher/timetable', 'page');
 
     return {
       success: true,

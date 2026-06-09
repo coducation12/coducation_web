@@ -53,7 +53,7 @@ export const useAttendanceScheduler = (teacherId?: string) => {
     useEffect(() => {
         const fetchAllStudents = async () => {
             try {
-                const result = await getActiveStudentsList();
+                const result = await getActiveStudentsList(teacherId);
                 if (!result.success) return;
 
                 const activeList = (result.data || [])
@@ -64,7 +64,7 @@ export const useAttendanceScheduler = (teacherId?: string) => {
             }
         };
         fetchAllStudents();
-    }, []);
+    }, [teacherId]);
 
     // 날짜 변경 시 학생 데이터 새로 불러오기
     useEffect(() => {

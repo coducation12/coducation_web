@@ -5,7 +5,6 @@ import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 import { cache } from 'react'
 import { supabase, supabaseAdmin } from '@/lib/supabase'
-import bcrypt from 'bcryptjs'
 import { compressImage, validateImageFile, formatFileSize } from '@/lib/image-utils'
 import { getAuthenticatedUser } from '@/lib/auth'
 
@@ -105,6 +104,7 @@ export async function updateUserPassword(userId: string, newPassword: string) {
 
 export async function updateStudentPassword(currentPassword: string, newPassword: string) {
   try {
+    const bcrypt = await import('bcryptjs');
     const cookieStore = await cookies();
     const userId = cookieStore.get('user_id')?.value;
     const userRole = cookieStore.get('user_role')?.value;
@@ -231,6 +231,7 @@ export async function login(formData: FormData) {
       const password = formData.get('password') as string;
 
       try {
+        const bcrypt = await import('bcryptjs');
         const { data: user, error } = await supabaseAdmin
           .from('users')
           .select('id, username, role, password, status')
@@ -448,6 +449,7 @@ export async function getUniqueUsername(baseUsername: string) {
 // 학생 추가 서버 액션
 export async function addStudent(formData: FormData, isSignup: boolean = false) {
   try {
+    const bcrypt = await import('bcryptjs');
     // 현재 로그인한 사용자 정보 가져오기
     const cookieStore = await cookies();
     const currentUserId = cookieStore.get('user_id')?.value;
@@ -872,6 +874,7 @@ export async function updateStudent(formData: FormData) {
     };
     
     if (studentData.password) {
+      const bcrypt = await import('bcryptjs');
       userUpdateData.password = await bcrypt.hash(studentData.password, 10);
     }
 
@@ -1464,11 +1467,24 @@ export async function deleteDailyAttendance(id: string) {
 }
 
 // 활성 상태(active)인 학생의 ID와 이름만 조회하는 초경량 Server Action (보강 등록용)
-export async function getActiveStudentsList() {
+export async function getActiveStudentsList(teacherId?: string | null) {
   try {
-    const { data, error } = await supabaseAdmin
+    const cookieStore = await cookies();
+    const currentUserRole = cookieStore.get('user_role')?.value;
+    const currentUserId = cookieStore.get('user_id')?.value;
+
+    let query = supabaseAdmin
       .from('students')
-      .select('user_id, users!students_user_id_fkey(name)');
+      .select('user_id, assigned_teachers, users!students_user_id_fkey(name, status)');
+
+    // 매개변수로 teacherId가 주어지거나, 로그인된 계정이 강사인 경우 해당 강사 담당 학생만 조회
+    const targetTeacherId = teacherId || (currentUserRole === 'teacher' ? currentUserId : null);
+
+    if (targetTeacherId) {
+      query = query.contains('assigned_teachers', [targetTeacherId]);
+    }
+
+    const { data, error } = await query;
 
     if (error) {
       console.error('getActiveStudentsList db error:', error);
@@ -1477,7 +1493,7 @@ export async function getActiveStudentsList() {
 
     // users.status가 active인 항목 필터링 (조인 조건 한계 보완)
     const filtered = (data || [])
-      .filter((s: any) => s.users?.name)
+      .filter((s: any) => s.users?.name && (s.users.status === 'active' || !s.users.status))
       .map((s: any) => ({
         id: s.user_id,
         name: s.users.name
@@ -2276,6 +2292,7 @@ export async function deleteMainCurriculum(curriculumId: string) {
 // 강사 추가 서버 액션
 export async function addTeacher(formData: FormData) {
   try {
+    const bcrypt = await import('bcryptjs');
     // 현재 로그인한 사용자가 관리자인지 확인
     const cookieStore = await cookies();
     const currentUserRole = cookieStore.get('user_role')?.value;
@@ -2525,6 +2542,7 @@ export async function updateTeacher(formData: FormData) {
 
     // 비밀번호가 입력된 경우에만 업데이트
     if (teacherData.password) {
+      const bcrypt = await import('bcryptjs');
       const passwordHash = await bcrypt.hash(teacherData.password, 10);
       updateUserData.password = passwordHash;
     }
@@ -2752,6 +2770,7 @@ export async function updateAdminProfile(formData: FormData) {
 
     // 비밀번호가 입력된 경우에만 업데이트
     if (adminData.newPassword) {
+      const bcrypt = await import('bcryptjs');
       const passwordHash = await bcrypt.hash(adminData.newPassword, 10);
       updateUserData.password = passwordHash;
     }
@@ -3263,6 +3282,7 @@ export async function createStudentSignupRequest(studentData: {
   assignedTeacherId: string;
 }) {
   try {
+    const bcrypt = await import('bcryptjs');
     // 유니크한 학생 아이디 확보 (이미 존재할 경우 s, t, f 접미사 부여)
     const uniqueStudentId = await getUniqueUsername(studentData.studentId);
 

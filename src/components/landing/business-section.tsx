@@ -61,7 +61,7 @@ export function BusinessSection({ initialBusinessAreas }: BusinessSectionProps) 
     <section id="business-areas" className="container w-full py-16 md:py-32 lg:py-40 border-t border-cyan-500/10">
       <div className="flex flex-col items-center text-center space-y-3 md:space-y-4 mb-12 md:mb-20 px-4">
         <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold tracking-tighter font-headline text-cyan-100 drop-shadow-[0_0_15px_rgba(0,255,247,0.3)]">
-          전문 사업 영역
+          사업 영역
         </h2>
         <p className="max-w-2xl text-sm sm:text-base md:text-lg text-muted-foreground">
           Coducation은 IT 전문 교육을 넘어 기업 및 브랜드를 위한 최고의 기술 개발 파트너로서 다양한 사업을 영위하고 있습니다.
@@ -70,14 +70,14 @@ export function BusinessSection({ initialBusinessAreas }: BusinessSectionProps) 
 
       <div className="grid gap-8 grid-cols-1 md:grid-cols-2 max-w-6xl mx-auto px-4">
         {businessAreas.map((area: any) => (
-          <Card 
+          <Card
             key={area.id}
             className="cyber-card overflow-hidden group hover:scale-[1.01] hover:-translate-y-1 transition-all duration-300 bg-cyan-950/20 backdrop-blur-sm border-cyan-500/20 shadow-[0_0_30px_rgba(0,0,0,0.6)] flex flex-col h-full"
           >
             {/* 상단: 이미지 영역 (크고 선명하게 노출) */}
             <div className="relative w-full h-56 sm:h-64 md:h-72 overflow-hidden border-b border-cyan-500/20">
-              <Image 
-                src={area.image || 'https://placehold.co/400x300.png'} 
+              <Image
+                src={area.image || 'https://placehold.co/400x300.png'}
                 alt={area.title}
                 fill
                 className="object-cover group-hover:scale-105 transition-transform duration-700"

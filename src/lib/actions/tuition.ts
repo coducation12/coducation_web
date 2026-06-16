@@ -152,7 +152,21 @@ export async function saveTuitionPayment(data: {
             yearlyGroups[year].push(item);
         });
 
-        // 2. 학생의 기본 수강료 조회
+        // 2. 학생의 기존 연도별 레코드 연도 조회 (전부 삭제된 연도 대응)
+        const { data: existingRecords } = await supabaseAdmin
+            .from('tuition_annual_records')
+            .select('year')
+            .eq('student_id', data.student_id);
+        
+        const existingYears = existingRecords?.map((r: any) => r.year) || [];
+        
+        // 처리해야 할 모든 연도 목록 (합집합)
+        const allYears = Array.from(new Set([
+            ...existingYears,
+            ...Object.keys(yearlyGroups).map(Number)
+        ]));
+
+        // 3. 학생의 기본 수강료 조회
         const { data: student } = await supabaseAdmin
             .from('students')
             .select('tuition_fee')
@@ -160,10 +174,9 @@ export async function saveTuitionPayment(data: {
             .maybeSingle();
         const standardFee = student?.tuition_fee || 0;
 
-        // 3. 각 연도별로 DB 업데이트
-        const updatePromises = Object.keys(yearlyGroups).map(async (yearStr) => {
-            const year = parseInt(yearStr);
-            const itemsInYear = yearlyGroups[year];
+        // 4. 각 연도별로 DB 업데이트
+        const updatePromises = allYears.map(async (year) => {
+            const itemsInYear = yearlyGroups[year] || [];
 
             // 기존 연도별 레코드 로드
             const { data: existingRecord } = await supabaseAdmin
@@ -173,7 +186,13 @@ export async function saveTuitionPayment(data: {
                 .eq('year', year)
                 .maybeSingle();
 
-            const updatedMonthlyData = { ...(existingRecord?.monthly_data || {}) };
+            // 이번에 전달된 내역도 없고, 기존 레코드도 없는 연도라면 패스
+            if (itemsInYear.length === 0 && !existingRecord) {
+                return { error: null };
+            }
+
+            // 새로운 월별 데이터를 담을 객체 (기존 레코드를 복사하지 않고 새로 정의하여 제외된 월은 삭제되도록 유도)
+            const updatedMonthlyData: Record<string, any> = {};
             
             // 월별로 항목 다시 그룹화 (동일 월 내 다수 결제 처리)
             const monthlyGroups: Record<string, any[]> = {};

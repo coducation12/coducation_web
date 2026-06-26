@@ -1,16 +1,100 @@
-# Coducation 데이터베이스 스키마
+# Coducation 데이터베이스 스키마 및 가이드
+
+이 문서는 **Coducation (코딩으로 세상을 교육하다)** 시스템의 Supabase (PostgreSQL) 데이터베이스 구조와 개편된 테이블 및 데이터를 설명합니다.
+
+---
 
 ## 📊 데이터베이스 개요
 
-**데이터베이스**: Supabase (PostgreSQL)  
-**인증**: Supabase Auth (강사/관리자) + Custom Auth (학생/학부모)
+* **플랫폼**: Supabase (PostgreSQL)
+* **인증**: Supabase Auth (이메일 기반: 강사/관리자) + Custom Auth (아이디 기반: 학생/학부모)
+* **RLS (Row Level Security)**: 활성화되어 있으며, 강사/관리자 전용 세션 및 작업은 `supabaseAdmin` (Service Role Key)을 사용해 수행합니다.
 
-## 🗂️ 테이블 구조
+---
 
-### 1. users (사용자 기본 정보)
+## 🗂️ 테이블 현황 일람
 
-모든 사용자의 기본 정보를 저장하는 테이블입니다.
+최근 개편 작업을 거치며 데이터 모델이 최적화되었습니다. 현재 시스템에서 참조 및 연동되는 활성 테이블은 다음과 같습니다.
 
+### 1. 핵심 사용자 및 교육 과정
+* **`users`**: 모든 사용자의 공통 계정 및 역할 정보
+* **`students`**: 학생 회원의 수강료, 배정 강사, 현재 진행 단계 등의 상세 정보
+* **`teachers`**: 강사 프로필, 소개, 경력 정보
+* **`curriculums`**: 학원의 교육 과정(커리큘럼) 마스터 정보
+* **`main_curriculums`**: 메인 페이지(랜딩)에 소개용으로 노출할 특정 교육 과정 목록
+
+### 2. 출결 및 진도/성과 관리
+* **`attendance_sessions` (★ 중요)**: 일별 정규/보강 수업 출결 및 **일일 타자연습 최고 점수 기록**
+* **`student_schedules`**: 학생별 요일별 기본 등원 시간 설정
+* **`timetable_snapshots`**: 학원 행정용 요일별/시간별 전체 학생 시간표 스냅샷
+* **`student_progresses`**: 학생별 커리큘럼 이수율 및 개별 평가 점수
+* **`student_achievements`**: 학생이 획득한 자격증(Certificate) 및 수상 내역(Award)
+* **`student_todos`**: 학생 대시보드의 개인 To-Do 할 일 목록
+
+### 3. 실습실 및 사이트 설정
+* **`pc_room_layouts`**: 컴퓨터 실습실의 PC 배치 및 회전 상태 정보
+* **`content_management`**: 메인 페이지의 슬라이드, 슬로건, 특징 카드 등 동적 컨텐츠 설정
+* **`site_statistics`**: 일별 페이지 뷰 및 순 방문자(Unique Visitors) 통계
+
+### 4. 타자 연습
+* **`typing_exercises`**: 타자연습 시스템에 등록된 전체 예문 목록
+* **`typing_weekly_stats` (★ 폐기)**: 주차별 타자 통계 (더 이상 사용하지 않음, 삭제 예정)
+* **`typing_logs` (★ 폐기)**: 개별 타자연습 로그 (더 이상 사용하지 않음, 삭제 예정)
+
+### 5. 소통 및 가입 승인
+* **`student_signup_requests`**: 신규 학생 가입 신청 상태 및 보류 사유
+* **`approval_logs`**: 가입 승인/반려 히스토리 로그
+* **`community_posts`**: 학원 게시판 글 정보 (소통, 알림)
+* **`community_comments`**: 게시글 댓글 정보
+* **`consultations`**: 학부모와 강사 간의 온라인 상담 신청 및 답변 내역
+
+---
+
+## 🔄 테이블 개편 및 폐기(Deprecated) 안내
+
+테이블 개편 과정에서 미사용/대체된 테이블들의 현황입니다.
+
+| 기존 테이블 (Deprecated) | 신규 테이블 (Active) | 변경 배경 및 비고 |
+| :--- | :--- | :--- |
+| **`student_activity_logs`** | **`attendance_sessions`** | 과거에는 일일 활동을 로깅 테이블 형태로 누적했으나, **출결과 연계된 하루 1회의 고유한 학습 세션**으로 관리하기 위해 일자별 고유 키를 가지는 세션 테이블로 통합되었습니다. |
+| **`tuition_payments`** | **`tuition_annual_records`** | 월별로 수많은 행이 생성되던 과거 구조에서, **학생별-연도별 단 1개의 행(Row)**만 생성하고 내부 `monthly_data` 컬럼을 JSONB 타입으로 구조화하여 쿼리 속도와 용량을 비약적으로 최적화했습니다. |
+| **`typing_logs`** | **`attendance_sessions`** | 원래 타자연습 매 시도마다 로그를 남기려 설계했던 흔적이나, 불필요한 쓰기 오버헤드를 막기 위해 **시도 결과는 일별 최고 속도(CPM)만 `attendance_sessions`에 합산**하므로 현재는 비어 있고 동작에 영향을 주지 않는 유령 테이블입니다. (완전히 삭제됨) |
+| **`typing_weekly_stats`** | **`attendance_sessions`** | 학생의 주차별 타자 속도/정확도 통계 데이터용으로 설계되었으나, 실제 학생 타자 차트는 `attendance_sessions`를 통해 직접 조회하므로 필요가 없어 완전 폐기되었습니다. |
+
+---
+
+## 🚨 문제 해결 가이드: 비정상 타수(5000 CPM 등) 수동 제거 및 수정 방법
+
+부정행위 등으로 인해 비정상적으로 높은 타수 기록이 등록되었을 때, 이를 DB에서 제거/수정하는 절차입니다.
+
+### 1. 타수가 저장된 물리적 공간
+타수가 저장되는 실제 컬럼은 **`attendance_sessions`** 테이블의 아래 컬럼들입니다.
+* **`korean_typing_speed`**: 당일 한국어 최고 타수 (CPM)
+* **`english_typing_speed`**: 당일 영어 최고 타수 (CPM)
+
+### 2. SQL을 사용한 수정/초기화 쿼리
+Supabase SQL Editor 또는 데이터베이스 툴에서 아래 쿼리를 사용하여 해당 학생의 점수를 강제 수정하거나 `NULL`(또는 `0`)로 리셋할 수 있습니다.
+
+```sql
+-- 특정 학생의 특정 날짜 타수 기록을 리셋(NULL로 변경)하는 쿼리
+UPDATE public.attendance_sessions
+SET 
+  korean_typing_speed = NULL,
+  english_typing_speed = NULL,
+  updated_at = NOW()
+WHERE 
+  student_id = '학생_UUID_값'
+  AND date = '2026-06-26'; -- 해당 학생이 플레이한 날짜
+```
+
+> [!TIP]
+> 학생의 UUID는 `users` 테이블에서 `username` 또는 `name`으로 조회할 수 있습니다.
+
+---
+
+## 📜 상세 활성 테이블 정의 (주요 필드)
+
+### 1. users (사용자 기본 계정)
 ```sql
 CREATE TABLE public.users (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -19,7 +103,7 @@ CREATE TABLE public.users (
   role TEXT NOT NULL CHECK (role IN ('student', 'parent', 'teacher', 'admin')),
   birth_year INTEGER,
   phone TEXT,
-  academy TEXT NOT NULL,
+  academy TEXT NOT NULL CHECK (academy IN ('코딩메이커', '광양코딩')),
   assigned_teacher_id UUID REFERENCES users(id),
   status TEXT DEFAULT 'active',
   can_manage_all_payments BOOLEAN DEFAULT false,
@@ -27,438 +111,86 @@ CREATE TABLE public.users (
 );
 ```
 
-#### 주요 필드
-- `id`: 사용자 고유 ID (UUID)
-- `username`: 로그인 아이디 (고유)
-- `name`: 사용자 이름
-- `role`: 역할 (student, parent, teacher, admin)
-- `academy`: 소속 학원명
-- `assigned_teacher_id`: 배정된 강사 ID (학생의 경우)
-
-#### 인덱스
+### 2. attendance_sessions (출결 및 당일 최고 타수)
 ```sql
-CREATE INDEX idx_users_role ON public.users(role);
-CREATE INDEX idx_users_academy ON public.users(academy);
-```
-
----
-
-### 2. students (학생 상세 정보)
-
-학생별 상세 정보를 저장하는 테이블입니다.
-
-```sql
-CREATE TABLE public.students (
-  user_id UUID PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
-  assigned_teachers UUID[] NOT NULL,
-  parent_id UUID UNIQUE REFERENCES users(id),
-  tuition_fee INTEGER,
-  current_curriculum_id UUID REFERENCES curriculums(id),
-  enrollment_start_date DATE NOT NULL,
-  enrollment_end_date DATE,
-  attendance_schedule JSONB,
-  memo TEXT,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
-```
-
-#### 주요 필드
-- `user_id`: users 테이블 참조
-- `assigned_teachers`: 담당 강사 ID 배열
-- `parent_id`: 학부모 ID (1:1 관계)
-- `tuition_fee`: 월 기본 학원비
-- `current_curriculum_id`: 현재 배정된 커리큘럼
-- `enrollment_start_date`: 수강 시작일
-- `enrollment_end_date`: 수강 종료일 (NULL이면 진행 중)
-- `attendance_schedule`: 출석 일정 (JSONB)
-  ```json
-  {
-    "1": "14:00",  // 월요일 14시
-    "3": "15:00",  // 수요일 15시
-    "5": "16:00"   // 금요일 16시
-  }
-  ```
-
----
-
-### 3. teachers (강사 상세 정보)
-
-강사별 상세 정보를 저장하는 테이블입니다.
-
-```sql
-CREATE TABLE public.teachers (
-  user_id UUID PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
-  bio TEXT,
-  image TEXT,
-  certs TEXT,
-  career TEXT,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
-```
-
-#### 주요 필드
-- `user_id`: users 테이블 참조
-- `bio`: 강사 소개
-- `image`: 프로필 이미지 URL
-- `certs`: 자격증 정보
-- `career`: 경력 정보
-
----
-
-### 4. curriculums (교육 과정)
-
-교육 과정 정보를 저장하는 테이블입니다.
-
-```sql
-CREATE TABLE public.curriculums (
+CREATE TABLE public.attendance_sessions (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  title TEXT NOT NULL,
-  description TEXT,
-  category TEXT,
-  level TEXT NOT NULL CHECK (level IN ('기초', '중급', '고급')),
-  image TEXT,
-  checklist TEXT[],
-  created_by UUID REFERENCES users(id),
-  public BOOLEAN NOT NULL DEFAULT false,
-  show_on_main BOOLEAN DEFAULT false,
-  main_display_order INTEGER,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
-```
-
-#### 주요 필드
-- `id`: 커리큘럼 고유 ID
-- `title`: 커리큘럼 제목
-- `description`: 설명
-- `category`: 카테고리
-- `level`: 난이도 (기초, 중급, 고급)
-- `checklist`: 단계별 체크리스트 배열
-- `public`: 공개 여부
-- `show_on_main`: 메인 페이지 표시 여부
-- `main_display_order`: 메인 페이지 표시 순서
-
----
-
-### 5. main_curriculums (메인 페이지 커리큘럼)
-
-메인 페이지에 표시되는 커리큘럼 정보를 별도로 관리하는 테이블입니다.
-
-```sql
-CREATE TABLE public.main_curriculums (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  title TEXT NOT NULL,
-  description TEXT,
-  category TEXT,
-  level TEXT NOT NULL CHECK (level IN ('기초', '중급', '고급')),
-  image TEXT,
-  display_order INTEGER NOT NULL,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
-```
-
-#### 주요 필드
-- `display_order`: 표시 순서 (낮을수록 먼저 표시)
-
----
-
-### 6. typing_exercises (타자 연습 문제)
-
-타자 연습 문제를 저장하는 테이블입니다.
-
-```sql
-CREATE TABLE public.typing_exercises (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  title TEXT NOT NULL,
-  content TEXT NOT NULL,
-  language TEXT NOT NULL CHECK (language IN ('Korean', 'English', 'Code')),
-  level TEXT NOT NULL CHECK (level IN ('기초', '중급', '고급')),
-  exercise_type TEXT NOT NULL CHECK (exercise_type IN ('자리연습', '실전연습')),
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  CONSTRAINT valid_exercise_type CHECK (
-    (language IN ('Korean', 'English') AND exercise_type IN ('자리연습', '실전연습'))
-    OR (language = 'Code' AND exercise_type = '실전연습')
-  )
-);
-```
-
-#### 주요 필드
-- `title`: 문제 제목
-- `content`: 연습 내용
-- `language`: 언어 (Korean, English, Code)
-- `level`: 난이도
-- `exercise_type`: 연습 유형
-  - 한글/영어: 자리연습, 실전연습
-  - 코드: 실전연습만
-
----
-
-### 7. student_activity_logs (학생 활동 기록)
-
-학생의 일일 활동을 기록하는 테이블입니다.
-
-```sql
-CREATE TABLE public.student_activity_logs (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  student_id UUID NOT NULL REFERENCES users(id),
+  student_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   date DATE NOT NULL,
-  attended BOOLEAN,
-  typing_score INTEGER,
-  typing_speed INTEGER,
-  curriculum_id UUID REFERENCES curriculums(id),
-  typing_exercise_id UUID REFERENCES typing_exercises(id),
-  result_image TEXT,
-  result_url TEXT,
-  result_file TEXT,
+  session_type TEXT NOT NULL DEFAULT 'regular' CHECK (session_type IN ('regular', 'makeup')),
+  status TEXT NOT NULL DEFAULT 'present' CHECK (status IN ('present', 'absent', 'late', 'makeup')),
+  korean_typing_speed INTEGER, -- 당일 한글 최고 속도
+  english_typing_speed INTEGER, -- 당일 영어 최고 속도
+  teacher_id UUID REFERENCES users(id),
+  start_time TIME,
+  end_time TIME,
   memo TEXT,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  UNIQUE(student_id, date, session_type)
 );
 ```
 
-#### 주요 필드
-- `student_id`: 학생 ID
-- `date`: 활동 날짜
-- `attended`: 출석 여부
-- `typing_score`: 타자 연습 점수
-- `typing_speed`: 타자 속도 (타/분)
-- `curriculum_id`: 관련 커리큘럼
-- `typing_exercise_id`: 타자 연습 문제 ID
-- `result_image`: 결과 이미지 URL
-- `result_url`: 결과 URL
-- `result_file`: 결과 파일 URL
-- `memo`: 메모
-
-#### 인덱스
+### 3. tuition_annual_records (연도별 수강료 수납 통합본)
 ```sql
-CREATE INDEX idx_student_activity_logs_student_id ON public.student_activity_logs(student_id);
-CREATE INDEX idx_student_activity_logs_date ON public.student_activity_logs(date);
-```
-
----
-
-### 8. community_posts (커뮤니티 게시글)
-
-커뮤니티 게시글을 저장하는 테이블입니다.
-
-```sql
-CREATE TABLE public.community_posts (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID NOT NULL REFERENCES users(id),
-  title TEXT NOT NULL,
-  content TEXT NOT NULL,
-  images TEXT[],
-  is_deleted BOOLEAN DEFAULT false,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+CREATE TABLE public.tuition_annual_records (
+  student_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  year INTEGER NOT NULL,
+  monthly_data JSONB DEFAULT '{}'::JSONB, -- 1월 ~ 12월의 수납상태, 실 수령액, 조정액, 상세 결제내역
+  memo TEXT,
+  recorded_by UUID REFERENCES users(id),
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  PRIMARY KEY (student_id, year)
 );
 ```
 
-#### 주요 필드
-- `user_id`: 작성자 ID
-- `title`: 제목
-- `content`: 내용
-- `images`: 이미지 URL 배열
-- `is_deleted`: 삭제 여부 (Soft Delete)
-
-#### 인덱스
-```sql
-CREATE INDEX idx_community_posts_user_id ON public.community_posts(user_id);
-CREATE INDEX idx_community_posts_created_at ON public.community_posts(created_at DESC);
+#### `monthly_data` JSONB 저장 구조 예시:
+```json
+{
+  "01": {
+    "base_amount": 150000,
+    "total_paid_amount": 150000,
+    "status": "paid",
+    "payment_details": [
+      {
+        "amount": 150000,
+        "date": "2026-01-10",
+        "method": "card",
+        "recorded_by": "선생님_UUID"
+      }
+    ]
+  },
+  "02": {
+    "base_amount": 150000,
+    "total_paid_amount": 0,
+    "status": "pending",
+    "payment_details": []
+  }
+}
 ```
 
----
-
-### 9. community_comments (커뮤니티 댓글)
-
-커뮤니티 댓글을 저장하는 테이블입니다.
-
+### 4. pc_room_layouts (실습실 PC 배치 레이아웃)
 ```sql
-CREATE TABLE public.community_comments (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  post_id UUID NOT NULL REFERENCES community_posts(id) ON DELETE CASCADE,
-  user_id UUID NOT NULL REFERENCES users(id),
-  content TEXT NOT NULL,
-  is_deleted BOOLEAN DEFAULT false,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+CREATE TABLE public.pc_room_layouts (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  academy_name TEXT NOT NULL,
+  room_name TEXT NOT NULL,
+  layout_data JSONB DEFAULT '[]'::JSONB, -- 모니터, 본체 배치 및 좌표값 배열
+  rotation INT DEFAULT 0,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  UNIQUE(academy_name, room_name)
 );
 ```
 
-#### 주요 필드
-- `post_id`: 게시글 ID
-- `user_id`: 작성자 ID
-- `content`: 댓글 내용
-- `is_deleted`: 삭제 여부 (Soft Delete)
-
-#### 인덱스
+### 5. timetable_snapshots (시간표 스냅샷)
 ```sql
-CREATE INDEX idx_community_comments_post_id ON public.community_comments(post_id);
-CREATE INDEX idx_community_comments_user_id ON public.community_comments(user_id);
-```
-
----
-
-### 10. consultations (상담 문의)
-
-상담 문의를 저장하는 테이블입니다.
-
-```sql
-CREATE TABLE public.consultations (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID NOT NULL REFERENCES users(id),
-  student_id UUID REFERENCES users(id),
-  title TEXT NOT NULL,
-  content TEXT NOT NULL,
-  status TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'in_progress', 'completed')),
-  response TEXT,
-  responded_by UUID REFERENCES users(id),
-  responded_at TIMESTAMP WITH TIME ZONE,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+CREATE TABLE public.timetable_snapshots (
+  year INTEGER NOT NULL,
+  month INTEGER NOT NULL,
+  snapshot_data JSONB NOT NULL, -- 저장 시점의 전체 시간표 렌더링용 매트릭스 데이터
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  PRIMARY KEY (year, month)
 );
 ```
-
-#### 주요 필드
-- `user_id`: 문의자 ID (학부모)
-- `student_id`: 관련 학생 ID
-- `title`: 제목
-- `content`: 내용
-- `status`: 상태 (pending, in_progress, completed)
-- `response`: 답변 내용
-- `responded_by`: 답변자 ID
-- `responded_at`: 답변 시간
-
----
-
-### 11. tuition_payments (학원비 수납 내역)
-
-학생별 월별 학원비 수납 정보를 관리하는 테이블입니다.
-
-```sql
-CREATE TABLE public.tuition_payments (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    student_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
-    payment_month DATE NOT NULL,
-    base_amount INTEGER NOT NULL DEFAULT 0,
-    total_paid_amount INTEGER DEFAULT 0,
-    payment_details JSONB DEFAULT '[]',
-    status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'partial', 'paid', 'excluded')),
-    recorded_by UUID REFERENCES public.users(id),
-    memo TEXT,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    UNIQUE(student_id, payment_month)
-);
-```
-
-#### 주요 필드
-- `student_id`: 학생 ID
-- `payment_month`: 수납 대상 월 (매월 1일 기준)
-- `base_amount`: 해당 월의 기준 학원비
-- `total_paid_amount`: 해당 월에 수납된 총액
-- `payment_details`: 상세 수납 항목 (배열)
-- `status`: 수납 상태 (미납, 부분납, 완납, 제외)
-- `recorded_by`: 기록자 (강사/관리자)
-
----
-
-## 🔐 RLS (Row Level Security) 정책
-
-### users 테이블
-- 모든 사용자는 자신의 정보 조회 가능
-- 관리자는 모든 사용자 정보 조회 가능
-
-### students 테이블
-- 학생: 자신의 정보만 조회 가능
-- 학부모: 자녀의 정보만 조회 가능
-- 강사: 담당 학생의 정보만 조회 가능
-- 관리자: 모든 학생 정보 조회 가능
-
-### teachers 테이블
-- 강사: 자신의 정보만 조회 가능
-- 관리자: 모든 강사 정보 조회 가능
-
-### curriculums 테이블
-- 모든 사용자: 공개된 커리큘럼 조회 가능
-- 강사/관리자: 커리큘럼 생성/수정 가능
-
-### community_posts 테이블
-- 모든 사용자: 게시글 조회 가능
-- 인증된 사용자: 게시글 작성 가능
-- 작성자: 자신의 게시글 수정/삭제 가능
-
-### community_comments 테이블
-- 모든 사용자: 댓글 조회 가능
-- 인증된 사용자: 댓글 작성 가능
-- 작성자: 자신의 댓글 수정/삭제 가능
-
-### consultations 테이블
-- 학부모: 자신의 상담 문의 작성/조회 가능
-- 강사/관리자: 모든 상담 문의 조회/답변 가능
-
----
-
-## 📈 주요 쿼리 예시
-
-### 오늘 수업이 있는 학생 조회
-```sql
-SELECT 
-  u.name as student_name,
-  u.academy,
-  s.attendance_schedule,
-  s.attendance_schedule->EXTRACT(DOW FROM CURRENT_DATE)::text as today_time
-FROM students s
-JOIN users u ON s.user_id = u.id
-WHERE u.role = 'student' 
-  AND s.enrollment_end_date IS NULL
-  AND s.attendance_schedule ? EXTRACT(DOW FROM CURRENT_DATE)::text;
-```
-
-### 강사별 담당 학생 수업 일정
-```sql
-SELECT 
-  u.name as student_name,
-  t.name as teacher_name,
-  s.attendance_schedule
-FROM students s
-JOIN users u ON s.user_id = u.id
-JOIN users t ON t.id = ANY(s.assigned_teachers)
-WHERE t.username = 'teacher1'
-  AND s.enrollment_end_date IS NULL;
-```
-
-### 학생별 타자 연습 통계
-```sql
-SELECT 
-  student_id,
-  AVG(typing_speed) as avg_speed,
-  AVG(typing_score) as avg_score,
-  COUNT(*) as total_exercises
-FROM student_activity_logs
-WHERE typing_exercise_id IS NOT NULL
-GROUP BY student_id;
-```
-
----
-
-## 🔄 마이그레이션
-
-마이그레이션 파일은 `supabase/migrations/` 디렉토리에 저장됩니다.
-
-### 주요 마이그레이션
-- `20241220000000_create_approval_system.sql`: 승인 시스템 생성
-
-### 마이그레이션 적용
-```bash
-# Supabase CLI 사용
-supabase db push
-
-# 또는 Supabase Dashboard에서 SQL Editor 사용
-```
-
----
-
-## 📝 참고사항
-
-1. **Soft Delete**: `community_posts`, `community_comments` 테이블은 실제 삭제 대신 `is_deleted` 플래그 사용
-2. **JSONB 활용**: `attendance_schedule`은 JSONB 타입으로 유연한 일정 관리
-3. **배열 타입**: `assigned_teachers`는 UUID 배열로 다대다 관계 표현
-4. **CASCADE 삭제**: 외래 키 제약조건에 CASCADE 옵션 적용으로 데이터 무결성 보장
-

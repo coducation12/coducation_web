@@ -46,7 +46,6 @@ export default function StudentProgressModal({ isOpen, onClose, studentId, stude
     // DB 데이터
     const [progress, setProgress] = useState<any[]>([]);
     const [achievements, setAchievements] = useState<any>({ attained: [], targets: [], awardsSummary: '' });
-    const [typing, setTyping] = useState<any>({ ko: { maxSpeed: 0 }, en: { maxSpeed: 0 } });
     const [totalXp, setTotalXp] = useState(0);
 
     // 모달 관리 상태
@@ -72,7 +71,6 @@ export default function StudentProgressModal({ isOpen, onClose, studentId, stude
                 attained: records.attained || [],
                 awards: records.awards || []
             });
-            setTyping(result.data.typing_stats || { ko: { maxSpeed: 0 }, en: { maxSpeed: 0 } });
             setTotalXp(result.data.total_xp || 0);
         }
         setLoading(false);
@@ -83,7 +81,6 @@ export default function StudentProgressModal({ isOpen, onClose, studentId, stude
         const data = {
             learning_progress: progress,
             achievement_records: achievements,
-            typing_stats: typing,
             total_xp: totalXp
         };
         const result = await updateStudentProgress(studentId, data);

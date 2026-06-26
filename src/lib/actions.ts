@@ -3170,8 +3170,6 @@ export async function deleteStudent(studentId: string) {
       supabaseAdmin.from('student_progresses').delete().eq('student_id', studentId),
       supabaseAdmin.from('student_todos').delete().eq('student_id', studentId),
       supabaseAdmin.from('student_achievements').delete().eq('student_id', studentId),
-      supabaseAdmin.from('typing_weekly_stats').delete().eq('student_id', studentId),
-      supabaseAdmin.from('typing_logs').delete().eq('student_id', studentId),
       supabaseAdmin.from('tuition_annual_records').delete().eq('student_id', studentId),
       supabaseAdmin.from('consultations').delete().eq('student_id', studentId),
       supabaseAdmin.from('consultations').delete().eq('user_id', studentId),
@@ -3707,7 +3705,7 @@ export async function updateTeacherLabelColor(teacherId: string, color: string) 
 export const getStudentDashboardData = cache(async (studentId: string) => {
   try {
     // 병렬로 신규 관계형 테이블 및 기존 students 컬럼들 조회
-    const [progressRes, achievementsRes, todosRes, studentProfileRes, typingStatsRes] = await Promise.all([
+    const [progressRes, achievementsRes, todosRes, studentProfileRes] = await Promise.all([
       supabaseAdmin
         .from('student_progresses')
         .select('id, category, title, percentage, status, results, xp_awarded, created_at')
@@ -3727,13 +3725,7 @@ export const getStudentDashboardData = cache(async (studentId: string) => {
         .from('students')
         .select('total_xp')
         .eq('user_id', studentId)
-        .single(),
-      supabaseAdmin
-        .from('typing_weekly_stats')
-        .select('year_week, stats_data')
-        .eq('student_id', studentId)
-        .order('year_week', { ascending: false })
-        .limit(12)
+        .single()
     ]);
 
     if (studentProfileRes.error) {
@@ -3754,16 +3746,11 @@ export const getStudentDashboardData = cache(async (studentId: string) => {
       xpAwarded: a.xp_awarded
     }));
 
-    // 최근 12개 주차의 데이터 중 가장 최신(첫 번째) 데이터를 기본 typing_stats로 사용
-    const latestTypingStats = typingStatsRes.data && typingStatsRes.data[0]
-      ? typingStatsRes.data[0].stats_data
-      : { ko: { maxSpeed: 0 }, en: { maxSpeed: 0 } };
+    // 기본 typing_stats 설정 (테이블 제거 대응)
+    const latestTypingStats = { ko: { maxSpeed: 0 }, en: { maxSpeed: 0 } };
 
-    // 주간 타자 통계 흐름을 함께 전달
-    const weeklyTypingStats = (typingStatsRes.data || []).map((w: any) => ({
-      week: w.year_week,
-      stats: w.stats_data
-    })).reverse(); // 시간 순 정렬
+    // 주간 타자 통계 흐름 기본 설정
+    const weeklyTypingStats: any[] = [];
 
     return { 
       success: true, 
@@ -3799,7 +3786,7 @@ export const getStudentDashboardData = cache(async (studentId: string) => {
  */
 export const getStudentProgress = cache(async (studentId: string) => {
   try {
-    const [progressRes, achievementsRes, studentProfileRes, typingStatsRes] = await Promise.all([
+    const [progressRes, achievementsRes, studentProfileRes] = await Promise.all([
       supabaseAdmin
         .from('student_progresses')
         .select('id, category, title, percentage, status, results, xp_awarded, created_at')
@@ -3814,13 +3801,7 @@ export const getStudentProgress = cache(async (studentId: string) => {
         .from('students')
         .select('total_xp')
         .eq('user_id', studentId)
-        .single(),
-      supabaseAdmin
-        .from('typing_weekly_stats')
-        .select('year_week, stats_data')
-        .eq('student_id', studentId)
-        .order('year_week', { ascending: false })
-        .limit(12)
+        .single()
     ]);
 
     if (studentProfileRes.error) {
@@ -3840,14 +3821,8 @@ export const getStudentProgress = cache(async (studentId: string) => {
       xpAwarded: a.xp_awarded
     }));
 
-    const latestTypingStats = typingStatsRes.data && typingStatsRes.data[0]
-      ? typingStatsRes.data[0].stats_data
-      : { ko: { maxSpeed: 0 }, en: { maxSpeed: 0 } };
-
-    const weeklyTypingStats = (typingStatsRes.data || []).map((w: any) => ({
-      week: w.year_week,
-      stats: w.stats_data
-    })).reverse();
+    const latestTypingStats = { ko: { maxSpeed: 0 }, en: { maxSpeed: 0 } };
+    const weeklyTypingStats: any[] = [];
 
     return { 
       success: true, 
@@ -4072,38 +4047,6 @@ export async function updateStudentProgress(studentId: string, progressData: any
         .from('student_achievements')
         .upsert(combinedAchievements);
       if (upsertAchError) throw upsertAchError;
-    }
-
-    // 3) typing_weekly_stats 테이블에 통계 upsert (CQRS 모델)
-    if (progressData.typing_stats) {
-      // ISO 8601 주차 구하기 (KST 기준)
-      const now = new Date();
-      const kstOffset = 9 * 60 * 60 * 1000;
-      const kstDate = new Date(now.getTime() + kstOffset);
-      
-      const getISOWeekString = (date: Date) => {
-        const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
-        const dayNum = d.getUTCDay() || 7;
-        d.setUTCDate(d.getUTCDate() + 4 - dayNum);
-        const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
-        const weekNo = Math.ceil((((d.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
-        const weekStr = weekNo < 10 ? `0${weekNo}` : `${weekNo}`;
-        return `${d.getUTCFullYear()}-W${weekStr}`;
-      };
-
-      const currentWeekStr = getISOWeekString(kstDate); // 'YYYY-Www' (예: '2026-W21')
-
-      const { error: upsertTypingError } = await supabaseAdmin
-        .from('typing_weekly_stats')
-        .upsert({
-          student_id: studentId,
-          year_week: currentWeekStr,
-          stats_data: progressData.typing_stats,
-          updated_at: new Date().toISOString()
-        }, {
-          onConflict: 'student_id,year_week'
-        });
-      if (upsertTypingError) throw upsertTypingError;
     }
 
     // 4) students 테이블 컬럼 갱신

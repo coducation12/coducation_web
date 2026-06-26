@@ -148,58 +148,7 @@ export interface Database {
           created_at?: string;
         };
       };
-      typing_logs: {
-        Row: {
-          id: string;
-          student_id: string;
-          language: string;
-          wpm: number;
-          accuracy: number;
-          elapsed_seconds: number;
-          created_at: string;
-        };
-        Insert: {
-          id?: string;
-          student_id: string;
-          language: string;
-          wpm: number;
-          accuracy: number;
-          elapsed_seconds: number;
-          created_at?: string;
-        };
-        Update: {
-          id?: string;
-          student_id?: string;
-          language?: string;
-          wpm?: number;
-          accuracy?: number;
-          elapsed_seconds?: number;
-          created_at?: string;
-        };
-      };
-      typing_weekly_stats: {
-        Row: {
-          id: string;
-          student_id: string;
-          year_week: string;
-          stats_data: any;
-          updated_at: string;
-        };
-        Insert: {
-          id?: string;
-          student_id: string;
-          year_week: string;
-          stats_data: any;
-          updated_at?: string;
-        };
-        Update: {
-          id?: string;
-          student_id?: string;
-          year_week?: string;
-          stats_data?: any;
-          updated_at?: string;
-        };
-      };
+
       student_todos: {
         Row: {
           id: string;

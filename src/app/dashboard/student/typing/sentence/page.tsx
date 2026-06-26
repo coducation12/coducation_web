@@ -505,7 +505,7 @@ export default function SentencePage() {
               </div>
 
               {/* 문장 박스 영역 (예제 4개 + 현재 1개) */}
-              <div className="w-full mb-2 sm:mb-4 lg:mb-6 bg-slate-800/40 backdrop-blur-md rounded-2xl sm:rounded-3xl p-3 sm:p-6 lg:p-8 xl:p-10 border border-cyan-500/20 shadow-2xl overflow-hidden self-stretch transition-all duration-500 flex-1 flex flex-col min-h-0">
+              <div className="w-full mb-2 sm:mb-4 lg:mb-6 bg-slate-800/40 backdrop-blur-md rounded-2xl sm:rounded-3xl p-3 sm:p-6 lg:p-8 xl:p-10 border border-cyan-500/20 shadow-2xl overflow-hidden self-stretch transition-all duration-500 flex-1 flex flex-col min-h-0 select-none">
                 {/* 예제 문장들 (공간 부족 시 먼저 줄어들거나 가려지는 영역) */}
                 <div className="flex-1 min-h-0 flex flex-col-reverse gap-1 sm:gap-2 transition-all duration-500 overflow-hidden">
                   {[1, 2, 3, 4].map((offset) => {
@@ -577,6 +577,7 @@ export default function SentencePage() {
                   onCompositionStart={handleCompositionStart}
                   onCompositionUpdate={handleCompositionUpdate}
                   onCompositionEnd={handleCompositionEnd}
+                  onPaste={(e) => e.preventDefault()}
                   onBlur={(e) => {
                     if (!showResultModal) {
                       setTimeout(() => e.target.focus(), 0);

@@ -968,7 +968,7 @@ export default function BasicPage() {
             {/* 현재 입력할 글자와 다음 글자 */}
             <div className="flex-shrink-0 flex items-center justify-center gap-2 sm:gap-4 lg:gap-6 mb-1 sm:mb-2 relative">
               {/* 현재 입력할 글자 - 항상 중앙에 (반응형) */}
-              <div className="flex-shrink-0 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-xl sm:rounded-3xl p-3 sm:p-6 lg:p-4 xl:p-6 shadow-2xl shadow-cyan-500/25 border border-cyan-400/50 transition-all duration-300 animate-in zoom-in-95 fade-in-0 duration-300">
+              <div className="flex-shrink-0 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-xl sm:rounded-3xl p-3 sm:p-6 lg:p-4 xl:p-6 shadow-2xl shadow-cyan-500/25 border border-cyan-400/50 transition-all duration-300 animate-in zoom-in-95 fade-in-0 duration-300 select-none">
                 <div className="text-center">
                   <div className={cn(
                     "text-[10px] sm:text-xs mb-1 sm:mb-2 lg:mb-4 opacity-80",
@@ -987,7 +987,7 @@ export default function BasicPage() {
 
               {/* 다음 입력할 글자 - 오른쪽에 작게 */}
               {nextChar && (
-                <div className="flex-shrink-0 bg-transparent rounded-xl p-2 sm:p-4 lg:p-3 xl:p-4 border border-slate-600/50 absolute right-0 top-1/2 transform -translate-y-1/2 translate-x-[100%] sm:translate-x-[120%]">
+                <div className="flex-shrink-0 bg-transparent rounded-xl p-2 sm:p-4 lg:p-3 xl:p-4 border border-slate-600/50 absolute right-0 top-1/2 transform -translate-y-1/2 translate-x-[100%] sm:translate-x-[120%] select-none">
                   <div className="text-center">
                     <div className="text-slate-400 text-[10px] sm:text-xs mb-0.5 sm:mb-2 opacity-80">다음 자리</div>
                     <div className="text-slate-300 text-xl sm:text-3xl lg:text-2xl xl:text-4xl font-bold leading-none">
@@ -1006,7 +1006,7 @@ export default function BasicPage() {
                 {/* 입력 필드 */}
                 <div className="mb-0.5 sm:mb-1">
                   {/* 글자별 표시를 위한 커스텀 입력 디스플레이 */}
-                  <div className="w-full max-w-xl sm:max-w-2xl mx-auto px-2 py-0.5 sm:py-1 text-center text-xl sm:text-3xl lg:text-4xl xl:text-5xl font-bold min-h-[30px] sm:min-h-[40px] lg:min-h-[50px] flex items-center justify-center">
+                  <div className="w-full max-w-xl sm:max-w-2xl mx-auto px-2 py-0.5 sm:py-1 text-center text-xl sm:text-3xl lg:text-4xl xl:text-5xl font-bold min-h-[30px] sm:min-h-[40px] lg:min-h-[50px] flex items-center justify-center select-none">
                     {currentCharIndex >= 50 ? (
                       <>
                         {userInput.split('').map((char, index) => {
@@ -1040,6 +1040,7 @@ export default function BasicPage() {
                       type="text"
                       value={userInput}
                       onChange={(e) => handleWordInput(e.target.value)}
+                      onPaste={(e) => e.preventDefault()}
                       onBlur={(e) => {
                         if (!showResultModal) {
                           setTimeout(() => e.target.focus(), 0);

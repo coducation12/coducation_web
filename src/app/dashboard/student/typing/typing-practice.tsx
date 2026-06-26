@@ -126,7 +126,7 @@ export function TypingPractice({ exercise }: TypingPracticeProps) {
     }, [textToType, userInput]);
 
     return (
-        <StudentCard className="max-w-2xl w-full">
+        <StudentCard className="max-w-2xl w-full select-none">
             <div className="p-6">
                 <div className="text-2xl tracking-wider p-4 border border-cyan-400/40 rounded-md mb-4 relative bg-background/40 shadow-[0_0_12px_0_rgba(0,255,255,0.10)]" onClick={() => inputRef.current?.focus()}>
                     {characters}
@@ -135,6 +135,7 @@ export function TypingPractice({ exercise }: TypingPracticeProps) {
                         type="text"
                         value={userInput}
                         onChange={handleInputChange}
+                        onPaste={(e) => e.preventDefault()}
                         className="absolute inset-0 opacity-0 cursor-default"
                         disabled={!!result}
                         autoFocus

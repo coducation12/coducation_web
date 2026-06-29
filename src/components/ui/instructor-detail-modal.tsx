@@ -80,7 +80,20 @@ export function InstructorDetailModal({ instructor, isOpen, onClose }: Instructo
                 <h4 className="text-lg font-semibold mb-3 text-cyan-400 font-headline">자격증</h4>
                 {Array.isArray(instructor.certs) ? (
                   <div className="grid grid-cols-[1fr_auto] gap-x-4 gap-y-3 items-baseline">
-                    {instructor.certs.map((item: any, index: number) => (
+                    {[...instructor.certs]
+                      .sort((a: any, b: any) => {
+                        const issuerA = a.issuer || '';
+                        const issuerB = b.issuer || '';
+                        if (issuerA < issuerB) return -1;
+                        if (issuerA > issuerB) return 1;
+                        
+                        const nameA = a.name || '';
+                        const nameB = b.name || '';
+                        if (nameA < nameB) return -1;
+                        if (nameA > nameB) return 1;
+                        return 0;
+                      })
+                      .map((item: any, index: number) => (
                       <Fragment key={index}>
                         <span className="text-cyan-100 font-medium text-sm md:text-base line-clamp-1 pb-1 border-b border-cyan-500/5">{item.name}</span>
                         <span className="text-cyan-200/80 text-xs md:text-sm line-clamp-1 pb-1 border-b border-cyan-500/5 text-right whitespace-nowrap">{item.issuer}</span>

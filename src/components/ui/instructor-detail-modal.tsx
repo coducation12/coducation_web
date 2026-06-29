@@ -93,12 +93,19 @@ export function InstructorDetailModal({ instructor, isOpen, onClose }: Instructo
                         if (nameA > nameB) return 1;
                         return 0;
                       })
-                      .map((item: any, index: number) => (
-                      <Fragment key={index}>
-                        <span className="text-cyan-100 font-medium text-sm md:text-base line-clamp-1 pb-1 border-b border-cyan-500/5">{item.name}</span>
-                        <span className="text-cyan-200/80 text-xs md:text-sm line-clamp-1 pb-1 border-b border-cyan-500/5 text-right whitespace-nowrap">{item.issuer}</span>
-                      </Fragment>
-                    ))}
+                      .map((item: any, index: number, array: any[]) => {
+                        const isNewIssuer = index > 0 && array[index - 1].issuer !== item.issuer;
+                        return (
+                          <Fragment key={index}>
+                            <span className={`text-cyan-100 font-medium text-sm md:text-base line-clamp-1 pb-1 border-b border-cyan-500/5 ${isNewIssuer ? 'mt-3' : ''}`}>
+                              {item.name}
+                            </span>
+                            <span className={`text-cyan-200/80 text-xs md:text-sm line-clamp-1 pb-1 border-b border-cyan-500/5 text-right whitespace-nowrap ${isNewIssuer ? 'mt-3' : ''}`}>
+                              {item.issuer}
+                            </span>
+                          </Fragment>
+                        );
+                      })}
                   </div>
                 ) : (
                   <p className="text-cyan-100 text-sm md:text-base whitespace-pre-line">

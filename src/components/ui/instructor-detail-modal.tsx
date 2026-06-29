@@ -63,10 +63,10 @@ export function InstructorDetailModal({ instructor, isOpen, onClose }: Instructo
             </div>
           </div>
 
-          {/* 자기소개 */}
+          {/* 인사말 */}
           <Card className="bg-cyan-900/10 border-cyan-500/20">
             <CardContent className="pt-6">
-              <h4 className="text-lg font-semibold mb-3 text-cyan-400 font-headline">자기소개</h4>
+              <h4 className="text-lg font-semibold mb-3 text-cyan-400 font-headline">인사말</h4>
               <p className="text-cyan-100 leading-relaxed whitespace-pre-line text-sm md:text-base">
                 {instructor.bio}
               </p>

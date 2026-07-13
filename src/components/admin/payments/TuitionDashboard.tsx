@@ -240,6 +240,18 @@ export function TuitionDashboard({ currentUserId, currentUserRole, canManageAllP
                 <h1 className="text-2xl sm:text-3xl font-bold text-cyan-100 drop-shadow-[0_0_8px_#00fff7]">수납 관리</h1>
 
                 <div className="flex flex-wrap items-center justify-end gap-2 sm:gap-3 w-full lg:w-auto">
+                    {/* 엑셀 추출 버튼 */}
+                    {canExport && (
+                        <Button
+                            onClick={() => setIsExportModalOpen(true)}
+                            className="bg-cyan-600/20 hover:bg-cyan-600/40 text-cyan-100 border border-cyan-500/30 h-8 sm:h-9 px-3"
+                            size="sm"
+                        >
+                            <Download className="w-3.5 h-3.5 mr-2" />
+                            <span className="hidden sm:inline">엑셀</span>
+                        </Button>
+                    )}
+
                     {/* 날짜 선택기 */}
                     <div className="flex items-center bg-[#0a1837] border border-cyan-500/20 rounded-lg p-0.5 sm:p-1">
                         <Button variant="ghost" size="icon" onClick={() => handleMonthChange(-1)} className="text-cyan-100 h-7 w-7 sm:h-8 sm:w-8">
@@ -266,18 +278,6 @@ export function TuitionDashboard({ currentUserId, currentUserRole, canManageAllP
                             </TabsTrigger>
                         </TabsList>
                     </Tabs>
-
-                    {/* 엑셀 추출 버튼 */}
-                    {canExport && (
-                        <Button
-                            onClick={() => setIsExportModalOpen(true)}
-                            className="bg-cyan-600/20 hover:bg-cyan-600/40 text-cyan-100 border border-cyan-500/30 h-8 sm:h-9 px-3"
-                            size="sm"
-                        >
-                            <Download className="w-3.5 h-3.5 mr-2" />
-                            <span className="hidden sm:inline">엑셀</span>
-                        </Button>
-                    )}
                 </div>
             </div>
 

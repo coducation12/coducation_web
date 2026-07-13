@@ -37,9 +37,10 @@ import { ko } from "date-fns/locale";
 interface TuitionDashboardProps {
     currentUserId: string;
     currentUserRole: string;
+    canManageAllPayments?: boolean;
 }
 
-export function TuitionDashboard({ currentUserId, currentUserRole }: TuitionDashboardProps) {
+export function TuitionDashboard({ currentUserId, currentUserRole, canManageAllPayments }: TuitionDashboardProps) {
     const [loading, setLoading] = useState(true);
     const [monthlyData, setMonthlyData] = useState<any[]>([]);
     const [yearlyData, setYearlyData] = useState<any[]>([]);
@@ -89,7 +90,12 @@ export function TuitionDashboard({ currentUserId, currentUserRole }: TuitionDash
                 return;
             }
 
-            // 일반 강사인 경우 권한 확인
+            if (canManageAllPayments !== undefined) {
+                setCanExport(canManageAllPayments);
+                return;
+            }
+
+            // 일반 강사인 경우 권한 확인 (fallback)
             const { supabase } = await import("@/lib/supabase");
             const { data } = await supabase
                 .from('users')
@@ -99,7 +105,7 @@ export function TuitionDashboard({ currentUserId, currentUserRole }: TuitionDash
             setCanExport(data?.can_manage_all_payments || false);
         };
         checkPermission();
-    }, [currentUserId, currentUserRole]);
+    }, [currentUserId, currentUserRole, canManageAllPayments]);
 
     const handleMonthChange = (step: number) => {
         const date = new Date(selectedMonth);

@@ -16,6 +16,7 @@ export default async function TeacherPaymentsPage() {
             <TuitionDashboard
                 currentUserId={user.id}
                 currentUserRole={user.role}
+                canManageAllPayments={user.can_manage_all_payments}
             />
         </DashboardPageWrapper>
     );

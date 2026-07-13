@@ -14,7 +14,7 @@ export async function getTuitionDashboardData(month: string, currentUserId: stri
         // 1. 권한 확인 (관리자 또는 특격 강사 여부)
         let canManageAll = currentUserRole === 'admin';
         if (!canManageAll && currentUserRole === 'teacher') {
-            const { data: userData } = await supabase
+            const { data: userData } = await supabaseAdmin
                 .from('users')
                 .select('can_manage_all_payments')
                 .eq('id', currentUserId)
@@ -305,7 +305,7 @@ export async function getTuitionYearlySummary(year: number, currentUserId: strin
         // 1. 권한 확인
         let canManageAll = currentUserRole === 'admin';
         if (!canManageAll && currentUserRole === 'teacher') {
-            const { data: userData } = await supabase
+            const { data: userData } = await supabaseAdmin
                 .from('users')
                 .select('can_manage_all_payments')
                 .eq('id', currentUserId)
@@ -425,7 +425,7 @@ export async function getTuitionExportData(startMonth: string, endMonth: string,
         // 1. 권한 확인
         let canManageAll = currentUserRole === 'admin';
         if (!canManageAll && currentUserRole === 'teacher') {
-            const { data: userData } = await supabase
+            const { data: userData } = await supabaseAdmin
                 .from('users')
                 .select('can_manage_all_payments')
                 .eq('id', currentUserId)

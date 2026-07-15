@@ -3147,7 +3147,7 @@ export async function deleteStudent(studentId: string) {
       .single();
 
     if (studentError || !studentData) {
-      return { success: false, error: '학생을 찾을 수 없습니다.' };
+      return { success: false, error: `학생 정보를 불러올 수 없습니다: ${studentError?.message || '존재하지 않거나 권한이 없습니다.'}` };
     }
 
     // 2. 학부모 계정 ID 조회 (학생 ID에 'p'를 붙인 username으로 찾기, supabaseAdmin 사용하여 RLS 우회)
@@ -3173,8 +3173,11 @@ export async function deleteStudent(studentId: string) {
       supabaseAdmin.from('tuition_annual_records').delete().eq('student_id', studentId),
       supabaseAdmin.from('consultations').delete().eq('student_id', studentId),
       supabaseAdmin.from('consultations').delete().eq('user_id', studentId),
-      supabaseAdmin.from('community_posts').update({ is_deleted: true }).eq('user_id', studentId),
-      supabaseAdmin.from('community_comments').update({ is_deleted: true }).eq('user_id', studentId)
+      supabaseAdmin.from('community_posts').delete().eq('user_id', studentId),
+      supabaseAdmin.from('community_comments').delete().eq('user_id', studentId),
+      supabaseAdmin.from('student_signup_requests').delete().eq('student_id', studentId),
+      supabaseAdmin.from('approval_logs').delete().eq('user_id', studentId),
+      supabaseAdmin.from('approval_logs').delete().eq('target_user_id', studentId)
     ];
 
     if (parentData) {
@@ -3200,7 +3203,7 @@ export async function deleteStudent(studentId: string) {
 
     if (studentDetailError) {
       console.error('학생 상세 정보 삭제 실패:', studentDetailError);
-      return { success: false, error: '학생 상세 정보 삭제에 실패했습니다.' };
+      return { success: false, error: `학생 상세 정보 삭제에 실패했습니다: ${studentDetailError.message}` };
     }
 
     // 5 & 6. 학부모 계정 및 학생 계정 삭제 (병렬 처리로 속도 개선)
@@ -3220,7 +3223,7 @@ export async function deleteStudent(studentId: string) {
 
     if (deleteStudentRes.error) {
       console.error('학생 계정 삭제 실패:', deleteStudentRes.error);
-      return { success: false, error: '학생 계정 삭제에 실패했습니다.' };
+      return { success: false, error: `학생 계정 삭제에 실패했습니다: ${deleteStudentRes.error.message}` };
     }
 
     if (deleteParentRes && deleteParentRes.error) {
@@ -3239,9 +3242,9 @@ export async function deleteStudent(studentId: string) {
       message: `${studentData.name} 학생의 계정이 성공적으로 삭제되었습니다.`
     };
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('학생 삭제 중 오류:', error);
-    return { success: false, error: '학생 삭제 중 오류가 발생했습니다.' };
+    return { success: false, error: `학생 삭제 중 예기치 않은 오류가 발생했습니다: ${error?.message || error}` };
   }
 }
 

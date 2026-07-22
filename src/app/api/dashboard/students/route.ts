@@ -20,7 +20,7 @@ export async function GET(request: NextRequest) {
             .from('students')
             .select(`
                 user_id, 
-                parent_id, 
+                parent_phone,
                 current_curriculum_id, 
                 enrollment_start_date, 
                 assigned_teachers,
@@ -40,8 +40,7 @@ export async function GET(request: NextRequest) {
                     email, 
                     status,
                     assigned_teacher_id
-                ), 
-                parent:users!students_parent_id_fkey ( phone )
+                )
             `);
 
         // 1. 권한 기반 필터링 적용

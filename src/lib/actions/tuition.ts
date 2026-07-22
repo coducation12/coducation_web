@@ -34,14 +34,10 @@ export async function getTuitionDashboardData(month: string, currentUserId: stri
                 students!students_user_id_fkey!inner (
                     tuition_fee,
                     assigned_teachers,
-                    parent_id,
+                    parent_phone,
                     enrollment_end_date,
                     sub_subject,
-                    main_subject,
-                    parent:users!students_parent_id_fkey (
-                        name,
-                        phone
-                    )
+                    main_subject
                 )
             `)
             .eq('role', 'student');
@@ -107,8 +103,8 @@ export async function getTuitionDashboardData(month: string, currentUserId: stri
                 student_id: user.id,
                 name: user.name,
                 phone: user.phone,
-                parent_name: student.parent && (Array.isArray(student.parent) ? student.parent[0]?.name : student.parent?.name),
-                parent_phone: student.parent && (Array.isArray(student.parent) ? student.parent[0]?.phone : student.parent?.phone),
+                parent_name: '-',
+                parent_phone: student.parent_phone || '-',
                 subject: student.sub_subject || student.main_subject,
                 standard_fee: standardFee,
                 base_amount: displayBaseAmount,
@@ -327,11 +323,7 @@ export async function getTuitionYearlySummary(year: number, currentUserId: strin
                     sub_subject,
                     main_subject,
                     enrollment_end_date,
-                    parent_id,
-                    parent:users!students_parent_id_fkey (
-                        name,
-                        phone
-                    )
+                    parent_phone
                 )
             `)
             .eq('role', 'student');
@@ -387,8 +379,8 @@ export async function getTuitionYearlySummary(year: number, currentUserId: strin
                 student_id: user.id,
                 name: user.name,
                 phone: user.phone,
-                parent_name: student.parent && (Array.isArray(student.parent) ? student.parent[0]?.name : student.parent?.name),
-                parent_phone: student.parent && (Array.isArray(student.parent) ? student.parent[0]?.phone : student.parent?.phone),
+                parent_name: '-',
+                parent_phone: student.parent_phone || '-',
                 status: user.status,
                 subject: student.sub_subject || student.main_subject,
                 base_amount: student.tuition_fee || 0,
@@ -448,10 +440,7 @@ export async function getTuitionExportData(startMonth: string, endMonth: string,
                     sub_subject,
                     main_subject,
                     enrollment_end_date,
-                    parent:users!students_parent_id_fkey (
-                        name,
-                        phone
-                    )
+                    parent_phone
                 )
             `)
             .eq('role', 'student');
@@ -498,8 +487,8 @@ export async function getTuitionExportData(startMonth: string, endMonth: string,
             if (!student) return;
 
             const teacherNames = (student.assigned_teachers || []).map((tid: string) => teacherMap.get(tid) || tid).join(', ');
-            const parentName = student.parent && (Array.isArray(student.parent) ? student.parent[0]?.name : student.parent?.name);
-            const parentPhone = student.parent && (Array.isArray(student.parent) ? student.parent[0]?.phone : student.parent?.phone);
+            const parentName = '-';
+            const parentPhone = student.parent_phone || '-';
 
             // 연도별 요약 데이터 구조 초기화
             years.forEach(year => {

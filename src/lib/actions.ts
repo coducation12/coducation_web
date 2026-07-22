@@ -948,7 +948,7 @@ export const getStudentDetailsForEdit = cache(async (userId: string, requestingT
         .from('students')
         .select(`
                   user_id, 
-                  parent_id, 
+                  parent_phone,
                   current_curriculum_id, 
                   enrollment_start_date, 
                   assigned_teachers,
@@ -968,8 +968,7 @@ export const getStudentDetailsForEdit = cache(async (userId: string, requestingT
                       email, 
                       status,
                       assigned_teacher_id
-                  ), 
-                  parent:users!students_parent_id_fkey ( phone )
+                  )
               `)
         .eq('user_id', userId)
         .maybeSingle(),

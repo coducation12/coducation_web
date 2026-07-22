@@ -121,7 +121,7 @@ export function useStudentsData() {
                     name: item.users?.name || '-',
                     email: item.users?.email || '-',
                     phone: item.users?.phone || '-',
-                    parentPhone: item.parent?.phone || '-',
+                    parentPhone: item.parent_phone || '-',
                     birthDate: item.users?.birth_year ? String(item.users.birth_year) : '-',
                     avatar: '/default-avatar.png',
                     course: (() => {

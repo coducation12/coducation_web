@@ -88,7 +88,7 @@ export interface Database {
         Row: {
           user_id: string;
           assigned_teachers: string[];
-          parent_id?: string;
+          parent_phone?: string | null;
           tuition_fee?: number;
           current_curriculum_id?: string;
           enrollment_start_date: string;
@@ -99,7 +99,7 @@ export interface Database {
         Insert: {
           user_id: string;
           assigned_teachers: string[];
-          parent_id?: string;
+          parent_phone?: string | null;
           tuition_fee?: number;
           current_curriculum_id?: string;
           enrollment_start_date: string;
@@ -110,7 +110,7 @@ export interface Database {
         Update: {
           user_id?: string;
           assigned_teachers?: string[];
-          parent_id?: string;
+          parent_phone?: string | null;
           tuition_fee?: number;
           current_curriculum_id?: string;
           enrollment_start_date?: string;

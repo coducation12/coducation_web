@@ -22,8 +22,7 @@ export default async function DashboardPage() {
         switch (user.role) {
             case 'student':
                 redirect('/dashboard/student');
-            case 'parent':
-                redirect('/dashboard/parent');
+
             case 'teacher':
                 redirect('/dashboard/teacher');
             case 'admin':

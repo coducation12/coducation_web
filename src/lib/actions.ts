@@ -109,7 +109,7 @@ export async function updateStudentPassword(currentPassword: string, newPassword
     const userId = cookieStore.get('user_id')?.value;
     const userRole = cookieStore.get('user_role')?.value;
 
-    if (!userId || !userRole || (userRole !== 'student' && userRole !== 'parent')) {
+    if (!userId || !userRole || userRole !== 'student') {
       return { success: false, error: '권한이 없습니다. 다시 로그인해주세요.' };
     }
 
@@ -3164,7 +3164,6 @@ export async function deleteStudent(studentId: string) {
 interface NewStudentSignupRequest {
   id: string;
   student_id: string;
-  parent_id?: string;
   academy: string;
   assigned_teacher_id?: string;
   status: 'pending' | 'approved' | 'rejected';
@@ -3219,29 +3218,7 @@ export async function createStudentSignupRequest(studentData: {
     const cookieStore = await cookies();
     const currentUserId = cookieStore.get('user_id')?.value;
 
-    // 1. 학부모 계정 생성
-    const parentUsername = `${studentDataFinal.studentId}p`;
-    const parentPasswordHash = await bcrypt.hash(studentDataFinal.password, 10);
-
-    const { data: parentData, error: parentError } = await supabase
-      .from('users')
-      .insert({
-        username: parentUsername,
-        name: `${studentDataFinal.name} 학부모`,
-        role: 'parent',
-        password: parentPasswordHash,
-        phone: studentDataFinal.parentPhone || null,
-        academy: studentDataFinal.academy,
-        status: 'pending',
-        created_at: new Date().toISOString()
-      })
-      .select()
-      .single();
-
-    if (parentError) {
-      console.error('학부모 계정 생성 실패:', parentError);
-      return { success: false, error: '학부모 계정 생성에 실패했습니다.' };
-    }
+    // 1. 학부모 계정 생성 (학부모 기능 제거됨)
 
     // 2. 중복 아이디 검사는 getUniqueUsername에서 이미 처리됨
 
@@ -3251,8 +3228,14 @@ export async function createStudentSignupRequest(studentData: {
     const { data: studentUserData, error: studentUserError } = await supabase
       .from('users')
       .insert({
-        academy: studentData.academy,
-        assigned_teacher_id: studentData.assignedTeacherId || null,
+        username: studentDataFinal.studentId,
+        name: studentDataFinal.name,
+        role: 'student',
+        password: studentPasswordHash,
+        phone: studentDataFinal.phone,
+        birth_year: parseInt(studentDataFinal.birthYear),
+        academy: studentDataFinal.academy,
+        assigned_teacher_id: studentDataFinal.assignedTeacherId || null,
         status: 'pending',
         created_at: new Date().toISOString()
       })
@@ -3260,8 +3243,6 @@ export async function createStudentSignupRequest(studentData: {
       .single();
 
     if (studentUserError) {
-      // 학부모 계정 롤백
-      await supabase.from('users').delete().eq('id', parentData.id);
       return { success: false, error: studentUserError.message };
     }
 
@@ -3271,15 +3252,14 @@ export async function createStudentSignupRequest(studentData: {
       .insert({
         user_id: studentUserData.id,
         assigned_teachers: studentData.assignedTeacherId ? [studentData.assignedTeacherId] : [],
-        parent_id: parentData.id,
+        parent_phone: studentDataFinal.parentPhone || null,
         current_curriculum_id: null,
         created_at: new Date().toISOString()
       });
 
     if (studentError) {
-      // 롤백: users 테이블에서 학생과 학부모 계정 삭제
+      // 롤백: users 테이블에서 학생 계정 삭제
       await supabase.from('users').delete().eq('id', studentUserData.id);
-      await supabase.from('users').delete().eq('id', parentData.id);
       return { success: false, error: studentError.message };
     }
 
@@ -3302,7 +3282,6 @@ export async function getNewStudentSignupRequests(teacherId?: string) {
       .select(`
         id,
         student_id,
-        parent_id,
         academy,
         assigned_teacher_id,
         status,
@@ -3383,7 +3362,7 @@ export async function approveNewStudentSignupRequest(requestId: string) {
     // 1. 가입 요청 정보 조회
     const { data: requestData, error: requestError } = await supabase
       .from('student_signup_requests')
-      .select('student_id, parent_id, status')
+      .select('student_id, status')
       .eq('id', requestId)
       .eq('status', 'pending')
       .single();
@@ -3392,13 +3371,13 @@ export async function approveNewStudentSignupRequest(requestId: string) {
       return { success: false, error: '가입 요청을 찾을 수 없습니다.' };
     }
 
-    // 2. 학생과 학부모 계정 상태를 active로 변경
+    // 2. 학생 계정 상태를 active로 변경
     const { error: studentUpdateError } = await supabase
       .from('users')
       .update({
         status: 'active'
       })
-      .in('id', [requestData.student_id, requestData.parent_id]);
+      .eq('id', requestData.student_id);
 
     if (studentUpdateError) {
       console.error('사용자 상태 업데이트 중 오류:', studentUpdateError);
@@ -3419,7 +3398,7 @@ export async function approveNewStudentSignupRequest(requestId: string) {
       await supabase
         .from('users')
         .update({ status: 'pending' })
-        .in('id', [requestData.student_id, requestData.parent_id]);
+        .eq('id', requestData.student_id);
       return { success: false, error: '학생 데이터 업데이트 중 오류가 발생했습니다.' };
     }
 
@@ -3467,7 +3446,7 @@ export async function rejectNewStudentSignupRequest(requestId: string, rejection
     // 1. 가입 요청 정보 조회
     const { data: requestData, error: requestError } = await supabase
       .from('student_signup_requests')
-      .select('student_id, parent_id, status')
+      .select('student_id, status')
       .eq('id', requestId)
       .eq('status', 'pending')
       .single();
@@ -3486,11 +3465,11 @@ export async function rejectNewStudentSignupRequest(requestId: string, rejection
       console.error('students 테이블 삭제 중 오류:', studentError);
     }
 
-    // 3. users 테이블에서 학생과 학부모 계정 삭제
+    // 3. users 테이블에서 학생 계정 삭제
     const { error: userError } = await supabase
       .from('users')
       .delete()
-      .in('id', [requestData.student_id, requestData.parent_id])
+      .eq('id', requestData.student_id)
       .eq('status', 'pending');
 
     if (userError) {

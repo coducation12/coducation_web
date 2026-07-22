@@ -33,7 +33,6 @@ const PROTECTED_ROUTES = {
     admin: '/dashboard/admin',
     teacher: '/dashboard/teacher',
     student: '/dashboard/student',
-    parent: '/dashboard/parent',
 };
 
 // 미들웨어가 실행될 경로 (정적 파일 및 API 예외처리)
@@ -170,14 +169,7 @@ export async function middleware(request: NextRequest) {
         }
     }
 
-    // 5. 학부모(parent) 경로 보호
-    if (pathname.startsWith(PROTECTED_ROUTES.parent)) {
-        if (userRole !== 'parent' && userRole !== 'admin') {
-            const forbiddenUrl = new URL('/login', request.url);
-            forbiddenUrl.searchParams.set('error', 'unauthorized_parent');
-            return NextResponse.redirect(forbiddenUrl);
-        }
-    }
+
 
     return NextResponse.next();
 }

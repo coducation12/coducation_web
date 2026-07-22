@@ -4,7 +4,7 @@ export interface Post {
   content: string;
   author: {
     name: string;
-    role: 'student' | 'parent' | 'teacher' | 'admin';
+    role: 'student' | 'teacher' | 'admin';
     avatar?: string;
   };
   createdAt: string;
@@ -18,7 +18,7 @@ export interface Comment {
   content: string;
   author: {
     name: string;
-    role: 'student' | 'parent' | 'teacher' | 'admin';
+    role: 'student' | 'teacher' | 'admin';
     avatar?: string;
   };
   createdAt: string;
@@ -191,14 +191,12 @@ export const mockComments: Comment[] = [
 
 export const roleColors = {
   student: 'bg-blue-100 text-blue-800',
-  parent: 'bg-green-100 text-green-800',
   teacher: 'bg-purple-100 text-purple-800',
   admin: 'bg-red-100 text-red-800'
 };
 
 export const roleLabels = {
   student: '학생',
-  parent: '학부모',
   teacher: '강사',
   admin: '관리자'
 };

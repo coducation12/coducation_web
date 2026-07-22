@@ -1,4 +1,4 @@
-export type UserRole = 'student' | 'parent' | 'teacher' | 'admin';
+export type UserRole = 'student' | 'teacher' | 'admin';
 
 export interface User {
   id: string;
@@ -18,7 +18,7 @@ export interface User {
 export interface Student {
   user_id: string;
   assigned_teachers: string[];
-  parent_id?: string;
+  parent_phone?: string;
   tuition_fee?: number;
   current_curriculum_id?: string;
   enrollment_start_date: string;

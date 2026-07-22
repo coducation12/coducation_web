@@ -1,7 +1,7 @@
 export interface User {
   id: string;
   name: string;
-  role: 'student' | 'parent' | 'teacher' | 'admin';
+  role: 'student' | 'teacher' | 'admin';
   avatar?: string;
   email?: string;
   grade?: number;
@@ -55,7 +55,7 @@ export interface CommentFormData {
   content: string;
 }
 
-export type UserRole = 'student' | 'parent' | 'teacher' | 'admin';
+export type UserRole = 'student' | 'teacher' | 'admin';
 
 export interface RoleConfig {
   label: string;

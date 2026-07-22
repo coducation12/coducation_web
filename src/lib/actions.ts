@@ -236,33 +236,25 @@ export async function login(formData: FormData) {
           .from('users')
           .select('id, username, role, password, status')
           .eq('username', username)
-          .in('role', ['student', 'parent'])
+          .eq('role', 'student')
           .single();
 
         if (error || !user) {
           return { success: false, error: '사용자 정보를 찾을 수 없습니다.' };
         }
 
-        // 사용자 상태 확인 (학생의 경우 수강 상태도 확인)
-        if (user.role === 'student') {
-          // 학생: active이면서 수강 중이어야 로그인 가능
-          if (user.status !== 'active') {
-            if (user.status === 'pending') {
-              return { success: false, error: '계정이 아직 승인되지 않았습니다.' };
-            } else if (user.status === 'suspended' || user.status === '휴강') {
-              return { success: false, error: '휴강 중인 계정입니다.' };
-            } else if (user.status === 'inactive' || user.status === '종료') {
-              return { success: false, error: '수강이 종료된 계정입니다.' };
-            } else if (user.status === 'consulting' || user.status === '상담') {
-              return { success: false, error: '상담 신청 중인 계정입니다. 수강 등록 후 로그인이 가능합니다.' };
-            } else {
-              return { success: false, error: '비활성화된 계정입니다.' };
-            }
-          }
-        } else {
-          // 학부모: active가 아니면 로그인 거부
-          if (user.status !== 'active') {
+        // 학생: active이면서 수강 중이어야 로그인 가능
+        if (user.status !== 'active') {
+          if (user.status === 'pending') {
             return { success: false, error: '계정이 아직 승인되지 않았습니다.' };
+          } else if (user.status === 'suspended' || user.status === '휴강') {
+            return { success: false, error: '휴강 중인 계정입니다.' };
+          } else if (user.status === 'inactive' || user.status === '종료') {
+            return { success: false, error: '수강이 종료된 계정입니다.' };
+          } else if (user.status === 'consulting' || user.status === '상담') {
+            return { success: false, error: '상담 신청 중인 계정입니다. 수강 등록 후 로그인이 가능합니다.' };
+          } else {
+            return { success: false, error: '비활성화된 계정입니다.' };
           }
         }
 
@@ -338,47 +330,7 @@ export const getCurrentUser = cache(async () => {
   }
 })
 
-// 학부모가 관리하는 학생(자녀) 목록 조회
-export async function getParentStudents(parentId: string) {
-  try {
-    const cookieStore = await cookies();
-    const currentUserId = cookieStore.get('user_id')?.value;
-    const currentUserRole = cookieStore.get('user_role')?.value;
 
-    // 본인 확인 또는 관리자 확인
-    if (currentUserId !== parentId && currentUserRole !== 'admin') {
-      return { success: false, error: '권한이 없습니다.' };
-    }
-
-    const { data, error } = await supabaseAdmin
-      .from('students')
-      .select(`
-        user_id,
-        users!students_user_id_fkey (
-          id,
-          name,
-          birth_year,
-          status
-        )
-      `)
-      .eq('parent_id', parentId);
-
-    if (error) throw error;
-
-    return {
-      success: true,
-      data: data.map((item: any) => ({
-        id: item.user_id,
-        name: item.users?.name || '알 수 없음',
-        grade: item.users?.birth_year ? `${new Date().getFullYear() - item.users.birth_year + 1}세` : '정보 없음',
-        status: item.users?.status
-      }))
-    };
-  } catch (error: any) {
-    console.error('getParentStudents error:', error);
-    return { success: false, error: error.message };
-  }
-}
 
 // Supabase Auth를 사용한 로그아웃
 export async function logout() {
@@ -525,48 +477,34 @@ export async function addStudent(formData: FormData, isSignup: boolean = false) 
 
     // 1. 비밀번호 해싱 (한 번만 수행하여 CPU 부하 감소)
     const sharedPasswordHash = await bcrypt.hash(studentDataFinal.password, 10);
-    const parentUsername = `${studentDataFinal.studentId}p`;
 
-    // 2. 유저 정보 준비 (학생 + 학부모를 한 번에 인서트하여 네트워크 라운드트립 감소)
-    const usersToInsert = [
-      {
-        username: parentUsername,
-        name: `${studentData.name} 학부모`,
-        role: 'parent',
-        password: sharedPasswordHash,
-        phone: studentData.parentPhone || null,
-        academy: studentData.academy || '코딩메이커',
-        status: 'active',
-        created_at: new Date().toISOString()
-      },
-      {
-        username: studentDataFinal.studentId,
-        name: studentDataFinal.name,
-        role: 'student',
-        password: sharedPasswordHash,
-        phone: studentDataFinal.phone,
-        birth_year: studentDataFinal.birthYear ? parseInt(studentDataFinal.birthYear) : null,
-        academy: studentDataFinal.academy || '코딩메이커',
-        assigned_teacher_id: studentDataFinal.assignedTeacherId || null,
-        status: studentDataFinal.status === '상담' ? 'consulting' : 'active',
-        created_at: new Date().toISOString()
-      }
-    ];
+    // 2. 유저 정보 인서트
+    const userToInsert = {
+      username: studentDataFinal.studentId,
+      name: studentDataFinal.name,
+      role: 'student',
+      password: sharedPasswordHash,
+      phone: studentDataFinal.phone,
+      birth_year: studentDataFinal.birthYear ? parseInt(studentDataFinal.birthYear) : null,
+      academy: studentDataFinal.academy || '코딩메이커',
+      assigned_teacher_id: studentDataFinal.assignedTeacherId || null,
+      status: studentDataFinal.status === '상담' ? 'consulting' : 'active',
+      created_at: new Date().toISOString()
+    };
 
-    const { data: insertedUsers, error: usersError } = await supabaseAdmin
+    const { data: insertedUser, error: usersError } = await supabaseAdmin
       .from('users')
-      .insert(usersToInsert)
-      .select();
+      .insert(userToInsert)
+      .select()
+      .single();
 
     if (usersError) {
       return { success: false, error: '계정 생성에 실패했습니다: ' + usersError.message };
     }
 
-    const parentData = insertedUsers.find((u: any) => u.role === 'parent');
-    const userData = insertedUsers.find((u: any) => u.role === 'student');
+    const userData = insertedUser;
 
-    if (!parentData || !userData) {
-      // 이론적으로 발생해서는 안 됨
+    if (!userData) {
       return { success: false, error: '계정 생성 결과가 올바르지 않습니다.' };
     }
 
@@ -630,7 +568,7 @@ export async function addStudent(formData: FormData, isSignup: boolean = false) 
     const studentInsertData = {
       user_id: userData.id,
       assigned_teachers: currentUserRole === 'teacher' && currentUserId ? [currentUserId] : [],
-      parent_id: parentData.id,
+      parent_phone: studentDataFinal.parentPhone || null,
       current_curriculum_id: null,
       main_subject: studentDataFinal.subject || null,
       sub_subject: studentDataFinal.sub_subject || null,
@@ -646,9 +584,8 @@ export async function addStudent(formData: FormData, isSignup: boolean = false) 
       .insert(studentInsertData);
 
     if (studentError) {
-      // 롤백: users 테이블에서 학생과 학부모 계정 삭제
+      // 롤백: users 테이블에서 학생 계정 삭제
       await supabaseAdmin.from('users').delete().eq('id', userData.id);
-      await supabaseAdmin.from('users').delete().eq('id', parentData.id);
       return { success: false, error: studentError.message };
     }
 
@@ -878,11 +815,7 @@ export async function updateStudent(formData: FormData) {
       userUpdateData.password = await bcrypt.hash(studentData.password, 10);
     }
 
-    const parentUsername = `${studentData.studentId}p`;
-    const parentUpdateData: any = { phone: studentData.parentPhone };
-    if (studentData.password) {
-      parentUpdateData.password = userUpdateData.password; // 이미 해싱된 비밀번호 재사용
-    }
+
 
     // learning_progress 동기화
     const updateProgressPromise = (async () => {
@@ -921,6 +854,7 @@ export async function updateStudent(formData: FormData) {
     )) as string[];
 
     const studentUpdateData: any = {
+      parent_phone: studentData.parentPhone || null,
       main_subject: studentData.subject || null,
       sub_subject: studentData.sub_subject || null,
       memo: studentData.memo || null,
@@ -972,16 +906,14 @@ export async function updateStudent(formData: FormData) {
     })();
 
     // 모든 업데이트를 병렬로 실행
-    const [userResult, parentResult, studentResult, _scheduleResult, _progressResult] = await Promise.all([
+    const [userResult, studentResult, _scheduleResult, _progressResult] = await Promise.all([
       supabaseAdmin.from('users').update(userUpdateData).eq('id', existingUser.id),
-      supabaseAdmin.from('users').update(parentUpdateData).eq('username', parentUsername),
       supabaseAdmin.from('students').update(studentUpdateData).eq('user_id', existingUser.id),
       updateSchedulesPromise,
       updateProgressPromise
     ]);
 
     if (userResult.error) throw userResult.error;
-    if (parentResult.error) throw parentResult.error;
     if (studentResult.error) throw studentResult.error;
 
     console.log('--- updateStudent 성공 (병렬 처리 완료) ---');
@@ -3150,18 +3082,6 @@ export async function deleteStudent(studentId: string) {
       return { success: false, error: `학생 정보를 불러올 수 없습니다: ${studentError?.message || '존재하지 않거나 권한이 없습니다.'}` };
     }
 
-    // 2. 학부모 계정 ID 조회 (학생 ID에 'p'를 붙인 username으로 찾기, supabaseAdmin 사용하여 RLS 우회)
-    const parentUsername = `${studentData.username}p`;
-    const { data: parentData, error: parentError } = await supabaseAdmin
-      .from('users')
-      .select('id')
-      .eq('username', parentUsername)
-      .eq('role', 'parent')
-      .single();
-
-    if (parentError) {
-      console.warn('학부모 계정을 찾을 수 없습니다:', parentError);
-    }
 
     // 3. 관련 데이터 삭제 (Promise.all 병렬 처리로 DB 네트워크 오버헤드 획기적 단축)
     const deletePromises = [
@@ -3180,11 +3100,7 @@ export async function deleteStudent(studentId: string) {
       supabaseAdmin.from('approval_logs').delete().eq('target_user_id', studentId)
     ];
 
-    if (parentData) {
-      deletePromises.push(
-        supabaseAdmin.from('consultations').delete().eq('user_id', parentData.id)
-      );
-    }
+
 
     const deleteResults = await Promise.all(deletePromises);
     
@@ -3211,23 +3127,14 @@ export async function deleteStudent(studentId: string) {
       supabaseAdmin.from('users').delete().eq('id', studentId)
     ];
 
-    if (parentData) {
-      userDeletePromises.push(
-        supabaseAdmin.from('users').delete().eq('id', parentData.id)
-      );
-    }
+
 
     const userDeleteResults = await Promise.all(userDeletePromises);
     const deleteStudentRes = userDeleteResults[0];
-    const deleteParentRes = parentData ? userDeleteResults[1] : null;
 
     if (deleteStudentRes.error) {
       console.error('학생 계정 삭제 실패:', deleteStudentRes.error);
       return { success: false, error: `학생 계정 삭제에 실패했습니다: ${deleteStudentRes.error.message}` };
-    }
-
-    if (deleteParentRes && deleteParentRes.error) {
-      console.warn('학부모 계정 삭제 실패:', deleteParentRes.error);
     }
 
     // 캐시 재검증 및 화면 새로고침 유도

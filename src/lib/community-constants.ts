@@ -2,7 +2,6 @@ import { RoleConfig } from '@/types/community';
 
 export const ROLE_LABELS: Record<string, string> = {
   student: '학생',
-  parent: '학부모',
   teacher: '강사',
   admin: '관리자',
 };
@@ -12,11 +11,6 @@ export const ROLE_CONFIGS: Record<string, RoleConfig> = {
     label: '학생',
     color: 'text-white',
     bgColor: 'bg-cyan-700',
-  },
-  parent: {
-    label: '학부모',
-    color: 'text-white',
-    bgColor: 'bg-green-700',
   },
   teacher: {
     label: '강사',
@@ -32,7 +26,6 @@ export const ROLE_CONFIGS: Record<string, RoleConfig> = {
 
 export const BADGE_COLOR_MAP = {
   student: 'bg-cyan-700 text-white',
-  parent: 'bg-green-700 text-white',
   teacher: 'bg-purple-700 text-white',
   admin: 'bg-red-700 text-white',
 };

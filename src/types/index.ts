@@ -12,6 +12,7 @@ export interface User {
   profile_image_url?: string;
   assigned_teacher_id?: string;
   status: string;
+  can_manage_all_payments?: boolean;
   created_at: string;
 }
 

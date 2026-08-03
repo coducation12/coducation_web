@@ -5,6 +5,7 @@ import { StudentWorksSection } from '@/components/landing/student-works-section'
 import { CurriculumSection } from '@/components/landing/curriculum-section';
 import { InstructorsSection } from '@/components/landing/instructors-section';
 import PromoModal from '@/components/common/PromoModal';
+import FloatingBanner from '@/components/common/FloatingBanner';
 import { getContent } from '@/lib/actions';
 
 export const dynamic = 'force-dynamic';
@@ -24,6 +25,11 @@ export default async function Home() {
       <StudentWorksSection />
       <InstructorsSection />
       <CurriculumSection />
+      <FloatingBanner 
+        isActive={content?.floating_banner_active ?? false}
+        imageUrl={content?.floating_banner_image}
+        linkUrl={content?.floating_banner_link}
+      />
     </div>
   );
 }

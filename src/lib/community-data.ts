@@ -77,9 +77,9 @@ export const mockPosts: Post[] = [
 
 경험이 있으신 분들의 조언을 부탁드립니다.`,
     author: {
-      name: '이학부모',
-      role: 'parent',
-      avatar: '/avatars/parent1.jpg'
+      name: '이학생',
+      role: 'student',
+      avatar: '/avatars/student1.jpg'
     },
     createdAt: '2024-01-14T15:20:00Z',
     likes: 8,

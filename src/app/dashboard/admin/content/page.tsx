@@ -5,6 +5,7 @@ import AcademyContentSettings from "@/components/admin/content/AcademyContentSet
 import CurriculumSettings from "@/components/admin/content/CurriculumSettings";
 import PromoModalSettings from "@/components/admin/content/PromoModalSettings";
 import BusinessContentSettings from "@/components/admin/content/BusinessContentSettings";
+import FloatingBannerSettings from "@/components/admin/content/FloatingBannerSettings";
 
 export const dynamic = 'force-dynamic';
 
@@ -27,7 +28,10 @@ export default async function ContentManagePage() {
     featured_card_2_link: content?.featured_card_2_link || '',
     promo_active: content?.promo_active || false,
     promo_image: content?.promo_image || '',
-    business_areas: content?.business_areas || []
+    business_areas: content?.business_areas || [],
+    floating_banner_active: content?.floating_banner_active || false,
+    floating_banner_image: content?.floating_banner_image || '',
+    floating_banner_link: content?.floating_banner_link || ''
   };
 
   return (
@@ -51,7 +55,8 @@ export default async function ContentManagePage() {
           <TabsTrigger value="academy">학원 소개</TabsTrigger>
           <TabsTrigger value="business">사업 영역</TabsTrigger>
           <TabsTrigger value="curriculum">교육 과정</TabsTrigger>
-          <TabsTrigger value="promo">프로모션</TabsTrigger>
+          <TabsTrigger value="promo">중앙 팝업창</TabsTrigger>
+          <TabsTrigger value="banner">우측 배너</TabsTrigger>
         </TabsList>
 
         <TabsContent value="academy">
@@ -68,6 +73,10 @@ export default async function ContentManagePage() {
 
         <TabsContent value="promo">
           <PromoModalSettings initialData={initialData} />
+        </TabsContent>
+
+        <TabsContent value="banner">
+          <FloatingBannerSettings initialData={initialData} />
         </TabsContent>
       </Tabs>
     </div>

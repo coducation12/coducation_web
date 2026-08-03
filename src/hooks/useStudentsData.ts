@@ -83,7 +83,8 @@ export function useStudentsData() {
     const fetchStudents = async () => {
         try {
             // API 를 통해 서버 측 쿠키 및 데이터 확인 (보안 강화)
-            const response = await fetch('/api/dashboard/students');
+            // 브라우저/Next.js 라우터 캐싱으로 인해 방금 수정한 데이터가 반영되지 않는 현상 방지
+            const response = await fetch(`/api/dashboard/students?t=${new Date().getTime()}`);
 
             if (!response.ok) {
                 if (response.status === 401) {

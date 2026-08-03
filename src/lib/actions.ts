@@ -1011,7 +1011,7 @@ export const getStudentDetailsForEdit = cache(async (userId: string, requestingT
       name: item.users?.name || '-',
       email: item.users?.email || '-',
       phone: item.users?.phone || '-',
-      parentPhone: item.parent?.phone || '-',
+      parentPhone: item.parent_phone || '-',
       birthDate: item.users?.birth_year ? String(item.users.birth_year) : '-',
       course: item.main_subject || '프로그래밍',
       status: item.users?.status === 'pending' ? '승인대기' :
@@ -1890,7 +1890,7 @@ export async function updateContent(formData: FormData) {
       'academy_title', 'academy_subtitle',
       'featured_card_1_title', 'featured_card_1_image_1', 'featured_card_1_image_2', 'featured_card_1_link',
       'featured_card_2_title', 'featured_card_2_image_1', 'featured_card_2_image_2', 'featured_card_2_link',
-      'promo_image', 'unit_threshold'
+      'promo_image', 'unit_threshold', 'floating_banner_image', 'floating_banner_link'
     ];
 
     textFields.forEach(field => {
@@ -1907,6 +1907,9 @@ export async function updateContent(formData: FormData) {
     // 불리언 필드 처리
     if (formData.has('promo_active')) {
       updates['promo_active'] = formData.get('promo_active') === 'true';
+    }
+    if (formData.has('floating_banner_active')) {
+      updates['floating_banner_active'] = formData.get('floating_banner_active') === 'true';
     }
 
     // JSON 필드 처리

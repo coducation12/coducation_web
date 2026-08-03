@@ -4,7 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { ROLE_LABELS, BADGE_COLOR_MAP } from '@/lib/community-constants';
 
 interface RoleBadgeProps {
-  role: 'student' | 'parent' | 'teacher' | 'admin';
+  role: 'student' | 'teacher' | 'admin';
   size?: 'sm' | 'md' | 'lg';
   className?: string;
 }

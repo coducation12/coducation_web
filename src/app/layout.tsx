@@ -112,11 +112,12 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ko" suppressHydrationWarning className="dark">
-      <head>
+      <head suppressHydrationWarning>
         <meta name="autocomplete" content="off" />
         <meta name="form-autocomplete" content="off" />
         <script
           type="application/ld+json"
+          suppressHydrationWarning
           dangerouslySetInnerHTML={{
             __html: JSON.stringify({
               '@context': 'https://schema.org',

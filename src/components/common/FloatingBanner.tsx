@@ -33,8 +33,9 @@ export default function FloatingBanner({ isActive, imageUrl, linkUrl }: Floating
         animate={{ opacity: 1, y: 0, x: 0 }}
         exit={{ opacity: 0, scale: 0.8, x: 20 }}
         transition={{ duration: 0.5, type: 'spring', bounce: 0.4 }}
-        className="fixed top-24 right-8 z-50 flex flex-col items-end"
+        className="fixed top-20 right-4 sm:top-24 sm:right-8 z-50 flex flex-col items-end"
       >
+        <div className="scale-[0.5] sm:scale-[0.7] lg:scale-100 origin-top-right">
         {/* 배너 링크 */}
         <a 
           href={finalLinkUrl} 
@@ -65,6 +66,7 @@ export default function FloatingBanner({ isActive, imageUrl, linkUrl }: Floating
             </div>
           )}
         </a>
+        </div>
       </motion.div>
     </AnimatePresence>
   );

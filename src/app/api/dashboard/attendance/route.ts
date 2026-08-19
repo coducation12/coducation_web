@@ -144,7 +144,11 @@ export async function GET(request: NextRequest) {
 
         return NextResponse.json({
             students: finalizedStudents,
-            sessions: sessionData,
+            sessions: (sessionData || []).map((s: any) => ({
+                ...s,
+                start_time: s.start_time ? s.start_time.substring(0, 5) : null,
+                end_time: s.end_time ? s.end_time.substring(0, 5) : null
+            })),
             teachers: teachersData,
             userId: userId,
             userRole: userRole

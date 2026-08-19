@@ -999,8 +999,8 @@ export const getStudentDetailsForEdit = cache(async (userId: string, requestingT
         };
         return {
           day: dayMap[sched.day_of_week] || String(sched.day_of_week),
-          startTime: sched.start_time || '',
-          endTime: sched.end_time || '',
+          startTime: sched.start_time ? sched.start_time.substring(0, 5) : '',
+          endTime: sched.end_time ? sched.end_time.substring(0, 5) : '',
           teacherId: sched.teacher_id || ''
         };
       });
@@ -1224,7 +1224,13 @@ export const getMonthlyAttendance = cache(async (studentId: string, startDateStr
       return { success: false, error: '출석 데이터를 불러오는데 실패했습니다.' };
     }
 
-    return { success: true, data };
+    const processedData = data?.map((item: any) => ({
+      ...item,
+      start_time: item.start_time ? item.start_time.substring(0, 5) : null,
+      end_time: item.end_time ? item.end_time.substring(0, 5) : null
+    }));
+
+    return { success: true, data: processedData };
   } catch (error) {
     console.error('getMonthlyAttendance error:', error);
     return { success: false, error: '서버 오류가 발생했습니다.' };
@@ -1257,7 +1263,13 @@ export const getDailyAttendance = cache(async (studentId: string, dateStr: strin
       return { success: false, error: '일일 출석 데이터를 불러오는데 실패했습니다.' };
     }
 
-    return { success: true, data };
+    const processedData = data ? {
+      ...data,
+      start_time: data.start_time ? data.start_time.substring(0, 5) : null,
+      end_time: data.end_time ? data.end_time.substring(0, 5) : null
+    } : data;
+
+    return { success: true, data: processedData };
   } catch (error) {
     console.error('getDailyAttendance error:', error);
     return { success: false, error: '서버 오류가 발생했습니다.' };

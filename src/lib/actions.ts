@@ -243,12 +243,10 @@ export async function login(formData: FormData) {
           return { success: false, error: '사용자 정보를 찾을 수 없습니다.' };
         }
 
-        // 학생: active이면서 수강 중이어야 로그인 가능
-        if (user.status !== 'active') {
+        // 학생: active 또는 휴강 상태일 때 로그인 가능
+        if (user.status !== 'active' && user.status !== 'suspended' && user.status !== '휴강') {
           if (user.status === 'pending') {
             return { success: false, error: '계정이 아직 승인되지 않았습니다.' };
-          } else if (user.status === 'suspended' || user.status === '휴강') {
-            return { success: false, error: '휴강 중인 계정입니다.' };
           } else if (user.status === 'inactive' || user.status === '종료') {
             return { success: false, error: '수강이 종료된 계정입니다.' };
           } else if (user.status === 'consulting' || user.status === '상담') {

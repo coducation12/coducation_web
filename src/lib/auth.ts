@@ -73,9 +73,16 @@ export const getAuthenticatedUser = cache(async (): Promise<User | null> => {
     if (error || !data) return null;
 
     // 실시간 정지/비활성화 상태 검증
-    if (data.status !== 'active') {
-      console.warn(`보안 경고: 사용자 ${data.username}의 계정이 비활성화 상태(${data.status})입니다. 접근을 차단합니다.`);
-      return null;
+    if (data.role === 'student') {
+      if (data.status !== 'active' && data.status !== 'suspended' && data.status !== '휴강') {
+        console.warn(`보안 경고: 학생 ${data.username}의 계정이 비활성화 상태(${data.status})입니다. 접근을 차단합니다.`);
+        return null;
+      }
+    } else {
+      if (data.status !== 'active') {
+        console.warn(`보안 경고: 사용자 ${data.username}의 계정이 비활성화 상태(${data.status})입니다. 접근을 차단합니다.`);
+        return null;
+      }
     }
 
     return data as User;

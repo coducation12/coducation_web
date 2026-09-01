@@ -325,7 +325,7 @@ export default function AdminStudentsPage() {
                                                                     {student.assignedTeachers?.[0]?.name}
                                                                 </span>
                                                             ) : (
-                                                                <span className="text-gray-400">강사1</span>
+                                                                <span className="text-gray-400">미지정</span>
                                                             )}
                                                         </SelectValue>
                                                     </SelectTrigger>
@@ -363,7 +363,7 @@ export default function AdminStudentsPage() {
                                                                     {student.assignedTeachers?.[1]?.name}
                                                                 </span>
                                                             ) : (
-                                                                <span className="text-gray-400">강사2</span>
+                                                                <span className="text-gray-400">미지정</span>
                                                             )}
                                                         </SelectValue>
                                                     </SelectTrigger>

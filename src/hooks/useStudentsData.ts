@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
-import { addStudent, updateStudent, deleteStudent, getTeachersAndAcademies } from "@/lib/actions";
+import { addStudent, updateStudent, deleteStudent, getTeachersAndAcademies, updateAssignedTeachers } from "@/lib/actions";
 import { useToast } from "@/hooks/use-toast";
 
 export interface Student {
@@ -326,17 +326,14 @@ export function useStudentsData() {
                 }
             }
 
-            // students 테이블의 assigned_teachers 배열 업데이트
+            // students 테이블의 assigned_teachers 배열 업데이트 (서버 액션 사용)
             const assignedTeacherIds = newTeachers.map(t => t.id);
-            const { error } = await supabase
-                .from('students')
-                .update({ assigned_teachers: assignedTeacherIds })
-                .eq('user_id', studentId);
+            const result = await updateAssignedTeachers(studentId, assignedTeacherIds);
 
-            if (error) {
+            if (!result.success) {
                 toast({
                     title: "오류",
-                    description: "담당강사 변경에 실패했습니다.",
+                    description: result.error || "담당강사 변경에 실패했습니다.",
                     variant: "destructive",
                 });
                 return false;

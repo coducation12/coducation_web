@@ -639,6 +639,31 @@ export async function addStudent(formData: FormData, isSignup: boolean = false) 
   }
 }
 
+// 학생 담당강사(assigned_teachers) 배열 업데이트 서버 액션
+export async function updateAssignedTeachers(studentId: string, assignedTeacherIds: string[]) {
+  try {
+    const cookieStore = await cookies();
+    const currentUserRole = cookieStore.get('user_role')?.value;
+
+    if (currentUserRole !== 'admin' && currentUserRole !== 'teacher') {
+      return { success: false, error: '담당 강사를 수정할 권한이 없습니다.' };
+    }
+
+    const { error } = await supabaseAdmin
+      .from('students')
+      .update({ assigned_teachers: assignedTeacherIds })
+      .eq('user_id', studentId);
+
+    if (error) {
+      return { success: false, error: error.message };
+    }
+
+    return { success: true };
+  } catch (error: any) {
+    return { success: false, error: '서버 오류가 발생했습니다.' };
+  }
+}
+
 // 학생 정보 수정 서버 액션
 export async function updateStudent(formData: FormData) {
   console.log('--- updateStudent 시작 ---');

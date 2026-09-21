@@ -49,6 +49,7 @@ export function AttendanceCalendarModal({
         currentMonth,
         setCurrentMonth,
         attendanceRecords,
+        holidays,
         editingDay,
         setEditingDay,
         isSaving,
@@ -166,6 +167,7 @@ export function AttendanceCalendarModal({
                             <CalendarGrid
                                 currentMonth={currentMonth}
                                 attendanceRecords={attendanceRecords}
+                                holidays={holidays}
                                 onEditDay={onEditDay}
                             />
                         </div>

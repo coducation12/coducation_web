@@ -1,13 +1,13 @@
 import React, { useMemo } from 'react';
 import { AttendanceRecord } from './types';
 import { STATUS_CONFIG } from '../types';
-import { getHoliday } from '@/lib/holiday-utils';
 
 interface CalendarDayProps {
     day: number;
     dateStr: string;
     isToday: boolean;
     records: AttendanceRecord[];
+    holidayName?: string;
     onEditDay: (dateStr: string, record?: AttendanceRecord) => void;
 }
 
@@ -16,11 +16,11 @@ export const CalendarDay = React.memo(({
     dateStr,
     isToday,
     records,
+    holidayName,
     onEditDay
 }: CalendarDayProps) => {
     // 공휴일 여부 및 요일 계산
-    const { holidayName, numberColorClass } = useMemo(() => {
-        const hName = getHoliday(dateStr);
+    const { numberColorClass } = useMemo(() => {
         const dayOfWeek = new Date(dateStr).getDay();
         const isSunday = dayOfWeek === 0;
         const isSaturday = dayOfWeek === 6;
@@ -28,14 +28,14 @@ export const CalendarDay = React.memo(({
         let colorClass = 'text-cyan-500/40 opacity-70 group-hover:opacity-100 transition-opacity';
         if (isToday) {
             colorClass = 'text-cyan-100 font-bold';
-        } else if (isSunday || hName) {
+        } else if (isSunday || holidayName) {
             colorClass = 'text-red-500/70 group-hover:text-red-400 transition-colors font-bold';
         } else if (isSaturday) {
             colorClass = 'text-blue-500/70 group-hover:text-blue-400 transition-colors font-bold';
         }
 
-        return { holidayName: hName, numberColorClass: colorClass };
-    }, [dateStr, isToday]);
+        return { numberColorClass: colorClass };
+    }, [dateStr, isToday, holidayName]);
 
     return (
         <div
@@ -114,6 +114,7 @@ export const CalendarDay = React.memo(({
         prev.day === next.day &&
         prev.dateStr === next.dateStr &&
         prev.isToday === next.isToday &&
+        prev.holidayName === next.holidayName &&
         JSON.stringify(prev.records) === JSON.stringify(next.records)
     );
 });

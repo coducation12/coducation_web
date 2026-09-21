@@ -21,6 +21,7 @@ export function useAttendanceCalendar(
     const [loading, setLoading] = useState(false);
     const [editingDay, setEditingDay] = useState<AttendanceRecord | null>(null);
     const [isSaving, setIsSaving] = useState(false);
+    const [holidays, setHolidays] = useState<Record<string, string>>({});
     const { toast } = useToast();
     
     // 마지막으로 요청한 정보를 저장하여 중복 요청 방지
@@ -80,6 +81,24 @@ export function useAttendanceCalendar(
     useEffect(() => {
         loadMonthlyAttendance();
     }, [loadMonthlyAttendance, refreshTrigger]);
+
+    const loadHolidays = useCallback(async (year: number) => {
+        try {
+            const res = await fetch(`/api/holidays?year=${year}`);
+            if (res.ok) {
+                const data = await res.json();
+                if (data.holidays) {
+                    setHolidays(prev => ({ ...prev, ...data.holidays }));
+                }
+            }
+        } catch (e) {
+            console.error('Failed to load holidays:', e);
+        }
+    }, []);
+
+    useEffect(() => {
+        loadHolidays(currentMonth.getFullYear());
+    }, [currentMonth.getFullYear(), loadHolidays]);
 
     const handleSaveDay = async (targetTeacherId?: string | null) => {
         if (!editingDay) return;
@@ -247,6 +266,7 @@ export function useAttendanceCalendar(
         currentMonth,
         setCurrentMonth,
         attendanceRecords,
+        holidays,
         loading,
         editingDay,
         setEditingDay,

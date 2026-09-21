@@ -5,12 +5,14 @@ import { CalendarDay } from './CalendarDay';
 interface CalendarGridProps {
     currentMonth: Date;
     attendanceRecords: Record<string, AttendanceRecord[]>;
+    holidays?: Record<string, string>;
     onEditDay: (dateStr: string, record?: AttendanceRecord) => void;
 }
 
 export function CalendarGrid({
     currentMonth,
     attendanceRecords,
+    holidays = {},
     onEditDay
 }: CalendarGridProps) {
     const todayStr = useMemo(() => new Date().toLocaleDateString('en-CA'), []);
@@ -57,6 +59,7 @@ export function CalendarGrid({
                         dateStr={item.dateStr as string}
                         isToday={item.isToday as boolean}
                         records={attendanceRecords[item.dateStr as string] || []}
+                        holidayName={holidays[item.dateStr as string]}
                         onEditDay={onEditDay}
                     />
                 );

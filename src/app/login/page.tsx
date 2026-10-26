@@ -120,15 +120,9 @@ function LoginForm() {
       }
 
       if (result.success) {
-        setSuccess('로그인 성공! 잠시 후 이동합니다...')
-        // 성공 메시지를 잠시 보여준 후 리다이렉트
-        setTimeout(() => {
-          if (result.redirect) {
-            window.location.href = result.redirect
-          } else {
-            window.location.href = '/dashboard'
-          }
-        }, 1000)
+        setSuccess('로그인 성공! 이동합니다...')
+        const target = result.redirect || '/dashboard'
+        window.location.href = target
       } else {
         setError(result.error || '로그인에 실패했습니다.')
       }

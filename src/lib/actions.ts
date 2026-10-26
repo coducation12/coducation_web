@@ -221,7 +221,13 @@ export async function login(formData: FormData) {
           cookieStore.set('refresh_token', authData.session.refresh_token, COOKIE_OPTIONS);
         }
 
-        return { success: true, redirect: '/dashboard' };
+        const directRedirect = user.role === 'admin' 
+          ? '/dashboard/admin' 
+          : user.role === 'teacher' 
+            ? '/dashboard/teacher' 
+            : '/dashboard/student';
+
+        return { success: true, redirect: directRedirect };
       } catch (error) {
         return { success: false, error: '로그인 중 오류가 발생했습니다.' };
       }
@@ -279,7 +285,7 @@ export async function login(formData: FormData) {
           cookieStore.set('user_id', user.id, COOKIE_OPTIONS);
           cookieStore.set('user_role', user.role, COOKIE_OPTIONS);
           cookieStore.set('login_date', currentDateString, COOKIE_OPTIONS);
-          return { success: true, redirect: '/dashboard' };
+          return { success: true, redirect: '/dashboard/student' };
         } else {
           return { success: false, error: '비밀번호가 올바르지 않습니다.' };
         }

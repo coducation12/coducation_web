@@ -40,7 +40,7 @@ export const CalendarDay = React.memo(({
     return (
         <div
             onClick={() => onEditDay(dateStr, records[0])}
-            className={`h-24 sm:h-32 p-1 sm:p-2 border border-cyan-500/10 cursor-pointer transition-all duration-300 relative group overflow-hidden flex flex-col
+            className={`min-h-[72px] sm:min-h-[84px] lg:min-h-[92px] p-1 sm:p-1.5 border border-cyan-500/10 cursor-pointer transition-all duration-200 relative group overflow-hidden flex flex-col justify-between
                 ${isToday ? 'bg-cyan-500/15 ring-1 ring-inset ring-cyan-400/30' : 'hover:bg-cyan-500/5'}
             `}
         >
@@ -48,7 +48,7 @@ export const CalendarDay = React.memo(({
                 <div className="absolute inset-x-0 top-0 h-1 bg-cyan-400/50 z-20 pointer-events-none"></div>
             )}
 
-            <div className="flex justify-between items-start mb-1 relative z-10 shrink-0 min-h-[16px] sm:min-h-[20px]">
+            <div className="flex justify-between items-start mb-0.5 relative z-10 shrink-0 min-h-[16px] sm:min-h-[18px]">
                 <div className="flex items-center gap-1 truncate max-w-[70%]">
                     <span className={`text-[10px] sm:text-[11px] font-black tracking-tighter ${numberColorClass}`}>
                         {String(day).padStart(2, '0')}
@@ -67,7 +67,7 @@ export const CalendarDay = React.memo(({
                 </div>
             </div>
 
-            <div className="flex-1 space-y-1 relative z-10 overflow-y-auto overflow-x-hidden scrollbar-hide scroll-smooth">
+            <div className="flex-1 flex flex-col justify-start gap-1 relative z-10 overflow-hidden">
                 {records.map((record, idx) => (
                     <div 
                         key={idx} 
@@ -77,7 +77,7 @@ export const CalendarDay = React.memo(({
                         }}
                         className="flex flex-col gap-0.5"
                     >
-                        <div className={`text-[8px] sm:text-[9px] font-bold px-1 sm:px-1.5 py-0.5 rounded-md flex items-center gap-1
+                        <div className={`text-[8px] sm:text-[9px] font-bold px-1 sm:px-1.5 py-0.5 rounded flex items-center justify-center gap-1
                             ${record.session_type === 'makeup'
                                 ? record.status === 'unregistered'
                                     ? 'border border-yellow-500/50 bg-yellow-500/10 text-yellow-200'
@@ -99,7 +99,16 @@ export const CalendarDay = React.memo(({
                         </div>
                         
                         {record.memo && (
-                            <div className="text-[7px] sm:text-[8px] text-cyan-200/60 leading-tight px-1 py-0.5 bg-cyan-900/40 rounded border border-white/5 truncate hover:whitespace-normal hover:overflow-visible hover:z-50 hover:bg-cyan-900/90 transition-all">
+                            <div 
+                                className={`text-[8px] sm:text-[9px] leading-snug px-1.5 py-0.5 rounded border truncate transition-colors ${
+                                    record.status === 'absent'
+                                        ? 'bg-red-950/60 border-red-500/30 text-red-200 font-medium'
+                                        : record.session_type === 'makeup'
+                                            ? 'bg-yellow-950/60 border-yellow-500/30 text-yellow-200 font-medium'
+                                            : 'bg-cyan-950/70 border-cyan-500/20 text-cyan-200'
+                                }`}
+                                title={record.memo}
+                            >
                                 {record.memo}
                             </div>
                         )}

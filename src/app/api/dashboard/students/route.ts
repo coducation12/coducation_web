@@ -90,7 +90,7 @@ export async function GET(request: NextRequest) {
                 .in('student_id', studentIds) : Promise.resolve({ data: [], error: null }),
             studentIds.length > 0 ? supabaseAdmin
                 .from('student_progresses')
-                .select('student_id, id, category, title, percentage, status, results, xp_awarded, created_at')
+                .select('student_id, id, category, title, percentage, status')
                 .in('student_id', studentIds) : Promise.resolve({ data: [], error: null })
         ]);
 

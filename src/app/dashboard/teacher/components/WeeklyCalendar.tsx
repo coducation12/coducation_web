@@ -3,7 +3,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Student } from "./types";
 import { useEffect, useState, useMemo } from "react";
-import { getAttendanceData } from "../lib/attendance";
+import { getWeeklyAttendanceData } from "../lib/attendance";
 import { DayCard } from "./DayCard";
 
 // 주간 캘린더 관련 유틸리티 함수들
@@ -42,19 +42,11 @@ export function WeeklyCalendar({ currentDate, teacherId, refreshTrigger = 0 }: W
   const [studentsByDay, setStudentsByDay] = useState<{ [key: string]: Student[] }>({});
   const [isLoading, setIsLoading] = useState(true);
 
-  // 각 요일별 학생 데이터 가져오기
+  // 1주일치 전체 출결 데이터를 1회의 배치 API 호출로 최적화 로드
   useEffect(() => {
     const fetchStudentsByDay = async () => {
       setIsLoading(true);
-      const studentsData: { [key: string]: Student[] } = {};
-
-      // 병렬 로드를 위해 Promise.all 사용 가능하지만, 7개 정도는 순차 로드도 나쁘지 않음. 
-      // 하지만 성능을 위해 병렬 로드로 리펙토링
-      await Promise.all(weekDates.map(async (date) => {
-        const dayName = getDayName(date);
-        studentsData[dayName] = await getAttendanceData(date, teacherId);
-      }));
-
+      const studentsData = await getWeeklyAttendanceData(weekDates, teacherId);
       setStudentsByDay(studentsData);
       setIsLoading(false);
     };

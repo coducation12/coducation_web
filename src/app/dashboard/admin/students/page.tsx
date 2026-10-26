@@ -28,6 +28,7 @@ export default function AdminStudentsPage() {
     const {
         students,
         teachers,
+        isLoading,
         handleAddStudent,
         handleSaveStudent,
         handleTeacherChange,
@@ -273,7 +274,23 @@ export default function AdminStudentsPage() {
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {sortedStudents.map((student, index) => (
+                                {isLoading ? (
+                                    <TableRow>
+                                        <TableCell colSpan={10} className="text-center py-16 text-cyan-300">
+                                            <div className="flex flex-col items-center justify-center gap-3">
+                                                <div className="w-8 h-8 border-2 border-cyan-400 border-t-transparent rounded-full animate-spin" />
+                                                <span className="text-sm text-cyan-200/80">학생 목록을 불러오는 중입니다...</span>
+                                            </div>
+                                        </TableCell>
+                                    </TableRow>
+                                ) : sortedStudents.length === 0 ? (
+                                    <TableRow>
+                                        <TableCell colSpan={10} className="text-center py-12 text-cyan-400/60">
+                                            등록된 학생이 없거나 조건에 맞는 학생이 없습니다.
+                                        </TableCell>
+                                    </TableRow>
+                                ) : (
+                                    sortedStudents.map((student, index) => (
                                     <TableRow
                                         key={student.id}
                                         className="border-cyan-500/10 hover:bg-cyan-900/10 cursor-pointer whitespace-nowrap"
@@ -441,7 +458,8 @@ export default function AdminStudentsPage() {
                                             </div>
                                         </TableCell>
                                     </TableRow>
-                                ))}
+                                    ))
+                                )}
                             </TableBody>
                         </Table>
                     </div>

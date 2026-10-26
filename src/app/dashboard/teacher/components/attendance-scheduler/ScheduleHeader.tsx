@@ -14,18 +14,14 @@ export const ScheduleHeader = ({
     onPrev,
     onNext
 }: ScheduleHeaderProps) => {
-    const todayStr = currentDate.toLocaleDateString('ko-KR', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-        weekday: 'long'
-    });
+    const yearShort = String(currentDate.getFullYear()).slice(-2);
+    const month = currentDate.getMonth() + 1;
+    const day = currentDate.getDate();
+    const dayNames = ['일', '월', '화', '수', '목', '금', '토'];
+    const dayOfWeek = dayNames[currentDate.getDay()];
 
-    const todayStrMobile = currentDate.toLocaleDateString('ko-KR', {
-        month: 'long',
-        day: 'numeric',
-        weekday: 'long'
-    });
+    const desktopStr = `${yearShort}년 ${month}월 ${day}일 ${dayOfWeek}요일`;
+    const mobileStr = `${yearShort}년 ${month}월 ${day}일 (${dayOfWeek})`;
 
     return (
         <CardHeader className="pb-4">
@@ -33,15 +29,15 @@ export const ScheduleHeader = ({
                 <div className="flex items-center gap-2 min-w-0">
                     <span className="text-cyan-100 font-bold text-xl sm:text-2xl whitespace-nowrap">출석 스케줄</span>
                 </div>
-                <div className="flex items-center gap-2 flex-1 justify-center min-w-0">
-                    <button onClick={onPrev} className="p-1 rounded hover:bg-cyan-900/30 transition-colors focus:outline-none">
+                <div className="flex items-center gap-1 sm:gap-2 flex-1 justify-center min-w-0">
+                    <button onClick={onPrev} className="p-1 rounded hover:bg-cyan-900/30 transition-colors focus:outline-none" aria-label="이전 날짜">
                         <ChevronLeft className="w-6 h-6 text-cyan-200" />
                     </button>
-                    <span className="text-cyan-200 text-lg sm:text-xl font-semibold select-none text-center truncate max-w-[220px]">
-                        <span className="hidden md:inline">{todayStr}</span>
-                        <span className="md:hidden">{todayStrMobile}</span>
+                    <span className="text-cyan-200 text-base sm:text-lg md:text-xl font-semibold select-none text-center whitespace-nowrap">
+                        <span className="hidden sm:inline">{desktopStr}</span>
+                        <span className="sm:hidden">{mobileStr}</span>
                     </span>
-                    <button onClick={onNext} className="p-1 rounded hover:bg-cyan-900/30 transition-colors focus:outline-none">
+                    <button onClick={onNext} className="p-1 rounded hover:bg-cyan-900/30 transition-colors focus:outline-none" aria-label="다음 날짜">
                         <ChevronRight className="w-6 h-6 text-cyan-200" />
                     </button>
                 </div>

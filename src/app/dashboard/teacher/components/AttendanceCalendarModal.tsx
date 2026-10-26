@@ -116,8 +116,8 @@ export function AttendanceCalendarModal({
                         </Button>
                     )}
                 </DialogTrigger>
-                <DialogContent className="w-[95vw] sm:max-w-4xl bg-[#0a1a2f] border-cyan-500/30 text-cyan-100 p-0 overflow-hidden flex flex-col max-h-[95vh] shadow-[0_0_50px_rgba(0,0,0,0.5)]">
-                    <DialogHeader className="p-2 sm:p-4 border-b border-cyan-500/20 bg-gradient-to-r from-cyan-950 to-blue-950">
+                <DialogContent className="w-[96vw] sm:max-w-5xl lg:max-w-6xl bg-[#0a1a2f] border-cyan-500/30 text-cyan-100 p-0 overflow-hidden flex flex-col max-h-[95vh] shadow-[0_0_50px_rgba(0,0,0,0.5)]">
+                    <DialogHeader className="p-2 sm:p-3 border-b border-cyan-500/20 bg-gradient-to-r from-cyan-950 to-blue-950 shrink-0">
                         <DialogTitle className="flex items-center justify-between w-full h-8 sm:h-10 pr-6 sm:pr-0">
                             {/* 왼쪽: 학생 이름 */}
                             <div className="w-[18%] xs:w-[20%] sm:w-1/4">
@@ -155,15 +155,15 @@ export function AttendanceCalendarModal({
                         </DialogTitle>
                     </DialogHeader>
 
-                    <div className="flex-1 overflow-y-auto p-4 sm:p-8 space-y-4">
-                        <div className="grid grid-cols-7 gap-px mb-2">
+                    <div className="flex-1 overflow-y-auto sm:overflow-hidden p-2.5 sm:p-4 flex flex-col justify-between min-h-0 space-y-2">
+                        <div className="grid grid-cols-7 gap-px mb-1 shrink-0">
                             {['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'].map((day, i) => (
-                                <div key={day} className={`text-center text-[11px] font-black tracking-widest py-2 border-b-2 border-transparent ${i === 0 ? 'text-red-500' : i === 6 ? 'text-blue-500' : 'text-cyan-500/60'}`}>
+                                <div key={day} className={`text-center text-[10px] sm:text-[11px] font-black tracking-widest py-1 border-b-2 border-transparent ${i === 0 ? 'text-red-500' : i === 6 ? 'text-blue-500' : 'text-cyan-500/60'}`}>
                                     {day}
                                 </div>
                             ))}
                         </div>
-                        <div className="grid grid-cols-7 gap-px border border-cyan-500/20 rounded-lg overflow-hidden bg-cyan-950/30 backdrop-blur-sm shadow-inner">
+                        <div className="grid grid-cols-7 gap-px border border-cyan-500/20 rounded-lg overflow-hidden bg-cyan-950/30 backdrop-blur-sm shadow-inner shrink-0">
                             <CalendarGrid
                                 currentMonth={currentMonth}
                                 attendanceRecords={attendanceRecords}
@@ -172,22 +172,22 @@ export function AttendanceCalendarModal({
                             />
                         </div>
 
-                        <div className="mt-4 sm:mt-8 flex flex-wrap gap-4 sm:gap-8 justify-center bg-cyan-900/10 p-3 sm:p-5 rounded-2xl border border-cyan-500/10 backdrop-blur-md">
-                            <div className="flex items-center gap-2 sm:gap-3">
-                                <div className="w-3 h-3 sm:w-4 sm:h-4 rounded-full bg-green-500/40 border border-green-500/60 shadow-[0_0_8px_rgba(34,197,94,0.3)]"></div>
-                                <span className="text-xs sm:text-sm font-bold text-cyan-200">출석</span>
+                        <div className="mt-2 flex flex-wrap gap-3 sm:gap-6 justify-center bg-cyan-900/10 py-1.5 px-3 sm:py-2.5 sm:px-5 rounded-xl border border-cyan-500/10 backdrop-blur-md shrink-0">
+                            <div className="flex items-center gap-1.5 sm:gap-2">
+                                <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-green-500/40 border border-green-500/60 shadow-[0_0_8px_rgba(34,197,94,0.3)]"></div>
+                                <span className="text-[11px] sm:text-xs font-bold text-cyan-200">출석</span>
                             </div>
-                            <div className="flex items-center gap-2 sm:gap-3">
-                                <div className="w-3 h-3 sm:w-4 sm:h-4 rounded-full bg-red-500/40 border border-red-500/60 shadow-[0_0_8px_rgba(239,68,68,0.3)]"></div>
-                                <span className="text-xs sm:text-sm font-bold text-cyan-200">결석</span>
+                            <div className="flex items-center gap-1.5 sm:gap-2">
+                                <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-red-500/40 border border-red-500/60 shadow-[0_0_8px_rgba(239,68,68,0.3)]"></div>
+                                <span className="text-[11px] sm:text-xs font-bold text-cyan-200">결석</span>
                             </div>
-                            <div className="flex items-center gap-2 sm:gap-3">
-                                <div className="w-3 h-3 sm:w-4 sm:h-4 rounded-full bg-yellow-500/40 border border-yellow-500/60 shadow-[0_0_8px_rgba(234,179,8,0.3)]"></div>
-                                <span className="text-xs sm:text-sm font-bold text-cyan-200">보강</span>
+                            <div className="flex items-center gap-1.5 sm:gap-2">
+                                <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-yellow-500/40 border border-yellow-500/60 shadow-[0_0_8px_rgba(234,179,8,0.3)]"></div>
+                                <span className="text-[11px] sm:text-xs font-bold text-cyan-200">보강</span>
                             </div>
-                            <div className="flex items-center gap-2 sm:gap-3 border-l border-cyan-500/20 pl-4 sm:pl-8">
-                                <div className="w-3 h-3 sm:w-4 sm:h-4 border-2 border-cyan-400 rounded-sm"></div>
-                                <span className="text-xs sm:text-sm font-bold text-cyan-200">오늘</span>
+                            <div className="flex items-center gap-1.5 sm:gap-2 border-l border-cyan-500/20 pl-3 sm:pl-6">
+                                <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 border-2 border-cyan-400 rounded-sm"></div>
+                                <span className="text-[11px] sm:text-xs font-bold text-cyan-200">오늘</span>
                             </div>
                         </div>
                     </div>

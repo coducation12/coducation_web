@@ -49,7 +49,7 @@ export function CalendarGrid({
         <>
             {days.map((item) => {
                 if (item.type === 'empty') {
-                    return <div key={item.id} className="h-20 sm:h-28 bg-cyan-950/10 border-cyan-500/5"></div>;
+                    return <div key={item.id} className="min-h-[72px] sm:min-h-[84px] lg:min-h-[92px] bg-cyan-950/10 border-cyan-500/5"></div>;
                 }
                 
                 return (

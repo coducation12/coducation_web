@@ -85,6 +85,8 @@ input::-ms-clear {
 
   * {
     @apply border-border;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(6, 182, 212, 0.4) rgba(10, 24, 55, 0.3);
   }
   
   body, html {
@@ -417,79 +419,119 @@ input::-ms-clear {
     box-shadow: 0 0 24px 0 rgba(0, 255, 255, 0.15);
   }
 
-  /* 커스텀 스크롤바 */
-  .custom-scrollbar::-webkit-scrollbar {
+  /* ==========================================================================
+     커스텀 스크롤바 디자인 (사이트 다크 사이언 테마 일체화)
+     ========================================================================== */
+
+  /* 전역 WebKit 스크롤바 (Chrome, Edge, Safari, Opera 등) */
+  *::-webkit-scrollbar {
     width: 6px;
+    height: 6px;
   }
 
-  .custom-scrollbar::-webkit-scrollbar-track {
+  *::-webkit-scrollbar-track {
+    background: rgba(10, 24, 55, 0.4);
+    border-radius: 9999px;
+  }
+
+  *::-webkit-scrollbar-thumb {
+    background: rgba(6, 182, 212, 0.35);
+    border-radius: 9999px;
+    border: 1px solid rgba(6, 182, 212, 0.15);
+    background-clip: padding-box;
+    transition: background 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  *::-webkit-scrollbar-thumb:hover {
+    background: rgba(34, 211, 238, 0.7);
+    border-color: rgba(34, 211, 238, 0.35);
+    box-shadow: 0 0 8px rgba(34, 211, 238, 0.4);
+  }
+
+  *::-webkit-scrollbar-thumb:active {
+    background: rgba(34, 211, 238, 0.95);
+    box-shadow: 0 0 12px rgba(34, 211, 238, 0.7);
+  }
+
+  *::-webkit-scrollbar-corner {
     background: transparent;
   }
 
-  .custom-scrollbar::-webkit-scrollbar-thumb {
-    background: hsl(var(--primary) / 0.5);
-    border-radius: 10px;
-    background-clip: padding-box;
-    border: 1px solid transparent;
-  }
-
-  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-    background: hsl(var(--primary) / 0.8);
-  }
-
-  /* 메인 페이지 전용 스크롤바 (원형/심플) */
+  /* 메인 페이지 전용 스크롤바 */
   .main-scrollbar::-webkit-scrollbar {
     width: 8px;
+    height: 8px;
+  }
+  .main-scrollbar::-webkit-scrollbar-track {
+    background: rgba(10, 24, 55, 0.4);
+    border-radius: 9999px;
   }
   .main-scrollbar::-webkit-scrollbar-thumb {
-    background: hsl(var(--primary) / 0.3);
-    border-radius: 100px;
+    background: rgba(6, 182, 212, 0.4);
+    border-radius: 9999px;
     border: 2px solid transparent;
     background-clip: content-box;
   }
   .main-scrollbar::-webkit-scrollbar-thumb:hover {
-    background: hsl(var(--primary) / 0.6);
+    background: rgba(34, 211, 238, 0.75);
+    box-shadow: 0 0 10px rgba(6, 182, 212, 0.5);
   }
 
-  /* Firefox 스크롤바 */
+  /* 커스텀 유틸리티 스크롤바 */
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: rgba(10, 24, 55, 0.3);
+    border-radius: 9999px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(6, 182, 212, 0.4);
+    border-radius: 9999px;
+    border: 1px solid rgba(6, 182, 212, 0.2);
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: rgba(34, 211, 238, 0.75);
+  }
   .custom-scrollbar {
     scrollbar-width: thin;
-    scrollbar-color: hsl(var(--primary) / 0.6) hsl(var(--background) / 0.3);
+    scrollbar-color: rgba(6, 182, 212, 0.45) rgba(10, 24, 55, 0.3);
   }
 
-  /* 스크롤바 숨김 (기능은 유지) */
-  .scrollbar-hide {
-    -ms-overflow-style: none;  /* Internet Explorer 10+ */
-    scrollbar-width: none;  /* Firefox */
-  }
-
-  .scrollbar-hide::-webkit-scrollbar {
-    display: none;  /* Safari and Chrome */
-  }
-
-  /* 심플하고 얇은 스크롤바 (학생 대시보드용) */
+  /* 심플 슬림 스크롤바 (학생 대시보드 / 모달 내부용) */
   .scrollbar-simple-cyan::-webkit-scrollbar {
     width: 4px;
     height: 4px;
   }
-
   .scrollbar-simple-cyan::-webkit-scrollbar-track {
     background: transparent;
   }
-
   .scrollbar-simple-cyan::-webkit-scrollbar-thumb {
-    background: rgba(34, 211, 238, 0.15);
-    border-radius: 20px;
+    background: rgba(34, 211, 238, 0.25);
+    border-radius: 9999px;
   }
-
-  .scrollbar-simple-cyan:hover::-webkit-scrollbar-thumb {
-    background: rgba(34, 211, 238, 0.4);
+  .scrollbar-simple-cyan:hover::-webkit-scrollbar-thumb,
+  .scrollbar-simple-cyan::-webkit-scrollbar-thumb:hover {
+    background: rgba(34, 211, 238, 0.55);
+    box-shadow: 0 0 6px rgba(34, 211, 238, 0.4);
   }
-
-  /* Firefox용 */
   .scrollbar-simple-cyan {
     scrollbar-width: thin;
     scrollbar-color: rgba(34, 211, 238, 0.3) transparent;
+  }
+
+  /* 스크롤바 숨김 유틸리티 (필요 시 명시적 사용) */
+  .scrollbar-hide,
+  .scrollbar-none {
+    -ms-overflow-style: none !important;
+    scrollbar-width: none !important;
+  }
+  .scrollbar-hide::-webkit-scrollbar,
+  .scrollbar-none::-webkit-scrollbar {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
   }
 
   /* 세로 해상도 대응을 위한 반응형 유틸리티 */

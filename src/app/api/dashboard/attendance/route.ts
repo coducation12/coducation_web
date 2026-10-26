@@ -13,8 +13,11 @@ export async function GET(request: NextRequest) {
         }
 
         const dateStr = request.nextUrl.searchParams.get('date');
-        if (!dateStr) {
-            return NextResponse.json({ error: 'Date is required' }, { status: 400 });
+        const startDate = request.nextUrl.searchParams.get('startDate');
+        const endDate = request.nextUrl.searchParams.get('endDate');
+
+        if (!dateStr && (!startDate || !endDate)) {
+            return NextResponse.json({ error: 'Date or date range (startDate, endDate) is required' }, { status: 400 });
         }
 
         // 🟢 최적화: 관리자 계정은 세션과 학생 데이터를 동시에 가져옵니다.
@@ -24,11 +27,18 @@ export async function GET(request: NextRequest) {
         let studentsData: any[] | null = null;
  
         if (userRole === 'admin') {
+            let sessionQuery = supabaseAdmin
+                .from('attendance_sessions')
+                .select('id, student_id, date, status, session_type, start_time, end_time, teacher_id, korean_typing_speed, english_typing_speed, memo');
+            
+            if (startDate && endDate) {
+                sessionQuery = sessionQuery.gte('date', startDate).lte('date', endDate);
+            } else if (dateStr) {
+                sessionQuery = sessionQuery.eq('date', dateStr);
+            }
+
             const [sessionRes, studentsRes] = await Promise.all([
-                supabaseAdmin
-                    .from('attendance_sessions')
-                    .select('id, student_id, status, session_type, start_time, end_time, teacher_id, korean_typing_speed, english_typing_speed, memo')
-                    .eq('date', dateStr),
+                sessionQuery,
                 supabaseAdmin
                     .from('students')
                     .select('user_id, assigned_teachers, main_subject, sub_subject, users!students_user_id_fkey(name, status)')
@@ -40,11 +50,18 @@ export async function GET(request: NextRequest) {
             if (studentsRes.error) throw studentsRes.error;
         } else {
             // 강사 계정: 본인 세션만 조회 후 연관 학생 조회
-            const { data: sData, error: sError } = await supabaseAdmin
+            let sessionQuery = supabaseAdmin
                 .from('attendance_sessions')
-                .select('id, student_id, status, session_type, start_time, end_time, teacher_id, korean_typing_speed, english_typing_speed, memo')
-                .eq('date', dateStr)
+                .select('id, student_id, date, status, session_type, start_time, end_time, teacher_id, korean_typing_speed, english_typing_speed, memo')
                 .eq('teacher_id', userId);
+
+            if (startDate && endDate) {
+                sessionQuery = sessionQuery.gte('date', startDate).lte('date', endDate);
+            } else if (dateStr) {
+                sessionQuery = sessionQuery.eq('date', dateStr);
+            }
+
+            const { data: sData, error: sError } = await sessionQuery;
             
             if (sError) throw sError;
             sessionData = sData;

@@ -469,7 +469,7 @@ export function TuitionDashboard({ currentUserId, currentUserRole, canManageAllP
                             <Table className="min-w-[600px] sm:min-w-[960px] w-full table-fixed">
                                 <TableHeader>
                                     <TableRow className="border-cyan-500/20 hover:bg-transparent text-sm">
-                                        <TableHead className="text-cyan-300 sticky left-0 bg-[#0a1837] z-20 w-[60px] sm:w-[220px] border-r border-cyan-500/20 px-1 sm:px-4 text-[11px] sm:text-sm">학생 정보/학원</TableHead>
+                                        <TableHead className="text-cyan-300 sticky left-0 bg-[#0a1837] z-20 w-[90px] sm:w-[220px] border-r border-cyan-500/20 px-1.5 sm:px-4 text-[11px] sm:text-sm">학생 정보</TableHead>
                                         {[...Array(12)].map((_, i) => <TableHead key={i} className="text-cyan-300 text-center px-0 min-w-[24px] sm:min-w-[50px] text-[10px] sm:text-sm">{i + 1}월</TableHead>)}
                                     </TableRow>
                                 </TableHeader>
@@ -481,15 +481,14 @@ export function TuitionDashboard({ currentUserId, currentUserRole, canManageAllP
                                     ) : (
                                         filteredYearlyData.map((item) => (
                                             <TableRow key={item.student_id} className={`border-cyan-500/10 text-[10px] sm:text-[11px] ${item.isInactive ? 'opacity-60 bg-zinc-900/20' : 'hover:bg-cyan-900/5'}`}>
-                                                <TableCell className="sticky left-0 bg-[#0a1837] z-10 border-r border-cyan-500/10 py-1 w-[60px] sm:w-[220px] px-1 sm:px-4">
+                                                <TableCell className="sticky left-0 bg-[#0a1837] z-10 border-r border-cyan-500/10 py-1 w-[90px] sm:w-[220px] px-1.5 sm:px-4">
                                                     <div className="font-bold flex flex-col sm:flex-row sm:items-center gap-0.5 sm:gap-1.5 flex-wrap text-[11px] sm:text-sm">
-                                                        <span className={`${item.isInactive ? 'text-zinc-500' : 'text-cyan-100'} truncate max-w-[75px] sm:max-w-none`}>{item.name}</span>
+                                                        <span className={`${item.isInactive ? 'text-zinc-500' : 'text-cyan-100'} truncate max-w-[85px] sm:max-w-none`}>{item.name}</span>
                                                         <span className="text-[10px] text-cyan-600 font-normal hidden sm:inline-block">{item.phone}</span>
                                                         {item.isInactive && <span className="text-[7px] sm:text-[8px] bg-zinc-800 text-zinc-500 px-0.5 sm:px-1 rounded border border-zinc-700 w-fit">종료</span>}
                                                     </div>
-                                                    <div className="text-[9px] sm:text-[10px] text-cyan-500 mt-0.5">
-                                                        <span className="text-cyan-400 font-medium">[{item.academy || "학원 미지정"}]</span>
-                                                        <span className="ml-1 hidden sm:inline">학부모: {item.parent_phone || "-"}</span>
+                                                    <div className="text-[9px] sm:text-[10px] text-cyan-500 mt-0.5 truncate">
+                                                        학부모: {item.parent_phone || "-"}
                                                     </div>
                                                     {/* item.memo && <div className="text-[8px] sm:text-[9px] text-cyan-400/60 truncate max-w-[75px] sm:max-w-[150px] mt-0.5">{item.memo}</div> */}
                                                 </TableCell>

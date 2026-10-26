@@ -52,10 +52,11 @@ export function useStudentsData() {
         const loadData = async () => {
             setIsLoading(true);
             try {
-                // 병렬 실행: 강사 정보와 학생 정보를 동시에 요청
+                // 병렬 실행: 강사 정보와 학생 정보를 동시에 요청하되 Promise를 공유하여 중복 호출 방지
+                const teachersPromise = fetchTeachers();
                 await Promise.all([
-                    fetchTeachers(),
-                    fetchStudents()
+                    teachersPromise,
+                    fetchStudents(teachersPromise)
                 ]);
             } catch (error) {
                 console.error("Data loading error:", error);
@@ -80,7 +81,7 @@ export function useStudentsData() {
         }
     };
 
-    const fetchStudents = async () => {
+    const fetchStudents = async (teachersData?: Promise<any[]> | any[]) => {
         try {
             // API 를 통해 서버 측 쿠키 및 데이터 확인 (보안 강화)
             // 브라우저/Next.js 라우터 캐싱으로 인해 방금 수정한 데이터가 반영되지 않는 현상 방지
@@ -101,9 +102,11 @@ export function useStudentsData() {
             setUserId(currentUserId);
             setUserRole(jsonRes.userRole);
 
-            // 강사 정보는 이미 fetchTeachers에서 전역 상태(teachers)에 저장됨
-            // 하지만 즉시 매핑을 위해 최신 값을 가져오거나 현재 상태 사용
-            const currentTeachers = teachers.length > 0 ? teachers : await fetchTeachers();
+            // 강사 정보 Promise를 재사용하거나 전역 상태/신규 조회 활용
+            const resolvedTeachers = teachersData
+                ? (Array.isArray(teachersData) ? teachersData : await teachersData)
+                : (teachers.length > 0 ? teachers : await fetchTeachers());
+            const currentTeachers = resolvedTeachers || [];
 
             // Student 타입에 맞게 매핑
             const mapped = (data || []).map((item: any) => {

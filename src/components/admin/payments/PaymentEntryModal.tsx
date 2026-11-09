@@ -53,6 +53,7 @@ export function PaymentEntryModal({ isOpen, onClose, student, currentMonth, curr
     const [viewYear, setViewYear] = useState(new Date(currentMonth).getFullYear());
 
     const [historyLoading, setHistoryLoading] = useState(false);
+    const [deleteConfirmIdx, setDeleteConfirmIdx] = useState<number | null>(null);
 
     useEffect(() => {
         const loadHistory = async () => {
@@ -60,6 +61,7 @@ export function PaymentEntryModal({ isOpen, onClose, student, currentMonth, curr
                 // 모달을 열거나 학생이 바뀌면 이전 데이터를 초기화 (깜빡임 방지)
                 setItems([]);
                 setMemo("");
+                setDeleteConfirmIdx(null);
 
                 try {
                     setHistoryLoading(true);
@@ -130,8 +132,13 @@ export function PaymentEntryModal({ isOpen, onClose, student, currentMonth, curr
     };
 
     const removeItem = (index: number) => {
-        if (!confirm("해당 결제 내역을 삭제하시겠습니까?")) return;
-        setItems(items.filter((_, i) => i !== index));
+        setDeleteConfirmIdx(index);
+    };
+
+    const confirmRemoveItem = () => {
+        if (deleteConfirmIdx === null) return;
+        setItems(items.filter((_, i) => i !== deleteConfirmIdx));
+        setDeleteConfirmIdx(null);
     };
 
     const updateItem = (index: number, field: keyof PaymentItem, value: any) => {
@@ -477,6 +484,35 @@ export function PaymentEntryModal({ isOpen, onClose, student, currentMonth, curr
                         ) : "저장"}
                     </Button>
                 </DialogFooter>
+
+                {deleteConfirmIdx !== null && (
+                    <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-[1px] p-4">
+                        <div className="w-full max-w-xs rounded-lg bg-[#0a203f] border border-cyan-500/40 p-4 sm:p-5 shadow-2xl space-y-4 text-center">
+                            <p className="text-sm sm:text-base font-medium text-cyan-100">
+                                해당 결제 내역을 삭제하시겠습니까?
+                            </p>
+                            <div className="flex justify-center gap-2">
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => setDeleteConfirmIdx(null)}
+                                    className="h-8 px-4 text-xs sm:text-sm text-cyan-300 hover:text-cyan-100 hover:bg-cyan-900/40"
+                                >
+                                    취소
+                                </Button>
+                                <Button
+                                    type="button"
+                                    size="sm"
+                                    onClick={confirmRemoveItem}
+                                    className="h-8 px-4 text-xs sm:text-sm bg-red-600 hover:bg-red-500 text-white font-bold"
+                                >
+                                    삭제
+                                </Button>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </DialogContent>
         </Dialog>
     );

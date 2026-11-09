@@ -119,17 +119,18 @@ export function PaymentEntryModal({ isOpen, onClose, student, currentMonth, curr
         const currentMonthObj = new Date(currentMonth);
         const defaultTargetMonth = `${viewYear}-${String(currentMonthObj.getMonth() + 1).padStart(2, '0')}-01`;
 
-        setItems([...items, {
+        setItems([{
             targetMonth: defaultTargetMonth,
             amount: student.base_amount,
             baseAmount: student.base_amount,
             date: new Date().toISOString().split('T')[0],
             method: "결제선생",
             isNew: true
-        }]);
+        }, ...items]);
     };
 
     const removeItem = (index: number) => {
+        if (!confirm("해당 결제 내역을 삭제하시겠습니까?")) return;
         setItems(items.filter((_, i) => i !== index));
     };
 

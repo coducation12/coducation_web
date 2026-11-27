@@ -137,7 +137,7 @@ function LoginForm() {
     <div className="flex items-center justify-center min-h-[calc(100vh-11rem)] py-12">
       <div className="mx-auto max-w-md w-full">
         {/* 로그인 폼 */}
-        <form onSubmit={handleLogin} className="bg-black/40 rounded-lg shadow-xl p-8" autoComplete="off">
+        <form onSubmit={handleLogin} className="bg-black/40 rounded-lg shadow-xl p-8" autoComplete={isAdminMode ? "on" : "off"}>
           {/* 로고 - 더블클릭으로 탭 전환 */}
           <div className="text-center mb-6">
             <div
@@ -197,11 +197,12 @@ function LoginForm() {
               <Label htmlFor="email" className="text-white text-sm font-medium">이메일</Label>
               <Input
                 id="email"
+                name="email"
                 type="email"
                 value={email}
                 onChange={e => setEmail(e.target.value)}
                 required
-                autoComplete="off"
+                autoComplete="username"
                 placeholder="강사/관리자 이메일을 입력하세요"
                 disabled={isLoading}
                 className="mt-1 bg-gray-800/50 border-gray-600 text-white placeholder-gray-400 focus:border-sky-500 focus:ring-sky-500"
@@ -213,10 +214,11 @@ function LoginForm() {
             <Label htmlFor="password" className="text-white text-sm font-medium">비밀번호</Label>
             <Input
               id="password"
+              name={isAdminMode ? "password" : undefined}
               type="password"
               value={password}
               onChange={e => setPassword(e.target.value)}
-              autoComplete="new-password"
+              autoComplete={isAdminMode ? "current-password" : "new-password"}
               placeholder="비밀번호를 입력하세요"
               disabled={isLoading}
               className="mt-1 bg-gray-800/50 border-gray-600 text-white placeholder-gray-400 focus:border-sky-500 focus:ring-sky-500"

@@ -9,6 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Plus, Trash2, Save, User, Phone, CreditCard, Banknote, Calendar, ChevronLeft, ChevronRight } from "lucide-react";
 import { saveTuitionPayment, getStudentPaymentHistory } from "@/lib/actions/tuition";
+import { calculateFirstMonthTuition } from "@/lib/timetable-utils";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
 
@@ -31,7 +32,10 @@ interface PaymentEntryModalProps {
         phone: string;
         parent_name?: string;
         parent_phone?: string;
+        standard_fee?: number;
         base_amount: number;
+        enrollment_start_date?: string;
+        attendance_schedule?: any;
         payment: {
             status: string;
             total_paid_amount: number;
@@ -55,6 +59,19 @@ export function PaymentEntryModal({ isOpen, onClose, student, currentMonth, curr
     const [historyLoading, setHistoryLoading] = useState(false);
     const [deleteConfirmIdx, setDeleteConfirmIdx] = useState<number | null>(null);
 
+    const standardFee = student.standard_fee ?? student.base_amount;
+    const getMonthBaseAmount = (targetMonthStr: string) => {
+        const [y, m] = targetMonthStr.split('-').map(Number);
+        if (!y || !m) return student.base_amount;
+        return calculateFirstMonthTuition(
+            y,
+            m,
+            standardFee,
+            student.attendance_schedule,
+            student.enrollment_start_date
+        );
+    };
+
     useEffect(() => {
         const loadHistory = async () => {
             if (isOpen && student.student_id) {
@@ -70,18 +87,21 @@ export function PaymentEntryModal({ isOpen, onClose, student, currentMonth, curr
                         const allItems: PaymentItem[] = [];
                         res.data.forEach((p: any) => {
                             if (p.payment_details && Array.isArray(p.payment_details) && p.payment_details.length > 0) {
-                                const mappedItems = p.payment_details.map((item: any) => ({
-                                    ...item,
-                                    targetMonth: item.targetMonth || p.payment_month,
-                                    baseAmount: item.baseAmount || p.base_amount || student.base_amount
-                                }));
+                                const mappedItems = p.payment_details.map((item: any) => {
+                                    const monthStr = item.targetMonth || p.payment_month;
+                                    return {
+                                        ...item,
+                                        targetMonth: monthStr,
+                                        baseAmount: item.baseAmount ?? p.base_amount ?? getMonthBaseAmount(monthStr)
+                                    };
+                                });
                                 allItems.push(...mappedItems);
                             } else {
                                 // 내역은 없지만 레코드는 있는 경우 (미납 등)
                                 allItems.push({
                                     targetMonth: p.payment_month,
                                     amount: p.total_paid_amount || 0,
-                                    baseAmount: p.base_amount || student.base_amount,
+                                    baseAmount: p.base_amount ?? getMonthBaseAmount(p.payment_month),
                                     date: p.updated_at?.split('T')[0] || new Date().toISOString().split('T')[0],
                                     method: p.total_paid_amount > 0 ? "기존기록" : "결제선생"
                                 });
@@ -92,7 +112,7 @@ export function PaymentEntryModal({ isOpen, onClose, student, currentMonth, curr
                         // 기록이 없을 경우 student.payment?.payment_details 매핑
                         const initialItems = (student.payment?.payment_details || []).map(item => ({
                             ...item,
-                            baseAmount: item.baseAmount || student.base_amount
+                            baseAmount: item.baseAmount ?? getMonthBaseAmount(item.targetMonth || currentMonth)
                         }));
                         setItems(initialItems);
                     }
@@ -112,19 +132,20 @@ export function PaymentEntryModal({ isOpen, onClose, student, currentMonth, curr
 
     const currentMonthItems = items.filter(item => item.targetMonth === currentMonth);
     const totalPaid = currentMonthItems.reduce((sum, item) => sum + Number(item.amount || 0), 0);
-    // 현재 달의 학원비 기준 (아이템이 있으면 첫 번째 아이템의 baseAmount, 없으면 학생 기본값)
-    const effectiveBaseAmount = currentMonthItems[0]?.baseAmount ?? student.base_amount;
+    // 현재 달의 학원비 기준 (아이템이 있으면 첫 번째 아이템의 baseAmount, 없으면 해당 월 계산값)
+    const effectiveBaseAmount = currentMonthItems[0]?.baseAmount ?? getMonthBaseAmount(currentMonth);
     const remaining = effectiveBaseAmount - totalPaid;
 
     const addItem = () => {
         // 현재 보고 있는 연도(viewYear)와 현재 달의 월 정보를 조합하여 기본값 설정
         const currentMonthObj = new Date(currentMonth);
         const defaultTargetMonth = `${viewYear}-${String(currentMonthObj.getMonth() + 1).padStart(2, '0')}-01`;
+        const defaultBaseAmount = getMonthBaseAmount(defaultTargetMonth);
 
         setItems([{
             targetMonth: defaultTargetMonth,
-            amount: student.base_amount,
-            baseAmount: student.base_amount,
+            amount: defaultBaseAmount,
+            baseAmount: defaultBaseAmount,
             date: new Date().toISOString().split('T')[0],
             method: "결제선생",
             isNew: true
@@ -158,6 +179,18 @@ export function PaymentEntryModal({ isOpen, onClose, student, currentMonth, curr
                     }
                 });
             }
+        } else if (field === 'targetMonth') {
+            const prevDefault = getMonthBaseAmount(newItems[index].targetMonth);
+            const nextDefault = getMonthBaseAmount(value);
+            const shouldSyncBase = newItems[index].isNew && newItems[index].baseAmount === prevDefault;
+            const shouldSyncAmount = shouldSyncBase && newItems[index].amount === prevDefault;
+            newItems[index] = {
+                ...newItems[index],
+                targetMonth: value,
+                ...(shouldSyncBase ? { baseAmount: nextDefault } : {}),
+                ...(shouldSyncAmount ? { amount: nextDefault } : {}),
+                isEdited: true
+            };
         } else {
             newItems[index] = { ...newItems[index], [field]: value, isEdited: true };
         }
@@ -240,7 +273,7 @@ export function PaymentEntryModal({ isOpen, onClose, student, currentMonth, curr
                         <div className="space-y-1 col-span-2 pt-2 border-t border-cyan-500/10">
                             <div className="flex justify-between items-center text-xs sm:text-sm">
                                 <span className="text-[11px] sm:text-xs text-cyan-300">
-                                    기준 학원비: <span className="font-mono font-medium text-cyan-100">{student.base_amount.toLocaleString()}원</span>
+                                    기준 학원비: <span className="font-mono font-medium text-cyan-100">{effectiveBaseAmount.toLocaleString()}원</span>
                                 </span>
                                 <span className="text-xs sm:text-sm font-bold text-cyan-400">
                                     잔액: <span className="font-mono text-cyan-300">{remaining.toLocaleString()}원</span>

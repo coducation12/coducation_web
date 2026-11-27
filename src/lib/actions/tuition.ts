@@ -2,6 +2,19 @@
 
 import { supabase, supabaseAdmin } from "@/lib/supabase"
 import { revalidatePath } from "next/cache"
+import { calculateFirstMonthTuition } from "@/lib/timetable-utils"
+
+const buildScheduleMap = (rows: any[] | null | undefined) => {
+    const map = new Map<string, Record<string, { startTime: string; endTime: string }>>();
+    (rows || []).forEach((s: any) => {
+        if (!map.has(s.student_id)) map.set(s.student_id, {});
+        map.get(s.student_id)![String(s.day_of_week)] = {
+            startTime: s.start_time ? s.start_time.substring(0, 5) : '',
+            endTime: s.end_time ? s.end_time.substring(0, 5) : ''
+        };
+    });
+    return map;
+};
 
 /**
  * 학원비 수납 현황 및 대시보드 데이터 조회
@@ -35,6 +48,7 @@ export async function getTuitionDashboardData(month: string, currentUserId: stri
                     tuition_fee,
                     assigned_teachers,
                     parent_phone,
+                    enrollment_start_date,
                     enrollment_end_date,
                     sub_subject,
                     main_subject
@@ -46,7 +60,7 @@ export async function getTuitionDashboardData(month: string, currentUserId: stri
             studentsQuery.filter('students.assigned_teachers', 'cs', `{"${currentUserId}"}`);
         }
 
-        const [studentsRes, annualRecordsRes, teachersRes] = await Promise.all([
+        const [studentsRes, annualRecordsRes, teachersRes, schedulesRes] = await Promise.all([
             studentsQuery,
             supabaseAdmin
                 .from('tuition_annual_records')
@@ -55,7 +69,10 @@ export async function getTuitionDashboardData(month: string, currentUserId: stri
             supabaseAdmin
                 .from('users')
                 .select('id, name')
-                .eq('role', 'teacher')
+                .eq('role', 'teacher'),
+            supabaseAdmin
+                .from('student_schedules')
+                .select('student_id, day_of_week, start_time, end_time')
         ]);
 
         if (studentsRes.error) throw studentsRes.error;
@@ -65,6 +82,7 @@ export async function getTuitionDashboardData(month: string, currentUserId: stri
         const annualRecords = annualRecordsRes.data;
         const allTeachers = teachersRes.data;
         const teacherMap = new Map(allTeachers?.map((t: any) => [t.id as string, t.name as string]) || []);
+        const scheduleMap = buildScheduleMap(schedulesRes.data);
 
         const annualRecordMap = new Map(annualRecords?.map((r: any) => [r.student_id, r]) || []);
 
@@ -87,14 +105,22 @@ export async function getTuitionDashboardData(month: string, currentUserId: stri
 
             const assignedTeacherIds = student.assigned_teachers || [];
             const teacherNames = assignedTeacherIds.map((tid: string) => teacherMap.get(tid) || tid).join(', ');
+            const studentSchedule = scheduleMap.get(user.id) || {};
 
             const standardFee = student.tuition_fee || 0;
+            const defaultMonthFee = calculateFirstMonthTuition(
+                year,
+                parseInt(monthKey, 10),
+                standardFee,
+                studentSchedule,
+                student.enrollment_start_date
+            );
             const hasPaymentRecord = !!payment;
 
-            // 대시보드 표시용 금액 결정 (신규 연도별 구조 반영)
-            let displayBaseAmount = standardFee;
+            // 대시보드 표시용 금액 결정 (신규 연도별 구조 및 첫 달 일수 계산 반영)
+            let displayBaseAmount = defaultMonthFee;
             if (hasPaymentRecord && payment.status !== 'pending') {
-                displayBaseAmount = payment.base_amount ?? standardFee;
+                displayBaseAmount = payment.base_amount ?? defaultMonthFee;
             }
 
             const autoStatus = standardFee === 0 ? 'paid' : 'pending';
@@ -108,13 +134,15 @@ export async function getTuitionDashboardData(month: string, currentUserId: stri
                 subject: student.sub_subject || student.main_subject,
                 standard_fee: standardFee,
                 base_amount: displayBaseAmount,
+                enrollment_start_date: student.enrollment_start_date,
+                attendance_schedule: studentSchedule,
                 teacher_names: teacherNames,
                 teacher_ids: assignedTeacherIds,
                 academy: user.academy,
                 payment: payment ? {
                     ...payment,
                     memo: annualRecord?.memo, // 메모는 연도별로 관리 중
-                    status: (payment.base_amount ?? standardFee) === 0 ? 'paid' : payment.status
+                    status: (payment.base_amount ?? displayBaseAmount) === 0 ? 'paid' : payment.status
                 } : {
                     status: autoStatus,
                     total_paid_amount: 0,
@@ -162,13 +190,20 @@ export async function saveTuitionPayment(data: {
             ...Object.keys(yearlyGroups).map(Number)
         ]));
 
-        // 3. 학생의 기본 수강료 조회
-        const { data: student } = await supabaseAdmin
-            .from('students')
-            .select('tuition_fee')
-            .eq('user_id', data.student_id)
-            .maybeSingle();
+        // 3. 학생의 기본 수강료 및 스케줄 조회
+        const [{ data: student }, { data: scheduleRows }] = await Promise.all([
+            supabaseAdmin
+                .from('students')
+                .select('tuition_fee, enrollment_start_date')
+                .eq('user_id', data.student_id)
+                .maybeSingle(),
+            supabaseAdmin
+                .from('student_schedules')
+                .select('student_id, day_of_week, start_time, end_time')
+                .eq('student_id', data.student_id)
+        ]);
         const standardFee = student?.tuition_fee || 0;
+        const studentSchedule = buildScheduleMap(scheduleRows).get(data.student_id) || {};
 
         // 4. 각 연도별로 DB 업데이트
         const updatePromises = allYears.map(async (year) => {
@@ -204,7 +239,14 @@ export async function saveTuitionPayment(data: {
                 const total_paid_amount = monthItems.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
                 
                 // baseAmount는 해당 월 항목 중 하나를 사용 (보통 모두 같거나 첫 번째가 기준)
-                const baseFee = monthItems[0].baseAmount !== undefined ? monthItems[0].baseAmount : standardFee;
+                const defaultMonthFee = calculateFirstMonthTuition(
+                    year,
+                    parseInt(monthKey, 10),
+                    standardFee,
+                    studentSchedule,
+                    student?.enrollment_start_date
+                );
+                const baseFee = monthItems[0].baseAmount !== undefined ? monthItems[0].baseAmount : defaultMonthFee;
 
                 // 모든 상세 내역 통합
                 const combinedDetails = monthItems.flatMap(item => 
@@ -322,6 +364,7 @@ export async function getTuitionYearlySummary(year: number, currentUserId: strin
                     assigned_teachers,
                     sub_subject,
                     main_subject,
+                    enrollment_start_date,
                     enrollment_end_date,
                     parent_phone
                 )
@@ -342,18 +385,23 @@ export async function getTuitionYearlySummary(year: number, currentUserId: strin
             .from('users')
             .select('id, name')
             .eq('role', 'teacher');
+        const schedulesPromise = supabaseAdmin
+            .from('student_schedules')
+            .select('student_id, day_of_week, start_time, end_time');
 
         const [
             { data: students, error: studentError },
             { data: annualRecords, error: paymentError },
-            { data: allTeachers }
-        ] = await Promise.all([studentsPromise, annualRecordsPromise, allTeachersPromise]);
+            { data: allTeachers },
+            { data: scheduleRows }
+        ] = await Promise.all([studentsPromise, annualRecordsPromise, allTeachersPromise, schedulesPromise]);
 
         if (studentError) throw studentError;
         if (paymentError) throw paymentError;
 
         const teacherMap = new Map(allTeachers?.map((t: any) => [t.id as string, t.name as string]) || []);
         const annualRecordMap = new Map(annualRecords?.map((r: any) => [r.student_id, r]) || []);
+        const scheduleMap = buildScheduleMap(scheduleRows);
 
         // 5. 데이터 가공 및 정렬 (재원생 우선, 하단에 휴강/종료생)
         const yearlyData = (students || []).map((user: any) => {
@@ -374,6 +422,7 @@ export async function getTuitionYearlySummary(year: number, currentUserId: strin
 
             const assignedTeacherIds = student.assigned_teachers || [];
             const teacherNames = assignedTeacherIds.map((tid: string) => teacherMap.get(tid) || tid).join(', ');
+            const studentSchedule = scheduleMap.get(user.id) || {};
 
             return {
                 student_id: user.id,
@@ -383,7 +432,10 @@ export async function getTuitionYearlySummary(year: number, currentUserId: strin
                 parent_phone: student.parent_phone || '-',
                 status: user.status,
                 subject: student.sub_subject || student.main_subject,
+                standard_fee: student.tuition_fee || 0,
                 base_amount: student.tuition_fee || 0,
+                enrollment_start_date: student.enrollment_start_date,
+                attendance_schedule: studentSchedule,
                 teacher_names: teacherNames,
                 teacher_ids: assignedTeacherIds,
                 academy: user.academy,
@@ -439,7 +491,9 @@ export async function getTuitionExportData(startMonth: string, endMonth: string,
                     assigned_teachers,
                     sub_subject,
                     main_subject,
+                    enrollment_start_date,
                     enrollment_end_date,
+                    attendance_schedule,
                     parent_phone
                 )
             `)

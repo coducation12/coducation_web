@@ -10,13 +10,18 @@
  * @param startDate 수강 시작일 (해당 월 중간에 시작하는 경우 고려)
  * @returns 해당 월의 총 수업 횟수
  */
+const parseLocalDate = (dateStr: string): Date => {
+    const [y, m, d] = dateStr.split('T')[0].split('-').map(Number);
+    return new Date(y, m - 1, d);
+};
+
 export const calculateMonthlySessions = (
     year: number,
     month: number,
     daysOfWeek: number[],
     startDate?: string
 ): number => {
-    const start = startDate ? new Date(startDate) : new Date(year, month - 1, 1);
+    const start = startDate ? parseLocalDate(startDate) : new Date(year, month - 1, 1);
     const end = new Date(year, month, 0); // 월의 마지막 날
 
     // 만약 시작일이 해당 월보다 늦으면 해당 월 수업 없음
@@ -38,6 +43,45 @@ export const calculateMonthlySessions = (
     }
 
     return sessionCount;
+};
+
+/**
+ * 월 중간에 등록한 학생의 첫 달 기준 학원비 계산 (등록일 포함 수업 일수 비례)
+ * - 월 기준 수업 횟수 = 주간 수업 일수 × 4 (예: 주 2회 = 8회, 주 3회 = 12회)
+ * - 첫 달 학원비 = 기준 학원비 × (첫 달 수업 가능 일수 / 월 기준 수업 횟수)
+ */
+export const calculateFirstMonthTuition = (
+    year: number,
+    month: number,
+    standardFee: number,
+    schedule: any,
+    enrollmentStartDate?: string | null
+): number => {
+    if (!standardFee || standardFee <= 0 || !enrollmentStartDate || !schedule) {
+        return standardFee || 0;
+    }
+
+    const [eYear, eMonth] = enrollmentStartDate.split('T')[0].split('-').map(Number);
+    if (eYear !== year || eMonth !== month) {
+        return standardFee;
+    }
+
+    const daysOfWeek = Object.keys(schedule)
+        .map(Number)
+        .filter(d => !isNaN(d) && d >= 0 && d <= 6 && schedule[d]?.startTime);
+
+    if (daysOfWeek.length === 0) {
+        return standardFee;
+    }
+
+    const monthlyStandardSessions = daysOfWeek.length * 4;
+    const availableSessions = calculateMonthlySessions(year, month, daysOfWeek, enrollmentStartDate);
+
+    if (availableSessions >= monthlyStandardSessions) {
+        return standardFee;
+    }
+
+    return Math.round((standardFee * availableSessions) / monthlyStandardSessions);
 };
 
 /**
